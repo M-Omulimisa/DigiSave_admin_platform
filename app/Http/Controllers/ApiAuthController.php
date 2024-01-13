@@ -19,6 +19,7 @@ use Carbon\Carbon;
 use Encore\Admin\Auth\Database\Administrator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Hash;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class ApiAuthController extends Controller
@@ -388,34 +389,121 @@ class ApiAuthController extends Controller
        return $this->success($acc, $msg, $code);
     }
 
-public function new_shareout(Request $r)
-{
-    $admin = auth('api')->user();
-    if ($admin == null) {
-        return $this->error('User not found.');
+    public function new_shareout(Request $request)
+    {
+        $admin = auth('api')->user();
+
+        if ($admin == null) {
+            return $this->error('User not found.');
+        }
+
+        $loggedIn = Administrator::find($admin->id);
+
+        if ($loggedIn == null) {
+            return $this->error('User not found.');
+        }
+
+        if ($request->password == null) {
+            return $this->error('Password is required.');
+        }
+
+        // Check if the provided password is correct
+        if (!Hash::check($request->password, $loggedIn->password)) {
+            return $this->error('Incorrect password.');
+        }
+
+        $sacco = Sacco::find($loggedIn->sacco_id);
+        $cycle_id =  $sacco->cycle_id;
+        if($cycle_id==null) {
+            return $this->error('No active cycle found.');
+        }
+
+        try {
+            foreach ($request->shareouts as $shareoutData) {
+                $shareout = new Shareout();
+                $shareout->sacco_id = $sacco->id;
+                $shareout->cycle_id = $cycle_id;
+                $shareout->member_id = $shareoutData['user_id'];
+                $shareout->shareout_amount = $shareoutData['savings'];
+                $shareout->shareout_date = Carbon::now();
+                $shareout->save();
+            }
+
+            return $this->success(null, 'Shareouts created successfully.');
+        } catch (\Throwable $th) {
+            return $this->error('Failed to create shareouts: ' . $th->getMessage());
+        }
     }
 
-    $loggedIn = Administrator::find($admin->id);
-    if ($loggedIn == null) {
-        return $this->error('User not found.');
-    }
+    // public function new_shareout(Request $r)
+    // {
+    //     $admin = auth('api')->user();
+    
+    //     if ($admin == null) {
+    //         return $this->error('User not found.');
+    //     }
+    
+    //     $loggedIn = Administrator::find($admin->id);
+    
+    //     if ($loggedIn == null) {
+    //         return $this->error('User not found.');
+    //     }
 
-    $sacco = Sacco::find($loggedIn->sacco_id);
+    //     if ($r->password == null) {
+    //         return $this->error('Password is required to shareout.');
+    //     }
+    
+    //     // Check if the provided password is correct
+    //     if (!Hash::check($r->password, $loggedIn->password)) {
+    //         return $this->error('Incorrect password.');
+    //     }
+    
+    //     $sacco = Sacco::find($loggedIn->sacco_id);
+    
+    //     $shareout = new Shareout();
+    //     $shareout->sacco_id = $sacco->id;
+    //     $shareout->cycle_id = $sacco->cycle_id;
+    //     $shareout->member_id = $r->user_id;
+    //     $shareout->shareout_amount = $r->savings;
+    //     $shareout->shareout_date = Carbon::now();
+    
+    //     try {
+    //         $shareout->save();
+    //         return $this->success($shareout, 'Shareout created successfully.');
+    //     } catch (\Throwable $th) {
+    //         return $this->error('Failed to create shareout: ' . $th->getMessage());
+    //     }
+    // }
+    
 
-    $shareout = new Shareout();
-    $shareout->sacco_id = $sacco->id;
-    $shareout->cycle_id = $sacco->cycle_id;
-    $shareout->member_id = $r->user_id;
-    $shareout->shareout_amount = $r->savings;
-    $shareout->shareout_date = Carbon::now();
+// public function new_shareout(Request $r)
+// {
+//     $admin = auth('api')->user();
+//     if ($admin == null) {
+//         return $this->error('User not found.');
+//     }
 
-    try {
-        $shareout->save();
-        return $this->success($shareout, 'Shareout created successfully.');
-    } catch (\Throwable $th) {
-        return $this->error('Failed to create shareout: ' . $th->getMessage());
-    }
-}
+//     $loggedIn = Administrator::find($admin->id);
+//     if ($loggedIn == null) {
+//         return $this->error('User not found.');
+//     }
+
+//     $sacco = Sacco::find($loggedIn->sacco_id);
+
+//     $shareout = new Shareout();
+//     $shareout->sacco_id = $sacco->id;
+//     $shareout->cycle_id = $sacco->cycle_id;
+//     $shareout->member_id = $r->user_id;
+//     $shareout->shareout_amount = $r->savings;
+//     $shareout->shareout_date = Carbon::now();
+
+//     try {
+//         $shareout->save();
+//         return $this->success($shareout, 'Shareout created successfully.');
+//     } catch (\Throwable $th) {
+//         return $this->error('Failed to create shareout: ' . $th->getMessage());
+//     }
+// }
 
 
     public function register(Request $r)

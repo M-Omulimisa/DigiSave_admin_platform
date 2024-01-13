@@ -3,12 +3,14 @@
 namespace App\Admin\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\Agent;
 use App\Models\Association;
 use App\Models\Crop;
 use App\Models\Garden;
 use App\Models\GardenActivity;
 use App\Models\Group;
 use App\Models\Location;
+use App\Models\Organization;
 use App\Models\Person;
 use App\Models\Sacco;
 use App\Models\Transaction;
@@ -51,6 +53,9 @@ class HomeController extends Controller
         $totalMembers = $filteredUsers->count();
         $totalPwdMembers = $filteredUsers->where('pwd', 'yes')->count();
 
+        $villageAgents = Agent::count();
+        $organisationCount = Organization::count();
+
         // Calculate percentage of youth members based on date of birth
         $youthMembersPercentage = $filteredUsers->filter(function ($user) {
             return Carbon::parse($user->dob)->age < 35; 
@@ -65,6 +70,13 @@ class HomeController extends Controller
         $maleUsers = $filteredUsers->where('sex', 'Male');
         $maleMembersCount = $maleUsers->count();
         $maleTotalBalance = number_format($maleUsers->sum('balance'), 2);
+
+        // $maleUserIds = User::where('sex', 'Male')->pluck('id');
+
+        // $maleTotalBalance = Transaction::where('type', 'SHARE')
+        //     ->whereIn('user_id', $maleUserIds)
+        //     ->sum('balance');
+        // $maleTotalBalance = number_format($maleTotalBalance, 2);
         
         // Youth members (assuming under 35 years old)
         $youthUsers = $filteredUsers->filter(function ($user) {
@@ -74,24 +86,32 @@ class HomeController extends Controller
         $youthTotalBalance = number_format($youthUsers->sum('balance'));
         
         // PWD members
-        $pwdUsers = $filteredUsers->where('pwd', 'yes');
+        $pwdUsers = User::where('pwd', 'Yes');
         $pwdMembersCount = $pwdUsers->count();
-        $pwdTotalBalance = number_format($pwdUsers->sum('balance'), 2);
+        $pwdUserIds = User::where('pwd', 'Yes')->pluck('id');
+
+
+        $pwdTotalBalance = Transaction::where('type', 'SHARE')
+            ->whereIn('user_id', $pwdUserIds)
+            ->sum('balance');
+        
+        $pwdTotalBalance = number_format($pwdTotalBalance, 2);
 
         // Loans disbursed to women
-        $loansDisbursedToWomen = Transaction::whereIn('user_id', $filteredUsers->where('sex', 'Female')->pluck('id'))
+        $loansDisbursedToWomen = Transaction::whereIn('user_id', User::where('sex', 'Female')->pluck('id'))
                                             ->where('type', 'LOAN')
                                             ->count();
         
         // Loans disbursed to men
-        $loansDisbursedToMen = Transaction::whereIn('user_id', $filteredUsers->where('sex', 'Male')->pluck('id'))
+        $loansDisbursedToMen = Transaction::whereIn('user_id',  User::where('sex', 'Male')->pluck('id'))
                                           ->where('type', 'LOAN')
                                           ->count();
         
         // Loans disbursed to youths (assuming youths are under 35 years old)
-        $youthIds = $filteredUsers->filter(function ($user) {
-            return Carbon::parse($user->dob)->age < 35;
+        $youthIds = User::where(function ($query) {
+            return $query->where('dob', '>', now()->subYears(35));
         })->pluck('id');
+        
         
         $loansDisbursedToYouths = Transaction::whereIn('user_id', $youthIds)
                                              ->where('type', 'LOAN')
@@ -148,15 +168,30 @@ $loanSumForYouths = Transaction::whereIn('user_id', $youthIds)
                 }
             }
             
+            $totalSaccosLink = url('saccos');
+            $villageAgentsLink = url('agents');
+            $organisationCountLink = url('organisation');
+            $totalMembersLink = url('members');
+            $totalPwdMembersLink = url('members');
+            $youthMembersPercentageLink = url('members');
+            
             return $content
-                ->header('<span style="color: #3B88D4; font-size: 30px; font-weight: bold;">Welcome to DigiSave Village Savings and Loans Associations (VSLAs) Admin platform</span>')
-                ->body('<div style="background-color: #E9F9E9; padding: 10px; border-radius: 5px;">' .
-                    view('widgets.statistics', [
-                        'totalSaccos' => $totalSaccos,
-                        'totalMembers' => $totalMembers,
-                        'totalPwdMembers' => $totalPwdMembers,
-                        'youthMembersPercentage' => number_format($youthMembersPercentage, 2),
-                    ]) .
+            ->header('<span style="color: #3B88D4; font-size: 30px; font-weight: bold;">Welcome to DigiSave Village Savings and Loans Associations (VSLAs) Admin platform</span>')
+            ->body('<div style="background-color: #E9F9E9; padding: 10px; border-radius: 5px;">' .
+                view('widgets.statistics', [
+                    'totalSaccos' => $totalSaccos,
+                    'villageAgents' => $villageAgents,
+                    'organisationCount' => $organisationCount,
+                    'totalMembers' => $totalMembers,
+                    'totalPwdMembers' => $pwdMembersCount,
+                    'youthMembersPercentage' => number_format($youthMembersPercentage, 2),
+                    'totalSaccosLink' => $totalSaccosLink,
+                    'villageAgentsLink' => $villageAgentsLink,
+                    'organisationCountLink' => $organisationCountLink,
+                    'totalMembersLink' => $totalMembersLink,
+                    'totalPwdMembersLink' => $totalPwdMembersLink,
+                    'youthMembersPercentageLink' => $youthMembersPercentageLink,
+                ]) . 
                     view('widgets.card_set', [
                         'femaleMembersCount' => $femaleMembersCount,
                         'femaleTotalBalance' => $femaleTotalBalance,

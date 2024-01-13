@@ -46,6 +46,7 @@ Route::get('village', [ApiResurceController::class, 'get_villages']);
 Route::get("sacco-members", [ApiResurceController::class, "sacco_members"]);
 Route::post("sacco-members-review", [ApiResurceController::class, "sacco_members_review"]);
 Route::post("cycles", [ApiResurceController::class, "cycles_create"]);
+Route::put('end-cycles/{cycleId}', [ApiResurceController::class, 'deactivateCycle']);
 Route::put('update-cycles/{saccoId}/{cycleId}', [ApiResurceController::class, 'cycles_update']);
 Route::post("members-review", [ApiResurceController::class, "sacco_members_review"]);
 Route::get("my-sacco-membership", [ApiResurceController::class, "my_sacco_membership"]);

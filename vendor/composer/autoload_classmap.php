@@ -6,6 +6,8 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
+    'App\\Admin\\Controllers\\AgentAllocationController' => $baseDir . '/app/Admin/Controllers/AgentAllocationController.php',
+    'App\\Admin\\Controllers\\AgentController' => $baseDir . '/app/Admin/Controllers/AgentController.php',
     'App\\Admin\\Controllers\\AssociationController' => $baseDir . '/app/Admin/Controllers/AssociationController.php',
     'App\\Admin\\Controllers\\AuthController' => $baseDir . '/app/Admin/Controllers/AuthController.php',
     'App\\Admin\\Controllers\\CounsellingCentreController' => $baseDir . '/app/Admin/Controllers/CounsellingCentreController.php',
@@ -32,6 +34,7 @@ return array(
     'App\\Admin\\Controllers\\MeetingController' => $baseDir . '/app/Admin/Controllers/MeetingController.php',
     'App\\Admin\\Controllers\\MembersController' => $baseDir . '/app/Admin/Controllers/MembersController.php',
     'App\\Admin\\Controllers\\NewsPostController' => $baseDir . '/app/Admin/Controllers/NewsPostController.php',
+    'App\\Admin\\Controllers\\OrganizationController' => $baseDir . '/app/Admin/Controllers/OrganizationController.php',
     'App\\Admin\\Controllers\\ParticipantController' => $baseDir . '/app/Admin/Controllers/ParticipantController.php',
     'App\\Admin\\Controllers\\PersonController' => $baseDir . '/app/Admin/Controllers/PersonController.php',
     'App\\Admin\\Controllers\\PostCategoryController' => $baseDir . '/app/Admin/Controllers/PostCategoryController.php',
@@ -94,6 +97,8 @@ return array(
     'App\\Jobs\\CalculateLoanBalance' => $baseDir . '/app/Jobs/CalculateLoanBalance.php',
     'App\\Models\\AdminRole' => $baseDir . '/app/Models/AdminRole.php',
     'App\\Models\\AdminRoleUser' => $baseDir . '/app/Models/AdminRoleUser.php',
+    'App\\Models\\Agent' => $baseDir . '/app/Models/Agent.php',
+    'App\\Models\\AgentAllocation' => $baseDir . '/app/Models/AgentAllocation.php',
     'App\\Models\\Association' => $baseDir . '/app/Models/Association.php',
     'App\\Models\\Campus' => $baseDir . '/app/Models/Campus.php',
     'App\\Models\\CounsellingCentre' => $baseDir . '/app/Models/CounsellingCentre.php',
@@ -125,6 +130,7 @@ return array(
     'App\\Models\\Meeting' => $baseDir . '/app/Models/Meeting.php',
     'App\\Models\\MemberPosition' => $baseDir . '/app/Models/MemberPosition.php',
     'App\\Models\\NewsPost' => $baseDir . '/app/Models/NewsPost.php',
+    'App\\Models\\Organization' => $baseDir . '/app/Models/Organization.php',
     'App\\Models\\Parish' => $baseDir . '/app/Models/Parish.php',
     'App\\Models\\Participant' => $baseDir . '/app/Models/Participant.php',
     'App\\Models\\PermissionInsert' => $baseDir . '/app/Models/PermissionInsert.php',
@@ -266,6 +272,7 @@ return array(
     'Cron\\MonthField' => $vendorDir . '/dragonmantank/cron-expression/src/Cron/MonthField.php',
     'Database\\Factories\\UserFactory' => $baseDir . '/database/factories/UserFactory.php',
     'Database\\Seeders\\DatabaseSeeder' => $baseDir . '/database/seeders/DatabaseSeeder.php',
+    'Database\\Seeders\\OrganizationSeeder' => $baseDir . '/database/seeders/OrganizationSeeder.php',
     'DeepCopy\\DeepCopy' => $vendorDir . '/myclabs/deep-copy/src/DeepCopy/DeepCopy.php',
     'DeepCopy\\Exception\\CloneException' => $vendorDir . '/myclabs/deep-copy/src/DeepCopy/Exception/CloneException.php',
     'DeepCopy\\Exception\\PropertyException' => $vendorDir . '/myclabs/deep-copy/src/DeepCopy/Exception/PropertyException.php',

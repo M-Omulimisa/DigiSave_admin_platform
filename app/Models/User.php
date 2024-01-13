@@ -119,6 +119,33 @@ class User extends Authenticatable implements JWTSubject
     ];
 
 
+public function getSHAREOUTSHAREPRICEAttribute()
+{
+    $sacco = Sacco::find($this->sacco_id);
+    if ($sacco == null) {
+        return 0;
+    }
+    if ($sacco->active_cycle == null) {
+        return 0;
+    }
+    $isAdminUser = ($this->id === $sacco->administrator_id);
+
+    if ($isAdminUser) {
+        $adminBalance = $this->balance;
+        $adminShareCount = $this->SHARE;
+
+        if ($adminShareCount != 0) {
+            $shareOutSharePrice = $adminBalance / $adminShareCount;
+            return round($shareOutSharePrice);
+        } else {
+            return 0;
+        }
+    }
+
+    return null; 
+}
+
+//Member share out
     public function getShareOutAmountAttribute()
 {
     $sacco = Sacco::find($this->sacco_id);
@@ -144,33 +171,6 @@ class User extends Authenticatable implements JWTSubject
     }
 
     return null;
-}
-
-
-public function getSHAREOUTSHAREPRICEAttribute()
-{
-    $sacco = Sacco::find($this->sacco_id);
-    if ($sacco == null) {
-        return 0;
-    }
-    if ($sacco->active_cycle == null) {
-        return 0;
-    }
-    $isAdminUser = ($this->id === $sacco->administrator_id);
-
-    if ($isAdminUser) {
-        $adminBalance = $this->balance;
-        $adminShareCount = $this->SHARE;
-
-        if ($adminShareCount != 0) {
-            $shareOutSharePrice = $adminBalance / $adminShareCount;
-            return round($shareOutSharePrice);
-        } else {
-            return 0;
-        }
-    }
-
-    return null; 
 }
 
 
@@ -298,23 +298,53 @@ public function getSHAREOUTSHAREPRICEAttribute()
     // }
 
     //getter for LOAN_INTEREST
+
     public function getLOANINTERESTAttribute()
     {
         $sacco = Sacco::find($this->sacco_id);
-        if ($sacco == null) {
-            return 0;
-        }
-        if ($sacco->active_cycle == null) {
-            return 0;
-        }
 
-        return Transaction::where([
-            'user_id' => $this->id,
-            'type' => 'LOAN_INTEREST',
-            'cycle_id' => $sacco->active_cycle->id
-        ])
-            ->sum('amount');
+        // Check if user_id in Transaction is the administrator_id in Sacco
+        $isAdminUser = ($this->id === $sacco->administrator_id);
+    
+        // If user_id is the administrator_id, calculate totalAmount differently
+        if ($isAdminUser) {
+            $users = User::where([
+                'sacco_id' => $this->sacco_id,
+            ])->where('id', '!=', $sacco->administrator_id)
+            ->pluck('id')
+            ->toArray();
+    
+            $totalAmount = Transaction::whereIn('user_id', $users)
+                ->where('type', ['LOAN_INTEREST'])
+                ->where('cycle_id', $this->cycle_id)
+                ->sum('amount');
+        
+    
+            return $totalAmount;
+        } else {
+         return Transaction::where('type', ['LOAN_INTEREST'])
+                ->where('cycle_id', $this->cycle_id)
+                ->sum('amount');
+        }
     }
+
+    // public function getLOANINTERESTAttribute()
+    // {
+    //     $sacco = Sacco::find($this->sacco_id);
+    //     if ($sacco == null) {
+    //         return 0;
+    //     }
+    //     if ($sacco->active_cycle == null) {
+    //         return 0;
+    //     }
+
+    //     return Transaction::where([
+    //         'user_id' => $this->id,
+    //         'type' => 'LOAN_INTEREST',
+    //         'cycle_id' => $sacco->active_cycle->id
+    //     ])
+    //         ->sum('amount');
+    // }
 
     //GETTER FOR LOAN_REPAYMENT
     public function getLOANREPAYMENTAttribute()

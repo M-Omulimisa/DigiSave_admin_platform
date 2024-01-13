@@ -10,6 +10,8 @@ class Parish extends Model
 
     use HasFactory;
 
+    protected $primaryKey = 'parish_id';
+
     protected $fillable = ['parish_name', 'subcounty_id'];
 
     public function villages()

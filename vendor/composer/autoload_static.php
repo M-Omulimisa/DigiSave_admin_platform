@@ -653,6 +653,8 @@ class ComposerStaticInitda89eef54c810448a827ed04bb3da82f
     );
 
     public static $classMap = array (
+        'App\\Admin\\Controllers\\AgentAllocationController' => __DIR__ . '/../..' . '/app/Admin/Controllers/AgentAllocationController.php',
+        'App\\Admin\\Controllers\\AgentController' => __DIR__ . '/../..' . '/app/Admin/Controllers/AgentController.php',
         'App\\Admin\\Controllers\\AssociationController' => __DIR__ . '/../..' . '/app/Admin/Controllers/AssociationController.php',
         'App\\Admin\\Controllers\\AuthController' => __DIR__ . '/../..' . '/app/Admin/Controllers/AuthController.php',
         'App\\Admin\\Controllers\\CounsellingCentreController' => __DIR__ . '/../..' . '/app/Admin/Controllers/CounsellingCentreController.php',
@@ -679,6 +681,7 @@ class ComposerStaticInitda89eef54c810448a827ed04bb3da82f
         'App\\Admin\\Controllers\\MeetingController' => __DIR__ . '/../..' . '/app/Admin/Controllers/MeetingController.php',
         'App\\Admin\\Controllers\\MembersController' => __DIR__ . '/../..' . '/app/Admin/Controllers/MembersController.php',
         'App\\Admin\\Controllers\\NewsPostController' => __DIR__ . '/../..' . '/app/Admin/Controllers/NewsPostController.php',
+        'App\\Admin\\Controllers\\OrganizationController' => __DIR__ . '/../..' . '/app/Admin/Controllers/OrganizationController.php',
         'App\\Admin\\Controllers\\ParticipantController' => __DIR__ . '/../..' . '/app/Admin/Controllers/ParticipantController.php',
         'App\\Admin\\Controllers\\PersonController' => __DIR__ . '/../..' . '/app/Admin/Controllers/PersonController.php',
         'App\\Admin\\Controllers\\PostCategoryController' => __DIR__ . '/../..' . '/app/Admin/Controllers/PostCategoryController.php',
@@ -741,6 +744,8 @@ class ComposerStaticInitda89eef54c810448a827ed04bb3da82f
         'App\\Jobs\\CalculateLoanBalance' => __DIR__ . '/../..' . '/app/Jobs/CalculateLoanBalance.php',
         'App\\Models\\AdminRole' => __DIR__ . '/../..' . '/app/Models/AdminRole.php',
         'App\\Models\\AdminRoleUser' => __DIR__ . '/../..' . '/app/Models/AdminRoleUser.php',
+        'App\\Models\\Agent' => __DIR__ . '/../..' . '/app/Models/Agent.php',
+        'App\\Models\\AgentAllocation' => __DIR__ . '/../..' . '/app/Models/AgentAllocation.php',
         'App\\Models\\Association' => __DIR__ . '/../..' . '/app/Models/Association.php',
         'App\\Models\\Campus' => __DIR__ . '/../..' . '/app/Models/Campus.php',
         'App\\Models\\CounsellingCentre' => __DIR__ . '/../..' . '/app/Models/CounsellingCentre.php',
@@ -772,6 +777,7 @@ class ComposerStaticInitda89eef54c810448a827ed04bb3da82f
         'App\\Models\\Meeting' => __DIR__ . '/../..' . '/app/Models/Meeting.php',
         'App\\Models\\MemberPosition' => __DIR__ . '/../..' . '/app/Models/MemberPosition.php',
         'App\\Models\\NewsPost' => __DIR__ . '/../..' . '/app/Models/NewsPost.php',
+        'App\\Models\\Organization' => __DIR__ . '/../..' . '/app/Models/Organization.php',
         'App\\Models\\Parish' => __DIR__ . '/../..' . '/app/Models/Parish.php',
         'App\\Models\\Participant' => __DIR__ . '/../..' . '/app/Models/Participant.php',
         'App\\Models\\PermissionInsert' => __DIR__ . '/../..' . '/app/Models/PermissionInsert.php',
@@ -913,6 +919,7 @@ class ComposerStaticInitda89eef54c810448a827ed04bb3da82f
         'Cron\\MonthField' => __DIR__ . '/..' . '/dragonmantank/cron-expression/src/Cron/MonthField.php',
         'Database\\Factories\\UserFactory' => __DIR__ . '/../..' . '/database/factories/UserFactory.php',
         'Database\\Seeders\\DatabaseSeeder' => __DIR__ . '/../..' . '/database/seeders/DatabaseSeeder.php',
+        'Database\\Seeders\\OrganizationSeeder' => __DIR__ . '/../..' . '/database/seeders/OrganizationSeeder.php',
         'DeepCopy\\DeepCopy' => __DIR__ . '/..' . '/myclabs/deep-copy/src/DeepCopy/DeepCopy.php',
         'DeepCopy\\Exception\\CloneException' => __DIR__ . '/..' . '/myclabs/deep-copy/src/DeepCopy/Exception/CloneException.php',
         'DeepCopy\\Exception\\PropertyException' => __DIR__ . '/..' . '/myclabs/deep-copy/src/DeepCopy/Exception/PropertyException.php',

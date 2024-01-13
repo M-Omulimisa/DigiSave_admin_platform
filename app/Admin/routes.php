@@ -15,6 +15,10 @@ Route::group([
     $router->get('/', 'HomeController@index')->name('home');
     $router->resource('gens', GenController::class);
     $router->resource('saccos', SaccoController::class);
+    $router->resource('agents', AgentController::class);
+    $router->resource('organisation', OrganizationController::class);
+    $router->resource('assign-org', OrganizationAllocationController::class);
+    $router->resource('agents-allocation', AgentAllocationController::class);
     $router->resource('loan-scheems', LoanScheemController::class);
     $router->resource('loans', LoanController::class);
     $router->resource('meetings', MeetingController::class);

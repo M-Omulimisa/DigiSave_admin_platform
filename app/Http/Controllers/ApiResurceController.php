@@ -650,7 +650,8 @@ class ApiResurceController extends Controller
 
         $loanAmount = $r->amount;
         $loanAmount = abs($loanAmount);
-        $amount = $loanAmount + (($loan_scheem->initial_interest_percentage / 100)) * $loanAmount;
+        $loanInterest = $loan_scheem->initial_interest_percentage / 100 * $loanAmount;
+        $amount = $loanAmount + $loanInterest;
         $amount = -1 * $amount;
         DB::beginTransaction();
         try {
@@ -704,7 +705,7 @@ class ApiResurceController extends Controller
             $sacco_transactions->desination_mobile_money_number = $u->phone_number;
             $sacco_transactions->desination_mobile_money_transaction_id = null;
             $sacco_transactions->desination_bank_transaction_id = null;
-            $sacco_transactions->amount = (-1*(abs($amount)));
+            $sacco_transactions->amount = (-1*(abs($loanAmount)));
             $sacco_transactions->description = "Loan Disbursement of UGX " . number_format($loanAmount) . " to {$u->phone_number} - $u->name. Loan Scheem: {$loan_scheem->name}. Reference: {$loan->id}.";
             $sacco_transactions->details = "Loan Disbursement of UGX " . number_format($loanAmount) . " to {$u->phone_number} - $u->name. Loan Scheem: {$loan_scheem->name}. Reference: {$loan->id}.";
             try {
@@ -714,31 +715,31 @@ class ApiResurceController extends Controller
                 return $this->error('Failed to save transaction, because ' . $th->getMessage() . '');
             }
 
-            // $receiver_transactions = new Transaction();
-            // $receiver_transactions->user_id = $u->id;
-            // $receiver_transactions->source_user_id = $sacco->administrator_id;
-            // $receiver_transactions->type = 'LOAN';
-            // $receiver_transactions->source_type = 'LOAN';
-            // $receiver_transactions->source_mobile_money_number = null;
-            // $receiver_transactions->source_mobile_money_transaction_id = null;
-            // $receiver_transactions->source_bank_account_number = null;
-            // $receiver_transactions->source_bank_transaction_id = null;
-            // $receiver_transactions->desination_bank_account_number = null;
-            // $receiver_transactions->desination_type = 'User';
-            // $receiver_transactions->desination_mobile_money_number = $u->phone_number;
-            // $receiver_transactions->desination_mobile_money_transaction_id = null;
-            // $receiver_transactions->desination_bank_transaction_id = null;
-            // $amount = abs($amount);
-            // $receiver_transactions->amount = $amount;
-            // $receiver_transactions->description = "Received Loan of UGX " . number_format($amount) . " from  $sacco->name -  Sacco Loan Scheem: {$loan_scheem->name}. Reference: {$loan->id}.";
-            // $receiver_transactions->details = "Received Loan of UGX " . number_format($amount) . " from  $sacco->name -  Sacco Loan Scheem: {$loan_scheem->name}. Reference: {$loan->id}.";
+            $receiver_transactions = new Transaction();
+            $receiver_transactions->user_id = $u->id;
+            $receiver_transactions->source_user_id = $sacco->administrator_id;
+            $receiver_transactions->type = 'LOAN_INTEREST';
+            $receiver_transactions->source_type = 'LOAN_INTEREST';
+            $receiver_transactions->source_mobile_money_number = null;
+            $receiver_transactions->source_mobile_money_transaction_id = null;
+            $receiver_transactions->source_bank_account_number = null;
+            $receiver_transactions->source_bank_transaction_id = null;
+            $receiver_transactions->desination_bank_account_number = null;
+            $receiver_transactions->desination_type = 'User';
+            $receiver_transactions->desination_mobile_money_number = $u->phone_number;
+            $receiver_transactions->desination_mobile_money_transaction_id = null;
+            $receiver_transactions->desination_bank_transaction_id = null;
+            $amount = abs($loanInterest);
+            $receiver_transactions->amount = $loanInterest;
+            $receiver_transactions->description = "Aloan Interest of UGX " . number_format($loanInterest) . " from  $sacco->name -  Sacco Loan Scheem: {$loan_scheem->name}. Reference: {$loan->id}.";
+            $receiver_transactions->details = "Aloan Interest of UGX " . number_format($loanInterest) . " from  $sacco->name -  Sacco Loan Scheem: {$loan_scheem->name}. Reference: {$loan->id}.";
 
-            // try {
-            //     $receiver_transactions->save();
-            // } catch (\Throwable $th) {
-            //     DB::rollBack();
-            //     return $this->error('Failed to save transaction, because ' . $th->getMessage() . '');
-            // }
+            try {
+                $receiver_transactions->save();
+            } catch (\Throwable $th) {
+                DB::rollBack();
+                return $this->error('Failed to save transaction, because ' . $th->getMessage() . '');
+            }
 
 
             $LoanTransaction = new LoanTransaction();
@@ -1042,9 +1043,9 @@ class ApiResurceController extends Controller
             $record->user_id = $u->id;
             $acc_balance = $u->balance;
 
-            if ($amount > $acc_balance) {
-                return $this->error('You do not have enough money to pay this loan. Your balance is UGX ' . number_format($acc_balance) . '.');
-            }
+            // if ($amount > $acc_balance) {
+            //     return $this->error('You do not have enough money to pay this loan. Your balance is UGX ' . number_format($acc_balance) . '.');
+            // }
 
             $amount = abs($r->amount);
             try {
@@ -1300,6 +1301,33 @@ class ApiResurceController extends Controller
             return $this->error('Failed to save cycle, because ' . $th->getMessage() . '');
         }
     }
+
+    public function deactivateCycle($cycleId)
+{
+    $u = auth('api')->user();
+
+    if ($u == null) {
+        return $this->error('User not found.');
+    }
+
+    $cycle = Cycle::find($cycleId);
+
+    if ($cycle == null) {
+        return $this->error('Cycle not found.');
+    }
+    if ($u->sacco_id != $cycle->sacco_id) {
+        return $this->error('You do not have permission to update this cycle.');
+    }
+
+    try {
+        $cycle->status = 'Inactive';
+        $cycle->save();
+        return $this->success($cycle, $message = "Cycle ended successfully!", 200);
+    } catch (\Throwable $th) {
+        return $this->error('Failed to end cycle, because ' . $th->getMessage());
+    }
+}
+
 
     public function meetings()
     {
