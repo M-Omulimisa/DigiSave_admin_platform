@@ -299,12 +299,12 @@ class ApiAuthController extends Controller
             return $this->error('Gender is missing.');
         }
 
-        if (
-            $request->campus_id == null ||
-            strlen($request->campus_id) < 2
-        ) {
-            return $this->error('National ID is missing.');
-        }
+        // if (
+        //     $request->campus_id == null ||
+        //     strlen($request->campus_id) < 2
+        // ) {
+        //     return $this->error('National ID is missing.');
+        // }
 
 
         $msg = "";

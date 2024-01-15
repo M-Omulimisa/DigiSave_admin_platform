@@ -30,22 +30,22 @@ class CycleController extends AdminController
     $u = Admin::user();
 
     if (!$u->isRole('admin')) {
-        if (!$u->isRole('sacco')) {
+        // if (!$u->isRole('sacco')) {
             $grid->disableCreateButton();
             $grid->actions(function (Grid\Displayers\Actions $actions) {
                 $actions->disableDelete();
             });
             $grid->disableFilter();
-        }
+        
     } 
     
-    $grid->model()->select('cycles.*', 'saccos.id as sacco_id', 'saccos.administrator_id')
-    ->leftJoin('saccos', 'cycles.sacco_id', '=', 'saccos.id')
-    ->where('cycles.sacco_id', $u->sacco_id)
-    ->where('saccos.administrator_id', $u->id)
-    ->orderBy('cycles.id', 'desc') // Ordering by 'cycles.id'
-    ->orderBy('cycles.name', 'asc') // Then by 'cycles.name'
-    ->orderBy('cycles.sacco_id', 'desc'); // Specify the table for sacco_id column
+    // $grid->model()->select('cycles.*', 'saccos.id as sacco_id', 'saccos.administrator_id')
+    // ->leftJoin('saccos', 'cycles.sacco_id', '=', 'saccos.id')
+    // ->where('cycles.sacco_id', $u->sacco_id)
+    // ->where('saccos.administrator_id', $u->id)
+    // ->orderBy('cycles.id', 'desc') // Ordering by 'cycles.id'
+    // ->orderBy('cycles.name', 'asc') // Then by 'cycles.name'
+    // ->orderBy('cycles.sacco_id', 'desc'); // Specify the table for sacco_id column
 
     $grid->disableBatchActions();
     $grid->quickSearch('name')->placeholder('Search by name');
