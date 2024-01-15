@@ -34,6 +34,7 @@ class OrganizationController extends AdminController
         $grid->column('id', 'ID')->sortable();
         $grid->column('name', 'Name')->sortable();
         $grid->column('phone_number', 'Phone Number')->sortable();
+        $grid->column('unique_code', 'Unique Code')->sortable();
         $grid->column('address', 'Address')->sortable();
 
         $grid->created_at('Created At')->sortable();
@@ -41,21 +42,23 @@ class OrganizationController extends AdminController
 
         return $grid;
     }
-
+    
     protected function detail($id)
     {
         $show = new Show(Organization::findOrFail($id));
-
+    
         $show->field('id', 'ID');
         $show->field('name', 'Name');
         $show->field('phone_number', 'Phone Number');
         $show->field('address', 'Address');
-
+        $show->field('unique_code', 'Unique Code'); 
+    
         $show->field('created_at', 'Created At');
         $show->field('updated_at', 'Updated At');
-
+    
         return $show;
     }
+    
 
     protected function form()
     {
@@ -74,6 +77,7 @@ class OrganizationController extends AdminController
 
         $form->text('name', 'Name')->rules('required');
         $form->text('phone_number', 'Phone Number')->rules('required');
+        $form->text('unique_code', 'Unique Code')->readonly();
         $form->text('address', 'Address');
 
         $form->display('created_at', 'Created At');

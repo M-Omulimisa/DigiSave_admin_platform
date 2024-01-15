@@ -23,6 +23,7 @@ Route::get("loan-schemes", [ApiResurceController::class, "loan_schemes"]);
 Route::post("loan-schemes", [ApiAuthController::class, "create_scheme"]);
 Route::get("loans", [ApiResurceController::class, "loans"]);
 Route::get("cycles", [ApiResurceController::class, "cycles"]);
+Route::get("organisation", [ApiResurceController::class, "get_orgs"]);
 Route::get('positions', [ApiResurceController::class, 'get_positions']);
 Route::get("share-records", [ApiResurceController::class, "share_records"]);
 Route::post("share-records", [ApiResurceController::class, "share_record_create"]);

@@ -25,6 +25,7 @@ use App\Models\Person;
 use App\Models\Product;
 use App\Models\Sacco;
 use App\Models\MemberPosition;
+use App\Models\Organization;
 use App\Models\Parish;
 use App\Models\ServiceProvider;
 use App\Models\ShareRecord;
@@ -419,6 +420,19 @@ class ApiResurceController extends Controller
         ];
         return $this->success(
             Cycle::where($conds)->orderby('id', 'desc')->get(),
+            $message = "Success",
+            200
+        );
+    }
+
+    public function get_orgs(Request $r)
+    {
+        $u = auth('api')->user();
+        if ($u == null) {
+            return $this->error('User not found.');
+        }
+        return $this->success(
+            Organization::all(),
             $message = "Success",
             200
         );
