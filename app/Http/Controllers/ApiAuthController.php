@@ -43,7 +43,7 @@ class ApiAuthController extends Controller
             'password' => 'admin',
         ]);
         die($token); */
-        $this->middleware('auth:api', ['except' => ['login', 'register']]);
+        $this->middleware('auth:api', ['except' => ['login', 'register', 'agent_login']]);
     }
 
 
@@ -129,6 +129,12 @@ class ApiAuthController extends Controller
 
     public function agent_login(Request $request)
     {
+        // Trim whitespace from input parameters
+        $request->merge([
+            'phone_number' => trim($request->phone_number),
+            'password' => trim($request->password),
+        ]);
+    
         $validator = Validator::make($request->all(), [
             'phone_number' => 'required',
             'password' => 'required',
@@ -153,14 +159,15 @@ class ApiAuthController extends Controller
             // Generate JWT token
             $token = JWTAuth::fromUser($agent);
             $agent->setRememberToken($token);
-            
+    
             $agent->save();
     
-            return $this->success(['token' => $token, 'user' => $agent], 'Logged in successfully.');
+            return $this->success($agent, 'Logged in successfully.');
         } else {
             return $this->error('Wrong credentials.');
         }
     }
+    
 
 
     

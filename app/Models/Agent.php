@@ -41,6 +41,20 @@ class Agent extends Authenticatable implements JWTSubject
         });
     }
 
+    protected $appends = [
+        'token',
+    ];
+
+     /**
+     * Get the custom token attribute.
+     *
+     * @return string
+     */
+    public function getTokenAttribute()
+    {
+        return $this->remember_token;
+    }
+
        /**
      * Get the identifier that will be stored in the subject claim of the JWT.
      *
