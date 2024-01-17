@@ -67,6 +67,7 @@ Route::get('sacco/{sacco_id}', [ApiResurceController::class, 'getSaccoData']);
 
 
 Route::POST("users/login", [ApiAuthController::class, "login"]);
+Route::POST("login", [ApiAuthController::class, "agent_login"]);
 Route::POST("shareout", [ApiAuthController::class, "new_shareout"]);
 Route::POST("users/register", [ApiAuthController::class, "register"]);
 Route::post('positions', [ApiAuthController::class, 'new_position']);

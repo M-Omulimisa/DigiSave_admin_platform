@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\Agent;
 use App\Models\Transaction;
 use Illuminate\Support\Facades\DB;
 use App\Models\LoanScheem;
@@ -18,7 +19,9 @@ use App\Traits\ApiResponser;
 use Carbon\Carbon;
 use Encore\Admin\Auth\Database\Administrator;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
@@ -54,9 +57,6 @@ class ApiAuthController extends Controller
         $query = auth('api')->user();
         return $this->success($query, $message = "Profile details", 200);
     }
-
-
-
 
 
     public function login(Request $r)
@@ -121,6 +121,35 @@ class ApiAuthController extends Controller
         $u->remember_token = $token;
 
         return $this->success($u, 'Logged in successfully.');
+    }
+
+
+
+
+
+    public function agent_login(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'phone_number' => 'required',
+            'password' => 'required',
+        ]);
+    
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 400);
+        }
+        $agent = Agent::where('phone_number', $request->phone_number)->first();
+    
+        if (!$agent) {
+            return response()->json(['error' => 'Invalid credentials'], 401);
+        }
+    
+        // Check the provided password against the hashed password in the database
+        if (Hash::check($request->password, $agent->password)) {
+            Auth::login($agent);
+            return response()->json(['message' => 'Login successful', 'agent' => $agent], 200);
+        } else {
+            return response()->json(['error' => 'Invalid credentials'], 401);
+        }
     }
 
 

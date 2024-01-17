@@ -655,6 +655,7 @@ class ComposerStaticInitda89eef54c810448a827ed04bb3da82f
     public static $classMap = array (
         'App\\Admin\\Controllers\\AgentAllocationController' => __DIR__ . '/../..' . '/app/Admin/Controllers/AgentAllocationController.php',
         'App\\Admin\\Controllers\\AgentController' => __DIR__ . '/../..' . '/app/Admin/Controllers/AgentController.php',
+        'App\\Admin\\Controllers\\AssignAgentsController' => __DIR__ . '/../..' . '/app/Admin/Controllers/AssignAgentsController.php',
         'App\\Admin\\Controllers\\AssociationController' => __DIR__ . '/../..' . '/app/Admin/Controllers/AssociationController.php',
         'App\\Admin\\Controllers\\AuthController' => __DIR__ . '/../..' . '/app/Admin/Controllers/AuthController.php',
         'App\\Admin\\Controllers\\CounsellingCentreController' => __DIR__ . '/../..' . '/app/Admin/Controllers/CounsellingCentreController.php',
@@ -681,6 +682,7 @@ class ComposerStaticInitda89eef54c810448a827ed04bb3da82f
         'App\\Admin\\Controllers\\MeetingController' => __DIR__ . '/../..' . '/app/Admin/Controllers/MeetingController.php',
         'App\\Admin\\Controllers\\MembersController' => __DIR__ . '/../..' . '/app/Admin/Controllers/MembersController.php',
         'App\\Admin\\Controllers\\NewsPostController' => __DIR__ . '/../..' . '/app/Admin/Controllers/NewsPostController.php',
+        'App\\Admin\\Controllers\\OrganizationAllocationController' => __DIR__ . '/../..' . '/app/Admin/Controllers/OrganizationAllocationController.php',
         'App\\Admin\\Controllers\\OrganizationController' => __DIR__ . '/../..' . '/app/Admin/Controllers/OrganizationController.php',
         'App\\Admin\\Controllers\\ParticipantController' => __DIR__ . '/../..' . '/app/Admin/Controllers/ParticipantController.php',
         'App\\Admin\\Controllers\\PersonController' => __DIR__ . '/../..' . '/app/Admin/Controllers/PersonController.php',
@@ -778,6 +780,7 @@ class ComposerStaticInitda89eef54c810448a827ed04bb3da82f
         'App\\Models\\MemberPosition' => __DIR__ . '/../..' . '/app/Models/MemberPosition.php',
         'App\\Models\\NewsPost' => __DIR__ . '/../..' . '/app/Models/NewsPost.php',
         'App\\Models\\Organization' => __DIR__ . '/../..' . '/app/Models/Organization.php',
+        'App\\Models\\OrganizationAssignment' => __DIR__ . '/../..' . '/app/Models/OrganizationAssignment.php',
         'App\\Models\\Parish' => __DIR__ . '/../..' . '/app/Models/Parish.php',
         'App\\Models\\Participant' => __DIR__ . '/../..' . '/app/Models/Participant.php',
         'App\\Models\\PermissionInsert' => __DIR__ . '/../..' . '/app/Models/PermissionInsert.php',

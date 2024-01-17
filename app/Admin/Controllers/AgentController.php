@@ -14,6 +14,7 @@ use Encore\Admin\Facades\Admin;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Encore\Admin\Show;
+use Illuminate\Support\Facades\Hash;
 
 class AgentController extends AdminController
 {
@@ -115,6 +116,21 @@ class AgentController extends AdminController
         $form->select('subcounty_id', 'Subcounty')->options($subcountyOptions)->rules('required');
         $form->select('parish_id', 'Parish')->options($parishOptions)->rules('required');
         $form->select('village_id', 'Village')->options($villageOptions)->rules('required');
+        
+        
+        // Password fields
+        $form->password('password', trans('admin.password'))->rules('confirmed|required');
+        $form->password('password_confirmation', trans('admin.password_confirmation'))->rules('required')
+            ->default(function ($form) {
+                return $form->model()->password;
+            });
+        $form->ignore(['password_confirmation']);
+        $form->ignore(['change_password']);
+
+        // Saving the hashed password before saving the model
+        $form->saving(function (Form $form) {
+            $form->input('password', Hash::make($form->password));
+        });
 
         return $form;
     }

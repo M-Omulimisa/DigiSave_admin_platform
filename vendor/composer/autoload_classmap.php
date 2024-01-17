@@ -8,6 +8,7 @@ $baseDir = dirname($vendorDir);
 return array(
     'App\\Admin\\Controllers\\AgentAllocationController' => $baseDir . '/app/Admin/Controllers/AgentAllocationController.php',
     'App\\Admin\\Controllers\\AgentController' => $baseDir . '/app/Admin/Controllers/AgentController.php',
+    'App\\Admin\\Controllers\\AssignAgentsController' => $baseDir . '/app/Admin/Controllers/AssignAgentsController.php',
     'App\\Admin\\Controllers\\AssociationController' => $baseDir . '/app/Admin/Controllers/AssociationController.php',
     'App\\Admin\\Controllers\\AuthController' => $baseDir . '/app/Admin/Controllers/AuthController.php',
     'App\\Admin\\Controllers\\CounsellingCentreController' => $baseDir . '/app/Admin/Controllers/CounsellingCentreController.php',
@@ -34,6 +35,7 @@ return array(
     'App\\Admin\\Controllers\\MeetingController' => $baseDir . '/app/Admin/Controllers/MeetingController.php',
     'App\\Admin\\Controllers\\MembersController' => $baseDir . '/app/Admin/Controllers/MembersController.php',
     'App\\Admin\\Controllers\\NewsPostController' => $baseDir . '/app/Admin/Controllers/NewsPostController.php',
+    'App\\Admin\\Controllers\\OrganizationAllocationController' => $baseDir . '/app/Admin/Controllers/OrganizationAllocationController.php',
     'App\\Admin\\Controllers\\OrganizationController' => $baseDir . '/app/Admin/Controllers/OrganizationController.php',
     'App\\Admin\\Controllers\\ParticipantController' => $baseDir . '/app/Admin/Controllers/ParticipantController.php',
     'App\\Admin\\Controllers\\PersonController' => $baseDir . '/app/Admin/Controllers/PersonController.php',
@@ -131,6 +133,7 @@ return array(
     'App\\Models\\MemberPosition' => $baseDir . '/app/Models/MemberPosition.php',
     'App\\Models\\NewsPost' => $baseDir . '/app/Models/NewsPost.php',
     'App\\Models\\Organization' => $baseDir . '/app/Models/Organization.php',
+    'App\\Models\\OrganizationAssignment' => $baseDir . '/app/Models/OrganizationAssignment.php',
     'App\\Models\\Parish' => $baseDir . '/app/Models/Parish.php',
     'App\\Models\\Participant' => $baseDir . '/app/Models/Participant.php',
     'App\\Models\\PermissionInsert' => $baseDir . '/app/Models/PermissionInsert.php',
