@@ -43,6 +43,7 @@ class Agent extends Authenticatable implements JWTSubject
 
     protected $appends = [
         'token',
+        'sacco_data'
     ];
 
      /**
@@ -136,19 +137,21 @@ class Agent extends Authenticatable implements JWTSubject
         return 'remember_token';
     }
 
-    // protected $appends = [
-    //     'sacco_id',
-    // ];
+    public function agentAllocation()
+    {
+        return $this->hasMany(AgentAllocation::class, 'agent_id', 'id');
+    }
 
-    // public function agentAllocation()
-    // {
-    //     return $this->hasOne(AgentAllocation::class, 'agent_id', 'id');
-    // }
+    public function getSaccoDataAttribute()
+    {
+        // Retrieve all allocated saccos for the agent
+        $allocatedSaccos = $this->agentAllocation->pluck('sacco_id');
 
-    // public function getSaccoIdAttribute()
-    // {
-    //     return optional($this->agentAllocation)->sacco_id;
-    // }
+        // Retrieve Sacco data based on allocated saccos
+        $saccoData = Sacco::whereIn('id', $allocatedSaccos)->get();
+
+        return $saccoData;
+    }
 
     public function district()
     {
