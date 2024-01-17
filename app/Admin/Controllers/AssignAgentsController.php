@@ -55,7 +55,7 @@ class AssignAgentsController extends AdminController
         $form->display('id', 'ID');
 
         $form->select('agent_id', 'Agent')->options(Agent::all()->pluck('full_name', 'id'));
-        $form->select('sacco_id', 'Sacco')->options(Sacco::all()->pluck('name', 'id'));
+        $form->select('sacco_id', 'Vsla Group')->options(Sacco::all()->pluck('name', 'id'));
 
         $form->display('created_at', 'Created At');
         $form->display('updated_at', 'Updated At');

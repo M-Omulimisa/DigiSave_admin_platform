@@ -31,10 +31,10 @@ class OrganizationAllocationController extends AdminController
 
         $grid->column('id', 'ID')->sortable();
         $grid->column('organization.name', 'Organization')->sortable();
-        $grid->column('sacco.name', 'Sacco')->sortable();
+        $grid->column('sacco.name', 'Vsla Group')->sortable();
 
-        $grid->created_at('Created At')->sortable();
-        $grid->updated_at('Updated At')->sortable();
+        // $grid->created_at('Created At')->sortable();
+        // $grid->updated_at('Updated At')->sortable();
 
         return $grid;
     }
@@ -70,7 +70,7 @@ class OrganizationAllocationController extends AdminController
 
     $form->select('organization_id', 'Organization')->options(Organization::pluck('name', 'id'))->rules('required');
 
-    $form->select('sacco_id', 'Sacco')->options(Sacco::pluck('name', 'id'))->rules('required');
+    $form->select('sacco_id', 'Vsla Group')->options(Sacco::pluck('name', 'id'))->rules('required');
 
     $form->display('created_at', 'Created At');
     $form->display('updated_at', 'Updated At');

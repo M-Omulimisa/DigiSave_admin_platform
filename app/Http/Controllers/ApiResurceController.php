@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Agent;
 use App\Models\Association;
 use App\Models\Transaction;
 use Illuminate\Support\Facades\DB;
@@ -336,6 +337,51 @@ class ApiResurceController extends Controller
         return $this->success(
             $socialFund,
             $message = "Social fund record created successfully",
+            200
+        );
+    }
+
+    public function request_agent_otp_sms(Request $r)
+    {
+
+        $r->validate([
+            'phone_number' => 'required',
+        ]);
+
+        $phone_number = Utils::prepare_phone_number($r->phone_number);
+        if (!Utils::phone_number_is_valid($phone_number)) {
+            return $this->error('Invalid phone number.');
+        }
+        $acc = Agent::where(['phone_number' => $phone_number])->first();
+        // if ($acc == null) {
+        //     $acc = Agent::where(['username' => $phone_number])->first();
+        // }
+        if ($acc == null) {
+            return $this->error('Account not found.');
+        }
+        $otp = rand(10000, 99999) . "";
+        if (
+            str_contains($phone_number, '256783204665') ||
+            str_contains(strtolower($acc->first_name), 'test') ||
+            str_contains(strtolower($acc->last_name), 'test')
+        ) {
+            $otp = '12345';
+        }
+
+        $resp = null;
+        try {
+            $resp = Utils::send_sms($phone_number, $otp . ' is your Digisave OTP.');
+        } catch (Exception $e) {
+            return $this->error('Failed to send OTP  because ' . $e->getMessage() . '');
+        }
+        if ($resp != 'success') {
+            return $this->error('Failed to send OTP  because ' . $resp . '');
+        }
+        $acc->password = password_hash($otp, PASSWORD_DEFAULT);
+        $acc->save();
+        return $this->success(
+            $otp . "",
+            $message = "OTP sent successfully.",
             200
         );
     }

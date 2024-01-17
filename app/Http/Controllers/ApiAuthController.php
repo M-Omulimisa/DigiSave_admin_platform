@@ -137,18 +137,28 @@ class ApiAuthController extends Controller
         if ($validator->fails()) {
             return response()->json(['error' => $validator->errors()], 400);
         }
+    
         $agent = Agent::where('phone_number', $request->phone_number)->first();
     
+        $phone_number = Utils::prepare_phone_number($request->phone_number);
+    
         if (!$agent) {
-            return response()->json(['error' => 'Invalid credentials'], 401);
+            return $this->error('User account not found (' . $phone_number . ').');
         }
     
         // Check the provided password against the hashed password in the database
         if (Hash::check($request->password, $agent->password)) {
             Auth::login($agent);
-            return response()->json(['message' => 'Login successful', 'agent' => $agent], 200);
+    
+            // Generate JWT token
+            $token = JWTAuth::fromUser($agent);
+            $agent->setRememberToken($token);
+            
+            $agent->save();
+    
+            return $this->success(['token' => $token, 'user' => $agent], 'Logged in successfully.');
         } else {
-            return response()->json(['error' => 'Invalid credentials'], 401);
+            return $this->error('Wrong credentials.');
         }
     }
 
