@@ -35,7 +35,7 @@ class AgentController extends AdminController
     }
 
     $grid->id('ID')->sortable();
-    $grid->full_name('Full Name')->sortable();
+    $grid->full_name('Name')->sortable();
     $grid->phone_number('Phone Number')->sortable();
     $grid->email('Email')->sortable();
     $grid->date_of_birth('Date of Birth')->sortable();
@@ -55,8 +55,8 @@ class AgentController extends AdminController
         return $village['village_name'];
     })->sortable();
 
-    $grid->created_at('Created At')->sortable();
-    $grid->updated_at('Updated At')->sortable();
+    // $grid->created_at('Created At')->sortable();
+    // $grid->updated_at('Updated At')->sortable();
 
     return $grid;
 }

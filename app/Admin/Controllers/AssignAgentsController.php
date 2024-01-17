@@ -27,7 +27,7 @@ class AssignAgentsController extends AdminController
 
         $grid->agent()->full_name('Agent')->sortable();
         // Display Sacco Name instead of Sacco ID
-        $grid->column('sacco_id', 'Sacco')->display(function ($saccoId) {
+        $grid->column('sacco_id', 'Vsla Group')->display(function ($saccoId) {
             $sacco = Sacco::find($saccoId);
             return $sacco ? $sacco->name : 'N/A';
         })->sortable();

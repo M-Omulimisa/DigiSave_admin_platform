@@ -45,7 +45,7 @@ class OrganizationAllocationController extends AdminController
 
         $show->field('id', 'ID');
         $show->field('organization.name', 'Organization');
-        $show->field('sacco.name', 'Sacco');
+        $show->field('sacco.name', 'Vsla Group');
 
         $show->field('created_at', 'Created At');
         $show->field('updated_at', 'Updated At');
