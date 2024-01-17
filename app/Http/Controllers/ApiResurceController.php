@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Agent;
+use App\Models\AgentAllocation;
 use App\Models\Association;
 use App\Models\Transaction;
 use Illuminate\Support\Facades\DB;
@@ -641,6 +642,15 @@ class ApiResurceController extends Controller
     {
         return $this->success(
             Sacco::where([])->orderby('id', 'desc')->get(),
+            $message = "Sussess",
+            200
+        );
+    }
+
+    public function agent_allocations(Request $r)
+    {
+        return $this->success(
+            AgentAllocation::where([])->orderby('id', 'desc')->get(),
             $message = "Sussess",
             200
         );

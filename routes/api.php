@@ -34,6 +34,7 @@ Route::post("request-otp-sms", [ApiResurceController::class, "request_otp_sms"])
 Route::get("transactions", [ApiResurceController::class, "transactions"]);
 Route::get("loan-transactions", [ApiResurceController::class, "loan_transactions"]);
 Route::get("saccos", [ApiResurceController::class, "saccos"]);
+Route::get("agent-allocation", [ApiResurceController::class, "agent_allocations"]);
 Route::get("eligibleMembers", [ApiResurceController::class, "eligible_members"]);
 Route::post("sacco-join-request", [ApiResurceController::class, "sacco_join_request"]);
 Route::POST("transactions-create", [ApiResurceController::class, "transactions_create"]);
