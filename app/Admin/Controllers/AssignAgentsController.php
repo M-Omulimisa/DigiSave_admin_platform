@@ -21,8 +21,6 @@ class AssignAgentsController extends AdminController
     {
         $grid = new Grid(new AgentAllocation());
     
-        // ... (existing code)
-    
         $grid->column('id', 'ID')->sortable();
 
         $grid->agent()->full_name('Agent')->sortable();
