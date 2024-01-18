@@ -13,8 +13,7 @@ use const PHP_EOL;
 use function get_class;
 use function sprintf;
 use function str_replace;
-use Tests\TestCase;
-
+use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\TestSuite;
 use PHPUnit\Runner\PhptTestCase;
 use RecursiveIteratorIterator;

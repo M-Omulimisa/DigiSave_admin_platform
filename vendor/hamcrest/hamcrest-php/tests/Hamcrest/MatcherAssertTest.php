@@ -1,7 +1,7 @@
 <?php
 namespace Hamcrest;
 
-use Tests\TestCase;
+use PHPUnit\Framework\TestCase;
 
 class MatcherAssertTest extends TestCase
 {

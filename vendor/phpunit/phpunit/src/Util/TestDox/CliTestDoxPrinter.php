@@ -22,7 +22,7 @@ use function strlen;
 use function strpos;
 use function trim;
 use PHPUnit\Framework\Test;
-use Tests\TestCase;
+use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\TestResult;
 use PHPUnit\Runner\BaseTestRunner;
 use PHPUnit\Runner\PhptTestCase;

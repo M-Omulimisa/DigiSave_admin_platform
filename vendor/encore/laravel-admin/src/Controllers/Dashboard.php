@@ -2,41 +2,11 @@
 
 namespace Encore\Admin\Controllers;
 
-use App\Models\Event;
-use App\Models\NewsPost;
 use Encore\Admin\Admin;
-use Encore\Admin\Auth\Database\Administrator;
 use Illuminate\Support\Arr;
 
 class Dashboard
 {
-
-    public static function dashboard_members()
-    {
-        $members = Administrator::where([])->orderBy('id', 'desc')->limit(8)->get();
-        return view('dashboard.members', [
-            'items' => $members
-        ]);
-    }
-
-    public static function dashboard_events()
-    {
-        $events = Event::where([])->orderBy('id', 'desc')->limit(8)->get();
-        return view('dashboard.events', [
-            'items' => $events
-        ]);
-    }
-
-    public static function dashboard_news()
-    {
-        $events = NewsPost::where([])->orderBy('id', 'desc')->limit(8)->get();
-        return view('dashboard.news', [
-            'items' => $events
-        ]); 
-    }
-
-
-
     /**
      * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
      */
@@ -51,7 +21,7 @@ class Dashboard
     public static function environment()
     {
         $envs = [
-            ['name' => 'PHP version',       'value' => 'PHP/' . PHP_VERSION],
+            ['name' => 'PHP version',       'value' => 'PHP/'.PHP_VERSION],
             ['name' => 'Laravel version',   'value' => app()->version()],
             ['name' => 'CGI',               'value' => php_sapi_name()],
             ['name' => 'Uname',             'value' => php_uname()],

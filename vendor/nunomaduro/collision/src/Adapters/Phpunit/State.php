@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace NunoMaduro\Collision\Adapters\Phpunit;
 
 use NunoMaduro\Collision\Contracts\Adapters\Phpunit\HasPrintableTestCaseName;
-use Tests\TestCase;
-
+use PHPUnit\Framework\TestCase;
 
 /**
  * @internal

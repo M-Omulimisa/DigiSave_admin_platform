@@ -18,8 +18,7 @@ use function sprintf;
 use function stripos;
 use function strlen;
 use function substr;
-use Tests\TestCase;
-
+use PHPUnit\Framework\TestCase;
 use PHPUnit\Util\FileLoader;
 use ReflectionClass;
 use ReflectionException;

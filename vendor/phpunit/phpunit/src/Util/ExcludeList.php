@@ -27,7 +27,7 @@ use phpDocumentor\Reflection\DocBlock;
 use phpDocumentor\Reflection\Project;
 use phpDocumentor\Reflection\Type;
 use PhpParser\Parser;
-use Tests\TestCase;
+use PHPUnit\Framework\TestCase;
 use Prophecy\Prophet;
 use ReflectionClass;
 use SebastianBergmann\CliParser\Parser as CliParser;

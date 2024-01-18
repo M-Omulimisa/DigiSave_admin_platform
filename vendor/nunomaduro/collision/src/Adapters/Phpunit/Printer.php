@@ -7,7 +7,7 @@ namespace NunoMaduro\Collision\Adapters\Phpunit;
 use NunoMaduro\Collision\Exceptions\ShouldNotHappen;
 use PHPUnit\Framework\AssertionFailedError;
 use PHPUnit\Framework\Test;
-use Tests\TestCase;
+use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\TestSuite;
 use PHPUnit\Framework\Warning;
 use ReflectionObject;
