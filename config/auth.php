@@ -44,6 +44,10 @@ return [
             'driver' => 'jwt',
             'provider' => 'users',
         ],
+        'village_agents' => [
+            'driver' => 'jwt',
+            'provider' => 'village_agents',
+        ]
     ],
 
     /*
@@ -68,6 +72,10 @@ return [
             'driver' => 'eloquent',
             'model' => Encore\Admin\Auth\Database\Administrator::class, 
         ],
+        'village_agents' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Agent::class,
+        ]
 
         // 'users' => [
         //     'driver' => 'database',

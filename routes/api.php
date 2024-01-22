@@ -63,6 +63,7 @@ Route::POST("garden-activities", [ApiResurceController::class, "activity_submit"
 
 Route::get("crops", [ApiResurceController::class, "crops"]);
 Route::get('sacco/{sacco_id}', [ApiResurceController::class, 'getSaccoData']);
+Route::get('agent-saccos/{saccoIds}', [ApiResurceController::class, 'agent_saccos']);
 
 
 

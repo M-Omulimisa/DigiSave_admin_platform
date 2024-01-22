@@ -8,13 +8,14 @@ use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Storage;
+use Tymon\JWTAuth\Contracts\JWTSubject;
 
 /**
  * Class Administrator.
  *
  * @property Role[] $roles
  */
-class Administrator extends Model implements AuthenticatableContract
+class Administrator extends Model implements AuthenticatableContract, JWTSubject
 {
     use Authenticatable;
     use HasPermissions;
@@ -88,5 +89,25 @@ class Administrator extends Model implements AuthenticatableContract
         $relatedModel = config('admin.database.permissions_model');
 
         return $this->belongsToMany($relatedModel, $pivotTable, 'user_id', 'permission_id');
+    }
+
+        /**
+     * Get the identifier that will be stored in the subject claim of the JWT.
+     *
+     * @return mixed
+     */
+    public function getJWTIdentifier()
+    {
+        return $this->getKey();
+    }
+
+    /**
+     * Return a key value array, containing any custom claims to be added to the JWT.
+     *
+     * @return array
+     */
+    public function getJWTCustomClaims()
+    {
+        return [];
     }
 }

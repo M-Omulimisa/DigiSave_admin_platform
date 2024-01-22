@@ -2019,4 +2019,56 @@ class ApiResurceController extends Controller
             return response()->json(['error' => 'Failed to fetch sacco data: ' . $e->getMessage()], 500);
         }
     }
+
+    public function agent_saccos($saccoIds)
+{
+    $villageAgent = auth('village_agents')->user();
+
+    if ($villageAgent == null) {
+        return $this->error('Village agent not found.');
+    }
+
+    // Convert the comma-separated string to an array of integers
+    $saccoIdsArray = explode(',', $saccoIds);
+    $saccoIdsArray = array_map('intval', $saccoIdsArray);
+
+    if (empty($saccoIdsArray)) {
+        return $this->error('No Sacco IDs provided.');
+    }
+
+    $saccos = Sacco::whereIn('id', $saccoIdsArray)->get();
+
+    // Return the response
+    return $this->success(
+        $saccos,
+        $message = "Saccos fetched successfully.",
+        $statusCode = 200
+    );
+}
+
+//     public function agent_saccos(Request $request)
+// {
+//     $villageAgent = auth('village_agents')->user();
+
+//     if ($villageAgent == null) {
+//         return $this->error('Village agent not found.');
+//     }
+
+//     // Extract the list of Sacco IDs from the request query parameters
+//     $saccoIds = $request->input('sacco_ids', []);
+
+//     if (empty($saccoIds)) {
+//         return $this->error('No Sacco IDs provided.');
+//     }
+
+//     $saccos = Sacco::whereIn('id', $saccoIds)->get();
+
+//     // Return the response
+//     return $this->success(
+//         $saccos,
+//         $message = "Saccos fetched successfully.",
+//         $statusCode = 200
+//     );
+// }
+
 }
