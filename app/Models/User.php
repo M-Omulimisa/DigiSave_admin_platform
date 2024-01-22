@@ -116,7 +116,19 @@ class User extends Authenticatable implements JWTSubject
         'share_price',
         'share_out_share_price',
         'share_out_amount',
+        'user_type_name'
     ];
+
+
+    public function userType(): BelongsTo
+    {
+        return $this->belongsTo(AdminRole::class, 'user_type');
+    }
+
+    public function getUserTypeNameAttribute()
+    {
+        return $this->userType->name ?? null;
+    }
 
 
 public function getSHAREOUTSHAREPRICEAttribute()

@@ -8,17 +8,20 @@ class CreateAgentAllocationTable extends Migration
 {
     public function up()
     {
-        Schema::create('agent_allocation', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('agent_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('sacco_id')->constrained('saccos');
-            $table->timestamps();
-        });
+        // Check if the table already exists before creating it
+        if (!Schema::hasTable('agent_allocation')) {
+            Schema::create('agent_allocation', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('agent_id')->constrained('users')->onDelete('cascade');
+                $table->foreignId('sacco_id')->constrained('saccos');
+                $table->timestamps();
+            });
+        }
     }
 
     public function down()
     {
+        // Drop the table if it exists
         Schema::dropIfExists('agent_allocation');
     }
 }
-
