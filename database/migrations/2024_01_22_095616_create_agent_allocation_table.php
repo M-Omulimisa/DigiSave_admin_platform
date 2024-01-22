@@ -10,9 +10,8 @@ class CreateAgentAllocationTable extends Migration
     {
         Schema::create('agent_allocation', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('agent_id')->constrained('agents')->onDelete('cascade');
-            $table->foreignId('sacco_id')->constrained('saccos')->onDelete('cascade');
-            // You can add additional fields if needed
+            $table->foreignId('agent_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('sacco_id')->constrained('saccos');
             $table->timestamps();
         });
     }
@@ -22,3 +21,4 @@ class CreateAgentAllocationTable extends Migration
         Schema::dropIfExists('agent_allocation');
     }
 }
+

@@ -12,7 +12,7 @@ class AgentAllocation extends Model
     protected $table = 'agent_allocation';
     public function agent()
     {
-        return $this->belongsTo(Agent::class, 'agent_id');
+        return $this->belongsTo(User::class, 'agent_id');
     }
 
     public function sacco()

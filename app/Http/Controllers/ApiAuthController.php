@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\AdminRole;
 use App\Models\Agent;
 use App\Models\Transaction;
 use Illuminate\Support\Facades\DB;
@@ -124,49 +125,104 @@ class ApiAuthController extends Controller
     }
 
 
+    public function agent_login(Request $r)
+{
+    if ($r->username == null) {
+        return $this->error('Username is nullable.');
+    }
 
+    if ($r->password == null) {
+        return $this->error('Password is required.');
+    }
 
+    $r->username = trim($r->username);
 
-    public function agent_login(Request $request)
-    {
-        // Trim whitespace from input parameters
-        $request->merge([
-            'phone_number' => trim($request->phone_number),
-            'password' => trim($request->password),
-        ]);
-    
-        $validator = Validator::make($request->all(), [
-            'phone_number' => 'required',
-            'password' => 'required',
-        ]);
-    
-        if ($validator->fails()) {
-            return response()->json(['error' => $validator->errors()], 400);
-        }
-    
-        $agent = Agent::where('phone_number', $request->phone_number)->first();
-    
-        $phone_number = Utils::prepare_phone_number($request->phone_number);
-    
-        if (!$agent) {
-            return $this->error('User account not found (' . $phone_number . ').');
-        }
-    
-        // Check the provided password against the hashed password in the database
-        if (Hash::check($request->password, $agent->password)) {
-            Auth::login($agent);
-    
-            // Generate JWT token
-            $token = JWTAuth::fromUser($agent);
-            $agent->setRememberToken($token);
-    
-            $agent->save();
-    
-            return $this->success($agent, 'Logged in successfully.');
-        } else {
-            return $this->error('Wrong credentials.');
+    $u = User::where('phone_number', $r->username)->orWhere('email', $r->username)->first();
+
+    if ($u == null) {
+        // Normalize and check phone number
+        $phone_number = Utils::prepare_phone_number($r->username);
+
+        if (Utils::phone_number_is_valid($phone_number)) {
+            $u = User::where('phone_number', $phone_number)->orWhere('username', $phone_number)->first();
         }
     }
+
+    if ($u == null) {
+        return $this->error('User account not found (' . $r->username . ').');
+    }
+
+    // Check if the user type corresponds to the 'agent' role
+    $agentRoleId = $u->user_type;
+
+    $agentRole = AdminRole::where('id', $agentRoleId)->where('name', 'agent')->first();
+
+    if (!$agentRole) {
+        return $this->error('You do not have permission to log in as an agent.');
+    }
+
+    JWTAuth::factory()->setTTL(60 * 24 * 30 * 365);
+
+    $token = auth('api')->attempt([
+        'id' => $u->id,
+        'password' => trim($r->password),
+    ]);
+
+    if ($token == null) {
+        return $this->error('Wrong credentials.');
+    }
+
+    $u->token = $token;
+    $u->remember_token = $token;
+
+    return $this->success($u, 'Logged in successfully.');
+}
+
+
+//     public function agent_login(Request $request)
+// {
+//     // Trim whitespace from input parameters
+//     $request->merge([
+//         'phone_number' => trim($request->phone_number),
+//         'password' => trim($request->password),
+//     ]);
+
+//     $validator = Validator::make($request->all(), [
+//         'phone_number' => 'required',
+//         'password' => 'required',
+//     ]);
+
+//     if ($validator->fails()) {
+//         return response()->json(['error' => $validator->errors()], 400);
+//     }
+
+//     $user = User::where('phone_number', $request->phone_number)
+//                 ->whereHas('adminRole', function ($query) {
+//                     $query->where('name', 'agent');
+//                 })
+//                 ->first();
+
+//     $phone_number = Utils::prepare_phone_number($request->phone_number);
+
+//     if (!$user) {
+//         return $this->error('User account not found (' . $phone_number . ').');
+//     }
+
+//     // Check the provided password against the hashed password in the database
+//     if (Hash::check($request->password, $user->password)) {
+//         Auth::login($user);
+
+//         // Generate JWT token
+//         $token = JWTAuth::fromUser($user);
+//         $user->setRememberToken($token);
+
+//         $user->save();
+
+//         return $this->success($user, 'Logged in successfully.');
+//     } else {
+//         return $this->error('Wrong credentials.');
+//     }
+// }
     
 
 

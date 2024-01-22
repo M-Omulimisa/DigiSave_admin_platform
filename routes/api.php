@@ -29,7 +29,7 @@ Route::get("share-records", [ApiResurceController::class, "share_records"]);
 Route::post("share-records", [ApiResurceController::class, "share_record_create"]);
 Route::get("social-funds", [ApiResurceController::class, "socialFundRecords"]);
 Route::post("social-funds", [ApiResurceController::class, "socialFundCreate"]);
-Route::post("request-agent-otp-sms", [ApiResurceController::class, "request_agent_otp_sms"]);
+Route::post("request-agent-otp-sms", [ApiResurceController::class, "request_otp_sms"]);
 Route::post("request-otp-sms", [ApiResurceController::class, "request_otp_sms"]);
 Route::get("transactions", [ApiResurceController::class, "transactions"]);
 Route::get("loan-transactions", [ApiResurceController::class, "loan_transactions"]);
@@ -70,7 +70,7 @@ Route::get('agent-saccos/{saccoIds}', [ApiResurceController::class, 'agent_sacco
 
 
 Route::POST("users/login", [ApiAuthController::class, "login"]);
-Route::POST("login", [ApiAuthController::class, "agent_login"]);
+Route::POST("login", [ApiAuthController::class, "login"]);
 Route::POST("shareout", [ApiAuthController::class, "new_shareout"]);
 Route::POST("users/register", [ApiAuthController::class, "register"]);
 Route::post('positions', [ApiAuthController::class, 'new_position']);

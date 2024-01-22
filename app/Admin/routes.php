@@ -24,6 +24,7 @@ Route::group([
     $router->resource('loans', LoanController::class);
     $router->resource('meetings', MeetingController::class);
     $router->resource('loan-transactions', LoanTransactionController::class);
+    $router->resource('admin-roles', AdminRoleController::class);
 
     /* ========================START OF NEW THINGS===========================*/
 
