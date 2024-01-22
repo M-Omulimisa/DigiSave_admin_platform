@@ -15,12 +15,10 @@ class UpdateUsersTable extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->string('username', 45)->nullable();
-            $table->text('password')->nullable();
             $table->string('first_name', 45)->nullable();
             $table->string('last_name', 45)->nullable();
             $table->string('reg_date', 45)->nullable();
             $table->string('last_seen', 45)->nullable();
-            $table->string('email', 45)->nullable();
             $table->tinyInteger('approved')->nullable();
             $table->string('profile_photo', 255)->nullable();
             $table->string('user_type', 45)->nullable();
@@ -42,8 +40,7 @@ class UpdateUsersTable extends Migration
             $table->string('language', 50)->nullable();
             $table->string('about', 600)->nullable();
             $table->string('address', 325)->nullable();
-            $table->timestamps();
-            $table->string('remember_token', 100)->nullable();
+            // $table->timestamps();
             $table->text('avatar')->nullable();
             $table->string('name', 355)->nullable();
             $table->string('campus_id', 255)->nullable();
@@ -74,11 +71,11 @@ class UpdateUsersTable extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->dropColumn([
-                'username', 'password', 'first_name', 'last_name', 'reg_date', 'last_seen',
-                'email', 'approved', 'profile_photo', 'user_type', 'sex', 'reg_number',
+                'username',  'first_name', 'last_name', 'reg_date', 'last_seen',
+                'approved', 'profile_photo', 'user_type', 'sex', 'reg_number',
                 'country', 'occupation', 'profile_photo_large', 'phone_number', 'location_lat',
                 'location_long', 'facebook', 'twitter', 'whatsapp', 'linkedin', 'website',
-                'other_link', 'cv', 'language', 'about', 'address', 'remember_token', 'avatar',
+                'other_link', 'cv', 'language', 'about', 'address', 'avatar',
                 'name', 'campus_id', 'complete_profile', 'title', 'dob', 'intro', 'sacco_id',
                 'sacco_join_status', 'id_front', 'id_back', 'status', 'balance', 'position_id',
                 'district_id', 'parish_id', 'village_id', 'pwd'
