@@ -16,8 +16,10 @@ class UpdateSocialFundsTable extends Migration
         if (!Schema::hasTable('social')) {
             Schema::create('social', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('created_by_id')->constrained('users');
-                $table->foreignId('user_id')->constrained('users');
+                $table->integer('created_by_id')->unsigned();
+                $table->foreign('created_by_id')->references('id')->on('users');
+                $table->Integer('user_id')->unsigned();
+                $table->foreign('user_id')->references('id')->on('users');
                 $table->decimal('amount_paid', 10, 2);
                 $table->integer('meeting_number');
                 $table->foreignId('cycle_id')->constrained('cycles');

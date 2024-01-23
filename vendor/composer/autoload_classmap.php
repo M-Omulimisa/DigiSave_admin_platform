@@ -6,6 +6,7 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
+    'App\\Admin\\Controllers\\AdminRoleController' => $baseDir . '/app/Admin/Controllers/AdminRoleController.php',
     'App\\Admin\\Controllers\\AgentAllocationController' => $baseDir . '/app/Admin/Controllers/AgentAllocationController.php',
     'App\\Admin\\Controllers\\AgentController' => $baseDir . '/app/Admin/Controllers/AgentController.php',
     'App\\Admin\\Controllers\\AssignAgentsController' => $baseDir . '/app/Admin/Controllers/AssignAgentsController.php',
@@ -274,8 +275,17 @@ return array(
     'Cron\\MinutesField' => $vendorDir . '/dragonmantank/cron-expression/src/Cron/MinutesField.php',
     'Cron\\MonthField' => $vendorDir . '/dragonmantank/cron-expression/src/Cron/MonthField.php',
     'Database\\Factories\\UserFactory' => $baseDir . '/database/factories/UserFactory.php',
+    'Database\\Seeders\\AdminMenuSeeder' => $baseDir . '/database/seeders/AdminMenuSeeder.php',
     'Database\\Seeders\\DatabaseSeeder' => $baseDir . '/database/seeders/DatabaseSeeder.php',
+    'Database\\Seeders\\GensSeeder' => $baseDir . '/database/seeders/GensSeeder.php',
+    'Database\\Seeders\\IndexSeeder' => $baseDir . '/database/seeders/IndexSeeder.php',
     'Database\\Seeders\\OrganizationSeeder' => $baseDir . '/database/seeders/OrganizationSeeder.php',
+    'Database\\Seeders\\PermissionSeeder' => $baseDir . '/database/seeders/PermissionSeeder.php',
+    'Database\\Seeders\\RoleMenuSeeder' => $baseDir . '/database/seeders/RoleMenuSeeder.php',
+    'Database\\Seeders\\RolePermissionSeeder' => $baseDir . '/database/seeders/RolePermissionSeeder.php',
+    'Database\\Seeders\\RoleSeeder' => $baseDir . '/database/seeders/RoleSeeder.php',
+    'Database\\Seeders\\RoleUserSeeder' => $baseDir . '/database/seeders/RoleUserSeeder.php',
+    'Database\\Seeders\\UserPermissionSeeder' => $baseDir . '/database/seeders/UserPermissionSeeder.php',
     'DeepCopy\\DeepCopy' => $vendorDir . '/myclabs/deep-copy/src/DeepCopy/DeepCopy.php',
     'DeepCopy\\Exception\\CloneException' => $vendorDir . '/myclabs/deep-copy/src/DeepCopy/Exception/CloneException.php',
     'DeepCopy\\Exception\\PropertyException' => $vendorDir . '/myclabs/deep-copy/src/DeepCopy/Exception/PropertyException.php',

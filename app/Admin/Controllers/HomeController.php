@@ -3,7 +3,6 @@
 namespace App\Admin\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Models\Agent;
 use App\Models\Association;
 use App\Models\Crop;
 use App\Models\Garden;
@@ -53,13 +52,15 @@ class HomeController extends Controller
         $totalMembers = $filteredUsers->count();
         $totalPwdMembers = $filteredUsers->where('pwd', 'yes')->count();
 
-        $villageAgents = Agent::count();
+        // $villageAgents = User::count();
         $organisationCount = Organization::count();
 
         // Calculate percentage of youth members based on date of birth
-        $youthMembersPercentage = $filteredUsers->filter(function ($user) {
-            return Carbon::parse($user->dob)->age < 35; 
-        })->count() / $totalMembers * 100;
+        $youthMembersPercentage = ($totalMembers > 0)
+    ? $filteredUsers->filter(function ($user) {
+        return Carbon::parse($user->dob)->age < 35;
+    })->count() / $totalMembers * 100
+    : 0;
         
         // Female members
         $femaleUsers = $filteredUsers->where('sex', 'Female');
@@ -180,7 +181,7 @@ $loanSumForYouths = Transaction::whereIn('user_id', $youthIds)
             ->body('<div style="background-color: #E9F9E9; padding: 10px; border-radius: 5px;">' .
                 view('widgets.statistics', [
                     'totalSaccos' => $totalSaccos,
-                    'villageAgents' => $villageAgents,
+                    'villageAgents' => 10,
                     'organisationCount' => $organisationCount,
                     'totalMembers' => $totalMembers,
                     'totalPwdMembers' => $pwdMembersCount,

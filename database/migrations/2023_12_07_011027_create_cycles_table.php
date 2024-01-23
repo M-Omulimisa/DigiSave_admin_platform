@@ -15,14 +15,16 @@ class CreateCyclesTable extends Migration
     {
         Schema::create('cycles', function (Blueprint $table) {
             $table->id();
-            $table->timestamps();
             $table->string('name')->nullable();
             $table->text('description')->nullable();
             $table->date('start_date')->nullable();
             $table->date('end_date')->nullable();
             $table->string('status')->nullable()->default('Inactive');
-            $table->integer('sacco_id')->nullable();
-            $table->integer('created_by_id')->nullable();
+            $table->foreignId('sacco_id')->nullable()->constrained();
+            $table->Integer('created_by_id')->unsigned();
+            $table->foreign('created_by_id')->references('id')->on('users');
+            // $table->integer('created_by_id')->nullable();
+            $table->timestamps();
         });
     }
 

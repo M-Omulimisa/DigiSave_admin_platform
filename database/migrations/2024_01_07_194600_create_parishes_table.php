@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class AddPasswordToAgentsTable extends Migration
+class CreateParishesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,8 +13,11 @@ class AddPasswordToAgentsTable extends Migration
      */
     public function up()
     {
-        Schema::table('agents', function (Blueprint $table) {
-            $table->string('password')->nullable();
+        Schema::create('parishes', function (Blueprint $table) {
+            $table->id('parish_id');
+            $table->string('parish_name')->nullable();
+            $table->foreignId('subcounty_id')->constrained('subcounties');
+            $table->timestamps();
         });
     }
 
@@ -25,9 +28,6 @@ class AddPasswordToAgentsTable extends Migration
      */
     public function down()
     {
-        Schema::table('agents', function (Blueprint $table) {
-            $table->dropColumn('password');
-        });
+        Schema::dropIfExists('parishes');
     }
 }
-

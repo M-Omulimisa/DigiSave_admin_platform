@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class UpdateAgentsTableForLongRememberToken extends Migration
+class CreateDistrictsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -12,12 +12,13 @@ class UpdateAgentsTableForLongRememberToken extends Migration
      * @return void
      */
     public function up()
-{
-    Schema::table('agents', function (Blueprint $table) {
-        $table->string('remember_token', 1410)->change(); // Adjust the length as needed
-    });
-}
-
+    {
+        Schema::create('districts', function (Blueprint $table) {
+            $table->id();
+            $table->string('name')->nullable();
+            $table->timestamps();
+        });
+    }
 
     /**
      * Reverse the migrations.
@@ -26,6 +27,6 @@ class UpdateAgentsTableForLongRememberToken extends Migration
      */
     public function down()
     {
-        //
+        Schema::dropIfExists('districts');
     }
 }

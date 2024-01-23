@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class AddRememberTokenToAgentsTable extends Migration
+class AddBalanceToTransactionsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,11 +13,10 @@ class AddRememberTokenToAgentsTable extends Migration
      */
     public function up()
     {
-        Schema::table('agents', function (Blueprint $table) {
-            $table->rememberToken()->nullable();
+        Schema::table('transactions', function (Blueprint $table) {
+            $table->integer('balance')->nullable()->default(0)->after('amount');
         });
     }
-    
 
     /**
      * Reverse the migrations.
@@ -26,9 +25,8 @@ class AddRememberTokenToAgentsTable extends Migration
      */
     public function down()
     {
-        Schema::table('agents', function (Blueprint $table) {
-            $table->dropColumn('remember_token');
+        Schema::table('transactions', function (Blueprint $table) {
+            $table->dropColumn('balance');
         });
     }
 }
-
