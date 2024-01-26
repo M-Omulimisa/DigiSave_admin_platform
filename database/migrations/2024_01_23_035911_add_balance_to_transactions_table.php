@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateTrafficRecordsTable extends Migration
+class AddBalanceToTransactionsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,10 +13,8 @@ class CreateTrafficRecordsTable extends Migration
      */
     public function up()
     {
-        Schema::create('traffic_records', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
-            $table->text('ref');
+        Schema::table('transactions', function (Blueprint $table) {
+            $table->integer('balance')->nullable()->default(0)->after('amount');
         });
     }
 
@@ -27,6 +25,8 @@ class CreateTrafficRecordsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('traffic_records');
+        Schema::table('transactions', function (Blueprint $table) {
+            $table->dropColumn('balance');
+        });
     }
 }

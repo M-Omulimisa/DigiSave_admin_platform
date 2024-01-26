@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateCourseCategoriesTable extends Migration
+class CreateVillagesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,12 +13,12 @@ class CreateCourseCategoriesTable extends Migration
      */
     public function up()
     {
-        Schema::create('course_categories', function (Blueprint $table) {
-            $table->id();
+        Schema::create('villages', function (Blueprint $table) {
+            $table->id('village_id');
+            $table->string('village_name')->nullable();
+            $table->unsignedBigInteger('parish_id');
+            $table->foreign('parish_id')->references('parish_id')->on('parishes');
             $table->timestamps();
-            $table->text('name')->nullable();
-            $table->text('thumbnail')->nullable();
-            $table->text('details')->nullable();                                
         });
     }
 
@@ -29,6 +29,6 @@ class CreateCourseCategoriesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('course_categories');
+        Schema::dropIfExists('villages');
     }
 }

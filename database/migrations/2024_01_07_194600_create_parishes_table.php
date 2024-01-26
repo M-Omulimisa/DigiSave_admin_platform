@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateParticipantsTable extends Migration
+class CreateParishesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,16 +13,11 @@ class CreateParticipantsTable extends Migration
      */
     public function up()
     {
-        Schema::create('participants', function (Blueprint $table) {
-            $table->id();
+        Schema::create('parishes', function (Blueprint $table) {
+            $table->id('parish_id');
+            $table->string('parish_name')->nullable();
+            $table->foreignId('subcounty_id')->constrained('subcounties');
             $table->timestamps();
-            $table->text('ref');
-            $table->text('name');
-            $table->text('email');
-            $table->text('whatsapp');
-            $table->text('country');
-            $table->text('message');
-
         });
     }
 
@@ -33,6 +28,6 @@ class CreateParticipantsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('participants');
+        Schema::dropIfExists('parishes');
     }
 }

@@ -11,10 +11,10 @@ class AddCycleIdToLoanTransactionsTable extends Migration
         if (!Schema::hasColumn('loan_transactions', 'cycle_id')) {
             Schema::table('loan_transactions', function (Blueprint $table) {
                 // Add cycle_id column
-                $table->unsignedInteger('cycle_id')->nullable();
+                $table->ForeignId('cycle_id')->nullable()->constrained();
 
-                // Add foreign key constraint if necessary
-                $table->foreign('cycle_id')->references('id')->on('cycles')->onDelete('SET NULL');
+                // // Add foreign key constraint if necessary
+                // $table->foreign('cycle_id')->references('id')->on('cycles')->onDelete('SET NULL');
             });
         }
     }

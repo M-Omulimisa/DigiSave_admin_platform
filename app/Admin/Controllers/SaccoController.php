@@ -120,7 +120,7 @@ class SaccoController extends AdminController
                     . "&search_by_2=id"
                     . "&model=User"
             );
-            $form->select('administrator_id', "Sacco Administrator")
+            $form->select('administrator_id', "Group Administrator")
                 ->options(function ($id) {
                     $a = Administrator::find($id);
                     if ($a) {
@@ -140,16 +140,7 @@ class SaccoController extends AdminController
         $form->text('email_address', __('Email address'));
         $form->text('physical_address', __('Physical address'));
         $form->datetime('establishment_date', __('Establishment date'))->rules('required');
-        $form->text('registration_number', __('Registration number'));
-        $form->text('chairperson_name', __('Chairperson name'))->rules('required');
-        $form->text('chairperson_phone_number', __('Chairperson phone number'))->rules('required');
-        $form->text('chairperson_email_address', __('Chairperson email address'));
-        $form->text('mission', __('Mission'))->rules('required');
-        $form->text('vision', __('Vision'))->rules('required');
-        $form->textarea('about', __('About'))->rules('required');
-
-        $form->quill('terms', __('Sacco Terms'))->rules('required');
-        $form->image('logo', __('Sacco Logo'))->rules('required');
+        $form->image('logo', __('VSLA Logo'));
 
         return $form;
     }

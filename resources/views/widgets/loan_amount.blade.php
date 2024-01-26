@@ -39,7 +39,7 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
-            <h3 style="font-size: 28px; font-weight: bold; color: #3B88D4; text-align: center;">Total Sum of LOAN Money Disbursed by Category</h3>
+            <h3 style="font-size: 25px; font-weight: bold; color: #3B88D4; text-align: center;">Loan Amount Disbursed</h3>
         </div>
     </div>
 
@@ -48,15 +48,15 @@
             <div class="loan-category">
                 <div class="row">
                     <div class="col-md-4 column-divider">
-                        <p>Sum of LOAN Money for Women</p>
+                        <p>Loan Amount Disbursed to Women</p>
                         <h4>{{ $loanSumForWomen }}</h4>
                     </div>
                     <div class="col-md-4 column-divider">
-                        <p>Sum of LOAN Money for Men</p>
+                        <p>Loan Amount Disbursed to Men</p>
                         <h4>{{ $loanSumForMen }}</h4>
                     </div>
                     <div class="col-md-4">
-                        <p>Sum of LOAN Money for Youths</p>
+                        <p>Loan Amount Disbursed to Youth</p>
                         <h4>{{ $loanSumForYouths }}</h4>
                     </div>
                 </div>

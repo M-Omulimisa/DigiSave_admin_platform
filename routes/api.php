@@ -46,6 +46,10 @@ Route::get('parish', [ApiResurceController::class, 'get_parishes']);
 Route::get('village', [ApiResurceController::class, 'get_villages']);
 
 
+Route::post("agent-meeting", [ApiResurceController::class, "scheduleMeeting"]);
+Route::get("agent-meeting", [ApiResurceController::class, "get_agent_meetings"]);
+
+
 Route::get("sacco-members", [ApiResurceController::class, "sacco_members"]);
 Route::post("sacco-members-review", [ApiResurceController::class, "sacco_members_review"]);
 Route::post("cycles", [ApiResurceController::class, "cycles_create"]);

@@ -16,7 +16,7 @@ class MembersController extends AdminController
      *
      * @var string
      */
-    protected $title = 'Sacco Members';
+    protected $title = 'VSLA Members';
 
     /**
      * Make a grid builder.

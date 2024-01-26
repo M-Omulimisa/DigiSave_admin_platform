@@ -12,7 +12,9 @@ class CreateAgentAllocationTable extends Migration
         if (!Schema::hasTable('agent_allocation')) {
             Schema::create('agent_allocation', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('agent_id')->constrained('users')->onDelete('cascade');
+                $table->integer('agent_id')->unsigned();
+                $table->foreign('agent_id')->references('id')->on('users');
+                // $table->foreignId('agent_id')->constrained('users')->onDelete('cascade');
                 $table->foreignId('sacco_id')->constrained('saccos');
                 $table->timestamps();
             });

@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreatePostCategoriesTable extends Migration
+class CreateSubcountiesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,11 +13,11 @@ class CreatePostCategoriesTable extends Migration
      */
     public function up()
     {
-        Schema::create('post_categories', function (Blueprint $table) {
+        Schema::create('subcounties', function (Blueprint $table) {
             $table->id();
+            $table->string('sub_county')->nullable();
+            $table->foreignId('district_id')->constrained('districts');
             $table->timestamps();
-            $table->text('name');
-            $table->text('details');
         });
     }
 
@@ -28,6 +28,6 @@ class CreatePostCategoriesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('post_categories');
+        Schema::dropIfExists('subcounties');
     }
 }

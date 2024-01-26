@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class AddPasswordToAgentsTable extends Migration
+class UpdateUsersTableNullablePassword extends Migration
 {
     /**
      * Run the migrations.
@@ -13,8 +13,8 @@ class AddPasswordToAgentsTable extends Migration
      */
     public function up()
     {
-        Schema::table('agents', function (Blueprint $table) {
-            $table->string('password')->nullable();
+        Schema::table('users', function (Blueprint $table) {
+            $table->string('password')->nullable()->change();
         });
     }
 
@@ -25,9 +25,8 @@ class AddPasswordToAgentsTable extends Migration
      */
     public function down()
     {
-        Schema::table('agents', function (Blueprint $table) {
-            $table->dropColumn('password');
+        Schema::table('users', function (Blueprint $table) {
+            $table->string('password')->change();
         });
     }
 }
-

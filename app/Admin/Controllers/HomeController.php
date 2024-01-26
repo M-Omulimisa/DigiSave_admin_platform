@@ -3,7 +3,6 @@
 namespace App\Admin\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Models\Agent;
 use App\Models\Association;
 use App\Models\Crop;
 use App\Models\Garden;
@@ -39,7 +38,7 @@ class HomeController extends Controller
     {
         
         $users = User::all(); 
-        
+
         $admin = Admin::user();
         $adminId = $admin->id;
         
@@ -48,18 +47,27 @@ class HomeController extends Controller
             return $user->id === $adminId && $user->user_type === 'Admin';
         });
         
+        // If you also want to filter out users with user_type '4' (agent), you can do the following:
+        $filteredUsers = $filteredUsers->reject(function ($user) {
+            return $user->user_type === '4';
+        });
+        
+        
         // Calculate various statistics
         $totalSaccos = Sacco::count();
         $totalMembers = $filteredUsers->count();
         $totalPwdMembers = $filteredUsers->where('pwd', 'yes')->count();
 
-        $villageAgents = Agent::count();
+        $villageAgents = User::where('user_type', '4')->count();
+
         $organisationCount = Organization::count();
 
         // Calculate percentage of youth members based on date of birth
-        $youthMembersPercentage = $filteredUsers->filter(function ($user) {
-            return Carbon::parse($user->dob)->age < 35; 
-        })->count() / $totalMembers * 100;
+        $youthMembersPercentage = ($totalMembers > 0)
+    ? $filteredUsers->filter(function ($user) {
+        return Carbon::parse($user->dob)->age < 35;
+    })->count() / $totalMembers * 100
+    : 0;
         
         // Female members
         $femaleUsers = $filteredUsers->where('sex', 'Female');
@@ -176,8 +184,8 @@ $loanSumForYouths = Transaction::whereIn('user_id', $youthIds)
             $youthMembersPercentageLink = url('members');
             
             return $content
-            ->header('<span style="color: #3B88D4; font-size: 30px; font-weight: bold;">Welcome to DigiSave Village Savings and Loans Associations (VSLAs) Admin platform</span>')
-            ->body('<div style="background-color: #E9F9E9; padding: 10px; border-radius: 5px;">' .
+            ->header('<div style="text-align: center; color: #039103; font-size: 30px; font-weight: bold; padding-top: 20px;">DigiSave VSLA Platform</div>')
+            ->body('<div style="background-color: #E9F9E9; padding: 10px; padding-top: 5px; border-radius: 5px;">' .
                 view('widgets.statistics', [
                     'totalSaccos' => $totalSaccos,
                     'villageAgents' => $villageAgents,

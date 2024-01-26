@@ -371,8 +371,8 @@ class ComposerStaticInitb4f9a58564d4079838a65f398d2f0fe1
         ),
         'Psr\\Http\\Message\\' => 
         array (
-            0 => __DIR__ . '/..' . '/psr/http-message/src',
-            1 => __DIR__ . '/..' . '/psr/http-factory/src',
+            0 => __DIR__ . '/..' . '/psr/http-factory/src',
+            1 => __DIR__ . '/..' . '/psr/http-message/src',
         ),
         'Psr\\Http\\Client\\' => 
         array (
@@ -428,8 +428,8 @@ class ComposerStaticInitb4f9a58564d4079838a65f398d2f0fe1
         ),
         'League\\Uri\\' => 
         array (
-            0 => __DIR__ . '/..' . '/league/uri-interfaces/src',
-            1 => __DIR__ . '/..' . '/league/uri/src',
+            0 => __DIR__ . '/..' . '/league/uri/src',
+            1 => __DIR__ . '/..' . '/league/uri-interfaces/src',
         ),
         'League\\OAuth2\\Server\\' => 
         array (
@@ -653,6 +653,7 @@ class ComposerStaticInitb4f9a58564d4079838a65f398d2f0fe1
     );
 
     public static $classMap = array (
+        'App\\Admin\\Controllers\\AdminRoleController' => __DIR__ . '/../..' . '/app/Admin/Controllers/AdminRoleController.php',
         'App\\Admin\\Controllers\\AgentAllocationController' => __DIR__ . '/../..' . '/app/Admin/Controllers/AgentAllocationController.php',
         'App\\Admin\\Controllers\\AgentController' => __DIR__ . '/../..' . '/app/Admin/Controllers/AgentController.php',
         'App\\Admin\\Controllers\\AssignAgentsController' => __DIR__ . '/../..' . '/app/Admin/Controllers/AssignAgentsController.php',
@@ -921,8 +922,17 @@ class ComposerStaticInitb4f9a58564d4079838a65f398d2f0fe1
         'Cron\\MinutesField' => __DIR__ . '/..' . '/dragonmantank/cron-expression/src/Cron/MinutesField.php',
         'Cron\\MonthField' => __DIR__ . '/..' . '/dragonmantank/cron-expression/src/Cron/MonthField.php',
         'Database\\Factories\\UserFactory' => __DIR__ . '/../..' . '/database/factories/UserFactory.php',
+        'Database\\Seeders\\AdminMenuSeeder' => __DIR__ . '/../..' . '/database/seeders/AdminMenuSeeder.php',
         'Database\\Seeders\\DatabaseSeeder' => __DIR__ . '/../..' . '/database/seeders/DatabaseSeeder.php',
+        'Database\\Seeders\\GensSeeder' => __DIR__ . '/../..' . '/database/seeders/GensSeeder.php',
+        'Database\\Seeders\\IndexSeeder' => __DIR__ . '/../..' . '/database/seeders/IndexSeeder.php',
         'Database\\Seeders\\OrganizationSeeder' => __DIR__ . '/../..' . '/database/seeders/OrganizationSeeder.php',
+        'Database\\Seeders\\PermissionSeeder' => __DIR__ . '/../..' . '/database/seeders/PermissionSeeder.php',
+        'Database\\Seeders\\RoleMenuSeeder' => __DIR__ . '/../..' . '/database/seeders/RoleMenuSeeder.php',
+        'Database\\Seeders\\RolePermissionSeeder' => __DIR__ . '/../..' . '/database/seeders/RolePermissionSeeder.php',
+        'Database\\Seeders\\RoleSeeder' => __DIR__ . '/../..' . '/database/seeders/RoleSeeder.php',
+        'Database\\Seeders\\RoleUserSeeder' => __DIR__ . '/../..' . '/database/seeders/RoleUserSeeder.php',
+        'Database\\Seeders\\UserPermissionSeeder' => __DIR__ . '/../..' . '/database/seeders/UserPermissionSeeder.php',
         'DeepCopy\\DeepCopy' => __DIR__ . '/..' . '/myclabs/deep-copy/src/DeepCopy/DeepCopy.php',
         'DeepCopy\\Exception\\CloneException' => __DIR__ . '/..' . '/myclabs/deep-copy/src/DeepCopy/Exception/CloneException.php',
         'DeepCopy\\Exception\\PropertyException' => __DIR__ . '/..' . '/myclabs/deep-copy/src/DeepCopy/Exception/PropertyException.php',

@@ -38,7 +38,7 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
-            <h3 style="font-size: 28px; font-weight: bold; color: #3B88D4; text-align: center;">Total Number of Loans Disbursed by Category</h3>
+            <h3 style="font-size: 25px; font-weight: bold; color: #3B88D4; text-align: center;">Number of Loan Disbursements</h3>
         </div>
     </div>
 

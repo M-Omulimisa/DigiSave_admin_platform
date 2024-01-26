@@ -27,6 +27,7 @@ class CreateSaccosTable extends Migration
             $table->string('chairperson_name')->nullable();
             $table->string('chairperson_phone_number')->nullable();
             $table->string('chairperson_email_address')->nullable();
+            $table->integer('share_price')->nullable();
             $table->text('about')->nullable();
             $table->text('terms')->nullable();
         });
