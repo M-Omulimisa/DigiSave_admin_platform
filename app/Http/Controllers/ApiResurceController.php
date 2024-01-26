@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\AgentMeeting;
 use App\Models\Agent;
 use App\Models\AgentAllocation;
 use App\Models\Association;
@@ -251,6 +252,8 @@ class ApiResurceController extends Controller
         $share_record->number_of_shares = $r->number_of_shares;
         $share_record->created_by_id = $admin->id;
 
+        
+
         try {
             $share_record->save();
         } catch (\Throwable $th) {
@@ -262,6 +265,7 @@ class ApiResurceController extends Controller
             200
         );
     }
+
 
     public function socialFundCreate(Request $request)
     {
@@ -1346,6 +1350,58 @@ class ApiResurceController extends Controller
             200
         );
     }
+
+    
+    public function scheduleMeeting(Request $request)
+    {
+        $admin = auth('api')->user();
+        if ($admin == null) {
+            return $this->error('User not found.');
+        }
+        if ($request->user_id == null) {
+            return $this->error('User not found.');
+        }
+        $u = User::find($request->user_id);
+            // Create a new meeting using the AgentMeeting model
+            $meeting = new AgentMeeting();
+            $meeting->user_id = $u->id;
+            $meeting->sacco_id = $request->input('sacco_id');
+            $meeting->meeting_date = $request->input('meeting_date');
+            $meeting->meeting_time = $request->input('meeting_time');
+            $meeting->meeting_description = $request->input('meeting_description');
+           
+
+            try {
+                $meeting->save();
+            } catch (\Throwable $th) {
+                return $this->error('Failed to schedule meeting record, because ' . $th->getMessage() . '');
+            }
+            return $this->success(
+                $meeting,
+                $message = "Success",
+                200
+            );
+    }
+
+    public function get_agent_meetings(Request $request)
+{
+    $user = auth('api')->user();
+    if (!$user) {
+        return $this->error('User not found.');
+    }
+
+    // Retrieve meetings associated with the logged-in user
+    $meetings = AgentMeeting::where('user_id', $user->id)->get();
+
+    if ($meetings->isEmpty()) {
+        return $this->error('No meetings found for the user.');
+    }
+
+    return $this->success($meetings, $message="Meetings retrieved successfully", 200);
+}
+
+    
+
     public function cycles_create(Request $r)
     {
 

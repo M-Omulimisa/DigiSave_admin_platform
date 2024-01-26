@@ -83,7 +83,16 @@ class User extends Authenticatable implements JWTSubject
     //getter for balance
     public function getBalanceAttribute()
     {
-        return Transaction::where('user_id', $this->id)->sum('amount');
+        $sacco = Sacco::find($this->sacco_id);
+        if ($sacco == null) {
+            return 0;
+        }
+        if ($sacco->active_cycle == null) {
+            return 0;
+        }
+        return Transaction::where('user_id', $this->id)
+        ->where('cycle_id',  $sacco->active_cycle->id)
+        ->sum('amount');
     }
 
     public function transactions()
@@ -565,6 +574,7 @@ public function getSHAREOUTSHAREPRICEAttribute()
     } else {
         $totalAmount = Transaction::where('user_id', $this->id)
             ->whereIn('type', ['SHARE'])
+            ->where('cycle_id', $sacco->active_cycle->id)
             ->sum('amount');
     }
     

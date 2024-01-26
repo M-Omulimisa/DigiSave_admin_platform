@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\AdminRole;
 use App\Models\Agent;
+use App\Models\Cycle;
 use App\Models\Transaction;
 use Illuminate\Support\Facades\DB;
 use App\Models\LoanScheem;
@@ -521,6 +522,11 @@ class ApiAuthController extends Controller
                 $shareout->shareout_date = Carbon::now();
                 $shareout->save();
             }
+
+                $cycle = Cycle::find($cycle_id);
+                $cycle->status = "Inactive";
+                $cycle->save();
+            
 
             return $this->success(null, 'Shareouts created successfully.');
         } catch (\Throwable $th) {
