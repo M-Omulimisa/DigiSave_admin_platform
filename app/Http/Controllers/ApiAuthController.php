@@ -412,8 +412,10 @@ class ApiAuthController extends Controller
         $msg = "";
         $acc->first_name = $request->first_name;
         $acc->last_name = $request->last_name;
+        $acc->name = $request->first_name . ' ' . $request->last_name;
         $acc->campus_id = $request->campus_id;
         $acc->phone_number = $phone_number;
+        $acc->username = $phone_number;
         $acc->sex = $request->sex;
         $acc->pwd = $request->pwd;
         $acc->position_id = $request->position_id;
@@ -433,17 +435,6 @@ class ApiAuthController extends Controller
         }
 
         $code = 1;
-           // Check if position ID is provided in the request
-    //    if ($request->position_id != null) {
-    //     // Find if any other user already has this position ID
-    //     $userWithSamePosition = Administrator::where('position_id', $request->position_id)
-    //         ->where('id', '!=', $acc->id) // Exclude the current user (if it's an edit operation)
-    //         ->first();
-
-    //     if ($userWithSamePosition != null) {
-    //         return $this->error('Group Member with the same position already exists.');
-    //     }
-    //    }
 
       try {
        
@@ -686,7 +677,7 @@ class ApiAuthController extends Controller
         $user->language = '';
         $user->about = '';
         $user->address = '';
-        $user->position_id = '';
+        // $user->position_id = '';
         $user->name = $name;
         $user->password = password_hash(trim($r->password), PASSWORD_DEFAULT);
         if (!$user->save()) {

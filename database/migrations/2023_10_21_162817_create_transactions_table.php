@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Cycle;
 use App\Models\Sacco;
 use Encore\Admin\Auth\Database\Administrator;
 use Illuminate\Database\Migrations\Migration;
@@ -21,6 +22,7 @@ class CreateTransactionsTable extends Migration
             $table->foreignIdFor(Administrator::class, 'user_id');
             $table->foreignIdFor(Administrator::class, 'source_user_id');
             $table->foreignIdFor(Sacco::class, 'sacco_id');
+            $table->foreignId('cycle_id')->constrained();
             $table->string('type')->default('Deposit');
             $table->string('source_type')->default('Mobile Money');
             $table->string('source_mobile_money_number')->nullable();

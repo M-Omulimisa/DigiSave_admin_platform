@@ -51,7 +51,6 @@ class UpdateUsersTable extends Migration
             $table->text('id_back')->nullable();
             $table->string('status', 25)->nullable()->default('Active');
             $table->integer('balance')->nullable()->default(0);
-            $table->index('position_id', 'users_position_id_index');
             $table->foreignId('district_id')->nullable()->default(null)->constrained('districts');
             $table->foreignId('subcounty_id')->nullable()->default(null)->constrained('subcounties');
             $table->unsignedBigInteger('parish_id')->nullable()->default(null);
@@ -75,7 +74,7 @@ class UpdateUsersTable extends Migration
                 'location_long', 'facebook', 'twitter', 'whatsapp', 'linkedin', 'website',
                 'other_link', 'cv', 'language', 'about', 'address',
                  'campus_id', 'complete_profile', 'title', 'dob', 'intro', 'sacco_id',
-                'sacco_join_status', 'id_front', 'id_back', 'status', 'balance', 'position_id',
+                'sacco_join_status', 'id_front', 'id_back', 'status', 'balance',
                 'district_id', 'subcounty_id', 'parish_id', 'village_id', 'pwd'
             ]);
         });

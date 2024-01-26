@@ -116,14 +116,15 @@ class User extends Authenticatable implements JWTSubject
         'share_price',
         'share_out_share_price',
         'share_out_amount',
-        'user_type_name'
+        'user_type_name',
+        'register'
     ];
 
 
-    public function userType(): BelongsTo
-    {
-        return $this->belongsTo(AdminRole::class, 'user_type');
-    }
+    // public function userType(): BelongsTo
+    // {
+    //     return $this->belongsTo(AdminRole::class, 'user_type');
+    // }
 
     public function getUserTypeNameAttribute()
     {
@@ -314,14 +315,18 @@ public function getSHAREOUTSHAREPRICEAttribute()
     public function getLOANINTERESTAttribute()
     {
         $sacco = Sacco::find($this->sacco_id);
+        info($sacco);
+        if($sacco)
+        {
 
-        // Check if user_id in Transaction is the administrator_id in Sacco
-        $isAdminUser = ($this->id === $sacco->administrator_id);
+          // Check if user_id in Transaction is the administrator_id in Sacco
+          $isAdminUser = ($this->id === $sacco->administrator_id);
     
-        // If user_id is the administrator_id, calculate totalAmount differently
-        if ($isAdminUser) {
+          // If user_id is the administrator_id, calculate totalAmount differently
+         if ($isAdminUser) {
             $users = User::where([
                 'sacco_id' => $this->sacco_id,
+
             ])->where('id', '!=', $sacco->administrator_id)
             ->pluck('id')
             ->toArray();
@@ -333,11 +338,17 @@ public function getSHAREOUTSHAREPRICEAttribute()
         
     
             return $totalAmount;
-        } else {
-         return Transaction::where('type', ['LOAN_INTEREST'])
+         } else {
+          return Transaction::where('type', ['LOAN_INTEREST'])
                 ->where('cycle_id', $this->cycle_id)
                 ->sum('amount');
         }
+    }
+
+    else {
+        return 0;
+    }
+
     }
 
     // public function getLOANINTERESTAttribute()
@@ -395,6 +406,25 @@ public function getSHAREOUTSHAREPRICEAttribute()
         ])
             ->sum('amount');
     }
+
+     //getter for REGESTRATION
+     public function getREGISTERAttribute()
+     {
+         $sacco = Sacco::find($this->sacco_id);
+         if ($sacco == null) {
+             return 0;
+         }
+         if ($sacco->active_cycle == null) {
+             return 0;
+         }
+ 
+         return Transaction::where([
+             'user_id' => $this->id,
+             'type' => 'REGESTRATION',
+             'cycle_id' => $sacco->active_cycle->id
+         ])
+             ->sum('amount');
+     }
 
     //getter for LOAN
     public function getLOANAttribute()

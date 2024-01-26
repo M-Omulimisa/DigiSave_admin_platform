@@ -92,10 +92,10 @@ class AgentController extends AdminController
         $villageOptions = Village::pluck('village_name', 'village_id');
 
         // Foreign key relationships
-        $form->select('district_id', 'District')->options($districtOptions)->rules('required');
+        $form->select('district_id', 'District')->options($districtOptions);
         // $form->select('subcounty_id', 'Subcounty')->options($subcountyOptions)->rules('required');
-        $form->select('parish_id', 'Parish')->options($parishOptions)->rules('required');
-        $form->select('village_id', 'Village')->options($villageOptions)->rules('required');
+        $form->select('parish_id', 'Parish')->options($parishOptions);
+        $form->select('village_id', 'Village')->options($villageOptions);
         
         
         // Password fields
