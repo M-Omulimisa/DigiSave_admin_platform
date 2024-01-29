@@ -49,13 +49,13 @@ class UpdateUsersTable extends Migration
             $table->string('sacco_join_status', 35)->nullable()->default('No Sacco');
             $table->text('id_front')->nullable();
             $table->text('id_back')->nullable();
-            $table->string('status', 25)->nullable()->default('Active');
-            $table->integer('balance')->nullable()->default(0);
-            $table->foreignId('district_id')->nullable()->default(null)->constrained('districts');
-            $table->foreignId('subcounty_id')->nullable()->default(null)->constrained('subcounties');
-            $table->unsignedBigInteger('parish_id')->nullable()->default(null);
+            $table->string('status', 25)->default('Active');
+            $table->integer('balance')->default(0);
+            $table->foreignId('district_id')->nullable()->constrained('districts');
+            $table->foreignId('subcounty_id')->nullable()->constrained('subcounties');
+            $table->unsignedBigInteger('parish_id')->nullable();
             $table->foreign('parish_id')->references('parish_id')->on('parishes');
-            $table->unsignedBigInteger('village_id')->nullable()->default(null);
+            $table->unsignedBigInteger('village_id')->nullable();
             $table->foreign('village_id')->references('village_id')->on('villages');
         });
     }
