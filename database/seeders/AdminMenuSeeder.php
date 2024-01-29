@@ -150,7 +150,7 @@ class AdminMenuSeeder extends Seeder
                 'parent_id' => 0,
                 'order' => 11,
                 'title' => 'Meetings',
-                'icon' => 'fa-shirtsinbulk',
+                'icon' => 'fa fa-address-card',
                 'uri' => 'meetings',
                 'permission' => null,
                 'created_at' => '2023-12-07 01:47:45',

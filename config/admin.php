@@ -310,7 +310,18 @@ return [
     | each page
     |
     */
-    'show_version' => TRUE,
+    'footer' => [
+        'powered' => 'Powered by <a href="https://laravel-admin.org/" target="_blank">Laravel-admin</a>',
+        'enable' => true, // Keep the footer enabled but customize it
+        'view' => 'admin.partials.custom-footer', // This should be the path to your custom blade template
+    ],
+    
+    // 'footer' => [
+    //     'powered' => 'Powered by <a href="https://laravel-admin.org/" target="_blank">Laravel-admin</a>',
+    //     'copyright' => '&copy; 2024 Your Company',
+    // ],    
+    
+    'show_version' => false,
 
     /*
     |--------------------------------------------------------------------------
