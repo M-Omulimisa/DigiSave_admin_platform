@@ -67,8 +67,9 @@ Admin::navbar(function (\Encore\Admin\Widgets\Navbar $navbar) {
 
 
 Encore\Admin\Form::forget(['map', 'editor']);
-Admin::css(url('/assets/css/bootstrap.css'));
+// Admin::css(url('/assets/css/bootstrap.css'));
 Admin::css('/assets/css/styles.css');
+Admin::style('.main-footer strong {display: none;}');
 
 //disable delete on form tools
 Encore\Admin\Form::init(function (Encore\Admin\Form $form) {
