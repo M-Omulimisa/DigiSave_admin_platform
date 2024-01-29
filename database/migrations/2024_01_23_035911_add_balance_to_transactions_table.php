@@ -14,7 +14,7 @@ class AddBalanceToTransactionsTable extends Migration
     public function up()
     {
         Schema::table('transactions', function (Blueprint $table) {
-            $table->integer('balance')->nullable()->default(0)->after('amount');
+            $table->integer('balance')->default(0)->after('amount');
         });
     }
 

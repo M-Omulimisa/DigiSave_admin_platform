@@ -28,8 +28,8 @@ class CreateGroupsTable extends Migration
             $table->integer('subcounty_id')->nullable();
             $table->integer('members')->nullable();
             $table->text('phone_number_2')->nullable();
-            $table->text('started')->default('Pending')->nullable();
-            $table->text('leader')->default('Pending')->nullable();
+            $table->string('started')->default('Pending');
+            $table->string('leader')->default('Pending');
             $table->softDeletes();
         });
     }
