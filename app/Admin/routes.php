@@ -18,6 +18,8 @@ Route::group([
     $router->resource('saccos', SaccoController::class);
     $router->resource('agents', AgentController::class);
     $router->resource('organisation', OrganizationController::class);
+    $router->resource('org-admin', OrganisationAdminController::class);
+    $router->resource('assign-org-admin', AssignOrganisationAdminController::class);
     $router->resource('assign-org', OrganizationAllocationController::class);
     $router->resource('assign-agent', AssignAgentsController::class);
     $router->resource('loan-scheems', LoanScheemController::class);

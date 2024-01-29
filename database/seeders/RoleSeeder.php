@@ -40,6 +40,13 @@ class RoleSeeder extends Seeder
                 'slug' => 'agent',
                 'created_at' => '2023-12-07 19:27:20',
                 'updated_at' => '2023-12-07 19:27:20',
+            ],
+            [
+                'id' => 5,
+                'name' => 'org',
+                'slug' => 'org',
+                'created_at' => '2023-12-07 19:27:20',
+                'updated_at' => '2023-12-07 19:27:20',
             ]
         ]);
     }

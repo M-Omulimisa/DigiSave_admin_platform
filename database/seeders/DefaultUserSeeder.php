@@ -17,7 +17,7 @@ class DefaultUserSeeder extends Seeder
             [
                 'id' => 1,
                 'username' => '+256783204665',
-                'password' => Hash::make('$2y$10$e9xyp74qg7gH5oJnUsqzHOw152XXlgJN2fGcvCAsxdMelICgeMae2'),
+                'password' => Hash::make('12345'),
                 'first_name' => 'M-Omulimisa',
                 'last_name' => 'Digisave',
                 'reg_date' => '1596135415',
