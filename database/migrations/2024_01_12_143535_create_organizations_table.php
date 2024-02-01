@@ -13,6 +13,9 @@ class CreateOrganizationsTable extends Migration
             $table->string('name');
             $table->string('phone_number');
             $table->text('address')->nullable();
+            $table->unsignedInteger('agent_id')->nullable();
+            $table->foreign('agent_id')->references('id')->on('users')->onDelete('set null');
+            
             $table->timestamps();
         });
     }
