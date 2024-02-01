@@ -26,6 +26,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Exception;
 
 class ApiAuthController extends Controller
 {
@@ -689,6 +690,19 @@ class ApiAuthController extends Controller
         if (!$user->save()) {
             return $this->error('Failed to create account. Please try again.');
         }
+
+        // Send SMS
+        $message = "Your account has been created successfully. Phone number: $phone_number, Password: {$r->password}";
+
+        $resp = null;
+        try {
+        $resp = Utils::send_sms($phone_number, $message);
+        } catch (Exception $e) {
+          return $this->error('Failed to send OTP  because ' . $e->getMessage() . '');
+       }
+       if ($resp != 'success') {
+        return $this->error('Failed to send OTP  because ' . $resp . '');
+       }
 
         $new_user = Administrator::find($user->id);
         if ($new_user == null) {

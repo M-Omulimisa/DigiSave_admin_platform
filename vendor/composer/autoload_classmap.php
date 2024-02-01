@@ -135,6 +135,7 @@ return array(
     'App\\Models\\Meeting' => $baseDir . '/app/Models/Meeting.php',
     'App\\Models\\MemberPosition' => $baseDir . '/app/Models/MemberPosition.php',
     'App\\Models\\NewsPost' => $baseDir . '/app/Models/NewsPost.php',
+    'App\\Models\\OrgAllocation' => $baseDir . '/app/Models/OrgAllocation.php',
     'App\\Models\\Organization' => $baseDir . '/app/Models/Organization.php',
     'App\\Models\\OrganizationAssignment' => $baseDir . '/app/Models/OrganizationAssignment.php',
     'App\\Models\\Parish' => $baseDir . '/app/Models/Parish.php',
