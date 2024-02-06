@@ -81,6 +81,7 @@ Route::post('positions', [ApiAuthController::class, 'new_position']);
 Route::post('groups/register', [ApiAuthController::class, 'registerGroup']);
 Route::post('roles/register', [ApiAuthController::class, 'registerRole']);
 Route::POST("users/update", [ApiAuthController::class, "update_user"]);
+Route::POST("member/update", [ApiAuthController::class, "member_update"]);
 Route::get("people", [ApiResurceController::class, "people"]);
 Route::POST("people", [ApiResurceController::class, "person_create"]);
 Route::get("jobs", [ApiResurceController::class, "jobs"]);

@@ -72,6 +72,8 @@ class ApiAuthController extends Controller
             return $this->error('Password is required.');
         }
 
+        // die($r->password);
+
         $r->username = trim($r->username);
 
         $u = User::where('phone_number', $r->username)->first();
@@ -79,6 +81,7 @@ class ApiAuthController extends Controller
             $u = User::where('phone_number', $r->username)
                 ->first();
         }
+        // die($u->id);
         if ($u == null) {
             $u = User::where('email', $r->username)->first();
         }
@@ -318,6 +321,137 @@ class ApiAuthController extends Controller
             $message = "Loan scheme created successfully",
             200
         );
+    }
+
+    public function member_update(Request $request)
+    {
+        $admin = auth('api')->user();
+        if ($admin == null) {
+            return $this->error('User not found.');
+        }
+
+        $loggedIn = Administrator::find($admin->id);
+        if ($loggedIn == null) {
+            return $this->error('User not found.');
+        }
+        $sacco = Sacco::find($loggedIn->sacco_id);
+
+        if ($sacco == null) {
+            return $this->error('Sacco not found.');
+        }
+
+        if (!isset($request->task)) {
+            return $this->error('Task is missing.');
+        }
+
+        $task = $request->task;
+
+        if (($task != 'Edit') && ($task != 'Create')) {
+            return $this->error('Invalid task.');
+        }
+
+        $phone_number = Utils::prepare_phone_number($request->phone_number);
+        if (!Utils::phone_number_is_valid($phone_number)) {
+            return $this->error('Invalid phone number.');
+        }
+
+        $account = null;
+        if ($task == 'Edit') {
+            if ($request->id == null) {
+                return $this->error('User id is missing.');
+            }
+            $acc = Administrator::find($request->id);
+            if ($acc == null) {
+                return $this->error('User not found.');
+            }
+            $old = Administrator::where('phone_number', $phone_number)
+                ->where('id', '!=', $request->id)
+                ->first();
+            if ($old != null) {
+                return $this->error('User with same phone number already exists. ' . $old->id . ' ' . $old->phone_number . ' ' . $old->first_name . ' ' . $old->last_name);
+            }
+        } else {
+
+            $old = Administrator::where('phone_number', $phone_number)
+                ->first();
+            if ($old != null) {
+                return $this->error('User with same phone number already exists.');
+            }
+
+            $acc = new Administrator();
+            $acc->sacco_id = $sacco->id;
+        }
+
+        if (
+            $request->first_name == null ||
+            strlen($request->first_name) < 2
+        ) {
+            return $this->error('First name is missing.');
+        }
+        //validate all
+        if (
+            $request->last_name == null ||
+            strlen($request->last_name) < 2
+        ) {
+            return $this->error('Last name is missing.');
+        }
+
+        //validate all
+        if (
+            $request->sex == null ||
+            strlen($request->sex) < 2
+        ) {
+            return $this->error('Gender is missing.');
+        }
+
+        // if (
+        //     $request->campus_id == null ||
+        //     strlen($request->campus_id) < 2
+        // ) {
+        //     return $this->error('National ID is missing.');
+        // }
+
+
+        $msg = "";
+        $acc->first_name = $request->first_name;
+        $acc->last_name = $request->last_name;
+        $acc->name = $request->first_name . ' ' . $request->last_name;
+        $acc->campus_id = $request->campus_id;
+        $acc->phone_number = $phone_number;
+        $acc->username = $phone_number;
+        $acc->sex = $request->sex;
+        $acc->pwd = $request->pwd;
+        $acc->position_id = $request->position_id;
+        $acc->district_id = $request->district_id;
+        $acc->parish_id = $request->parish_id;
+        $acc->village_id = $request->village_id;
+        $acc->dob = $request->dob;
+        $acc->address = $request->address;
+        $acc->sacco_join_status = 'Approved';
+
+        $images = [];
+        if (!empty($_FILES)) {
+            $images = Utils::upload_images_2($_FILES, false);
+        }
+        if (!empty($images)) {
+            $acc->avatar = 'images/' . $images[0];
+        }
+
+        $code = 1;
+
+      try {
+       
+          $acc->save();
+       } catch (\Throwable $th) {
+         $msg = $th->getMessage();
+         $code = 0;
+         return $this->error($msg);
+       }
+       return $this->success(
+        $acc,
+        $message = "User account updated successfully",
+        $code
+    );
     }
 
 
