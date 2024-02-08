@@ -67,6 +67,7 @@ Route::POST("garden-activities", [ApiResurceController::class, "activity_submit"
 
 Route::get("crops", [ApiResurceController::class, "crops"]);
 Route::get('sacco/{sacco_id}', [ApiResurceController::class, 'getSaccoData']);
+Route::get('cycle-history', [ApiResurceController::class, 'getMemberDetailsByCycle']);
 Route::get('agent-saccos/{saccoIds}', [ApiResurceController::class, 'agent_saccos']);
 
 
@@ -81,6 +82,7 @@ Route::post('positions', [ApiAuthController::class, 'new_position']);
 Route::post('groups/register', [ApiAuthController::class, 'registerGroup']);
 Route::post('roles/register', [ApiAuthController::class, 'registerRole']);
 Route::POST("users/update", [ApiAuthController::class, "update_user"]);
+Route::POST("group/update", [ApiAuthController::class, "update_group"]);
 Route::POST("member/update", [ApiAuthController::class, "member_update"]);
 Route::get("people", [ApiResurceController::class, "people"]);
 Route::POST("people", [ApiResurceController::class, "person_create"]);

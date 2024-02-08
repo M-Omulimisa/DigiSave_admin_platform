@@ -16,6 +16,7 @@ Route::group([
     $router->get('/', 'HomeController@index')->name('home');
     $router->resource('gens', GenController::class);
     $router->resource('saccos', SaccoController::class);
+    // $router->resource('districts', DistrictsController::class);
     $router->resource('agents', AgentController::class);
     $router->resource('organisation', OrganizationController::class);
     $router->resource('org-admin', OrganisationAdminController::class);

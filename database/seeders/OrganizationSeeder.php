@@ -13,6 +13,7 @@ class OrganizationSeeder extends Seeder
             'name' => 'M-Omulimisa',
             'phone_number' => '+2567059753296',
             'address' => 'Mutungo',
+            'agent_id' => 2
         ]);
     }
 }

@@ -454,6 +454,34 @@ class ApiAuthController extends Controller
     );
     }
 
+    public function update_group(Request $request)
+    {
+        try {
+            // Find the authenticated administrator
+            $admin = auth('api')->user();
+            if (!$admin) {
+                return $this->error('User not authenticated.', 401);
+            }
+    
+            // Find the group to update
+            $group = GroupInsert::find($request->id);
+            if (!$group) {
+                return $this->error('Group not found.', 404);
+            }
+    
+            // Update group attributes without validation
+            $group->fill($request->all());
+            $group->save();
+    
+            // Return success response
+            return $this->success($group, 'Group updated successfully');
+        } catch (\Exception $e) {
+            // Handle unexpected errors
+            return $this->error('Failed to update group: ' . $e->getMessage(), 500);
+        }
+    }
+    
+
 
 
     public function update_user(Request $request)
@@ -740,67 +768,152 @@ class ApiAuthController extends Controller
 // }
 
 
+    // public function register(Request $r)
+    // {
+    //     if ($r->phone_number == null) {
+    //         return $this->error('Phone number is required.');
+    //     }
+
+    //     $phone_number = Utils::prepare_phone_number(trim($r->phone_number));
+
+
+    //     if (!Utils::phone_number_is_valid($phone_number)) {
+    //         return $this->error('Invalid phone number. ' . $phone_number);
+    //     }
+
+    //     if ($r->password == null) {
+    //         return $this->error('Password is required.');
+    //     }
+
+    //     if ($r->name == null) {
+    //         return $this->error('Name is required.');
+    //     }
+
+
+
+
+
+    //     $u = Administrator::where('phone_number', $phone_number)->first();
+    //     if ($u != null) {
+    //         return $this->error('User with same phone number already exists.');
+    //     }
+
+    //     $u = Administrator::where('username', $phone_number)->first();
+    //     if ($u != null) {
+    //         return $this->error('User with same phone number already exists. (username)');
+    //     }
+
+    //     $u = Administrator::where('email', $phone_number)->first();
+    //     if ($u != null) {
+    //         return $this->error('User with same phone number already exists (email).');
+    //     }
+
+    //     $u = Administrator::where('reg_number', $phone_number)->first();
+    //     if ($u != null) {
+    //         return $this->error('User with same phone number already exists (reg_number).');
+    //     }
+
+    //     $user = new Administrator();
+
+    //     $name = $r->name;
+
+    //     $x = explode(' ', $name);
+
+    //     if (
+    //         isset($x[0]) &&
+    //         isset($x[1])
+    //     ) {
+    //         $user->first_name = $x[0];
+    //         $user->last_name = $x[1];
+    //     } else {
+    //         $user->first_name = $name;
+    //     }
+
+    //     $user->phone_number = $phone_number;
+    //     $user->username = $phone_number;
+    //     $user->reg_number = $phone_number;
+    //     $user->country = $phone_number;
+    //     $user->occupation = $phone_number;
+    //     $user->profile_photo_large = '';
+    //     $user->location_lat = '';
+    //     $user->location_long = '';
+    //     $user->facebook = '';
+    //     $user->twitter = '';
+    //     $user->linkedin = '';
+    //     $user->website = '';
+    //     $user->other_link = '';
+    //     $user->cv = '';
+    //     $user->language = '';
+    //     $user->about = '';
+    //     $user->address = '';
+    //     // $user->position_id = '';
+    //     $user->name = $name;
+    //     $user->password = password_hash(trim($r->password), PASSWORD_DEFAULT);
+    //     if (!$user->save()) {
+    //         return $this->error('Failed to create account. Please try again.');
+    //     }
+
+    //     // Send SMS
+    //     $message = "Your account has been created successfully. Phone number: $phone_number, Password: {$r->password}";
+
+    //     $resp = null;
+    //     try {
+    //     $resp = Utils::send_sms($phone_number, $message);
+    //     } catch (Exception $e) {
+    //       return $this->error('Failed to send OTP  because ' . $e->getMessage() . '');
+    //    }
+    //    if ($resp != 'success') {
+    //     return $this->error('Failed to send OTP  because ' . $resp . '');
+    //    }
+
+    //     $new_user = Administrator::find($user->id);
+    //     if ($new_user == null) {
+    //         return $this->error('Account created successfully but failed to log you in.');
+    //     }
+    //     Config::set('jwt.ttl', 60 * 24 * 30 * 365);
+
+    //     $token = auth('api')->attempt([
+    //         'username' => $phone_number,
+    //         'password' => trim($r->password),
+    //     ]);
+
+    //     $new_user->token = $token;
+    //     $new_user->remember_token = $token;
+    //     return $this->success($new_user, 'Account created successfully.');
+    // }
+
     public function register(Request $r)
     {
         if ($r->phone_number == null) {
             return $this->error('Phone number is required.');
         }
-
+    
         $phone_number = Utils::prepare_phone_number(trim($r->phone_number));
-
-
+    
         if (!Utils::phone_number_is_valid($phone_number)) {
             return $this->error('Invalid phone number. ' . $phone_number);
         }
-
-        if ($r->password == null) {
-            return $this->error('Password is required.');
-        }
-
+    
         if ($r->name == null) {
             return $this->error('Name is required.');
         }
-
-
-
-
-
+    
         $u = Administrator::where('phone_number', $phone_number)->first();
         if ($u != null) {
-            return $this->error('User with same phone number already exists.');
+            return $this->error('User with the same phone number already exists.');
         }
-
-        $u = Administrator::where('username', $phone_number)->first();
-        if ($u != null) {
-            return $this->error('User with same phone number already exists. (username)');
-        }
-
-        $u = Administrator::where('email', $phone_number)->first();
-        if ($u != null) {
-            return $this->error('User with same phone number already exists (email).');
-        }
-
-        $u = Administrator::where('reg_number', $phone_number)->first();
-        if ($u != null) {
-            return $this->error('User with same phone number already exists (reg_number).');
-        }
-
+    
         $user = new Administrator();
-
+    
         $name = $r->name;
-
         $x = explode(' ', $name);
-
-        if (
-            isset($x[0]) &&
-            isset($x[1])
-        ) {
+        if (isset($x[0]) && isset($x[1])) {
             $user->first_name = $x[0];
             $user->last_name = $x[1];
         } else {
             $user->first_name = $name;
         }
-
+    
         $user->phone_number = $phone_number;
         $user->username = $phone_number;
         $user->reg_number = $phone_number;
@@ -818,37 +931,42 @@ class ApiAuthController extends Controller
         $user->language = '';
         $user->about = '';
         $user->address = '';
-        // $user->position_id = '';
         $user->name = $name;
-        $user->password = password_hash(trim($r->password), PASSWORD_DEFAULT);
+    
+        // Generate a random 5-digit password
+        $password = str_pad(mt_rand(1, 99999), 5, '0', STR_PAD_LEFT);
+        $user->password = password_hash($password, PASSWORD_DEFAULT);
+    
         if (!$user->save()) {
             return $this->error('Failed to create account. Please try again.');
         }
-
-        // Send SMS
-        $message = "Your account has been created successfully. Phone number: $phone_number, Password: {$r->password}";
-
+    
+        // Send SMS with the generated password
+        $message = "Group $name account has been created successfully. Use Phone number: $phone_number and Passcode: $password to login";
+    
         $resp = null;
         try {
-        $resp = Utils::send_sms($phone_number, $message);
+            $resp = Utils::send_sms($phone_number, $message);
         } catch (Exception $e) {
-          return $this->error('Failed to send OTP  because ' . $e->getMessage() . '');
-       }
-       if ($resp != 'success') {
-        return $this->error('Failed to send OTP  because ' . $resp . '');
-       }
-
+            return $this->error('Failed to send OTP because ' . $e->getMessage());
+        }
+    
+        if ($resp != 'success') {
+            return $this->error('Failed to send OTP because ' . $resp);
+        }
+    
         $new_user = Administrator::find($user->id);
         if ($new_user == null) {
             return $this->error('Account created successfully but failed to log you in.');
         }
+    
         Config::set('jwt.ttl', 60 * 24 * 30 * 365);
-
+    
         $token = auth('api')->attempt([
             'username' => $phone_number,
-            'password' => trim($r->password),
+            'password' => $password,
         ]);
-
+    
         $new_user->token = $token;
         $new_user->remember_token = $token;
         return $this->success($new_user, 'Account created successfully.');

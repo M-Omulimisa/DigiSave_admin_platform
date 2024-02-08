@@ -780,6 +780,7 @@ class ComposerStaticInitb4f9a58564d4079838a65f398d2f0fe1
         'App\\Models\\LoanTransaction' => __DIR__ . '/../..' . '/app/Models/LoanTransaction.php',
         'App\\Models\\Location' => __DIR__ . '/../..' . '/app/Models/Location.php',
         'App\\Models\\Meeting' => __DIR__ . '/../..' . '/app/Models/Meeting.php',
+        'App\\Models\\MemberCycleDetails' => __DIR__ . '/../..' . '/app/Models/MemberCycleDetails.php',
         'App\\Models\\MemberPosition' => __DIR__ . '/../..' . '/app/Models/MemberPosition.php',
         'App\\Models\\NewsPost' => __DIR__ . '/../..' . '/app/Models/NewsPost.php',
         'App\\Models\\OrgAllocation' => __DIR__ . '/../..' . '/app/Models/OrgAllocation.php',

@@ -2,6 +2,7 @@
 
 namespace App\Admin\Controllers;
 
+use App\Mail\SendMail;
 use App\Models\AdminRole;
 use App\Models\Agent;
 use App\Models\District;
@@ -16,7 +17,9 @@ use Encore\Admin\Facades\Admin;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Encore\Admin\Show;
+use Exception;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 
 class OrganisationAdminController extends AdminController
 {
@@ -28,7 +31,7 @@ class OrganisationAdminController extends AdminController
     
         $u = Admin::user();
         if (!$u->isRole('admin')) {
-            $grid->model()->where('administrator_id', $u->id);
+            // $grid->model()->where('administrator_id', $u->id);
             $grid->disableCreateButton();
             $grid->actions(function (Grid\Displayers\Actions $actions) {
                 $actions->disableDelete();
@@ -36,8 +39,8 @@ class OrganisationAdminController extends AdminController
             $grid->disableFilter();
         }
     
-        $grid->id('ID')->sortable();
-        $grid->addColumn('full_name', 'Full Name')->display(function () {
+        // $grid->id('ID')->sortable();
+        $grid->addColumn('Admin Name', 'Full Name')->display(function () {
             return $this->first_name . ' ' . $this->last_name;
         })->sortable();
         $grid->phone_number('Phone Number')->sortable();
@@ -63,43 +66,71 @@ class OrganisationAdminController extends AdminController
     
 
     protected function form()
-{
-    $form = new Form(new User());
-
-    $u = Admin::user();
-
-    if (!$u->isRole('admin')) {
-        if ($form->isCreating()) {
-            admin_error("You are not allowed to create new Agent");
-            return back();
+    {
+        $form = new Form(new User());
+    
+        $u = Admin::user();
+    
+        if (!$u->isRole('admin')) {
+            if ($form->isCreating()) {
+                admin_error("You are not allowed to create new Agent");
+                return back();
+            }
         }
+    
+        $form->text('first_name', 'First Name')->rules('required');
+        $form->text('last_name', 'Last Name')->rules('required');
+        $form->text('phone_number', 'Phone Number')->rules('required');
+        $form->text('email', 'Email');
+        $form->select('sex', 'Gender')->options(['male' => 'Male', 'female' => 'Female', 'other' => 'Other'])->rules('required');
+    
+        // Disable user_type selection and set default value to '5' (assuming '5' corresponds to 'org')
+        $form->hidden('user_type')->default('5');
+    
+        $password = str_pad(mt_rand(1, 99999), 5, '0', STR_PAD_LEFT);
+        $form->hidden('password')->default($password);
+        $form->hidden('username')->default($form->phone_number);
+
+        $form->saving(function (Form $form) use ($password) {
+            // Check if a user with the same phone number already exists
+            $existingUser = User::where('phone_number', $form->phone_number)->first();
+    
+            if ($existingUser) {
+                // User with the same phone number already exists, send message and prevent creation
+                admin_error("A user with the same phone number already exists.");
+                return back();
+            }
+    
+            // If no user with the same phone number exists, continue saving
+            $form->input('password', Hash::make($password));
+            $form->input('username', $form->phone_number);
+            
+    
+            // Custom message for registration
+            $platformLink = "https://digisave.m-omulimisa.com/";
+            $message = "Welcome to Digisave VSLA! You have been registered as an organisation administrator. Your login details are: Phone Number: {$form->phone_number}, Password: {$password}. Click here to access the platform: {$platformLink}";
+            $email_info = [
+                "first_name"=>$form->first_name,
+                "last_name"=>$form->last_name,
+                "phone_number"=>$form->phone_number,
+                "password"=>$password,
+                "platformLink"=>$platformLink
+            ];
+            // Sending SMS
+            $resp = null;
+            try {
+                Mail::to($form->email)->send(new SendMail($email_info));
+                // $resp = Utils::send_sms($form->phone_number, $message);
+            } catch (Exception $e) {
+                return admin_error('Failed to send SMS because ' . $e->getMessage());
+            }
+    
+            // if ($resp != ) {
+            //     return admin_error('Failed to send SMS because ' . $resp);
+            // }
+        });
+    
+        return $form;
     }
 
-    $form->text('first_name', 'First Name')->rules('required');
-    $form->text('last_name', 'Last Name')->rules('required');
-    $form->text('phone_number', 'Phone Number')->rules('required');
-    $form->text('email', 'Email');
-    $form->select('sex', 'Gender')->options(['male' => 'Male', 'female' => 'Female', 'other' => 'Other'])->rules('required');
-
-    // Disable user_type selection and set default value to 'org'
-    $form->hidden('user_type')->default('5');
-
-    // Password fields
-    $form->password('password', trans('admin.password'))->rules('confirmed|required');
-    $form->password('password_confirmation', trans('admin.password_confirmation'))->rules('required')
-        ->default(function ($form) {
-            return $form->model()->password;
-        });
-    $form->ignore(['password_confirmation']);
-    $form->ignore(['change_password']);
-
-    // Saving the hashed password before saving the model
-    $form->saving(function (Form $form) {
-        $form->input('password', Hash::make($form->password));
-    });
-
-    return $form;
 }
-
-}
-

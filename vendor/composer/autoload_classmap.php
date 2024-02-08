@@ -133,6 +133,7 @@ return array(
     'App\\Models\\LoanTransaction' => $baseDir . '/app/Models/LoanTransaction.php',
     'App\\Models\\Location' => $baseDir . '/app/Models/Location.php',
     'App\\Models\\Meeting' => $baseDir . '/app/Models/Meeting.php',
+    'App\\Models\\MemberCycleDetails' => $baseDir . '/app/Models/MemberCycleDetails.php',
     'App\\Models\\MemberPosition' => $baseDir . '/app/Models/MemberPosition.php',
     'App\\Models\\NewsPost' => $baseDir . '/app/Models/NewsPost.php',
     'App\\Models\\OrgAllocation' => $baseDir . '/app/Models/OrgAllocation.php',

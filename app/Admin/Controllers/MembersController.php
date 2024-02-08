@@ -2,6 +2,8 @@
 
 namespace App\Admin\Controllers;
 
+use App\Models\Organization;
+use App\Models\OrganizationAssignment;
 use App\Models\User;
 use Encore\Admin\Controllers\AdminController;
 use Encore\Admin\Facades\Admin;
@@ -29,7 +31,7 @@ class MembersController extends AdminController
         $u = Admin::user();
         if (!$u->isRole('admin')) {
             /* $grid->model()->where('sacco_id', $u->sacco_id);
-  */           if (!$u->isRole('sacco')) {
+  */           if ($u->isRole('org')) {
                 $grid->disableCreateButton();
                 //dsable delete
                 $grid->actions(function (Grid\Displayers\Actions $actions) {
@@ -37,7 +39,12 @@ class MembersController extends AdminController
                 });
                 $grid->disableFilter();
             }
-            $grid->model()->where('sacco_id', $u->sacco_id);
+            // Retrieve the organization IDs assigned to the admin user
+            $orgIds = Organization::where('agent_id', $u->id)->pluck('id')->toArray();
+            // Retrieve the sacco IDs associated with the organization IDs
+            $saccoIds = OrganizationAssignment::whereIn('organization_id', $orgIds)->pluck('sacco_id')->toArray();
+            // Filter users based on the retrieved sacco IDs
+            $grid->model()->whereIn('sacco_id', $saccoIds);
         } else {
         }
         $grid->disableBatchActions();

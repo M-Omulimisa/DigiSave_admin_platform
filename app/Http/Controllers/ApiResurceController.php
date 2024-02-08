@@ -31,6 +31,7 @@ use App\Models\MemberPosition;
 use App\Models\Organization;
 use App\Models\Parish;
 use App\Models\ServiceProvider;
+use App\Models\Shareout;
 use App\Models\ShareRecord;
 use App\Models\SocialFund;
 use App\Models\User;
@@ -2075,6 +2076,66 @@ class ApiResurceController extends Controller
             return response()->json(['error' => 'Failed to fetch sacco data: ' . $e->getMessage()], 500);
         }
     }
+
+    public function getMemberDetailsByCycle(Request $request)
+{
+    try {
+        $user = auth('api')->user();
+
+        if ($user === null) {
+            return $this->error('User not found.');
+        }
+
+        $sacco = Sacco::where('id', $user->sacco_id)->first();
+
+        if ($sacco === null) {
+            return $this->error('Sacco not found.');
+        }
+
+        $cycles = Cycle::where('sacco_id', $sacco->id)->get();
+
+        $memberDetails = [];
+
+        foreach ($cycles as $cycle) {
+            $members = User::where('sacco_id', $sacco->id)->get();
+            foreach ($members as $member) {
+                $memberData = [
+                    'cycle_id' => $cycle->id,
+                    'user_id' => $member->id,
+                    'name' => $member->name,
+                    'shares' => ShareRecord::where('user_id', $member->id)
+                        ->where('cycle_id', $cycle->id)
+                        ->sum('total_amount') /($sacco->share_price),
+                    'loans' => Transaction::where('user_id', $member->id)
+                                               ->where('cycle_id', $cycle->id)
+                                               ->where('type', 'LOAN')
+                                               ->sum('amount'),
+                    'loan_repayments' => Transaction::where('user_id', $member->id)
+                                                         ->where('cycle_id', $cycle->id)
+                                                         ->where('type', 'LOAN_REPAYMENT')
+                                                         ->sum('amount'),
+                    'fines' => Transaction::where('user_id', $member->id)
+                                          ->where('cycle_id', $cycle->id)
+                                          ->where('type', 'FINE')
+                                          ->sum('amount'),
+                    'share_out_money' => Shareout::where('member_id', $member->id)
+                                          ->where('cycle_id', $cycle->id)
+                                          ->sum('shareout_amount'),
+            
+                ];
+
+                $memberDetails[] = $memberData;
+            }
+        }
+
+        return $this->success($memberDetails, 'Member details fetched successfully.', 200);
+    } catch (Exception $e) {
+        return $this->error($e->getMessage(), $e->getCode());
+    } catch (Throwable $e) {
+        return $this->error('Something went wrong.', 500);
+    }
+}
+
 
     public function agent_saccos($saccoIds)
 {

@@ -2,6 +2,8 @@
 
 namespace App\Admin\Controllers;
 
+use App\Models\Organization;
+use App\Models\OrganizationAssignment;
 use App\Models\ShareRecord;
 use Encore\Admin\Controllers\AdminController;
 use Encore\Admin\Facades\Admin;
@@ -26,6 +28,22 @@ class ShareRecordController extends AdminController
     protected function grid()
     {
         $grid = new Grid(new ShareRecord());
+        $u = Admin::user();
+        if (!$u->isRole('admin')) {
+                $grid->disableCreateButton();
+                $grid->actions(function (Grid\Displayers\Actions $actions) {
+                    $actions->disableDelete();
+                });
+                $grid->disableFilter();
+            
+            $grid->model()->where('sacco_id', $u->sacco_id);
+        }
+    
+        if ($u->isRole('org')) {
+            $orgIds = Organization::where('agent_id', $u->id)->pluck('id')->toArray();
+            $saccoIds = OrganizationAssignment::whereIn('organization_id', $orgIds)->pluck('sacco_id')->toArray();
+            $grid->model()->whereIn('sacco_id', $saccoIds);
+        }
         $grid->disableBatchActions();
         $grid->quickSearch('name')->placeholder('Search by name');
         $grid->disableExport();
@@ -34,6 +52,7 @@ class ShareRecordController extends AdminController
         //CREATE filter
         $grid->filter(function ($filter) {
             $filter->disableIdFilter();
+            $filter->like('sacco_id', 'VSLA Group');
             $filter->like('user_id', 'Shareholder');
             $filter->like('cycle_id', 'Cycle');
             $filter->like('created_by_id', 'Created By');
@@ -48,6 +67,14 @@ class ShareRecordController extends AdminController
             ->display(function ($date) {
                 return date('d M, Y', strtotime($date));
             })->sortable();
+            $grid->column('sacco_id', __('VSLA Group'))
+                ->display(function ($sacco_id) {
+                    $user = \App\Models\User::find($sacco_id);
+                    if ($user == null) {
+                        return "Unknown";
+                    }
+                    return $user->name;
+                })->sortable();
         $grid->column('user_id', __('Shareholder'))
             ->display(function ($user_id) {
                 $user = \App\Models\User::find($user_id);

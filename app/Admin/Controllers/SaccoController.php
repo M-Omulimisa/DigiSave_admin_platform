@@ -2,6 +2,8 @@
 
 namespace App\Admin\Controllers;
 
+use App\Models\Organization;
+use App\Models\OrganizationAssignment;
 use App\Models\Sacco;
 use Encore\Admin\Auth\Database\Administrator;
 use Encore\Admin\Controllers\AdminController;
@@ -30,13 +32,23 @@ class SaccoController extends AdminController
 
         $u = Admin::user();
         if (!$u->isRole('admin')) {
-            $grid->model()->where('administrator_id', $u->id);
-            $grid->disableCreateButton();
-            //dsable delete
-            $grid->actions(function (Grid\Displayers\Actions $actions) {
-                $actions->disableDelete();
-            });
-            $grid->disableFilter();
+            if ($u->isRole('org')) {
+                // Retrieve the organization IDs assigned to the admin user
+                $orgIds = Organization::where('agent_id', $u->id)->pluck('id')->toArray();
+                // Retrieve the sacco IDs associated with the organization IDs
+                $saccoIds = OrganizationAssignment::whereIn('organization_id', $orgIds)->pluck('sacco_id')->toArray();
+                // Filter Saccos based on the retrieved sacco IDs
+                $grid->model()->whereIn('id', $saccoIds);
+            
+                // Non-admin users other than type 5 users
+                // $grid->model()->where('administrator_id', $u->id);
+                $grid->disableCreateButton();
+                // Disable delete
+                $grid->actions(function (Grid\Displayers\Actions $actions) {
+                    $actions->disableDelete();
+                });
+                $grid->disableFilter();
+            }
         }
         $grid->disableBatchActions();
         $grid->quickSearch('name')->placeholder('Search by name');
