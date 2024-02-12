@@ -31,38 +31,31 @@ class OrganisationAdminController extends AdminController
     
         $u = Admin::user();
         if (!$u->isRole('admin')) {
-            // $grid->model()->where('administrator_id', $u->id);
             $grid->disableCreateButton();
             $grid->actions(function (Grid\Displayers\Actions $actions) {
                 $actions->disableDelete();
             });
             $grid->disableFilter();
+    
+            // Filter users by role 'org'
+            
+        $orgRoleId = AdminRole::where('name', 'org')->value('id');
+        $grid->model()->where('user_type', '=', $orgRoleId);
         }
     
-        // $grid->id('ID')->sortable();
+        $grid->id('ID')->sortable();
         $grid->addColumn('Admin Name', 'Full Name')->display(function () {
             return $this->first_name . ' ' . $this->last_name;
         })->sortable();
         $grid->phone_number('Phone Number')->sortable();
-        // $grid->dob('Date of Birth')->sortable();
         $grid->sex('Gender')->sortable();
-    
-        // $grid->district('District')->display(function ($district) {
-        //     return $district['name'];
-        // })->sortable();
-        // $grid->parish('Parish')->display(function ($parish) {
-        //     return $parish['parish_name'];
-        // })->sortable();
-        // $grid->village('Village')->display(function ($village) {
-        //     return $village['village_name'];
-        // })->sortable();
-    
-        // Filter users by user type ID based on AdminRole name 'agent'
-        $agentRoleId = AdminRole::where('name', 'org')->value('id');
-        $grid->model()->where('user_type', '=', $agentRoleId);
+        
+        $orgRoleId = AdminRole::where('name', 'org')->value('id');
+        $grid->model()->where('user_type', '=', $orgRoleId);
     
         return $grid;
     }
+    
     
 
     protected function form()

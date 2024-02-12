@@ -93,10 +93,10 @@ Encore\Admin\Grid::init(function (Encore\Admin\Grid $grid) {
 
     if (!$u->isRole('admin')) {
         if (!in_array($current_segment, $exclude)) {
-            // $grid->model()->where('sacco_id', $u->sacco_id);
+            $grid->model()->where('sacco_id', $u->sacco_id);
         }
     }
-    $grid->model()->orderBy('id', 'desc');
+    $grid->model();
 });
 //show each see for their respective sacco_id
 Encore\Admin\Show::init(function (Encore\Admin\Show $show) {
