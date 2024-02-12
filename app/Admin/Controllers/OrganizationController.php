@@ -7,6 +7,7 @@ use App\Models\AdminRole;
 use App\Models\Agent;
 use App\Models\AgentAllocation;
 use App\Models\Organization;
+use App\Models\OrganizationAssignment;
 use App\Models\Sacco;
 use App\Models\User;
 use Encore\Admin\Controllers\AdminController;
@@ -25,12 +26,20 @@ class OrganizationController extends AdminController
 
         $u = Admin::user();
         if (!$u->isRole('admin')) {
-            $grid->model()->where('administrator_id', $u->id);
+            if ($u->isRole('org')) {
+            //$grid->model()->where('administrator_id', $u->id);
+               // Retrieve the organization IDs assigned to the admin user
+               $orgIds = Organization::where('agent_id', $u->id)->pluck('id')->toArray();
+               // Retrieve the sacco IDs associated with the organization IDs
+               $saccoIds = OrganizationAssignment::whereIn('organization_id', $orgIds)->pluck('sacco_id')->toArray();
+               // Filter users based on the retrieved sacco IDs
+                $grid->model()->whereIn('id', $orgIds);
             $grid->disableCreateButton();
             $grid->actions(function (Grid\Displayers\Actions $actions) {
                 $actions->disableDelete();
             });
             $grid->disableFilter();
+        }
         }
 
         $grid->column('id', 'ID')->sortable();

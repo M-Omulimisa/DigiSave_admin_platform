@@ -28,7 +28,7 @@ class AgentController extends AdminController
     
         $u = Admin::user();
         if (!$u->isRole('admin')) {
-            $grid->model()->where('administrator_id', $u->id);
+            // $grid->model()->where('administrator_id', $u->id);
             $grid->disableCreateButton();
             $grid->actions(function (Grid\Displayers\Actions $actions) {
                 $actions->disableDelete();

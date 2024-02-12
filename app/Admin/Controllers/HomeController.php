@@ -10,6 +10,7 @@ use App\Models\GardenActivity;
 use App\Models\Group;
 use App\Models\Location;
 use App\Models\Organization;
+use App\Models\OrganizationAssignment;
 use App\Models\Person;
 use App\Models\Sacco;
 use App\Models\Transaction;
@@ -36,7 +37,6 @@ class HomeController extends Controller
 
     public function index(Content $content)
     {
-        
         $users = User::all(); 
 
         $admin = Admin::user();
@@ -51,58 +51,129 @@ class HomeController extends Controller
         $filteredUsers = $filteredUsers->reject(function ($user) {
             return $user->user_type === '4';
         });
-        
-        
-        // Calculate various statistics
-        $totalSaccos = Sacco::count();
-        $totalMembers = $filteredUsers->count();
-        $totalPwdMembers = $filteredUsers->where('pwd', 'yes')->count();
-
-        $villageAgents = User::where('user_type', '4')->count();
-
-        $organisationCount = Organization::count();
-
-        // Calculate percentage of youth members based on date of birth
-        $youthMembersPercentage = ($totalMembers > 0)
-    ? $filteredUsers->filter(function ($user) {
-        return Carbon::parse($user->dob)->age < 35;
-    })->count() / $totalMembers * 100
-    : 0;
-        
-        // Female members
-        $femaleUsers = $filteredUsers->where('sex', 'Female');
-        $femaleMembersCount = $femaleUsers->count();
-        $femaleTotalBalance = number_format($femaleUsers->sum('balance'), 2);
-        
-        // Male members
-        $maleUsers = $filteredUsers->where('sex', 'Male');
-        $maleMembersCount = $maleUsers->count();
-        $maleTotalBalance = number_format($maleUsers->sum('balance'), 2);
-
-        // $maleUserIds = User::where('sex', 'Male')->pluck('id');
-
-        // $maleTotalBalance = Transaction::where('type', 'SHARE')
-        //     ->whereIn('user_id', $maleUserIds)
-        //     ->sum('balance');
-        // $maleTotalBalance = number_format($maleTotalBalance, 2);
-        
-        // Youth members (assuming under 35 years old)
-        $youthUsers = $filteredUsers->filter(function ($user) {
-            return Carbon::parse($user->dob)->age < 35;
+        $filteredUsers = $filteredUsers->reject(function ($user) {
+            return $user->user_type === '5';
         });
-        $youthMembersCount = $youthUsers->count();
-        $youthTotalBalance = number_format($youthUsers->sum('balance'));
+
+        if ($admin->isRole('org')) {
+            $orgIds = Organization::where('agent_id', $admin->id)->pluck('id')->toArray();
+            
+            // Retrieve the sacco IDs associated with the organization IDs
+            $saccoIds = OrganizationAssignment::whereIn('organization_id', $orgIds)->pluck('sacco_id')->toArray();
+            
+            // Calculate various statistics based on organization-specific data
+            $totalSaccos = Sacco::whereIn('id', $saccoIds)->count();
+            $organisationCount = Organization::whereIn('id', $orgIds)->count();
+            $totalMembers = $filteredUsers->whereIn('sacco_id', $saccoIds)->count();
+            $totalPwdMembers = $filteredUsers->whereIn('sacco_id', $saccoIds)->where('pwd', 'yes')->count();
+            $villageAgents = User::whereIn('sacco_id', $saccoIds)->where('user_type', '4')->count();
+            $youthMembersPercentage = ($totalMembers > 0) ? $filteredUsers->whereIn('sacco_id', $saccoIds)->filter(function ($user) {
+                return Carbon::parse($user->dob)->age < 35;
+            })->count() / $totalMembers * 100 : 0;
         
-        // PWD members
-        $pwdUsers = User::where('pwd', 'Yes');
+            // Filter users for calculating balances
+            $filteredUsersForBalances = $filteredUsers->whereIn('sacco_id', $saccoIds);
+
+                    // Calculate statistics for PWD members
+        $pwdUsers = $filteredUsersForBalances->where('pwd', 'Yes');
         $pwdMembersCount = $pwdUsers->count();
-        $pwdUserIds = User::where('pwd', 'Yes')->pluck('id');
+        $pwdUserIds = $pwdUsers->pluck('id');
+        
+        $pwdTotalBalance = Transaction::whereIn('sacco_id', $saccoIds)->where('type', 'SHARE')
+            ->whereIn('user_id', $pwdUserIds)
+            ->sum('balance');
+        $pwdTotalBalance = number_format($pwdTotalBalance, 2);
 
+        // Loans disbursed to women
+        $loansDisbursedToWomen = Transaction::whereIn('sacco_id', $saccoIds)->whereIn('user_id', User::whereIn('sacco_id', $saccoIds)->where('sex', 'Female')->pluck('id'))
+                                            ->where('type', 'LOAN')
+                                            ->count();
+        
+        // Loans disbursed to men
+        $loansDisbursedToMen = Transaction::whereIn('sacco_id', $saccoIds)->whereIn('user_id',  User::whereIn('sacco_id', $saccoIds)->where('sex', 'Male')->pluck('id'))
+                                          ->where('type', 'LOAN')
+                                          ->count();
+                // Loans disbursed to youths (assuming youths are under 35 years old)
+                $youthIds = User::whereIn('sacco_id', $saccoIds)->where(function ($query) {
+                    return $query->where('dob', '>', now()->subYears(35));
+                })->pluck('id');
+                
+                
+        $loansDisbursedToYouths = Transaction::whereIn('sacco_id', $saccoIds)->whereIn('user_id', $youthIds)
+                                                     ->where('type', 'LOAN')
+                                                     ->count();
+        
+        
+        $loanSumForWomen = Transaction::whereIn('sacco_id', $saccoIds)->whereIn('user_id', $filteredUsers->whereIn('sacco_id', $saccoIds)->where('sex', 'Female')->pluck('id'))
+                                        ->where('type', 'LOAN')
+                                        ->sum('amount');
+        
+        
+        $loanSumForMen = Transaction::whereIn('sacco_id', $saccoIds)->whereIn('user_id', $filteredUsers->whereIn('sacco_id', $saccoIds)->where('sex', 'Male')->pluck('id'))
+                                      ->where('type', 'LOAN')
+                                      ->sum('amount');
+                                
+        $youthIds = $filteredUsers->whereIn('sacco_id', $saccoIds)->filter(function ($user) {
+            return Carbon::parse($user->dob)->age < 35;
+        })->pluck('id');
+        
+        $loanSumForYouths = Transaction::whereIn('sacco_id', $saccoIds)->whereIn('user_id', $youthIds)
+                                            ->where('type', 'LOAN')
+                                            ->sum('amount');
+                                                                     
+                                
+        // Calculate total loan amount disbursed
+        $totalLoanAmount = Transaction::whereIn('sacco_id', $saccoIds)->whereIn('user_id', $filteredUsers->pluck('id'))
+                                    ->where('type', 'LOAN')
+                                    ->sum('amount');
+                                
+                                
+        // Calculate total loan amount disbursed
+        $totalLoanBalance = Transaction::whereIn('sacco_id', $saccoIds)->whereIn('user_id', $filteredUsers->pluck('id'))
+                                    ->where('type', 'LOAN')
+                                    ->sum('balance');
 
+        $transactions = Transaction::whereIn('sacco_id', $saccoIds)->get();
+
+        $monthYearList = [];
+        $totalSavingsList = [];
+        
+        foreach ($transactions as $transaction) {
+            $monthYear = Carbon::parse($transaction->created_at)->format('F Y');
+        
+            if (!in_array($monthYear, $monthYearList)) {
+                $monthYearList[] = $monthYear;
+            }
+        
+            if (array_key_exists($monthYear, $totalSavingsList)) {
+                $totalSavingsList[$monthYear] += $transaction->amount;
+            } else {
+                $totalSavingsList[$monthYear] = $transaction->amount;
+            }
+        }
+                                    
+                                                                        
+        } else {
+            // Calculate various statistics without organization-specific data
+            $totalSaccos = Sacco::count();
+            $organisationCount = Organization::count();
+            $totalMembers = $filteredUsers->count();
+            $totalPwdMembers = $filteredUsers->where('pwd', 'yes')->count();
+            $villageAgents = User::where('user_type', '4')->count();
+            $youthMembersPercentage = ($totalMembers > 0) ? $filteredUsers->filter(function ($user) {
+                return Carbon::parse($user->dob)->age < 35;
+            })->count() / $totalMembers * 100 : 0;
+        
+            // All users for calculating balances
+            $filteredUsersForBalances = $filteredUsers;
+                    // Calculate statistics for PWD members
+        $pwdUsers = $filteredUsersForBalances->where('pwd', 'Yes');
+        $pwdMembersCount = $pwdUsers->count();
+        $pwdUserIds = $pwdUsers->pluck('id');
+        
         $pwdTotalBalance = Transaction::where('type', 'SHARE')
             ->whereIn('user_id', $pwdUserIds)
             ->sum('balance');
-        
         $pwdTotalBalance = number_format($pwdTotalBalance, 2);
 
         // Loans disbursed to women
@@ -114,74 +185,103 @@ class HomeController extends Controller
         $loansDisbursedToMen = Transaction::whereIn('user_id',  User::where('sex', 'Male')->pluck('id'))
                                           ->where('type', 'LOAN')
                                           ->count();
-        
-        // Loans disbursed to youths (assuming youths are under 35 years old)
-        $youthIds = User::where(function ($query) {
-            return $query->where('dob', '>', now()->subYears(35));
-        })->pluck('id');
-        
-        
+
+                // Loans disbursed to youths (assuming youths are under 35 years old)
+                $youthIds = User::where(function ($query) {
+                    return $query->where('dob', '>', now()->subYears(35));
+                })->pluck('id');
+                
+                
         $loansDisbursedToYouths = Transaction::whereIn('user_id', $youthIds)
-                                             ->where('type', 'LOAN')
-                                             ->count();
-
-
-$loanSumForWomen = Transaction::whereIn('user_id', $filteredUsers->where('sex', 'Female')->pluck('id'))
-                                ->where('type', 'LOAN')
-                                ->sum('amount');
-
-
-$loanSumForMen = Transaction::whereIn('user_id', $filteredUsers->where('sex', 'Male')->pluck('id'))
-                              ->where('type', 'LOAN')
-                              ->sum('amount');
-
-
-$youthIds = $filteredUsers->filter(function ($user) {
-    return Carbon::parse($user->dob)->age < 35;
-})->pluck('id');
-
-$loanSumForYouths = Transaction::whereIn('user_id', $youthIds)
-                                 ->where('type', 'LOAN')
-                                 ->sum('amount');
-                                 
-                                 
-            // Calculate total loan amount disbursed
-            $totalLoanAmount = Transaction::whereIn('user_id', $filteredUsers->pluck('id'))
+                                                     ->where('type', 'LOAN')
+                                                     ->count();
+        
+        
+        $loanSumForWomen = Transaction::whereIn('user_id', $filteredUsers->where('sex', 'Female')->pluck('id'))
                                         ->where('type', 'LOAN')
                                         ->sum('amount');
-                                 
-                                 
-            // Calculate total loan amount disbursed
-            $totalLoanBalance = Transaction::whereIn('user_id', $filteredUsers->pluck('id'))
+        
+        
+        $loanSumForMen = Transaction::whereIn('user_id', $filteredUsers->where('sex', 'Male')->pluck('id'))
+                                      ->where('type', 'LOAN')
+                                      ->sum('amount');
+
+    $youthIds = $filteredUsers->filter(function ($user) {
+        return Carbon::parse($user->dob)->age < 35;
+    })->pluck('id');
+    
+    $loanSumForYouths = Transaction::whereIn('user_id', $youthIds)
                                         ->where('type', 'LOAN')
-                                        ->sum('balance');
+                                        ->sum('amount');
+                                        
+                                        
+        // Calculate total loan amount disbursed
+        $totalLoanAmount = Transaction::whereIn('user_id', $filteredUsers->pluck('id'))
+                                    ->where('type', 'LOAN')
+                                    ->sum('amount');
+                                
+                                
+        // Calculate total loan amount disbursed
+        $totalLoanBalance = Transaction::whereIn('user_id', $filteredUsers->pluck('id'))
+                                    ->where('type', 'LOAN')
+                                    ->sum('balance');
+                                        
+        $transactions = Transaction::all();
 
-            $transactions = Transaction::all();
 
-            
-            $monthYearList = [];
-            $totalSavingsList = [];
-            
-            foreach ($transactions as $transaction) {
-                $monthYear = Carbon::parse($transaction->created_at)->format('F Y');
-            
-                if (!in_array($monthYear, $monthYearList)) {
-                    $monthYearList[] = $monthYear;
-                }
-            
-                if (array_key_exists($monthYear, $totalSavingsList)) {
-                    $totalSavingsList[$monthYear] += $transaction->amount;
-                } else {
-                    $totalSavingsList[$monthYear] = $transaction->amount;
-                }
+        $monthYearList = [];
+        $totalSavingsList = [];
+        
+        foreach ($transactions as $transaction) {
+            $monthYear = Carbon::parse($transaction->created_at)->format('F Y');
+        
+            if (!in_array($monthYear, $monthYearList)) {
+                $monthYearList[] = $monthYear;
             }
+        
+            if (array_key_exists($monthYear, $totalSavingsList)) {
+                $totalSavingsList[$monthYear] += $transaction->amount;
+            } else {
+                $totalSavingsList[$monthYear] = $transaction->amount;
+            }
+        }
+
+
+
+        }
+        
+        // Calculate statistics for female members
+        $femaleUsers = $filteredUsersForBalances->where('sex', 'Female');
+        $femaleMembersCount = $femaleUsers->count();
+        $femaleTotalBalance = number_format($femaleUsers->sum('balance'), 2);
+        
+        // Calculate statistics for male members
+        $maleUsers = $filteredUsersForBalances->where('sex', 'Male');
+        $maleMembersCount = $maleUsers->count();
+        $maleTotalBalance = number_format($maleUsers->sum('balance'), 2);
+        
+        // Calculate statistics for youth members
+        $youthUsers = $filteredUsersForBalances->filter(function ($user) {
+            return Carbon::parse($user->dob)->age < 35;
+        });
+        $youthMembersCount = $youthUsers->count();
+        $youthTotalBalance = number_format($youthUsers->sum('balance'), 2);
+
+//----------------------------------------------------------------------------------------------------//
+        
+
+
+
+
+
+
             
-            $totalSaccosLink = url('saccos');
-            $villageAgentsLink = url('agents');
-            $organisationCountLink = url('organisation');
-            $totalMembersLink = url('members');
-            $totalPwdMembersLink = url('members');
-            $youthMembersPercentageLink = url('members');
+            // $totalSaccosLink = url('saccos');
+            // $villageAgentsLink = url('agents');
+            // $organisationCountLink = url('organisation');
+            // $totalMembersLink = url('members');
+            // $totalPwdMembersLink = url('members');
+            // $youthMembersPercentageLink = url('members');
             
             return $content
             ->header('<div style="text-align: center; color: #039103; font-size: 30px; font-weight: bold; padding-top: 20px;">DigiSave VSLA Platform</div>')
@@ -193,12 +293,12 @@ $loanSumForYouths = Transaction::whereIn('user_id', $youthIds)
                     'totalMembers' => $totalMembers,
                     'totalPwdMembers' => $pwdMembersCount,
                     'youthMembersPercentage' => number_format($youthMembersPercentage, 2),
-                    'totalSaccosLink' => $totalSaccosLink,
-                    'villageAgentsLink' => $villageAgentsLink,
-                    'organisationCountLink' => $organisationCountLink,
-                    'totalMembersLink' => $totalMembersLink,
-                    'totalPwdMembersLink' => $totalPwdMembersLink,
-                    'youthMembersPercentageLink' => $youthMembersPercentageLink,
+                    // 'totalSaccosLink' => $totalSaccosLink,
+                    // 'villageAgentsLink' => $villageAgentsLink,
+                    // 'organisationCountLink' => $organisationCountLink,
+                    // 'totalMembersLink' => $totalMembersLink,
+                    // 'totalPwdMembersLink' => $totalPwdMembersLink,
+                    // 'youthMembersPercentageLink' => $youthMembersPercentageLink,
                 ]) . 
                     view('widgets.card_set', [
                         'femaleMembersCount' => $femaleMembersCount,

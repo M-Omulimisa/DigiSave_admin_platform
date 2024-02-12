@@ -61,7 +61,7 @@ class SaccoController extends AdminController
                 return number_format($price);
             })->sortable(); 
         $grid->column('physical_address', __('Physical address'))->sortable();
-        $grid->column('establishment_date', __('Established'))
+        $grid->column('created_at', __('Established'))
             ->display(function ($date) {
                 return date('d M Y', strtotime($date));
             })->sortable();
@@ -95,7 +95,7 @@ class SaccoController extends AdminController
         $show->field('phone_number', __('Phone number'));
         $show->field('email_address', __('Email address'));
         $show->field('physical_address', __('Physical address'));
-        $show->field('establishment_date', __('Establishment date'));
+        $show->field('created_at', __('Establishment date'));
         $show->field('registration_number', __('Registration number'));
         $show->field('chairperson_name', __('Chairperson name'));
         $show->field('chairperson_phone_number', __('Chairperson phone number'));
@@ -151,7 +151,7 @@ class SaccoController extends AdminController
         $form->text('phone_number', __('Phone number'))->rules('required');
         $form->text('email_address', __('Email address'));
         $form->text('physical_address', __('Physical address'));
-        $form->datetime('establishment_date', __('Establishment date'))->rules('required');
+        $form->datetime('created_at', __('Establishment date'))->rules('required');
         $form->image('logo', __('VSLA Logo'));
 
         return $form;

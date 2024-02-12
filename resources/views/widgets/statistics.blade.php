@@ -28,61 +28,62 @@
     <div class="col-md-3">
         <div class="small-box bg-white">
             <div class="inner">
-                <h3>{{ $totalSaccos }}</h3>
-                <div class="green-background">
-                    <p><a href="{{ $totalSaccosLink }}">Total VSLAs</a></p>
+                <div class="green-background" style="padding: 5px; border-radius: 5px;">
+                    <h4 style="color: white; font-family: 'Arial', sans-serif; text-align: center; margin: 0; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);">Total VSLAs</h4>
                 </div>
+                <h3 style="margin-top: 10px; text-align: center;">{{ $totalSaccos }}</h3>
             </div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="small-box bg-white">
             <div class="inner">
-                <h3>{{ $villageAgents }}</h3>
-                <div class="green-background">
-                    <p><a href="{{ $villageAgentsLink }}">Village Agents</a></p>
+                <div class="green-background" style="padding: 5px; border-radius: 5px;">
+                    <h4 style="color: white; font-family: 'Arial', sans-serif; text-align: center; margin: 0; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);">Village Agents</h4>
                 </div>
+                <h3 style="margin-top: 10px; text-align: center;">{{ $villageAgents }}</h3>
             </div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="small-box bg-white">
             <div class="inner">
-                <h3>{{ $organisationCount }}</h3>
-                <div class="green-background">
-                    <p><a href="{{ $organisationCountLink }}">Organisations</a></p>
+                <div class="green-background" style="padding: 5px; border-radius: 5px;">
+                    <h4 style="color: white; font-family: 'Arial', sans-serif; text-align: center; margin: 0; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);">Organisations</h4>
                 </div>
+                <h3 style="margin-top: 10px; text-align: center;">{{ $organisationCount }}</h3>
             </div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="small-box bg-white">
             <div class="inner">
-                <h3>{{ $totalMembers }}</h3>
-                <div class="green-background">
-                    <p><a href="{{ $totalMembersLink }}">Current Users</a></p>
+                <div class="green-background" style="padding: 5px; border-radius: 5px;">
+                    <h4 style="color: white; font-family: 'Arial', sans-serif; text-align: center; margin: 0; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);">Current Users</h4>
                 </div>
+                <h3 style="margin-top: 10px; text-align: center;">{{ $totalMembers }}</h3>
             </div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="small-box bg-white">
             <div class="inner">
-                <h3>{{ $totalPwdMembers }}</h3>
-                <div class="green-background">
-                    <p><a href="{{ $totalPwdMembersLink }}">PWD Users</a></p>
+                <div class="green-background" style="padding: 5px; border-radius: 5px;">
+                    <h4 style="color: white; font-family: 'Arial', sans-serif; text-align: center; margin: 0; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);">PWD Users</h4>
                 </div>
+                <h3 style="margin-top: 10px; text-align: center;">{{ $totalPwdMembers }}</h3>
             </div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="small-box bg-white">
             <div class="inner">
-                <h3>{{ $youthMembersPercentage }}%</h3>
-                <div class="green-background">
-                    <p><a href="{{ $youthMembersPercentageLink }}">Percentage of Youths</a></p>
+                <div class="green-background" style="padding: 5px; border-radius: 5px;">
+                    <h4 style="color: white; font-family: 'Arial', sans-serif; text-align: center; margin: 0; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);">Percentage of Youths</h4>
                 </div>
+                <h3 style="margin-top: 10px; text-align: center;">{{ $youthMembersPercentage }}%</h3>
             </div>
         </div>
     </div>
 </div>
+    

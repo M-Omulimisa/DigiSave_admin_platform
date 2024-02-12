@@ -6,6 +6,7 @@ use App\Models\AdminRole;
 use App\Models\Agent;
 use App\Models\AgentAllocation;
 use App\Models\Organization;
+use App\Models\OrganizationAssignment;
 use App\Models\Sacco;
 use App\Models\User;
 use Encore\Admin\Controllers\AdminController;
@@ -22,6 +23,24 @@ class AssignAgentsController extends AdminController
     protected function grid()
     {
         $grid = new Grid(new AgentAllocation());
+        $u = Admin::user();
+        if (!$u->isRole('admin')) {
+            /* $grid->model()->where('sacco_id', $u->sacco_id);
+  */           if ($u->isRole('org')) {
+               // Retrieve the organization IDs assigned to the admin user
+               $orgIds = Organization::where('agent_id', $u->id)->pluck('id')->toArray();
+               // Retrieve the sacco IDs associated with the organization IDs
+               $saccoIds = OrganizationAssignment::whereIn('organization_id', $orgIds)->pluck('sacco_id')->toArray();
+               // Filter users based on the retrieved sacco IDs
+                $grid->model()->whereIn('sacco_id', $saccoIds);
+                $grid->disableCreateButton();
+                //dsable delete
+                $grid->actions(function (Grid\Displayers\Actions $actions) {
+                    $actions->disableDelete();
+                });
+                $grid->disableFilter();
+            }
+        }
     
         $grid->column('id', 'ID')->sortable();
     
@@ -52,7 +71,7 @@ class AssignAgentsController extends AdminController
     
         if (!$u->isRole('admin')) {
             if ($form->isCreating()) {
-                admin_error("You are not allowed to create a new Agent Allocation");
+                admin_error("You are not allowed to allocate village agent. Contact DigiSave Administartors");
                 return back();
             }
         }

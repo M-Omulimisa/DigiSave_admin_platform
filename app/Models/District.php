@@ -10,7 +10,7 @@ class District extends Model
 
     use HasFactory;
 
-    protected $fillable = ['district_name'];
+    protected $fillable = ['name'];
     public function subcounties()
     {
         return $this->hasMany(Subcounty::class);
