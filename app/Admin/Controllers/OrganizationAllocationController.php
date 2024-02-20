@@ -2,9 +2,10 @@
 
 namespace App\Admin\Controllers;
 
-use App\Models\Organization;
-use App\Models\OrganizationAssignment;
+use App\Models\OrgAllocation;
+use App\Models\VslaOrganisationSacco;
 use App\Models\Sacco;
+use App\Models\VslaOrganisation;
 use Encore\Admin\Controllers\AdminController;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
@@ -17,16 +18,25 @@ class OrganizationAllocationController extends AdminController
 
     protected function grid()
     {
-        $grid = new Grid(new OrganizationAssignment());
+        $grid = new Grid(new VslaOrganisationSacco());
 
         $u = Admin::user();
         if (!$u->isRole('admin')) {
-            // $grid->model()->where('administrator_id', $u->id);
-            $grid->disableCreateButton();
-            $grid->actions(function (Grid\Displayers\Actions $actions) {
-                $actions->disableDelete();
-            });
-            $grid->disableFilter();
+            /* $grid->model()->where('sacco_id', $u->sacco_id);
+  */           if ($u->isRole('org')) {
+               // Retrieve the organization IDs assigned to the admin user            
+               $orgIds = OrgAllocation::where('user_id', $u->user_id)->pluck('vsla_organisation_id')->toArray();
+               // Retrieve the sacco IDs associated with the organization IDs
+               $saccoIds = VslaOrganisationSacco::whereIn('vsla_organisation_id', $orgIds)->pluck('sacco_id')->toArray();
+               // Filter users based on the retrieved sacco IDs
+                $grid->model()->whereIn('vsla_organisation_id', $orgIds);
+                $grid->disableCreateButton();
+                //dsable delete
+                $grid->actions(function (Grid\Displayers\Actions $actions) {
+                    $actions->disableDelete();
+                });
+                $grid->disableFilter();
+            }
         }
 
         $grid->column('id', 'ID')->sortable();
@@ -41,7 +51,7 @@ class OrganizationAllocationController extends AdminController
 
     protected function detail($id)
     {
-        $show = new Show(OrganizationAssignment::findOrFail($id));
+        $show = new Show(VslaOrganisationSacco::findOrFail($id));
 
         $show->field('id', 'ID');
         $show->field('organization.name', 'Organization');
@@ -55,7 +65,7 @@ class OrganizationAllocationController extends AdminController
 
     protected function form()
 {
-    $form = new Form(new OrganizationAssignment());
+    $form = new Form(new VslaOrganisationSacco());
 
     $u = Admin::user();
 
@@ -68,7 +78,7 @@ class OrganizationAllocationController extends AdminController
 
     $form->display('id', 'ID');
 
-    $form->select('organization_id', 'Organization')->options(Organization::pluck('name', 'id'))->rules('required');
+    $form->select('vsla_organisation_id', 'Organization')->options(VslaOrganisation::pluck('name', 'id'))->rules('required');
 
     $form->select('sacco_id', 'Vsla Group')->options(Sacco::pluck('name', 'id'))->rules('required');
 

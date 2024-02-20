@@ -28,6 +28,7 @@ Route::group([
     $router->resource('loans', LoanController::class);
     $router->resource('meetings', MeetingController::class);
     $router->resource('loan-transactions', LoanTransactionController::class);
+    $router->resource('assign-org-admin', AssignOrganisationAdminController::class);
     $router->resource('admin-roles', AdminRoleController::class);
 
     /* ========================START OF NEW THINGS===========================*/
@@ -57,6 +58,7 @@ Route::group([
     $router->resource('settings', UserController::class);
     $router->resource('participants', ParticipantController::class);
     $router->resource('members', MembersController::class);
+    $router->resource('accounts', GroupAccountController::class);
     $router->resource('post-categories', PostCategoryController::class);
     $router->resource('news-posts', NewsPostController::class);
     $router->resource('events', EventController::class);

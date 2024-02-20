@@ -11,14 +11,14 @@ use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Encore\Admin\Show;
 
-class MembersController extends AdminController
+class GroupAccountController extends AdminController
 {
     /**
      * Title for current resource.
      *
      * @var string
      */
-    protected $title = 'VSLA Members';
+    protected $title = 'Group Accounts';
 
     /**
      * Make a grid builder.
@@ -38,44 +38,30 @@ class MembersController extends AdminController
                 $saccoIds = OrganizationAssignment::whereIn('organization_id', $orgIds)->pluck('sacco_id')->toArray();
                 // Filter users based on the retrieved sacco IDs
                 $grid->model()->whereIn('sacco_id', $saccoIds);
-                $grid->disableCreateButton();
-                // Disable delete
+                // Disable creation
+                $grid->disableCreateButton();                // Disable delete
                 $grid->actions(function (Grid\Displayers\Actions $actions) {
                     $actions->disableDelete();
                 });
-                // Filter by user_type
-                $grid->model()->where(function ($query) {
-                    $query->whereNull('user_type')->orWhereNotIn('user_type', ['Admin', '5']);
-                });
-    
+                // Filter by user_type 'Admin'
+                $grid->model()->where('user_type', 'Admin');
                 $grid->disableFilter();
             }
         } else {
-            // For admin role, apply common conditions
-            $grid->model()->where(function ($query) {
-                $query->whereNull('user_type')->orWhereNotIn('user_type', ['Admin', '5']);
-            });
+            // For admin role, display all users where user_type is 'Admin'
+            $grid->disableCreateButton();
+            $grid->model()->where('user_type', 'Admin');
         }
     
         $grid->disableBatchActions();
         $grid->quickSearch('first_name', 'last_name', 'email', 'phone_number')->placeholder('Search by name, email or phone number');
     
-        $grid->column('first_name', __('First name'))->sortable();
-        $grid->column('last_name', __('Last name'))->sortable();
-        $grid->column('email', __('Email'))->sortable();
-        $grid->column('sex', __('Gender'))->sortable();
-        $grid->column('phone_number', __('Phone Number'));
-        // $grid->column('sacco_join_status', __('Status'))
-        //     ->label([
-        //         'Pending' => 'warning',
-        //         'Approved' => 'success',
-        //     ])
-        //     ->sortable();
-        $grid->column('address', __('Address'));
-        $grid->column('created_at', __('Date Joined'))
-            ->display(function ($date) {
-                return date('d M Y', strtotime($date));
-            })->sortable();
+        $grid->column('name', __('Account Name'))->display(function () {
+            return $this->first_name . ' ' . $this->last_name;
+        });
+        $grid->column('phone_number', __('Contact'));
+        // $grid->column('email', __('Email'))->sortable();
+        $grid->column('created_at', __('Date Created'))->sortable();
     
         return $grid;
     }    

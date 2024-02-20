@@ -6,11 +6,14 @@ use App\Mail\SendMail;
 use App\Models\AdminRole;
 use App\Models\Agent;
 use App\Models\District;
+use App\Models\OrgAllocation;
 use App\Models\Parish;
 use App\Models\Sacco;
 use App\Models\Subcounty;
 use App\Models\User;
 use App\Models\Village;
+use App\Models\VslaOrganisation;
+use App\Models\VslaOrganisationSacco;
 use Encore\Admin\Auth\Database\Administrator;
 use Encore\Admin\Controllers\AdminController;
 use Encore\Admin\Facades\Admin;
@@ -31,30 +34,36 @@ class OrganisationAdminController extends AdminController
     
         $u = Admin::user();
         if (!$u->isRole('admin')) {
-            $grid->disableCreateButton();
-            $grid->actions(function (Grid\Displayers\Actions $actions) {
-                $actions->disableDelete();
-            });
-            $grid->disableFilter();
-    
-            // Filter users by role 'org'
-            
-        $orgRoleId = AdminRole::where('name', 'org')->value('id');
-        $grid->model()->where('user_type', '=', $orgRoleId);
+            if ($u->isRole('org')) {
+                // Retrieve the organization IDs assigned to the admin user            
+                $orgIds = OrgAllocation::where('user_id', $u->user_id)->pluck('vsla_organisation_id')->toArray();
+                // Retrieve the sacco IDs associated with the organization IDs
+                $saccoIds = VslaOrganisationSacco::whereIn('vsla_organisation_id', $orgIds)->pluck('sacco_id')->toArray();
+                // Filter users based on the retrieved sacco IDs and organization role
+                $orgRoleId = AdminRole::where('name', 'org')->value('id');
+                $grid->model()->where('user_type', '=', $orgRoleId)->whereIn('sacco_id', $saccoIds);
+                $grid->disableCreateButton();
+                // Disable delete
+                $grid->actions(function (Grid\Displayers\Actions $actions) {
+                    $actions->disableDelete();
+                });
+                $grid->disableFilter();
+            }
         }
     
         $grid->id('ID')->sortable();
         $grid->addColumn('Admin Name', 'Full Name')->display(function () {
             return $this->first_name . ' ' . $this->last_name;
         })->sortable();
-        $grid->phone_number('Phone Number')->sortable();
         $grid->sex('Gender')->sortable();
-        
-        $orgRoleId = AdminRole::where('name', 'org')->value('id');
-        $grid->model()->where('user_type', '=', $orgRoleId);
+        $grid->column('email_address', 'Email')->display(function () {
+            return $this->email;
+        });
+        $grid->phone_number('Phone Number')->sortable();
     
         return $grid;
     }
+    
     
     
 

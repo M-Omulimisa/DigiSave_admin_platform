@@ -5,10 +5,12 @@ namespace App\Admin\Controllers;
 use App\Models\AdminRole;
 use App\Models\Agent;
 use App\Models\AgentAllocation;
+use App\Models\OrgAllocation;
 use App\Models\Organization;
 use App\Models\OrganizationAssignment;
 use App\Models\Sacco;
 use App\Models\User;
+use App\Models\VslaOrganisationSacco;
 use Encore\Admin\Controllers\AdminController;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
@@ -27,10 +29,10 @@ class AssignAgentsController extends AdminController
         if (!$u->isRole('admin')) {
             /* $grid->model()->where('sacco_id', $u->sacco_id);
   */           if ($u->isRole('org')) {
-               // Retrieve the organization IDs assigned to the admin user
-               $orgIds = Organization::where('agent_id', $u->id)->pluck('id')->toArray();
+               // Retrieve the organization IDs assigned to the admin user            
+               $orgIds = OrgAllocation::where('user_id', $u->user_id)->pluck('vsla_organisation_id')->toArray();
                // Retrieve the sacco IDs associated with the organization IDs
-               $saccoIds = OrganizationAssignment::whereIn('organization_id', $orgIds)->pluck('sacco_id')->toArray();
+               $saccoIds = VslaOrganisationSacco::whereIn('vsla_organisation_id', $orgIds)->pluck('sacco_id')->toArray();
                // Filter users based on the retrieved sacco IDs
                 $grid->model()->whereIn('sacco_id', $saccoIds);
                 $grid->disableCreateButton();

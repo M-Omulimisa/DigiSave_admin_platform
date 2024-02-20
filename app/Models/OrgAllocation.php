@@ -9,20 +9,20 @@ class OrgAllocation extends Model
 {
     use HasFactory;
 
-    protected $table = 'org_allocations';
+    protected $table = 'admin_organization';
 
     protected $fillable = [
-        'admin_id',
-        'organization_id',
+        'user_id',
+        'vsla_organisation_id',
     ];
 
     public function admin()
     {
-        return $this->belongsTo(User::class, 'admin_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function organization()
     {
-        return $this->belongsTo(Organization::class, 'organization_id');
+        return $this->belongsTo(VslaOrganisation::class, 'vsla_organisation_id');
     }
 }

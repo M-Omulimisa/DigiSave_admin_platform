@@ -9,6 +9,7 @@ use App\Models\Garden;
 use App\Models\GardenActivity;
 use App\Models\Group;
 use App\Models\Location;
+use App\Models\OrgAllocation;
 use App\Models\Organization;
 use App\Models\OrganizationAssignment;
 use App\Models\Person;
@@ -16,6 +17,7 @@ use App\Models\Sacco;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Models\Utils;
+use App\Models\VslaOrganisation;
 use Carbon\Carbon;
 use Encore\Admin\Auth\Database\Administrator;
 use Encore\Admin\Controllers\Dashboard;
@@ -42,28 +44,42 @@ class HomeController extends Controller
         $admin = Admin::user();
         $adminId = $admin->id;
         
-        // Filter out the logged-in admin from the users
-        $filteredUsers = $users->reject(function ($user) use ($adminId) {
-            return $user->id === $adminId && $user->user_type === 'Admin';
-        });
-        
-        // If you also want to filter out users with user_type '4' (agent), you can do the following:
-        $filteredUsers = $filteredUsers->reject(function ($user) {
-            return $user->user_type === '4';
-        });
-        $filteredUsers = $filteredUsers->reject(function ($user) {
-            return $user->user_type === '5';
-        });
+   // Filter out the logged-in admin from the users
+$totalAccounts = User::where('user_type', 'Admin')->count();
+$totalOrgAdmins = User::where('user_type', '5')->count();
+
+// die("Total org admins with user_type 'Admin': $totalOrgAdmins");
+
+$filteredUsers = $users->reject(function ($user) use ($adminId) {
+    return $user->id === $adminId && $user->user_type === 'Admin';
+});
+
+// If you also want to filter out users with user_type '4' (agent), you can do the following:
+$filteredUsers = $filteredUsers->reject(function ($user) {
+    return $user->user_type === '4';
+});
+
+$filteredUsers = $filteredUsers->reject(function ($user) {
+    return $user->user_type === '5';
+});
+
+// Filter users to count only those whose user_type is null or not Admin or 5
+$filteredUsers = $filteredUsers->filter(function ($user) {
+    return $user->user_type === null || !in_array($user->user_type, ['Admin', '5']);
+});
+
 
         if ($admin->isRole('org')) {
-            $orgIds = Organization::where('agent_id', $admin->id)->pluck('id')->toArray();
+            
+            $orgIds = OrgAllocation::where('user_id', $admin->user_id)->pluck('vsla_organisation_id')->toArray();
+            // $orgIds = VslaOrganisation::where('agent_id', $admin->id)->pluck('id')->toArray();
             
             // Retrieve the sacco IDs associated with the organization IDs
             $saccoIds = OrganizationAssignment::whereIn('organization_id', $orgIds)->pluck('sacco_id')->toArray();
             
             // Calculate various statistics based on organization-specific data
             $totalSaccos = Sacco::whereIn('id', $saccoIds)->count();
-            $organisationCount = Organization::whereIn('id', $orgIds)->count();
+            $organisationCount = VslaOrganisation::whereIn('id', $orgIds)->count();
             $totalMembers = $filteredUsers->whereIn('sacco_id', $saccoIds)->count();
             $totalPwdMembers = $filteredUsers->whereIn('sacco_id', $saccoIds)->where('pwd', 'yes')->count();
             $villageAgents = User::whereIn('sacco_id', $saccoIds)->where('user_type', '4')->count();
@@ -291,6 +307,8 @@ class HomeController extends Controller
                     'villageAgents' => $villageAgents,
                     'organisationCount' => $organisationCount,
                     'totalMembers' => $totalMembers,
+                    'totalAccounts' => $totalAccounts,
+                    'totalOrgAdmins' => $totalOrgAdmins,
                     'totalPwdMembers' => $pwdMembersCount,
                     'youthMembersPercentage' => number_format($youthMembersPercentage, 2),
                     // 'totalSaccosLink' => $totalSaccosLink,
