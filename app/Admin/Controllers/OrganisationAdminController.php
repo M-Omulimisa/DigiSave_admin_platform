@@ -26,7 +26,7 @@ use Illuminate\Support\Facades\Mail;
 
 class OrganisationAdminController extends AdminController
 {
-    protected $title = 'Org Admin';
+    protected $title = 'Organisation Admin';
 
     protected function grid()
     {
@@ -34,22 +34,15 @@ class OrganisationAdminController extends AdminController
     
         $u = Admin::user();
         if (!$u->isRole('admin')) {
-            if ($u->isRole('org')) {
-                // Retrieve the organization IDs assigned to the admin user            
-                $orgIds = OrgAllocation::where('user_id', $u->user_id)->pluck('vsla_organisation_id')->toArray();
-                // Retrieve the sacco IDs associated with the organization IDs
-                $saccoIds = VslaOrganisationSacco::whereIn('vsla_organisation_id', $orgIds)->pluck('sacco_id')->toArray();
-                // Filter users based on the retrieved sacco IDs and organization role
-                $orgRoleId = AdminRole::where('name', 'org')->value('id');
-                $grid->model()->where('user_type', '=', $orgRoleId)->whereIn('sacco_id', $saccoIds);
                 $grid->disableCreateButton();
-                // Disable delete
                 $grid->actions(function (Grid\Displayers\Actions $actions) {
                     $actions->disableDelete();
                 });
                 $grid->disableFilter();
-            }
-        }
+            
+        } 
+        $orgRoleId = AdminRole::where('name', 'org')->value('id');
+        $grid->model()->where('user_type', '=', $orgRoleId);
     
         $grid->id('ID')->sortable();
         $grid->addColumn('Admin Name', 'Full Name')->display(function () {

@@ -31,21 +31,14 @@ class TransactionController extends AdminController
         $grid = new Grid(new Transaction());
         $u = Admin::user();
         if (!$u->isRole('admin')) {
-            if ($u->isRole('org')) {
+            // if (!$u->isRole('sacco')) {
                 $grid->disableCreateButton();
                 $grid->actions(function (Grid\Displayers\Actions $actions) {
                     $actions->disableDelete();
                 });
                 $grid->disableFilter();
-                $orgIds = Organization::where('agent_id', $u->id)->pluck('id')->toArray();
-                $saccoIds = OrganizationAssignment::whereIn('organization_id', $orgIds)->pluck('sacco_id')->toArray();
-                $grid->model()->whereIn('sacco_id', $saccoIds);
-            }
-            // $grid->model()->where('sacco_id', $u->sacco_id);
-        }
-    
-        if ($u->user_type == '5') {
-        }
+            
+        } 
         $grid->disableCreateButton();
         //create a filter
         $grid->filter(function ($filter) {

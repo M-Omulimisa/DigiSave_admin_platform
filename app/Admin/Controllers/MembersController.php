@@ -28,34 +28,21 @@ class MembersController extends AdminController
     protected function grid()
     {
         $grid = new Grid(new User());
+
         $u = Admin::user();
-    
         if (!$u->isRole('admin')) {
-            if ($u->isRole('org')) {
-                // Retrieve the organization IDs assigned to the admin user
-                $orgIds = Organization::where('agent_id', $u->id)->pluck('id')->toArray();
-                // Retrieve the sacco IDs associated with the organization IDs
-                $saccoIds = OrganizationAssignment::whereIn('organization_id', $orgIds)->pluck('sacco_id')->toArray();
-                // Filter users based on the retrieved sacco IDs
-                $grid->model()->whereIn('sacco_id', $saccoIds);
+            // if (!$u->isRole('sacco')) {
                 $grid->disableCreateButton();
-                // Disable delete
                 $grid->actions(function (Grid\Displayers\Actions $actions) {
                     $actions->disableDelete();
                 });
-                // Filter by user_type
-                $grid->model()->where(function ($query) {
-                    $query->whereNull('user_type')->orWhereNotIn('user_type', ['Admin', '5']);
-                });
-    
                 $grid->disableFilter();
-            }
-        } else {
-            // For admin role, apply common conditions
-            $grid->model()->where(function ($query) {
-                $query->whereNull('user_type')->orWhereNotIn('user_type', ['Admin', '5']);
-            });
-        }
+            
+        } 
+        // Filter by user_type
+        $grid->model()->where(function ($query) {
+            $query->whereNull('user_type')->orWhereNotIn('user_type', ['Admin', '5']);
+        });
     
         $grid->disableBatchActions();
         $grid->quickSearch('first_name', 'last_name', 'email', 'phone_number')->placeholder('Search by name, email or phone number');

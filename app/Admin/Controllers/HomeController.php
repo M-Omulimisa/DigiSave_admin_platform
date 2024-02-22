@@ -172,7 +172,7 @@ $filteredUsers = $filteredUsers->filter(function ($user) {
         } else {
             // Calculate various statistics without organization-specific data
             $totalSaccos = Sacco::count();
-            $organisationCount = Organization::count();
+            $organisationCount = VslaOrganisation::count();
             $totalMembers = $filteredUsers->count();
             $totalPwdMembers = $filteredUsers->where('pwd', 'yes')->count();
             $villageAgents = User::where('user_type', '4')->count();

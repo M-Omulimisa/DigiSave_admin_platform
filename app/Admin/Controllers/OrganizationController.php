@@ -21,7 +21,7 @@ use Encore\Admin\Facades\Admin;
 
 class OrganizationController extends AdminController
 {
-    protected $title = 'Organizations';
+    protected $title = 'VSLA Organizations';
 
     protected function grid()
     {
@@ -46,17 +46,13 @@ class OrganizationController extends AdminController
         }
 
         $grid->column('id', 'ID')->sortable();
+        $grid->column('name', 'Organisation Name')->sortable();
         $grid->column('phone_number', 'Phone Number')->sortable();
-        $grid->column('unique_code', 'Unique Code')->sortable();
         $grid->column('email', 'Email Address')->sortable();
-        $grid->column('name', 'Name')->sortable();
-        $grid->column('agent_id', 'Admin')->display(function ($adminId) {
-            $admin = User::find($adminId);
-            return $admin ? $admin->first_name . ' ' . $admin->last_name : 'N/A';
-        })->sortable();
+        $grid->column('unique_code', 'Unique Code')->sortable();
 
-        $grid->created_at('Created At')->sortable();
-        $grid->updated_at('Updated At')->sortable();
+        // $grid->created_at('Created At')->sortable();
+        // $grid->updated_at('Updated At')->sortable();
 
         return $grid;
     }
