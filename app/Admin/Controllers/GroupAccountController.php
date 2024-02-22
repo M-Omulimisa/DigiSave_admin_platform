@@ -29,29 +29,16 @@ class GroupAccountController extends AdminController
     {
         $grid = new Grid(new User());
         $u = Admin::user();
-    
         if (!$u->isRole('admin')) {
-            if ($u->isRole('org')) {
-                // Retrieve the organization IDs assigned to the admin user
-                $orgIds = Organization::where('agent_id', $u->id)->pluck('id')->toArray();
-                // Retrieve the sacco IDs associated with the organization IDs
-                $saccoIds = OrganizationAssignment::whereIn('organization_id', $orgIds)->pluck('sacco_id')->toArray();
-                // Filter users based on the retrieved sacco IDs
-                $grid->model()->whereIn('sacco_id', $saccoIds);
-                // Disable creation
-                $grid->disableCreateButton();                // Disable delete
+            // if (!$u->isRole('sacco')) {
+                $grid->disableCreateButton();
                 $grid->actions(function (Grid\Displayers\Actions $actions) {
                     $actions->disableDelete();
                 });
-                // Filter by user_type 'Admin'
-                $grid->model()->where('user_type', 'Admin');
                 $grid->disableFilter();
-            }
-        } else {
-            // For admin role, display all users where user_type is 'Admin'
-            $grid->disableCreateButton();
-            $grid->model()->where('user_type', 'Admin');
-        }
+            
+        } 
+        $grid->model()->where('user_type', 'Admin');
     
         $grid->disableBatchActions();
         $grid->quickSearch('first_name', 'last_name', 'email', 'phone_number')->placeholder('Search by name, email or phone number');
