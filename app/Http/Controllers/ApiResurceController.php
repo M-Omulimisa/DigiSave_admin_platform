@@ -491,25 +491,54 @@ class ApiResurceController extends Controller
     }
 
 
-    public function get_positions()
-{
-    $user = auth('api')->user();
-
-    if ($user) {
-        $sacco = Sacco::where('administrator_id', $user->id)->first();
-
-        if ($sacco) {
-            $saccoId = $sacco->id;
-            $positions = MemberPosition::where('sacco_id', $saccoId)->get();
-            return $this->success(
-            $positions,
-            $message = "Success",
-            $statusCode = 200);
+    public function get_positions(Request $request = null)
+    {
+        // Initialize variables to store user ID and user
+        $userId = null;
+        $user = null;
+    
+        // Check if a request is provided and if it contains user ID
+        if ($request && $request->has('user_id')) {
+            // If user ID is provided in the request, assign it
+            $userId = $request->input('user_id');
         }
-    }
-    return response()->json(['message' => 'User or associated Sacco not found'], 404);
-}
-
+    
+        // Check if the authenticated user is available
+        if (auth('api')->check()) {
+            // If authenticated, use the authenticated user's ID
+            $user = auth('api')->user();
+        } elseif ($userId) {
+            // If authenticated user is null but user ID is provided in the request, find the user
+            $user = User::find($userId);
+        } else {
+            // If both authenticated user and user ID in the request are null, return an error response
+            return response()->json(['message' => 'User not authenticated and no user ID provided in the request'], 404);
+        }
+    
+        // Check if a user is found
+        if ($user) {
+            // Find the associated Sacco
+            $sacco = Sacco::where('administrator_id', $user->id)->first();
+    
+            // Check if a Sacco is found
+            if ($sacco) {
+                // Get positions associated with the Sacco
+                $positions = MemberPosition::where('sacco_id', $sacco->id)->get();
+                // Return success response with positions
+                return $this->success(
+                    $positions,
+                    $message = "Success",
+                    $statusCode = 200
+                );
+            } else {
+                // Return error response if Sacco not found
+                return response()->json(['message' => 'Associated Sacco not found'], 404);
+            }
+        } else {
+            // Return error response if user not found
+            return response()->json(['message' => 'User not found'], 404);
+        }
+    }    
     
 //     public function get_positions()
 // {

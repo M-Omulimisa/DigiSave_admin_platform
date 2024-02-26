@@ -18,26 +18,35 @@ class Transaction extends Model
 
         static::creating(function ($model) {
             include_once(app_path() . '/Models/Utils.php');
-
+        
             if (!in_array($model->type, TRANSACTION_TYPES)) {
                 throw new Exception("Invalid transaction type.");
             }
-
+        
             $user = Administrator::find($model->user_id);
             if ($user == null) {
                 throw new Exception("User not found");
             }
-            //get active cycle
-            $cycle = Cycle::where('sacco_id', $user->sacco_id)->where('status', 'Active')->first();
+        
+            // Get active cycle
+            $cycle = Cycle::where('sacco_id', $user->sacco_id)
+                ->where('status', 'Active')
+                ->first();
+        
+            // Check if an active cycle is found
             if ($cycle == null) {
-                throw new Exception("No active cycle found");
+                // You can handle the case where no active cycle is found
+                // Set $model->cycle_id to null or any default value as needed
+                $model->cycle_id = null; // or $model->cycle_id = some_default_value;
+            } else {
+                // If an active cycle is found, set the cycle_id and sacco_id
+                $model->cycle_id = $cycle->id;
+                $model->sacco_id = $user->sacco_id;
             }
-
-            
-            $model->cycle_id = $cycle->id;
-            $model->sacco_id = $user->sacco_id;
+        
             return $model;
         });
+        
 
         //updating
         static::updating(function ($model) {

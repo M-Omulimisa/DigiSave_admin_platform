@@ -76,12 +76,14 @@ Route::get('agent-saccos/{saccoIds}', [ApiResurceController::class, 'agent_sacco
 
 Route::POST("users/login", [ApiAuthController::class, "login"]);
 Route::POST("login", [ApiAuthController::class, "login"]);
+Route::POST("admin/auth", [ApiAuthController::class, "verify_user"]);
 Route::POST("shareout", [ApiAuthController::class, "new_shareout"]);
 Route::POST("users/register", [ApiAuthController::class, "register"]);
 Route::post('positions', [ApiAuthController::class, 'new_position']);
 Route::post('groups/register', [ApiAuthController::class, 'registerGroup']);
 Route::post('roles/register', [ApiAuthController::class, 'registerRole']);
 Route::POST("users/update", [ApiAuthController::class, "update_user"]);
+Route::POST("admin/update", [ApiAuthController::class, "update_admin"]);
 Route::POST("group/update", [ApiAuthController::class, "update_group"]);
 Route::POST("member/update", [ApiAuthController::class, "member_update"]);
 Route::get("people", [ApiResurceController::class, "people"]);

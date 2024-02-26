@@ -106,7 +106,22 @@ class User extends Authenticatable implements JWTSubject
         return $this->first_name . ' ' . $this->last_name;
     }
 
+    // Accessor for position name
+    public function getPositionNameAttribute()
+    {
+        // Check if position_id exists
+        if ($this->position_id) {
+            // Retrieve the position based on the position_id
+            $position = MemberPosition::find($this->position_id);
+            // If position exists, return its name, else return null
+            return $position ? $position->name : null;
+        }
+        // If position_id is null, return null
+        return null;
+    }
+
     protected $appends = [
+        'position_name',
         'balance',
         'name',
         'user_text',

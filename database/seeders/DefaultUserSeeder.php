@@ -67,7 +67,7 @@ class DefaultUserSeeder extends Seeder
             ],
             [
                 'id' => 2,
-                'username' => '0759753296',
+                'username' => '0759753298',
                 'password' => Hash::make('12345'),
                 'first_name' => 'M-Omulimisa',
                 'last_name' => 'Admin',

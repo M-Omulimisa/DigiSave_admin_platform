@@ -46,7 +46,7 @@ class ApiAuthController extends Controller
             'password' => 'admin',
         ]);
         die($token); */
-        $this->middleware('auth:api', ['except' => ['login', 'register', 'agent_login']]);
+        $this->middleware('auth:api', ['except' => ['login', 'register', 'agent_login', 'registerGroup', 'update_admin', 'new_position', 'updateUser', 'registerRole']]);
     }
 
 
@@ -128,6 +128,63 @@ class ApiAuthController extends Controller
 
         return $this->success($u, 'Logged in successfully.');
     }
+
+
+    public function verify_user(Request $request)
+   {
+    // Get the logged-in admin
+    $admin = auth('api')->user();
+    if ($admin == null) {
+        return $this->error('User not found.');
+    }
+
+    $loggedIn = Administrator::find($admin->id);
+    if ($loggedIn == null) {
+        return $this->error('User not found.');
+    }
+    $sacco = Sacco::find($loggedIn->sacco_id);
+
+    if ($sacco == null) {
+        return $this->error('VSLA group not found.');
+    }
+    $sacco_id = $sacco->id;
+
+    // Get the input parameters
+    $username = $request->username;
+    $passcode = $request->passcode;
+    $position_id = $request->position_id;
+
+    // Find the user with the given parameters
+    $user = User::where('sacco_id', $sacco_id)
+                ->where('username', $username)
+                ->where('position_id', $position_id)
+                ->first();
+
+    if (!$user) {
+        return $this->error('User not found or invalid credentials.');
+    }
+
+    JWTAuth::factory()->setTTL(60 * 24 * 30 * 365);
+        
+    $token = auth('api')->attempt([
+        'id' => $user->id,
+        'password' => trim($request->password),
+    ]);
+
+
+    if ($token == null) {
+        return $this->error('Wrong credentials.');
+    }
+
+
+
+    $user->token = $token;
+    $user->remember_token = $token;
+
+    // If the user is found, return success response
+    return $this->success($user, 'Logged in successfully.');
+  }
+
 
 
     public function agent_login(Request $r)
@@ -234,19 +291,31 @@ class ApiAuthController extends Controller
     
     public function new_position(Request $request)
     {
-        $admin = auth('api')->user();
-        if ($admin == null) {
-            return $this->error('User not found.');
+        // Check if the user is authenticated
+    $admin = auth('api')->user();
+    if ($admin == null) {
+        $adminId = $request->input('admin_id');
+        $admin = User::find($adminId);
+        $loggedInAdmin = Administrator::find($admin->id);
+    }
+    if ($loggedInAdmin == null) {
+            // Handle case where requested admin user is not found
+            return $this->error('Requested admin user not found.');
+
+        // Check if the authenticated user has the same sacco_id as the requested admin
+        if ($admin->sacco_id !== $loggedInAdmin->sacco_id) {
+            return $this->error('You do not have permission to perform this action.');
         }
-    
-        $loggedIn = Administrator::find($admin->id);
-        if ($loggedIn == null) {
-            return $this->error('User not found.');
-        }
-        $sacco = Sacco::find($loggedIn->sacco_id);
-    
-        if ($sacco == null) {
-            return $this->error('Sacco not found.');
+    }
+
+    // Continue with the logic for creating a new position in the specified sacco
+    $saccoId = $request->input('sacco_id');
+    $sacco = Sacco::find($saccoId);
+
+        // Check if the Sacco model is found
+       if ($sacco == null) {
+          // Handle case where Sacco is not found
+          return $this->error('Sacco not found.');
         }
     
         // Validate incoming request data
@@ -482,23 +551,29 @@ class ApiAuthController extends Controller
     }
     
 
-
-
     public function update_user(Request $request)
     {
-        $admin = auth('api')->user();
-        if ($admin == null) {
-            return $this->error('User not found.');
-        }
+        // Extract the admin user's ID from the request data
+        $adminId = $request->input('admin_id');
 
-        $loggedIn = Administrator::find($admin->id);
-        if ($loggedIn == null) {
-            return $this->error('User not found.');
-        }
-        $sacco = Sacco::find($loggedIn->sacco_id);
+       // Use the admin user's ID to find the corresponding User model
+       $admin = User::find($adminId);
 
-        if ($sacco == null) {
-            return $this->error('Sacco not found.');
+       // Check if the admin user is found
+       if ($admin == null) {
+          // Handle case where admin user is not found
+          return $this->error('Admin user not found.');
+        }
+        
+        $saccoId = $request->input('sacco_id');
+
+        // Use the sacco_id to find the corresponding Sacco model
+        $sacco = Sacco::find($saccoId);
+
+        // Check if the Sacco model is found
+       if ($sacco == null) {
+          // Handle case where Sacco is not found
+          return $this->error('Sacco not found.');
         }
 
         if (!isset($request->task)) {
@@ -645,6 +720,193 @@ class ApiAuthController extends Controller
        $msg = 'Account ' . $task . 'ed successfully.';
        return $this->success($acc, $msg, $code);
     }
+
+    public function update_admin(Request $request)
+    {
+        // Extract the admin user's ID from the request data
+        $adminId = $request->input('admin_id');
+
+       // Use the admin user's ID to find the corresponding User model
+       $admin = User::find($adminId);
+
+       // Check if the admin user is found
+       if ($admin == null) {
+          // Handle case where admin user is not found
+          return $this->error('Admin user not found.');
+        }
+        
+        $saccoId = $request->input('sacco_id');
+
+        // Use the sacco_id to find the corresponding Sacco model
+        $sacco = Sacco::find($saccoId);
+
+        // Check if the Sacco model is found
+       if ($sacco == null) {
+          // Handle case where Sacco is not found
+          return $this->error('Sacco not found.');
+        }
+
+        if (!isset($request->task)) {
+            return $this->error('Task is missing.');
+        }
+
+        $task = $request->task;
+
+        if (($task != 'Edit') && ($task != 'Create')) {
+            return $this->error('Invalid task.');
+        }
+
+        $phone_number = Utils::prepare_phone_number($request->phone_number);
+        if (!Utils::phone_number_is_valid($phone_number)) {
+            return $this->error('Invalid phone number.');
+        }
+
+        $account = null;
+        if ($task == 'Edit') {
+            if ($request->id == null) {
+                return $this->error('User id is missing.');
+            }
+            $acc = Administrator::find($request->id);
+            if ($acc == null) {
+                return $this->error('User not found.');
+            }
+            $old = Administrator::where('phone_number', $phone_number)
+                ->where('id', '!=', $request->id)
+                ->first();
+            if ($old != null) {
+                return $this->error('User with same phone number already exists. ' . $old->id . ' ' . $old->phone_number . ' ' . $old->first_name . ' ' . $old->last_name);
+            }
+        } else {
+
+            $old = Administrator::where('phone_number', $phone_number)
+                ->first();
+            if ($old != null) {
+                return $this->error('User with same phone number already exists.');
+            }
+
+            $acc = new Administrator();
+            $acc->sacco_id = $sacco->id;
+        }
+
+        if (
+            $request->first_name == null ||
+            strlen($request->first_name) < 2
+        ) {
+            return $this->error('First name is missing.');
+        }
+        //validate all
+        if (
+            $request->last_name == null ||
+            strlen($request->last_name) < 2
+        ) {
+            return $this->error('Last name is missing.');
+        }
+
+        //validate all
+        if (
+            $request->sex == null ||
+            strlen($request->sex) < 2
+        ) {
+            return $this->error('Gender is missing.');
+        }
+        
+        $msg = "";
+        $acc->first_name = $request->first_name;
+        $acc->last_name = $request->last_name;
+        $acc->name = $request->first_name . ' ' . $request->last_name;
+        $acc->campus_id = $request->campus_id;
+        $acc->phone_number = $phone_number;
+        $acc->username = $phone_number;
+        $acc->sex = $request->sex;
+        $acc->pwd = $request->pwd;
+        $acc->position_id = $request->position_id;
+        $acc->district_id = $request->district_id;
+        $acc->parish_id = $request->parish_id;
+        $acc->village_id = $request->village_id;
+        $acc->dob = $request->dob;
+        $acc->address = $request->address;
+        $acc->sacco_join_status = 'Approved';
+
+        $images = [];
+        if (!empty($_FILES)) {
+            $images = Utils::upload_images_2($_FILES, false);
+        }
+        if (!empty($images)) {
+            $acc->avatar = 'images/' . $images[0];
+        }
+
+        $code = 1;
+
+        
+    
+        // Generate a random 5-digit password
+        $password = str_pad(mt_rand(1, 99999), 5, '0', STR_PAD_LEFT);
+        $acc->password = password_hash($password, PASSWORD_DEFAULT);
+
+        if (!$acc->save()) {
+            return $this->error('Failed to create account. Please try again.');
+        }
+    
+        // Send SMS with the generated password
+        $message = "Success, your admin account has been created successfully. Use Phone number: $phone_number and Passcode: $password to login into your VSLA group";
+    
+        $resp = null;
+        try {
+            $resp = Utils::send_sms($phone_number, $message);
+        } catch (Exception $e) {
+            return $this->error('Failed to send OTP because ' . $e->getMessage());
+        }
+    
+        if ($resp != 'success') {
+            return $this->error('Failed to send OTP because ' . $resp);
+        }
+
+      try {
+       
+          $acc->save();
+          $amount = abs($sacco->register_fee);
+
+          try {
+            DB::beginTransaction();
+            //add balance to sacc account
+            $transaction_sacco = new Transaction();
+            $transaction_sacco->user_id = $admin->id;
+            $transaction_sacco->source_user_id = $acc->id;
+            $transaction_sacco->sacco_id = $acc->sacco_id;
+            $transaction_sacco->type = 'REGESTRATION';
+            $transaction_sacco->source_type = 'REGESTRATION';
+            $transaction_sacco->amount = $amount;
+            $transaction_sacco->description = "Registration fees of UGX " . number_format($amount) . " from {$acc->phone_number} - $acc->name.";
+            try {
+                $transaction_sacco->save();
+            } catch (\Throwable $th) {
+                DB::rollback();
+                return $this->error('Failed to save transaction, because ' . $th->getMessage() . '');
+            }
+            try {
+                $transaction_sacco->save();
+            } catch (\Throwable $th) {
+                DB::rollback();
+                return $this->error('Failed to save transaction, because ' . $th->getMessage() . '');
+            }
+
+            DB::commit();
+            return $this->success(null, "Registration fees of UGX " . number_format($amount) . " was successful. Your balance is now UGX " . number_format($admin->balance) . ".", 200);
+          } catch (\Exception $e) {
+            DB::rollback();
+            // something went wrong
+            return $this->error('Failed to save transaction, because ' . $e->getMessage() . '');
+          }
+       } catch (\Throwable $th) {
+         $msg = $th->getMessage();
+         $code = 0;
+         return $this->error($msg);
+       }
+       return $this->success(null, $msg, $code);
+       $msg = 'Account ' . $task . 'ed successfully.';
+       return $this->success($acc, $msg, $code);
+    }
+
 
     public function new_shareout(Request $request)
     {
@@ -942,7 +1204,7 @@ class ApiAuthController extends Controller
         }
     
         // Send SMS with the generated password
-        $message = "Group $name account has been created successfully. Use Phone number: $phone_number and Passcode: $password to login";
+        $message = "Group $name been created successfully. Use Phone number: $phone_number and Passcode: $password to login";
     
         $resp = null;
         try {

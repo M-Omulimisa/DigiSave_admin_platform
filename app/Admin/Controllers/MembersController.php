@@ -41,7 +41,7 @@ class MembersController extends AdminController
         } 
         // Filter by user_type
         $grid->model()->where(function ($query) {
-            $query->whereNull('user_type')->orWhereNotIn('user_type', ['Admin', '5']);
+            $query->whereNull('user_type');
         });
     
         $grid->disableBatchActions();
