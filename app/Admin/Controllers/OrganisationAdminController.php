@@ -31,16 +31,25 @@ class OrganisationAdminController extends AdminController
     protected function grid()
     {
         $grid = new Grid(new User());
+
+        $admin = Admin::user();
+        $adminId = $admin->id;
+        if (!$admin->isRole('admin')) {
     
-        $u = Admin::user();
-        if (!$u->isRole('admin')) {
-                $grid->disableCreateButton();
-                $grid->actions(function (Grid\Displayers\Actions $actions) {
-                    $actions->disableDelete();
-                });
-                $grid->disableFilter();
-            
-        } 
+            $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+            if ($orgAllocation) {
+                $orgId = $orgAllocation->vsla_organisation_id;
+                // die(print_r($orgId));
+                $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
+
+                // Extracting Sacco IDs from the assignments
+                $OrgAdmins = OrgAllocation::where('vsla_organisation_id', $orgId)->pluck('user_id')->toArray();
+                // die(print_r($saccoIds));
+
+                $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
+                $grid->model()->where('id', $OrgAdmins);
+            }
+        }
         $orgRoleId = AdminRole::where('name', 'org')->value('id');
         $grid->model()->where('user_type', '=', $orgRoleId);
     
@@ -66,12 +75,12 @@ class OrganisationAdminController extends AdminController
     
         $u = Admin::user();
     
-        if (!$u->isRole('admin')) {
-            if ($form->isCreating()) {
-                admin_error("You are not allowed to create new Agent");
-                return back();
-            }
-        }
+        // if (!$u->isRole('admin')) {
+        //     if ($form->isCreating()) {
+        //         admin_error("You are not allowed to create new Agent");
+        //         return back();
+        //     }
+        // }
     
         $form->text('first_name', 'First Name')->rules('required');
         $form->text('last_name', 'Last Name')->rules('required');

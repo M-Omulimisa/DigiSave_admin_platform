@@ -91,20 +91,20 @@ Encore\Admin\Grid::init(function (Encore\Admin\Grid $grid) {
     'organisation',
     'social', 'gens', 'loan-scheems', 'trainings','loans', 'meetings', 'crops', 'crop-protocols', 'gardens', 'garden-activities',  'service-providers', 'groups', 'associations', 'people', 'disabilities', 'institutions', 'counselling-centres', 'jobs', 'job-applications', 'course-categories', 'courses', 'settings', 'participants', 'members', 'post-categories', 'news-posts', 'events', 'event-bookings', 'products', 'product-orders', ];
 
-    if (!$u->isRole('admin')) {
-        if (!in_array($current_segment, $exclude)) {
-            $grid->model()->where('sacco_id', $u->sacco_id);
-        }
-    }
+    // if (!$u->isRole('admin')) {
+    //     if (!in_array($current_segment, $exclude)) {
+    //         $grid->model()->where('sacco_id', $u->sacco_id);
+    //     }
+    // }
     $grid->model();
 });
 //show each see for their respective sacco_id
 Encore\Admin\Show::init(function (Encore\Admin\Show $show) {
     $u = Admin::user();
-    if (!$u->isRole('admin')) {
-        $show->panel()->tools(function ($tools) {
-            $tools->disableDelete();
-            $tools->disableEdit();
-        });
-    }
+    // if (!$u->isRole('admin')) {
+    //     $show->panel()->tools(function ($tools) {
+    //         $tools->disableDelete();
+    //         $tools->disableEdit();
+    //     });
+    // }
 });

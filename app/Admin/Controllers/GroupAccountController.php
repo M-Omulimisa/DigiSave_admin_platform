@@ -2,9 +2,11 @@
 
 namespace App\Admin\Controllers;
 
+use App\Models\OrgAllocation;
 use App\Models\Organization;
 use App\Models\OrganizationAssignment;
 use App\Models\User;
+use App\Models\VslaOrganisationSacco;
 use Encore\Admin\Controllers\AdminController;
 use Encore\Admin\Facades\Admin;
 use Encore\Admin\Form;
@@ -29,15 +31,28 @@ class GroupAccountController extends AdminController
     {
         $grid = new Grid(new User());
         $u = Admin::user();
-        if (!$u->isRole('admin')) {
-            // if (!$u->isRole('sacco')) {
+        $admin = Admin::user();
+        $adminId = $admin->id;
+        if (!$admin->isRole('admin')) {
+    
+            $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+            if ($orgAllocation) {
+                $orgId = $orgAllocation->vsla_organisation_id;
+                // die(print_r($orgId));
+                $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
+
+                // Extracting Sacco IDs from the assignments
+                $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
+                // die(print_r($saccoIds));
+
+                $grid->model()->whereIn('sacco_id', $saccoIds);
                 $grid->disableCreateButton();
                 $grid->actions(function (Grid\Displayers\Actions $actions) {
                     $actions->disableDelete();
                 });
                 $grid->disableFilter();
-            
-        } 
+            }
+        }
         $grid->model()->where('user_type', 'Admin');
     
         $grid->disableBatchActions();

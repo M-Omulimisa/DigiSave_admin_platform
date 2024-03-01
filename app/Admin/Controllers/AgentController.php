@@ -3,13 +3,15 @@
 namespace App\Admin\Controllers;
 
 use App\Models\AdminRole;
-use App\Models\Agent;
+use App\Models\AgentAllocation;
 use App\Models\District;
+use App\Models\OrgAllocation;
 use App\Models\Parish;
 use App\Models\Sacco;
 use App\Models\Subcounty;
 use App\Models\User;
 use App\Models\Village;
+use App\Models\VslaOrganisationSacco;
 use Encore\Admin\Auth\Database\Administrator;
 use Encore\Admin\Controllers\AdminController;
 use Encore\Admin\Facades\Admin;
@@ -25,15 +27,28 @@ class AgentController extends AdminController
     protected function grid()
     {
         $grid = new Grid(new User());
+
+        $admin = Admin::user();
+        $adminId = $admin->id;
+        if (!$admin->isRole('admin')) {
     
-        $u = Admin::user();
-        if (!$u->isRole('admin')) {
-            // $grid->model()->where('administrator_id', $u->id);
-            $grid->disableCreateButton();
-            $grid->actions(function (Grid\Displayers\Actions $actions) {
-                $actions->disableDelete();
-            });
-            $grid->disableFilter();
+            $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+            if ($orgAllocation) {
+                $orgId = $orgAllocation->vsla_organisation_id;
+                // die(print_r($orgId));
+                $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
+                $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
+
+                // Extracting Sacco IDs from the assignments
+                $OrgAgents = AgentAllocation::whereIn('sacco_id', $saccoIds)->pluck('agent_id')->toArray();
+                // die(print_r($saccoIds));
+
+                $grid->model()->where('id', $OrgAgents);
+                // $grid->disableCreateButton();
+                // $grid->actions(function (Grid\Displayers\Actions $actions) {
+                //     $actions->disableDelete();
+                // });            
+            }
         }
     
         $grid->id('ID')->sortable();
@@ -68,12 +83,12 @@ class AgentController extends AdminController
 
         $u = Admin::user();
 
-        if (!$u->isRole('admin')) {
-            if ($form->isCreating()) {
-                admin_error("You are not allowed to create new Agent");
-                return back();
-            }
-        }
+        // if (!$u->isRole('admin')) {
+        //     if ($form->isCreating()) {
+        //         admin_error("You are not allowed to create new Agent");
+        //         return back();
+        //     }
+        // }
 
         $form->text('first_name', 'First Name')->rules('required');
         $form->text('last_name', 'Last Name')->rules('required');

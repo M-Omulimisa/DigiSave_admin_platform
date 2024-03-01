@@ -7,6 +7,7 @@ use App\Models\OrgAllocation;
 use App\Models\OrganizationAssignment;
 use App\Models\User;
 use App\Models\VslaOrganisation; // Import the VslaOrganisation model
+use App\Models\VslaOrganisationSacco;
 use Encore\Admin\Controllers\AdminController;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
@@ -21,27 +22,23 @@ class AssignOrganisationAdminController extends AdminController
     {
         $grid = new Grid(new OrgAllocation());
 
-        $u = Admin::user();
+        $admin = Admin::user();
+        $adminId = $admin->id;
+        if (!$admin->isRole('admin')) {
     
-        if (!$u->isRole('admin')) {
-            if ($u->isRole('org')) {
-                // Retrieve the organization IDs assigned to the admin user
-                $orgIds = OrgAllocation::where('user_id', $u->user_id)->pluck('vsla_organisation_id')->toArray();
-                // Filter users based on the retrieved sacco IDs
-                $grid->model()->whereIn('vsla_organisation_id', $orgIds);
-                $grid->disableCreateButton();
-                // Disable delete
-                $grid->actions(function (Grid\Displayers\Actions $actions) {
-                    $actions->disableDelete();
-                });
-                // Filter by user_type
-                $grid->model()->where(function ($query) {
-                    $query->whereNull('user_type')->orWhereNotIn('user_type', ['Admin', '5']);
-                });
-    
-                $grid->disableFilter();
-            }
-        } 
+            $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+            if ($orgAllocation) {
+                $orgId = $orgAllocation->vsla_organisation_id;
+                // die(print_r($orgId));
+                $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
+
+                // Extracting Sacco IDs from the assignments
+                $OrgAdmins = OrgAllocation::where('vsla_organisation_id', $orgId)->pluck('user_id')->toArray();
+                // die(print_r($saccoIds));
+
+                $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
+                $grid->model()->where('vsla_organisation_id', $orgId);            }
+        }
     
         $grid->column('id', 'ID')->sortable();
     
@@ -92,14 +89,9 @@ class AssignOrganisationAdminController extends AdminController
 {
     $form = new Form(new OrgAllocation());
 
-    $u = Admin::user();
+    $admin = Admin::user();
 
-    if (!$u->isRole('admin')) {
-        if ($form->isCreating()) {
-            admin_error("You are not allowed to create a new Agent Allocation");
-            return back();
-        }
-    }
+   $adminId = $admin->id;
 
     $form->display('id', 'ID');
 
@@ -116,8 +108,17 @@ class AssignOrganisationAdminController extends AdminController
         ->pluck('full_name', 'id');
 
     $form->select('user_id', 'Admin')->options($orgUsers); // Change 'admin' to 'user_id'
-
-    $form->select('vsla_organisation_id', 'VSLA Organisation')->options(VslaOrganisation::all()->pluck('name', 'id'));
+    if (!$admin->isRole('admin')) {
+    
+        $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+        if ($orgAllocation) {
+            $orgId = $orgAllocation->vsla_organisation_id;  
+            $form->select('vsla_organisation_id', 'VSLA Organisation')->options(VslaOrganisation::where('id', $orgId)->pluck('name', 'id'));
+        }
+    }
+    else {
+        $form->select('vsla_organisation_id', 'VSLA Organisation')->options(VslaOrganisation::all()->pluck('name', 'id'));
+    }
 
     $form->display('created_at', 'Created At');
     $form->display('updated_at', 'Updated At');

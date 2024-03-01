@@ -69,18 +69,30 @@ $filteredUsers = $filteredUsers->filter(function ($user) {
 });
 
 
-        if ($admin->isRole('org')) {
+        if (!$admin->isRole('admin')){
+
+            $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+            if ($orgAllocation) {
+                $orgIds = $orgAllocation->vsla_organisation_id;
+                // Use $orgId for further processing
+              } else {
+                die('No organisation id');
+              }
             
-            $orgIds = OrgAllocation::where('user_id', $admin->user_id)->pluck('vsla_organisation_id')->toArray();
-            // $orgIds = VslaOrganisation::where('agent_id', $admin->id)->pluck('id')->toArray();
+            // $orgIds = OrgAllocation::where('user_id', $admin->user_id)->pluck('vsla_organisation_id')->toArray();
             
             // Retrieve the sacco IDs associated with the organization IDs
-            $saccoIds = OrganizationAssignment::whereIn('organization_id', $orgIds)->pluck('sacco_id')->toArray();
+            $saccoIds = OrganizationAssignment::where('organization_id', $orgIds)->pluck('sacco_id')->toArray();
+
+            // Count the number of users allocated to the organizations specified by $orgIds
+            $OrgAdmins = OrgAllocation::where('vsla_organisation_id', $orgIds)->pluck('vsla_organisation_id')->toArray();
+            $totalOrgAdmins = count($OrgAdmins);
             
             // Calculate various statistics based on organization-specific data
             $totalSaccos = Sacco::whereIn('id', $saccoIds)->count();
-            $organisationCount = VslaOrganisation::whereIn('id', $orgIds)->count();
+            $organisationCount = VslaOrganisation::where('id', $orgIds)->count();
             $totalMembers = $filteredUsers->whereIn('sacco_id', $saccoIds)->count();
+            $totalAccounts = $filteredUsers->where('user_type', 'Admin')->whereIn('sacco_id', $saccoIds)->count();
             $totalPwdMembers = $filteredUsers->whereIn('sacco_id', $saccoIds)->where('pwd', 'yes')->count();
             $villageAgents = User::whereIn('sacco_id', $saccoIds)->where('user_type', '4')->count();
             $youthMembersPercentage = ($totalMembers > 0) ? $filteredUsers->whereIn('sacco_id', $saccoIds)->filter(function ($user) {

@@ -2,9 +2,11 @@
 
 namespace App\Admin\Controllers;
 
+use App\Models\OrgAllocation;
 use App\Models\Organization;
 use App\Models\OrganizationAssignment;
 use App\Models\Sacco;
+use App\Models\VslaOrganisationSacco;
 use Encore\Admin\Auth\Database\Administrator;
 use Encore\Admin\Controllers\AdminController;
 use Encore\Admin\Facades\Admin;
@@ -29,17 +31,30 @@ class SaccoController extends AdminController
     protected function grid()
     {
         $grid = new Grid(new Sacco());
+    
+        $admin = Admin::user();
+        $adminId = $admin->id;
+        if (!$admin->isRole('admin')) {
+    
+            $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+            if ($orgAllocation) {
+                $orgId = $orgAllocation->vsla_organisation_id;
+                // die(print_r($orgId));
+                $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
 
-        $u = Admin::user();
-        if (!$u->isRole('admin')) {
-            // if (!$u->isRole('sacco')) {
+                // Extracting Sacco IDs from the assignments
+                $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
+                // die(print_r($saccoIds));
+
+                $grid->model()->whereIn('id', $saccoIds);
                 $grid->disableCreateButton();
                 $grid->actions(function (Grid\Displayers\Actions $actions) {
                     $actions->disableDelete();
                 });
                 $grid->disableFilter();
-            
-        } 
+            }
+        }
+        
         $grid->disableBatchActions();
         $grid->quickSearch('name')->placeholder('Search by name');
         $grid->disableExport();

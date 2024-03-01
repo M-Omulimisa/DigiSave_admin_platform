@@ -26,18 +26,23 @@ class OrganizationController extends AdminController
     protected function grid()
     {
         $grid = new Grid(new VslaOrganisation());
-        $u = Admin::user();
-        if (!$u->isRole('admin')) {
-            /* $grid->model()->where('sacco_id', $u->sacco_id);
-  */           if ($u->isRole('org')) {
-               // Retrieve the organization IDs assigned to the admin user            
-               $orgIds = OrgAllocation::where('user_id', $u->user_id)->pluck('vsla_organisation_id')->toArray();
-               // Retrieve the sacco IDs associated with the organization IDs
-               $saccoIds = VslaOrganisationSacco::whereIn('vsla_organisation_id', $orgIds)->pluck('sacco_id')->toArray();
-               // Filter users based on the retrieved sacco IDs
-                $grid->model()->whereIn('vsla_organisation_id', $orgIds);
+        
+        $admin = Admin::user();
+        $adminId = $admin->id;
+        if (!$admin->isRole('admin')) {
+    
+            $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+            if ($orgAllocation) {
+                $orgId = $orgAllocation->vsla_organisation_id;
+                // die(print_r($orgId));
+                $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
+
+                // Extracting Sacco IDs from the assignments
+                $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
+                // die(print_r($saccoIds));
+
+                $grid->model()->where('id', $orgId);
                 $grid->disableCreateButton();
-                //dsable delete
                 $grid->actions(function (Grid\Displayers\Actions $actions) {
                     $actions->disableDelete();
                 });
