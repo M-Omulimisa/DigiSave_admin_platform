@@ -29,7 +29,7 @@
         <div class="small-box bg-white">
             <div class="inner">
                 <div class="green-background" style="padding: 5px; border-radius: 5px;">
-                    <h4 style="color: white; font-family: 'Arial', sans-serif; text-align: center; margin: 0; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);">Total VSLAs</h4>
+                    <h4 style="color: white; font-family: 'Arial', sans-serif; text-align: center; margin: 0; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);">VSLAs</h4>
                 </div>
                 <h3 style="margin-top: 10px; text-align: center;">{{ $totalSaccos }}</h3>
             </div>
@@ -79,7 +79,7 @@
         <div class="small-box bg-white">
             <div class="inner">
                 <div class="green-background" style="padding: 5px; border-radius: 5px;">
-                    <h4 style="color: white; font-family: 'Arial', sans-serif; text-align: center; margin: 0; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);">Current Users</h4>
+                    <h4 style="color: white; font-family: 'Arial', sans-serif; text-align: center; margin: 0; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);">Group Members</h4>
                 </div>
                 <h3 style="margin-top: 10px; text-align: center;">{{ $totalMembers }}</h3>
             </div>
@@ -89,7 +89,7 @@
         <div class="small-box bg-white">
             <div class="inner">
                 <div class="green-background" style="padding: 5px; border-radius: 5px;">
-                    <h4 style="color: white; font-family: 'Arial', sans-serif; text-align: center; margin: 0; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);">PWD Users</h4>
+                    <h4 style="color: white; font-family: 'Arial', sans-serif; text-align: center; margin: 0; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);">PWDs</h4>
                 </div>
                 <h3 style="margin-top: 10px; text-align: center;">{{ $totalPwdMembers }}</h3>
             </div>

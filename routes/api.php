@@ -1,5 +1,6 @@
 <?php
 
+use App\Admin\Controllers\SaccoController;
 use App\Http\Controllers\ApiAuthController;
 use App\Http\Controllers\ApiResurceController;
 use App\Http\Controllers\PositionController;
@@ -70,7 +71,7 @@ Route::get('sacco/{sacco_id}', [ApiResurceController::class, 'getSaccoData']);
 Route::get('cycle-history', [ApiResurceController::class, 'getMemberDetailsByCycle']);
 Route::get('agent-saccos/{saccoIds}', [ApiResurceController::class, 'agent_saccos']);
 
-
+// Route::get('admin/sacco/export-pdf/{id}', [SaccoController::class, 'exportPDF'])->name('admin.sacco.exportPDF');
 
 
 

@@ -12,7 +12,11 @@ use Encore\Admin\Controllers\AdminController;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Encore\Admin\Facades\Admin;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\SendMail;
 use Encore\Admin\Show; // Import the Show class
+use Exception;
+use Illuminate\Support\Facades\Hash;
 
 class AssignOrganisationAdminController extends AdminController
 {
@@ -133,6 +137,49 @@ class AssignOrganisationAdminController extends AdminController
             admin_error("This admin is already assigned to the selected organization.");
             return back();
         }
+        else
+            // Check if a user with the same phone number already exists
+            $adminUser = User::find($form->user_id);
+            $password = str_pad(mt_rand(1, 99999), 5, '0', STR_PAD_LEFT);
+
+            // Update the password field with the generated password
+            $adminUser->password = Hash::make($password);
+            $adminUser->save();
+
+            $org = VslaOrganisation::where('id', $form->vsla_organisation_id)->first();
+            
+    
+            // Custom message for registration
+            $platformLink = "https://digisave.m-omulimisa.com/";
+            $message = "Hello {$adminUser->first_name} {$adminUser->last_name}, you have sucessfully been registered as {$org->name} organisation administrator. Your login details are: Phone Number: {$adminUser->phone_number}, Password: {$password}. Click here to access the platform: {$platformLink}";
+            $email_info = [
+                "first_name"=>$adminUser->first_name,
+                "last_name"=>$adminUser->last_name,
+                "phone_number"=>$adminUser->phone_number,
+                "password"=>$password,
+                "platformLink"=>$platformLink
+            ];
+            // die($message);
+            // Sending SMS
+            $resp = null;
+            try {
+                Mail::to($form->email)->send(new SendMail($email_info));
+                
+                // Log a success message
+                admin_toastr("Email sent successfully to {$form->email}");
+        
+                // $resp = Utils::send_sms($form->phone_number, $message);
+            } catch (Exception $e) {
+                // die('Failed to send email because');
+                // Log the error
+                admin_error('Failed to send email because ' . $e->getMessage());
+        
+                // Throw an exception
+                throw new Exception('Failed to send email because ' . $e->getMessage());
+                
+                // Return an error message
+                // return admin_error('Failed to send email because ' . $e->getMessage());
+            }
     });
 
     return $form;

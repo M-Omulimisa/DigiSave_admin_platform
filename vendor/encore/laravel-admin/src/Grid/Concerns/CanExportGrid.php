@@ -21,22 +21,28 @@ trait CanExportGrid
      * @param bool $forceExport
      */
     protected function handleExportRequest($forceExport = false)
-    {
-        if (!$scope = request(Exporter::$queryName)) {
-            return;
-        }
-
-        // clear output buffer.
-        if (ob_get_length()) {
-            ob_end_clean();
-        }
-
-        $this->disablePagination();
-
-        if ($forceExport) {
-            $this->getExporter($scope)->export();
-        }
+{
+    if (!$scope = request(Exporter::$queryName)) {
+        return;
     }
+
+    // Check if the scope is for PDF export
+    if ($scope === 'pdf') {
+        // Trigger the PDF export method
+        return $this->exportPDF();
+    }
+
+    // clear output buffer.
+    if (ob_get_length()) {
+        ob_end_clean();
+    }
+
+    $this->disablePagination();
+
+    if ($forceExport) {
+        $this->getExporter($scope)->export();
+    }
+}
 
     /**
      * @param string $scope

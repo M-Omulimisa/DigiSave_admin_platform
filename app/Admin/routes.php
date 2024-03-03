@@ -31,6 +31,9 @@ Route::group([
     $router->resource('assign-org-admin', AssignOrganisationAdminController::class);
     $router->resource('admin-roles', AdminRoleController::class);
 
+    $router->get('saccos/export-pdf/{id}', 'SaccoController@exportPDF')->name('saccos.export-pdf');
+
+
     /* ========================START OF NEW THINGS===========================*/
 
     $router->resource('crops', CropController::class);

@@ -2,11 +2,11 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.0-2/css/fontawesome.min.css" />  
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.0-2/css/all.min.css" />  
 <style>
-    .small-box .inner h4:hover, .small-box .inner p:hover {
+    /* .small-box .inner h4:hover, .small-box .inner p:hover {
         text-decoration: underline;
         color: rgb(0, 162, 255);
         cursor: pointer;
-    }
+    } */
     .savings {
         color: green;
         font-weight: bold;

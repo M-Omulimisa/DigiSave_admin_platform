@@ -7,6 +7,7 @@ use App\Models\Organization;
 use App\Models\OrganizationAssignment;
 use App\Models\Sacco;
 use App\Models\VslaOrganisationSacco;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Encore\Admin\Auth\Database\Administrator;
 use Encore\Admin\Controllers\AdminController;
 use Encore\Admin\Facades\Admin;
@@ -22,6 +23,8 @@ class SaccoController extends AdminController
      * @var string
      */
     protected $title = 'VLSA Groups';
+
+
 
     /**
      * Make a grid builder.
@@ -54,10 +57,11 @@ class SaccoController extends AdminController
                 $grid->disableFilter();
             }
         }
+
+        $grid->showExportBtn();
         
         $grid->disableBatchActions();
         $grid->quickSearch('name')->placeholder('Search by name');
-        $grid->disableExport();
         $grid->model()->orderBy('name', 'desc');
         $grid->column('name', __('Name'))->sortable();
         $grid->column('phone_number', __('Phone number'))->sortable();
@@ -78,6 +82,9 @@ class SaccoController extends AdminController
         $grid->column('mission', __('Mission'));
         $grid->column('vision', __('Vision'))->hide();
         $grid->column('logo', __('Logo'))->hide();
+        $grid->showExportBtn();
+
+        // Customize export button to export to PDF
 
         return $grid;
     }

@@ -110,24 +110,24 @@ class OrganisationAdminController extends AdminController
             $form->input('username', $form->phone_number);
             
     
-            // Custom message for registration
-            $platformLink = "https://digisave.m-omulimisa.com/";
-            $message = "Welcome to Digisave VSLA! You have been registered as an organisation administrator. Your login details are: Phone Number: {$form->phone_number}, Password: {$password}. Click here to access the platform: {$platformLink}";
-            $email_info = [
-                "first_name"=>$form->first_name,
-                "last_name"=>$form->last_name,
-                "phone_number"=>$form->phone_number,
-                "password"=>$password,
-                "platformLink"=>$platformLink
-            ];
-            // Sending SMS
-            $resp = null;
-            try {
-                Mail::to($form->email)->send(new SendMail($email_info));
-                // $resp = Utils::send_sms($form->phone_number, $message);
-            } catch (Exception $e) {
-                return admin_error('Failed to send SMS because ' . $e->getMessage());
-            }
+            // // Custom message for registration
+            // $platformLink = "https://digisave.m-omulimisa.com/";
+            // $message = "Welcome to Digisave VSLA! You have been registered as an organisation administrator. Your login details are: Phone Number: {$form->phone_number}, Password: {$password}. Click here to access the platform: {$platformLink}";
+            // $email_info = [
+            //     "first_name"=>$form->first_name,
+            //     "last_name"=>$form->last_name,
+            //     "phone_number"=>$form->phone_number,
+            //     "password"=>$password,
+            //     "platformLink"=>$platformLink
+            // ];
+            // // Sending SMS
+            // $resp = null;
+            // try {
+            //     Mail::to($form->email)->send(new SendMail($email_info));
+            //     // $resp = Utils::send_sms($form->phone_number, $message);
+            // } catch (Exception $e) {
+            //     return admin_error('Failed to send email because ' . $e->getMessage());
+            // }
     
             // if ($resp != ) {
             //     return admin_error('Failed to send SMS because ' . $resp);
