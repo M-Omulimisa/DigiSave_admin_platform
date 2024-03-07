@@ -14,6 +14,7 @@ class VslaOrganisation extends Model
         'phone_number',
         'email',
         'unique_code',
+        'logo'
     ];
 
     /**

@@ -52,7 +52,7 @@ class ApiResurceController extends Controller
 
     public function get_districts()
     {
-        
+
         $u = auth('api')->user();
 
         if ($u == null) {
@@ -68,7 +68,7 @@ class ApiResurceController extends Controller
 
     public function get_parishes()
     {
-        
+
         $u = auth('api')->user();
 
         if ($u == null) {
@@ -84,7 +84,7 @@ class ApiResurceController extends Controller
 
     public function get_villages()
     {
-        
+
         $u = auth('api')->user();
 
         if ($u == null) {
@@ -154,32 +154,32 @@ class ApiResurceController extends Controller
             $message = "Success",
             200
         );
-    } 
-    
+    }
+
     public function eligible_members(Request $r)
     {
         $u = auth('api')->user();
-    
+
         if ($u == null) {
             return $this->error('User not found.');
         }
-    
+
         // Fetch schemes associated with the Sacco
         $schemes = LoanScheem::where(['sacco_id' => $u->sacco_id])->get();
-    
+
         // Fetch members associated with the Sacco
         $members = User::where(['sacco_id' => $u->sacco_id])->limit(1000)->orderBy('id', 'desc')->get();
-    
+
         // Initialize an array to store eligible members with scheme details
         $eligibleMembers = [];
-    
+
         // Iterate through schemes to find eligible members and their eligible amounts
         foreach ($schemes as $scheme) {
             foreach ($members as $member) {
                 if ($member->balance >= $scheme->max_balance) {
                     // Calculate the maximum eligible amount based on balance for this scheme
                     $eligibleAmount = $member->balance * 3; // Adjust the multiplier as needed
-    
+
                     // Append the scheme ID, eligible amount, and name to the member's data
                     $eligibleMembers[] = [
                         'sacco_id' => $u->sacco_id,
@@ -192,7 +192,7 @@ class ApiResurceController extends Controller
                 }
             }
         }
-    
+
         // Return eligible members data with specific fields including name
         return $this->success($eligibleMembers, $message = "Eligible Members with Scheme IDs, Names, and Eligible Amounts", 200);
     }
@@ -253,7 +253,7 @@ class ApiResurceController extends Controller
         $share_record->number_of_shares = $r->number_of_shares;
         $share_record->created_by_id = $admin->id;
 
-        
+
 
         try {
             $share_record->save();
@@ -271,47 +271,47 @@ class ApiResurceController extends Controller
     public function socialFundCreate(Request $request)
     {
         $admin = auth('api')->user();
-    
+
         if ($admin === null) {
             return $this->error('User not found.');
         }
-    
+
         if ($request->user_id === null) {
             return $this->error('User ID not provided.');
         }
-    
+
         $user = User::find($request->user_id);
-    
+
         if ($user === null) {
             return $this->error('User not found.');
         }
-    
+
         $sacco = Sacco::find($user->sacco_id);
-    
+
         if ($sacco === null) {
             return $this->error('Sacco not found.');
         }
-    
+
         // Fetch the active cycle for the user's SACCO
         $activeCycle = Cycle::where('sacco_id', $sacco->id)
                         ->where('status', 'Active')
                         ->first();
-    
+
         if (!$activeCycle) {
             return $this->error('Active cycle not found for the SACCO.');
         }
-    
+
         $requiredAmount = $activeCycle->amount_required_per_meeting;
 
         $previousRemainingBalance = 0; // Default value if it's the first meeting
-        
+
         if ($request->meeting_number > 1) {
             $previousSocialFund = SocialFund::where('user_id', $user->id)
                 ->where('sacco_id', $sacco->id)
                 ->where('cycle_id', $activeCycle->id)
                 ->where('meeting_number', $request->meeting_number - 1)
                 ->first();
-        
+
             if ($previousSocialFund) {
                 $previousRemainingBalance = $previousSocialFund->remaining_balance;
             } else {
@@ -320,11 +320,11 @@ class ApiResurceController extends Controller
                 $previousRemainingBalance = $firstMeetingRequiredAmount;
             }
         }
-        
+
         // Calculate the new remaining balance
         $newBalance = $previousRemainingBalance + $requiredAmount - $request->amount_paid;
-        
-    
+
+
         $socialFund = new SocialFund();
         $socialFund->user_id = $user->id;
         $socialFund->created_by_id = $admin->id;
@@ -333,13 +333,13 @@ class ApiResurceController extends Controller
         $socialFund->sacco_id = $sacco->id;
         $socialFund->cycle_id = $activeCycle->id;
         $socialFund->remaining_balance = $newBalance;
-    
+
         try {
             $socialFund->save();
         } catch (\Throwable $th) {
             return $this->error('Failed to save social fund record: ' . $th->getMessage());
         }
-    
+
         return $this->success(
             $socialFund,
             $message = "Social fund record created successfully",
@@ -391,7 +391,7 @@ class ApiResurceController extends Controller
             200
         );
     }
-         
+
 
     public function request_otp_sms(Request $r)
     {
@@ -496,13 +496,13 @@ class ApiResurceController extends Controller
         // Initialize variables to store user ID and user
         $userId = null;
         $user = null;
-    
+
         // Check if a request is provided and if it contains user ID
         if ($request && $request->has('user_id')) {
             // If user ID is provided in the request, assign it
             $userId = $request->input('user_id');
         }
-    
+
         // Check if the authenticated user is available
         if (auth('api')->check()) {
             // If authenticated, use the authenticated user's ID
@@ -514,12 +514,12 @@ class ApiResurceController extends Controller
             // If both authenticated user and user ID in the request are null, return an error response
             return response()->json(['message' => 'User not authenticated and no user ID provided in the request'], 404);
         }
-    
+
         // Check if a user is found
         if ($user) {
             // Find the associated Sacco
             $sacco = Sacco::where('administrator_id', $user->id)->first();
-    
+
             // Check if a Sacco is found
             if ($sacco) {
                 // Get positions associated with the Sacco
@@ -538,8 +538,8 @@ class ApiResurceController extends Controller
             // Return error response if user not found
             return response()->json(['message' => 'User not found'], 404);
         }
-    }    
-    
+    }
+
 //     public function get_positions()
 // {
 //     $u = auth('api')->user();
@@ -604,13 +604,13 @@ class ApiResurceController extends Controller
     public function socialFundRecords(Request $request)
     {
         $user = auth('api')->user();
-    
+
         if ($user === null) {
             return $this->error('User not found.');
         }
-    
+
         $conditions = [];
-    
+
         if ($user->isRole('sacco')) {
             $conditions = [
                 'sacco_id' => $user->sacco_id
@@ -620,33 +620,33 @@ class ApiResurceController extends Controller
                 'user_id' => $user->id
             ];
         }
-    
+
         // Fetch the active cycle's required amount
         $activeCycle = Cycle::where('status', 'Active')
                         ->where('sacco_id', $user->sacco_id) // Adjust this condition if needed
                         ->first();
-    
+
         if (!$activeCycle) {
             return $this->error('Active cycle not found.');
         }
-    
+
         $requiredAmount = $activeCycle->amount_required_per_meeting;
-    
+
         $socialFunds = SocialFund::where($conditions)
                         ->orderBy('id', 'desc')
                         ->get();
-    
+
         // Append the required amount to each social fund record
         $socialFunds->each(function ($socialFund) use ($requiredAmount) {
             $socialFund->required_amount = $requiredAmount;
         });
-    
+
         return $this->success(
             $socialFunds,
             $message = "Social fund records retrieved successfully",
             200
         );
-    }    
+    }
 
     public function transactions(Request $r)
     {
@@ -886,13 +886,13 @@ class ApiResurceController extends Controller
                 //success
                 DB::commit();
                 return $this->success($loan, $message = "Loan created successfully.", 200);
-    
+
             } catch (\Throwable $th) {
                 DB::rollBack();
                 return $this->error('Failed to save loan, because ' . $th->getMessage() . '');
             }
 
-            DB::commit(); 
+            DB::commit();
             return $this->success(null, $message = "Loan applied successfully. You will receive a confirmation message shortly.", 200);
         } catch (\Throwable $th) {
             DB::rollBack();
@@ -951,7 +951,7 @@ class ApiResurceController extends Controller
                 $transaction_user->description = "Withdrawal of UGX " . number_format($amount) . " from {$u->phone_number} - $u->name.";
                 try {
                     $transaction_user->save();
-                    
+
                 } catch (\Throwable $th) {
                     DB::rollback();
                     return $this->error('Failed to save transaction, because ' . $th->getMessage() . '');
@@ -1077,7 +1077,7 @@ class ApiResurceController extends Controller
 
 
             //create positive transaction for sacco
-        } 
+        }
 
          else if ($r->type == 'SAVING') {
 
@@ -1207,7 +1207,7 @@ class ApiResurceController extends Controller
                     return $this->error('Failed to save transaction, because ' . $th->getMessage() . '');
                 }
                 if ($loan->balance == 0) {
-                    $loan->is_fully_paid = 'Yes'; 
+                    $loan->is_fully_paid = 'Yes';
                     try {
                         $loan->save();
                     } catch (\Throwable $th) {
@@ -1215,7 +1215,7 @@ class ApiResurceController extends Controller
                         return $this->error('Failed to update loan status, because ' . $th->getMessage() . '');
                     }
                 }
-                
+
                 DB::commit();
                 return $this->success($loan, $message = "Loan repayment of UGX " . number_format($amount) . " was successful. Your balance is now UGX " . number_format($u->balance) . ".", 200);
             } catch (\Exception $e) {
@@ -1381,7 +1381,7 @@ class ApiResurceController extends Controller
         );
     }
 
-    
+
     public function scheduleMeeting(Request $request)
     {
         $admin = auth('api')->user();
@@ -1399,7 +1399,7 @@ class ApiResurceController extends Controller
             $meeting->meeting_date = $request->input('meeting_date');
             $meeting->meeting_time = $request->input('meeting_time');
             $meeting->meeting_description = $request->input('meeting_description');
-           
+
 
             try {
                 $meeting->save();
@@ -1430,7 +1430,7 @@ class ApiResurceController extends Controller
     return $this->success($meetings, $message="Meetings retrieved successfully", 200);
 }
 
-    
+
 
     public function cycles_create(Request $r)
     {
@@ -1561,13 +1561,13 @@ class ApiResurceController extends Controller
         if ($u == null) {
             return $this->error('User not found.');
         }
-    
+
         try {
             $cycle = Cycle::where('sacco_id', $saccoId)
                 ->where('id', $cycleId)
                 ->firstOrFail(); // Find the cycle by its SACCO ID and Cycle ID
-                
-    
+
+
             // Update cycle attributes if they are provided in the request
             if ($r->has('name')) {
                 $cycle->name = $r->name;
@@ -1587,22 +1587,22 @@ class ApiResurceController extends Controller
             if ($r->has('end_date')) {
                 $cycle->end_date = Carbon::parse($r->end_date);
             }
-    
+
             // Ensure the cycle being updated belongs to the authenticated user's SACCO
             if ($cycle->sacco_id !== $u->sacco_id) {
                 return $this->error('Unauthorized. This cycle does not belong to your SACCO.');
             }
-    
+
             $cycle->save(); // Save the updated cycle
-    
+
             // Retrieve the updated cycle data
             $updatedCycle = Cycle::findOrFail($cycle->id);
-    
+
             return $this->success($updatedCycle, $message = "Cycle updated successfully!", 200);
         } catch (\Throwable $th) {
             return $this->error('Failed to update cycle: ' . $th->getMessage());
         }
-    }    
+    }
 
 
     public function sacco_members_review(Request $r)
@@ -2150,7 +2150,7 @@ class ApiResurceController extends Controller
                     'share_out_money' => Shareout::where('member_id', $member->id)
                                           ->where('cycle_id', $cycle->id)
                                           ->sum('shareout_amount'),
-            
+
                 ];
 
                 $memberDetails[] = $memberData;

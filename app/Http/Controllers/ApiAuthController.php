@@ -553,27 +553,42 @@ class ApiAuthController extends Controller
 
     public function update_user(Request $request)
     {
-        // Extract the admin user's ID from the request data
-        $adminId = $request->input('admin_id');
+        $admin = auth('api')->user();
+            if (!$admin) {
+                
+                // Extract the admin user's ID from the request data
+                $adminId = $request->input('admin_id');
 
-       // Use the admin user's ID to find the corresponding User model
-       $admin = User::find($adminId);
+                // Use the admin user's ID to find the corresponding User model
+                $admin = User::find($adminId);
+ 
+               // Check if the admin user is found
+               if ($admin == null) {
+              // Handle case where admin user is not found
+                return $this->error('Admin user not found.');
+                }
+            }
 
-       // Check if the admin user is found
-       if ($admin == null) {
-          // Handle case where admin user is not found
-          return $this->error('Admin user not found.');
+            
+
+        $loggedIn = Administrator::find($admin->id);
+        if ($loggedIn == null) {
+            return $this->error('Admin User not found.');
         }
+        $sacco = Sacco::find($loggedIn->sacco_id);
+
+        if ($sacco == null) {
         
-        $saccoId = $request->input('sacco_id');
-
-        // Use the sacco_id to find the corresponding Sacco model
-        $sacco = Sacco::find($saccoId);
-
-        // Check if the Sacco model is found
-       if ($sacco == null) {
-          // Handle case where Sacco is not found
-          return $this->error('Sacco not found.');
+            $saccoId = $request->input('sacco_id');
+    
+            // Use the sacco_id to find the corresponding Sacco model
+            $sacco = Sacco::find($saccoId);
+    
+            // Check if the Sacco model is found
+           if ($sacco == null) {
+              // Handle case where Sacco is not found
+              return $this->error('Sacco not found.');
+            }
         }
 
         if (!isset($request->task)) {

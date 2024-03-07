@@ -41,6 +41,7 @@
 </style>
 
 <template>
+    hello
     <div id="grid-context-menu"></div>
 </template>
 

@@ -34,7 +34,7 @@ class MembersController extends AdminController
         $admin = Admin::user();
         $adminId = $admin->id;
         if (!$admin->isRole('admin')) {
-    
+
             $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
             if ($orgAllocation) {
                 $orgId = $orgAllocation->vsla_organisation_id;
@@ -57,10 +57,10 @@ class MembersController extends AdminController
         $grid->model()->where(function ($query) {
             $query->whereNull('user_type');
         });
-    
+
         $grid->disableBatchActions();
         $grid->quickSearch('first_name', 'last_name', 'email', 'phone_number')->placeholder('Search by name, email or phone number');
-    
+
         $grid->column('first_name', __('First name'))->sortable();
         $grid->column('last_name', __('Last name'))->sortable();
         $grid->column('email', __('Email'))->sortable();
@@ -77,9 +77,9 @@ class MembersController extends AdminController
             ->display(function ($date) {
                 return date('d M Y', strtotime($date));
             })->sortable();
-    
+
         return $grid;
-    }    
+    }
 
     /**
      * Make a show builder.
