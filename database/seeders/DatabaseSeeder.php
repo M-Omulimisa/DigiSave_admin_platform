@@ -23,7 +23,7 @@ class DatabaseSeeder extends Seeder
             UserPermissionSeeder::class,
             GensSeeder::class,
             DefaultUserSeeder::class,
-            OrganizationSeeder::class
+            VslaOrganisationSeeder::class
 
         ]);
     }
