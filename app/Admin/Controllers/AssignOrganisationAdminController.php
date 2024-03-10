@@ -14,8 +14,10 @@ use Encore\Admin\Grid;
 use Encore\Admin\Facades\Admin;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\SendMail;
+use App\Models\Utils;
 use Encore\Admin\Show; // Import the Show class
 use Exception;
+use GuzzleHttp\Psr7\Message;
 use Illuminate\Support\Facades\Hash;
 
 class AssignOrganisationAdminController extends AdminController
@@ -29,7 +31,7 @@ class AssignOrganisationAdminController extends AdminController
         $admin = Admin::user();
         $adminId = $admin->id;
         if (!$admin->isRole('admin')) {
-    
+
             $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
             if ($orgAllocation) {
                 $orgId = $orgAllocation->vsla_organisation_id;
@@ -43,28 +45,28 @@ class AssignOrganisationAdminController extends AdminController
                 $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
                 $grid->model()->where('vsla_organisation_id', $orgId);            }
         }
-    
+
         $grid->column('id', 'ID')->sortable();
-    
+
         $grid->column('admin', 'Admin')->display(function () {
             return $this->admin ? $this->admin->first_name . ' ' . $this->admin->last_name : 'N/A';
         })->sortable();
-    
+
         $grid->column('admin_email', 'Admin Email')->display(function () {
             return $this->admin ? $this->admin->email : 'N/A';
         });
-    
+
         $grid->column('admin_phone', 'Admin Phone')->display(function () {
             return $this->admin ? $this->admin->phone_number : 'N/A';
         });
-    
+
         $grid->column('organization', 'VSLA Organisation')->display(function () {
             return $this->organization ? $this->organization->name : 'N/A';
         })->sortable();
-    
+
         $grid->created_at('Created At')->sortable();
         $grid->updated_at('Updated At')->sortable();
-    
+
         return $grid;
     }
 
@@ -113,10 +115,10 @@ class AssignOrganisationAdminController extends AdminController
 
     $form->select('user_id', 'Admin')->options($orgUsers); // Change 'admin' to 'user_id'
     if (!$admin->isRole('admin')) {
-    
+
         $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
         if ($orgAllocation) {
-            $orgId = $orgAllocation->vsla_organisation_id;  
+            $orgId = $orgAllocation->vsla_organisation_id;
             $form->select('vsla_organisation_id', 'VSLA Organisation')->options(VslaOrganisation::where('id', $orgId)->pluck('name', 'id'));
         }
     }
@@ -147,8 +149,8 @@ class AssignOrganisationAdminController extends AdminController
             $adminUser->save();
 
             $org = VslaOrganisation::where('id', $form->vsla_organisation_id)->first();
-            
-    
+
+
             // Custom message for registration
             $platformLink = "https://digisave.m-omulimisa.com/";
             $message = "Hello {$adminUser->first_name} {$adminUser->last_name}, you have sucessfully been registered as {$org->name} organisation administrator. Your login details are: Phone Number: {$adminUser->phone_number}, Password: {$password}. Click here to access the platform: {$platformLink}";
@@ -163,20 +165,23 @@ class AssignOrganisationAdminController extends AdminController
             // Sending SMS
             $resp = null;
             try {
+                info('Send mail');
                 Mail::to($form->email)->send(new SendMail($email_info));
-                
+                info('After Send mail');
+
                 // Log a success message
                 admin_toastr("Email sent successfully to {$form->email}");
-        
-                // $resp = Utils::send_sms($form->phone_number, $message);
+
+                $resp = Utils::send_sms($form->phone_number, $message);
             } catch (Exception $e) {
+                info($e->getMessage());
                 // die('Failed to send email because');
                 // Log the error
                 admin_error('Failed to send email because ' . $e->getMessage());
-        
+
                 // Throw an exception
                 throw new Exception('Failed to send email because ' . $e->getMessage());
-                
+
                 // Return an error message
                 // return admin_error('Failed to send email because ' . $e->getMessage());
             }
@@ -185,5 +190,5 @@ class AssignOrganisationAdminController extends AdminController
     return $form;
 }
 
-    
+
 }

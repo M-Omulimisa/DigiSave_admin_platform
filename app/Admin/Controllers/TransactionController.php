@@ -4,7 +4,9 @@ namespace App\Admin\Controllers;
 
 use App\Models\Organization;
 use App\Models\OrganizationAssignment;
+use App\Models\Sacco;
 use App\Models\Transaction;
+use App\Models\User;
 use App\Models\Utils;
 use Encore\Admin\Controllers\AdminController;
 use Encore\Admin\Facades\Admin;
@@ -37,8 +39,8 @@ class TransactionController extends AdminController
                     $actions->disableDelete();
                 });
                 $grid->disableFilter();
-            
-        } 
+
+        }
         $grid->disableCreateButton();
         //create a filter
         $grid->filter(function ($filter) {
@@ -141,30 +143,34 @@ class TransactionController extends AdminController
      *
      * @return Form
      */
-    protected function form()
-    {
-        $form = new Form(new Transaction());
-        return $form;
 
-        $u = Admin::user();
-        //only show sacco admin can create new transaction
-        $sacco_members = \App\Models\User::where('sacco_id', \Encore\Admin\Facades\Admin::user()->sacco_id)->get();
+// In the form method:
+    // protected function form()
+    // {
+    //     $form = new Form(new Transaction());
 
-        $form->select('user_id', __('Select Account'))->options($sacco_members->pluck('name', 'id'))
-            ->rules('required');
-        $form->hidden('source_user_id')->value($u->id);
-        $form->hidden('sacco_id')->value($u->sacco_id);
-        $form->radio('type', __('Tranasaction Type'))
-            ->options([
-                'Debit' => 'Debit (+)',
-                'Credit' => 'Credit (-)',
-            ]);
+    //     // Retrieve the list of SACCOs
+    //     $saccos = Sacco::pluck('name', 'id');
 
-        $form->decimal('amount', __('Amount'))
-            ->rules('required');
+    //     $form->select('sacco_id', __('Select SACCO'))->options($saccos)->rules('required');
 
-        $form->textarea('details', __('Details'))->rules('required');
+    //     $form->select('user_id', __('Select Account'))->options(function ($saccoId) {
+    //         // Fetch users based on the selected SACCO
+    //         $users = User::where('sacco_id', $saccoId)->pluck('name', 'id');
+    //         return $users;
+    //     })->rules('required');
 
-        return $form;
-    }
+    //     $form->radio('type', __('Transaction Type'))
+    //         ->options([
+    //             'SAVING' => 'Debit (+)',
+    //             'LOAN' => 'Credit (-)',
+    //         ]);
+
+    //     $form->decimal('amount', __('Amount'))->rules('required');
+
+    //     $form->textarea('details', __('Details'))->rules('required');
+
+    //     return $form;
+    // }
+
 }

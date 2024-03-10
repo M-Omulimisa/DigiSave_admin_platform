@@ -20,7 +20,7 @@ class User extends Authenticatable implements JWTSubject
     use Notifiable;
 
     protected $fillable = [
-        'sacco_id', 
+        'sacco_id',
         'position_id'
     ];
 
@@ -68,6 +68,13 @@ class User extends Authenticatable implements JWTSubject
 
         return admin_asset($default);
     }
+
+    // In your User model
+public function sacco()
+{
+    return $this->belongsTo(Sacco::class);
+}
+
 
 
 
@@ -179,14 +186,14 @@ public function getSHAREOUTSHAREPRICEAttribute()
         }
     }
 
-    return null; 
+    return null;
 }
 
 //Member share out
     public function getShareOutAmountAttribute()
 {
     $sacco = Sacco::find($this->sacco_id);
-    
+
     if ($sacco == null || $sacco->active_cycle == null) {
         return null;
     }
@@ -215,7 +222,7 @@ public function getSHAREOUTSHAREPRICEAttribute()
     {
         $sacco = Sacco::find($this->sacco_id);
         if ($sacco == null || $sacco->active_cycle == null) {
-            return null; 
+            return null;
         }
 
         return $sacco->active_cycle->id;
@@ -226,7 +233,7 @@ public function getSHAREOUTSHAREPRICEAttribute()
         $sacco = Sacco::find($this->sacco_id);
 
         if ($sacco == null || $sacco->active_cycle == null) {
-            return null; 
+            return null;
         }
 
         $cycleId = $sacco->active_cycle->id;
@@ -249,10 +256,10 @@ public function getSHAREOUTSHAREPRICEAttribute()
         if ($sacco->active_cycle == null) {
             return 0;
         }
-    
+
         $balance = $this->balance;
         $shareQuantity = $this->SHARE;
-    
+
         if ($shareQuantity != 0) {
             $cycleProfit = $balance / $shareQuantity;
             return $cycleProfit;
@@ -345,7 +352,7 @@ public function getSHAREOUTSHAREPRICEAttribute()
 
           // Check if user_id in Transaction is the administrator_id in Sacco
           $isAdminUser = ($this->id === $sacco->administrator_id);
-    
+
           // If user_id is the administrator_id, calculate totalAmount differently
          if ($isAdminUser) {
             $users = User::where([
@@ -354,13 +361,13 @@ public function getSHAREOUTSHAREPRICEAttribute()
             ])->where('id', '!=', $sacco->administrator_id)
             ->pluck('id')
             ->toArray();
-    
+
             $totalAmount = Transaction::whereIn('user_id', $users)
                 ->where('type', ['LOAN_INTEREST'])
                 ->where('cycle_id', $this->cycle_id)
                 ->sum('amount');
-        
-    
+
+
             return $totalAmount;
          } else {
           return Transaction::where('type', ['LOAN_INTEREST'])
@@ -441,7 +448,7 @@ public function getSHAREOUTSHAREPRICEAttribute()
          if ($sacco->active_cycle == null) {
              return 0;
          }
- 
+
          return Transaction::where([
              'user_id' => $this->id,
              'type' => 'REGESTRATION',
@@ -469,7 +476,7 @@ public function getSHAREOUTSHAREPRICEAttribute()
             ->sum('amount');
     }
 
-    
+
 
     //getter for LOAN
     // public function getLOAN_BALANCEAttribute()
@@ -500,24 +507,24 @@ public function getSHAREOUTSHAREPRICEAttribute()
         if ($sacco->active_cycle == null) {
             return 0;
         }
-    
+
         $totalLoan = Transaction::where([
             'user_id' => $this->id,
             'type' => 'LOAN',
             'cycle_id' => $sacco->active_cycle->id
         ])->sum('amount');
-    
+
         $totalRepayment = Transaction::where([
             'user_id' => $this->id,
             'type' => 'LOAN_REPAYMENT',
             'cycle_id' => $sacco->active_cycle->id
         ])->sum('amount');
-    
+
         $loanBalance = - $totalLoan - $totalRepayment;
-        
+
         return $loanBalance;
     }
-    
+
     //LOAN_COUNT
     public function getLOANCOUNTAttribute()
     {
@@ -541,7 +548,7 @@ public function getSHAREOUTSHAREPRICEAttribute()
 {
     $activeCycle = $this->active_cycle;
     $saccoId = $this->id;
-    
+
     if ($activeCycle == null) {
         return 0;
     }
@@ -558,7 +565,7 @@ public function getSHAREOUTSHAREPRICEAttribute()
     } else {
         return 0;
     }
-}  
+}
 
     //getter for SHARE
     public function getSHAREAttribute()
@@ -581,7 +588,7 @@ public function getSHAREOUTSHAREPRICEAttribute()
         ])->where('id', '!=', $sacco->administrator_id)
         ->pluck('id')
         ->toArray();
-    
+
         $totalAmount = Transaction::whereIn('user_id', $users)
             ->where('type', ['SHARE'])
             ->where('cycle_id', $sacco->active_cycle->id)
@@ -592,7 +599,7 @@ public function getSHAREOUTSHAREPRICEAttribute()
             ->where('cycle_id', $sacco->active_cycle->id)
             ->sum('amount');
     }
-    
+
 
     $sharePrice = $this->share_price;
 
@@ -615,14 +622,14 @@ public function getSHAREOUTSHAREPRICEAttribute()
     //     }
 
     //     $totalAmount = Transaction::where('user_id', $this->id)->sum('amount');
-    
+
     //     $sharePrice = $this->share_price;
-    
+
     //     if ($sharePrice != 0) {
     //         $shareQuantity = $totalAmount / $sharePrice;
     //         return $shareQuantity;
     //     } else {
     //         return 0;
     //     }
-    // }    
+    // }
 }

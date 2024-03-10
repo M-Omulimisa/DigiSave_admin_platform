@@ -34,11 +34,11 @@ class SaccoController extends AdminController
     protected function grid()
     {
         $grid = new Grid(new Sacco());
-    
+
         $admin = Admin::user();
         $adminId = $admin->id;
         if (!$admin->isRole('admin')) {
-    
+
             $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
             if ($orgAllocation) {
                 $orgId = $orgAllocation->vsla_organisation_id;
@@ -59,7 +59,7 @@ class SaccoController extends AdminController
         }
 
         $grid->showExportBtn();
-        
+
         $grid->disableBatchActions();
         $grid->quickSearch('name')->placeholder('Search by name');
         $grid->model()->orderBy('name', 'desc');
@@ -68,7 +68,7 @@ class SaccoController extends AdminController
         $grid->column('share_price', __('Share (UGX)'))
             ->display(function ($price) {
                 return number_format($price);
-            })->sortable(); 
+            })->sortable();
         $grid->column('physical_address', __('Physical address'))->sortable();
         $grid->column('created_at', __('Established'))
             ->display(function ($date) {
@@ -102,7 +102,7 @@ class SaccoController extends AdminController
         $show->field('id', __('Id'));
         $show->field('created_at', __('Created at'));
         $show->field('updated_at', __('Updated at'));
-        $show->field('administrator_id', __('Administrator id'));
+        // $show->field('administrator_id', __('Administrator id'));
         $show->field('name', __('Name'));
         $show->field('phone_number', __('Phone number'));
         $show->field('email_address', __('Email address'));
@@ -137,7 +137,8 @@ class SaccoController extends AdminController
                 admin_error("You are not allowed to create new Sacco");
                 return back();
             }
-        } else {
+        }
+        else {
             $ajax_url = url(
                 '/api/ajax?'
                     . "search_by_1=name"
