@@ -1134,7 +1134,8 @@ class ApiResurceController extends Controller
 
 
             //create positive transaction for sacco
-        } else if ($r->type == 'LOAN_REPAYMENT') {
+        }
+        else if ($r->type == 'LOAN_REPAYMENT') {
             $loan = Loan::find($r->loan_id);
             if ($loan == null) {
                 return $this->error('Loan not found.');
@@ -1184,6 +1185,7 @@ class ApiResurceController extends Controller
                 $transaction_sacco->type = 'LOAN_REPAYMENT';
                 $transaction_sacco->source_type = 'LOAN_REPAYMENT';
                 $transaction_sacco->amount = $amount;
+                // $transaction_sacco->balance = $acc_balance;
                 $transaction_sacco->description = "Loan Repayment of UGX " . number_format($amount) . " from {$u->phone_number} - $u->name. Loan Scheem: {$loan->scheme_name}. Reference: {$loan->id}.";
                 $transaction_sacco->details = "Loan Repayment of UGX " . number_format($amount) . " from {$u->phone_number} - $u->name. Loan Scheem: {$loan->scheme_name}. Reference: {$loan->id}.";
                 try {
@@ -1195,17 +1197,22 @@ class ApiResurceController extends Controller
 
                 //create loan transaction
                 $loan_transaction = new LoanTransaction();
-                $loan_transaction->user_id = $u->id;
-                $loan_transaction->loan_id = $loan->id;
-                $loan_transaction->sacco_id = $u->sacco_id;
-                $loan_transaction->amount = $amount;
-                $loan_transaction->description = "Loan Repayment of UGX " . number_format($amount) . " from {$u->phone_number} - $u->name. Loan Scheem: {$loan->scheme_name}. Reference: {$loan->id}.";
-                try {
-                    $loan_transaction->save();
-                } catch (\Throwable $th) {
-                    DB::rollback();
-                    return $this->error('Failed to save transaction, because ' . $th->getMessage() . '');
-                }
+$loan_transaction->user_id = $u->id;
+$loan_transaction->loan_id = $loan->id;
+$loan_transaction->sacco_id = $u->sacco_id;
+$loan_transaction->amount = $amount;
+
+// Set balance value here (example: subtract the amount from the user's balance)
+$loan_transaction->balance = $u->balance - $amount;
+
+$loan_transaction->description = "Loan Repayment of UGX " . number_format($amount) . " from {$u->phone_number} - $u->name. Loan Scheme: {$loan->scheme_name}. Reference: {$loan->id}.";
+
+try {
+    $loan_transaction->save();
+} catch (\Throwable $th) {
+    DB::rollback();
+    return $this->error('Failed to save transaction, because ' . $th->getMessage() . '');
+}
                 if ($loan->balance == 0) {
                     $loan->is_fully_paid = 'Yes';
                     try {
