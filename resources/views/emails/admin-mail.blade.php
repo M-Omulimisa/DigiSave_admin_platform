@@ -139,7 +139,7 @@
             <a type="button" href="{{$data['platformLink']}}" class="btn btn-primary">Login to Your Account</a>
             {{-- <div class="btn" href="{{$data['platformLink']}}">Login to Your Account</div> --}}
             <div style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;line-height:20px;text-align:left;color:#525252;">
-                Best regards,<br><br> Daniel Ninsiima<br>O-Mulimisa Team<br>
+                Best regards,<br>M-Omulimisa Support Team<br>
             </div>
             <p><i>This is an automated email. Please do not reply to this email.</i></p>
         </div>
