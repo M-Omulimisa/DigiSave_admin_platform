@@ -5,6 +5,7 @@ namespace App\Models;
 use Encore\Admin\Facades\Admin;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
 
 class Sacco extends Model
 {
@@ -21,12 +22,29 @@ class Sacco extends Model
             if ($u == null) {
                 throw new \Exception("Sacco Administrator not found");
             }
+
+            // Set the user's sacco_id to the newly created SACCO's ID
             $u->sacco_id = $m->id;
             $u->user_type = 'Admin';
             $u->status = 'Active';
             $u->sacco_join_status = 'Approved';
+
+            // Save the user changes
             $u->save();
+
+            // Establish a relationship with organization having ID 2
+            $organization = VslaOrganisation::find(1);
+            if ($organization) {
+                $m->vslaOrganisation()->associate($organization);
+                // You can also use $m->vsla_organisation_id = $organization->id; if needed
+
+                // Save the changes
+                $m->save();
+            } else {
+                throw new \Exception("Organization with ID 2 not found");
+            }
         });
+
 
         //updated
         self::updated(function ($m) {
@@ -99,7 +117,7 @@ class Sacco extends Model
         'cycle_id',
     ];
 
-    //getter for cycle_text 
+    //getter for cycle_text
     public function getCycleTextAttribute()
     {
         $cycle = Cycle::where('sacco_id', $this->id)->where('status', 'Active')->first();
@@ -117,19 +135,19 @@ class Sacco extends Model
             return null;
         }
         return $cycle->id;
-    } 
+    }
 
-    
+
     public function getCYCLEPROFITAttribute()
     {
         $activeCycle = $this->active_cycle;
         if ($activeCycle == null) {
             return 0;
         }
-    
+
         $balance = $this->balance;
         $shareQuantity = $this->SHARE;
-    
+
         if ($shareQuantity != 0) {
             $cycleProfit = $balance / $shareQuantity;
             return $cycleProfit;
@@ -137,7 +155,7 @@ class Sacco extends Model
             return 0;
         }
     }
-    
+
 
     // public function getCYCLEPROFITAttribute()
     // {
@@ -296,7 +314,7 @@ public function getSHARECOUNTAttribute()
 {
     $activeCycle = $this->active_cycle;
     $saccoId = $this->id;
-    
+
     if ($activeCycle == null) {
         return 0;
     }
@@ -313,7 +331,7 @@ public function getSHARECOUNTAttribute()
     } else {
         return 0;
     }
-}  
+}
 
     // public function getSHAREAttribute()
     // {
@@ -326,16 +344,16 @@ public function getSHARECOUNTAttribute()
     //     }
 
     //     $totalAmount = Transaction::where('sacco_id', $this->id)->sum('amount');
-    
+
     //     $sharePrice = $this->share_price;
-    
+
     //     if ($sharePrice != 0) {
     //         $shareQuantity = $totalAmount / $sharePrice;
     //         return $shareQuantity;
     //     } else {
     //         return 0;
     //     }
-    // }    
+    // }
 
     public function getLOANAttribute()
     {

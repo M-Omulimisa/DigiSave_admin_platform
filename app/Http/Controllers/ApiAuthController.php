@@ -17,6 +17,7 @@ use App\Models\PermissionInsert;
 use App\Models\MemberPosition;
 use App\Models\Shareout;
 use App\Models\Utils;
+use App\Models\VslaOrganisationSacco;
 use App\Traits\ApiResponser;
 use Carbon\Carbon;
 use Encore\Admin\Auth\Database\Administrator;
@@ -25,6 +26,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Exception;
 
@@ -61,6 +63,41 @@ class ApiAuthController extends Controller
         return $this->success($query, $message = "Profile details", 200);
     }
 
+//     public function login(Request $r)
+// {
+//     if ($r->username == null || $r->password == null) {
+//         return $this->error('Username and password are required.');
+//     }
+
+//     $u = User::where('phone_number', $r->username)
+//         ->orWhere('email', $r->username)
+//         ->orWhere('username', $r->username)
+//         ->first();
+
+//     if ($u == null) {
+//         return $this->error('User account not found.');
+//     }
+
+//     // Ensure that the login credentials match the registration credentials
+//     if ($u->password !== $r->password) {
+//         return $this->error('Wrong credentials.');
+//     }
+
+//     JWTAuth::factory()->setTTL(60 * 24 * 30 * 365);
+
+//     $token = auth('api')->login($u); // Authenticate the user using their model instance
+
+//     if ($token == null) {
+//         return $this->error('Failed to authenticate user.');
+//     }
+
+//     $u->token = $token;
+//     $u->remember_token = $token;
+
+//     return $this->success($u, 'Logged in successfully.');
+// }
+
+
 
     public function login(Request $r)
     {
@@ -89,7 +126,9 @@ class ApiAuthController extends Controller
 
         if ($u == null) {
 
-            $phone_number = Utils::prepare_phone_number($r->username);
+            // $phone_number = Utils::prepare_phone_number($r->username);
+            $phone_number = $r->username;
+
 
 
             if (Utils::phone_number_is_valid($phone_number)) {
@@ -165,7 +204,7 @@ class ApiAuthController extends Controller
     }
 
     JWTAuth::factory()->setTTL(60 * 24 * 30 * 365);
-        
+
     $token = auth('api')->attempt([
         'id' => $user->id,
         'password' => trim($request->password),
@@ -285,10 +324,10 @@ class ApiAuthController extends Controller
 //         return $this->error('Wrong credentials.');
 //     }
 // }
-    
 
 
-    
+
+
     public function new_position(Request $request)
     {
         // Check if the user is authenticated
@@ -317,15 +356,15 @@ class ApiAuthController extends Controller
           // Handle case where Sacco is not found
           return $this->error('Sacco not found.');
         }
-    
+
         // Validate incoming request data
         $validatedData = $request->validate([
             'name' => 'required|string|unique:positions,name,NULL,id,sacco_id,' . $sacco->id,
         ]);
-    
+
         // Create the position
         $position = new MemberPosition();
-    
+
         // Assign values from the request data
         $position->sacco_id = $sacco->id;
         $position->name = $request->input('name');
@@ -335,14 +374,14 @@ class ApiAuthController extends Controller
         } catch (\Throwable $th) {
             return $this->error('Failed to create position: ' . $th->getMessage());
         }
-    
+
         return $this->success(
             $position,
             $message = "Position created successfully",
             200
         );
     }
-    
+
     public function create_scheme(Request $request)
     {
         $admin = auth('api')->user();
@@ -384,7 +423,7 @@ class ApiAuthController extends Controller
         } catch (\Throwable $th) {
             return $this->error('Failed to create loan scheme: ' . $th->getMessage());
         }
-    
+
         return $this->success(
             $loanScheme,
             $message = "Loan scheme created successfully",
@@ -509,7 +548,7 @@ class ApiAuthController extends Controller
         $code = 1;
 
       try {
-       
+
           $acc->save();
        } catch (\Throwable $th) {
          $msg = $th->getMessage();
@@ -531,17 +570,17 @@ class ApiAuthController extends Controller
             if (!$admin) {
                 return $this->error('User not authenticated.', 401);
             }
-    
+
             // Find the group to update
             $group = GroupInsert::find($request->id);
             if (!$group) {
                 return $this->error('Group not found.', 404);
             }
-    
+
             // Update group attributes without validation
             $group->fill($request->all());
             $group->save();
-    
+
             // Return success response
             return $this->success($group, 'Group updated successfully');
         } catch (\Exception $e) {
@@ -549,19 +588,19 @@ class ApiAuthController extends Controller
             return $this->error('Failed to update group: ' . $e->getMessage(), 500);
         }
     }
-    
+
 
     public function update_user(Request $request)
     {
         $admin = auth('api')->user();
             if (!$admin) {
-                
+
                 // Extract the admin user's ID from the request data
                 $adminId = $request->input('admin_id');
 
                 // Use the admin user's ID to find the corresponding User model
                 $admin = User::find($adminId);
- 
+
                // Check if the admin user is found
                if ($admin == null) {
               // Handle case where admin user is not found
@@ -569,7 +608,7 @@ class ApiAuthController extends Controller
                 }
             }
 
-            
+
 
         $loggedIn = Administrator::find($admin->id);
         if ($loggedIn == null) {
@@ -578,12 +617,12 @@ class ApiAuthController extends Controller
         $sacco = Sacco::find($loggedIn->sacco_id);
 
         if ($sacco == null) {
-        
+
             $saccoId = $request->input('sacco_id');
-    
+
             // Use the sacco_id to find the corresponding Sacco model
             $sacco = Sacco::find($saccoId);
-    
+
             // Check if the Sacco model is found
            if ($sacco == null) {
               // Handle case where Sacco is not found
@@ -691,7 +730,7 @@ class ApiAuthController extends Controller
         $code = 1;
 
       try {
-       
+
           $acc->save();
           $amount = abs($sacco->register_fee);
 
@@ -749,7 +788,7 @@ class ApiAuthController extends Controller
           // Handle case where admin user is not found
           return $this->error('Admin user not found.');
         }
-        
+
         $saccoId = $request->input('sacco_id');
 
         // Use the sacco_id to find the corresponding Sacco model
@@ -791,7 +830,8 @@ class ApiAuthController extends Controller
             if ($old != null) {
                 return $this->error('User with same phone number already exists. ' . $old->id . ' ' . $old->phone_number . ' ' . $old->first_name . ' ' . $old->last_name);
             }
-        } else {
+        }
+        else {
 
             $old = Administrator::where('phone_number', $phone_number)
                 ->first();
@@ -824,7 +864,7 @@ class ApiAuthController extends Controller
         ) {
             return $this->error('Gender is missing.');
         }
-        
+
         $msg = "";
         $acc->first_name = $request->first_name;
         $acc->last_name = $request->last_name;
@@ -852,8 +892,8 @@ class ApiAuthController extends Controller
 
         $code = 1;
 
-        
-    
+
+
         // Generate a random 5-digit password
         $password = str_pad(mt_rand(1, 99999), 5, '0', STR_PAD_LEFT);
         $acc->password = password_hash($password, PASSWORD_DEFAULT);
@@ -861,23 +901,23 @@ class ApiAuthController extends Controller
         if (!$acc->save()) {
             return $this->error('Failed to create account. Please try again.');
         }
-    
+
         // Send SMS with the generated password
         $message = "Success, your admin account has been created successfully. Use Phone number: $phone_number and Passcode: $password to login into your VSLA group";
-    
+
         $resp = null;
         try {
             $resp = Utils::send_sms($phone_number, $message);
         } catch (Exception $e) {
             return $this->error('Failed to send OTP because ' . $e->getMessage());
         }
-    
+
         if ($resp != 'success') {
             return $this->error('Failed to send OTP because ' . $resp);
         }
 
       try {
-       
+
           $acc->save();
           $amount = abs($sacco->register_fee);
 
@@ -966,7 +1006,7 @@ class ApiAuthController extends Controller
                 $cycle = Cycle::find($cycle_id);
                 $cycle->status = "Inactive";
                 $cycle->save();
-            
+
 
             return $this->success(null, 'Shareouts created successfully.');
         } catch (\Throwable $th) {
@@ -977,13 +1017,13 @@ class ApiAuthController extends Controller
     // public function new_shareout(Request $r)
     // {
     //     $admin = auth('api')->user();
-    
+
     //     if ($admin == null) {
     //         return $this->error('User not found.');
     //     }
-    
+
     //     $loggedIn = Administrator::find($admin->id);
-    
+
     //     if ($loggedIn == null) {
     //         return $this->error('User not found.');
     //     }
@@ -991,21 +1031,21 @@ class ApiAuthController extends Controller
     //     if ($r->password == null) {
     //         return $this->error('Password is required to shareout.');
     //     }
-    
+
     //     // Check if the provided password is correct
     //     if (!Hash::check($r->password, $loggedIn->password)) {
     //         return $this->error('Incorrect password.');
     //     }
-    
+
     //     $sacco = Sacco::find($loggedIn->sacco_id);
-    
+
     //     $shareout = new Shareout();
     //     $shareout->sacco_id = $sacco->id;
     //     $shareout->cycle_id = $sacco->cycle_id;
     //     $shareout->member_id = $r->user_id;
     //     $shareout->shareout_amount = $r->savings;
     //     $shareout->shareout_date = Carbon::now();
-    
+
     //     try {
     //         $shareout->save();
     //         return $this->success($shareout, 'Shareout created successfully.');
@@ -1013,7 +1053,7 @@ class ApiAuthController extends Controller
     //         return $this->error('Failed to create shareout: ' . $th->getMessage());
     //     }
     // }
-    
+
 
 // public function new_shareout(Request $r)
 // {
@@ -1164,24 +1204,24 @@ class ApiAuthController extends Controller
         if ($r->phone_number == null) {
             return $this->error('Phone number is required.');
         }
-    
+
         $phone_number = Utils::prepare_phone_number(trim($r->phone_number));
-    
+
         if (!Utils::phone_number_is_valid($phone_number)) {
             return $this->error('Invalid phone number. ' . $phone_number);
         }
-    
+
         if ($r->name == null) {
             return $this->error('Name is required.');
         }
-    
-        $u = Administrator::where('phone_number', $phone_number)->first();
-        if ($u != null) {
-            return $this->error('User with the same phone number already exists.');
-        }
-    
+
+        // $u = Administrator::where('phone_number', $phone_number)->first();
+        // if ($u != null) {
+        //     return $this->error('User with the same phone number already exists.');
+        // }
+
         $user = new Administrator();
-    
+
         $name = $r->name;
         $x = explode(' ', $name);
         if (isset($x[0]) && isset($x[1])) {
@@ -1190,11 +1230,14 @@ class ApiAuthController extends Controller
         } else {
             $user->first_name = $name;
         }
-    
-        $user->phone_number = $phone_number;
-        $user->username = $phone_number;
-        $user->reg_number = $phone_number;
-        $user->country = $phone_number;
+
+        // Generate 8-digit code combining phone number digits, current year, and random letters
+        $code = substr($phone_number, 3, 3) . date('Y') . strtoupper(Str::random(2));
+        $user->username = $code;
+
+        $user->phone_number = $code;
+        $user->reg_number = $code;
+        $user->country = "Uganda";
         $user->occupation = $phone_number;
         $user->profile_photo_large = '';
         $user->location_lat = '';
@@ -1209,45 +1252,46 @@ class ApiAuthController extends Controller
         $user->about = '';
         $user->address = '';
         $user->name = $name;
-    
+
         // Generate a random 5-digit password
-        $password = str_pad(mt_rand(1, 99999), 5, '0', STR_PAD_LEFT);
-        $user->password = password_hash($password, PASSWORD_DEFAULT);
-    
+        // $password = str_pad(mt_rand(1, 99999), 5, '0', STR_PAD_LEFT);
+        $user->password = Hash::make($code);
+
         if (!$user->save()) {
             return $this->error('Failed to create account. Please try again.');
         }
-    
+
         // Send SMS with the generated password
-        $message = "Group $name been created successfully. Use Phone number: $phone_number and Passcode: $password to login";
-    
+        $message = "Group $name been created successfully. Use $code to access your group";
+
         $resp = null;
         try {
             $resp = Utils::send_sms($phone_number, $message);
         } catch (Exception $e) {
             return $this->error('Failed to send OTP because ' . $e->getMessage());
         }
-    
+
         if ($resp != 'success') {
             return $this->error('Failed to send OTP because ' . $resp);
         }
-    
+
         $new_user = Administrator::find($user->id);
         if ($new_user == null) {
             return $this->error('Account created successfully but failed to log you in.');
         }
-    
-        Config::set('jwt.ttl', 60 * 24 * 30 * 365);
-    
-        $token = auth('api')->attempt([
-            'username' => $phone_number,
-            'password' => $password,
-        ]);
-    
-        $new_user->token = $token;
-        $new_user->remember_token = $token;
+
+        // Config::set('jwt.ttl', 60 * 24 * 30 * 365);
+
+        // $token = auth('api')->attempt([
+        //     'username' => $code,
+        //     'password' => $code,
+        // ]);
+
+        // $new_user->token = $token;
+        // $new_user->remember_token = $token;
         return $this->success($new_user, 'Account created successfully.');
     }
+
 
     public function registerGroup(Request $request)
     {
@@ -1269,16 +1313,25 @@ class ApiAuthController extends Controller
                 'terms' => 'nullable|string|max:500',
                 'administrator_id' => 'nullable|numeric'
             ]);
-    
+
             // Create a new group record in the database
             $group = GroupInsert::createGroup($validatedData);
 
-            
+            // Get the group ID
+            $groupId = $group['group_id'];
+
+            // Create a record in vsla_organisation_sacco with vsla_organisation_id as 2
+            $saccoData = [
+                'vsla_organisation_id' => 1,
+                'sacco_id' => $groupId,
+            ];
+            $saccoRecord = VslaOrganisationSacco::createSacco($saccoData);
+
         if (isset($group['error'])) {
             // If an error occurred during creation, return the error response
             return response()->json(['error' => $group['error']], 400);
         }
-    
+
             // Return success response
             return response()->json(['message' => 'Group registered successfully', 'data' => $group], 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -1304,20 +1357,20 @@ class ApiAuthController extends Controller
             ]);
 
             $role = RolesInsert::createRole($validatedRoleData);
-    
+
             if (isset($role['error'])) {
                 // If an error occurred during role creation, return the error response
                 return response()->json(['error' => $role['error']], 400);
             }
-    
+
             // Create a new permission record in the database
             $permission = PermissionInsert::createPermission($validatedPermissionData);
-    
+
             if (isset($permission['error'])) {
                 // If an error occurred during permission creation, return the error response
                 return response()->json(['error' => $permission['error']], 400);
             }
-    
+
             // Return success response
             return response()->json(['message' => 'Role and permission registered successfully', 'role_data' => $role, 'permission_data' => $permission], 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -1328,34 +1381,34 @@ class ApiAuthController extends Controller
             return response()->json(['error' => 'Failed to register role and permission: ' . $e->getMessage()], 500);
         }
     }
-    
+
 
     public function updateUser(Request $request, $userId)
     {
         try {
 
             $user = Administrator::find($userId);
-    
+
             if (!$user) {
                 return response()->json(['error' => 'User not found'], 404);
             }
-    
+
             // Update the specified fields
             $user->sacco_id = $request->input('sacco_id');
             $user->user_type = $request->input('user_type');
             $user->sacco_join_status = $request->input('sacco_join_status');
-            
-    
+
+
             // Save the changes to the user
             $user->save();
-    
+
             // Fetch the updated user data
             $updatedUser = Administrator::find($userId);
-    
+
             return response()->json(['message' => 'User updated successfully', 'data' => $updatedUser], 200);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Failed to update user: ' . $e->getMessage()], 500);
         }
     }
-    
+
 }

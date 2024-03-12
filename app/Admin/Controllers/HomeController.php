@@ -31,6 +31,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Session;
 use SplFileObject;
 
 class HomeController extends Controller
@@ -72,6 +73,15 @@ $filteredUsers = $filteredUsers->filter(function ($user) {
         if (!$admin->isRole('admin')){
 
             $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+            if (!$orgAllocation) {
+                // If the user is not allocated to an organization, log them out
+                Auth::logout();
+                // If the user is not allocated to an organization
+                $message = "You are not allocated to any organization. Please contact M-Omulimisa Service Help for assistance.";
+                Session::flash('warning', $message);
+                admin_error($message);
+                return redirect('auth/logout'); // Adjust the logout route as needed
+            }
             if ($orgAllocation) {
                 $organization = VslaOrganisation::find($orgAllocation->vsla_organisation_id);
 

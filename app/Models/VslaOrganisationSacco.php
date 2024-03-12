@@ -31,10 +31,30 @@ class VslaOrganisationSacco extends Model
     {
         return $this->belongsTo(Sacco::class);
     }
-    
+
     public function organization()
     {
         return $this->belongsTo(VslaOrganisation::class, 'vsla_organisation_id');
     }
-    
+
+    public static function createSacco($data)
+    {
+        // Check if the record already exists
+        $existingRecord = static::where([
+            'vsla_organisation_id' => $data['vsla_organisation_id'],
+            'sacco_id' => $data['sacco_id'],
+        ])->first();
+
+        if ($existingRecord) {
+            // If the record already exists, return an error
+            return ['error' => 'Record already exists'];
+        }
+
+        // Create a new record in the database
+        $newRecord = static::create($data);
+
+        // Return the ID and data for the newly created record
+        return ['record_id' => $newRecord->id, 'record_data' => $newRecord];
+    }
+
 }
