@@ -12,8 +12,8 @@ use Encore\Admin\Controllers\AdminController;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Encore\Admin\Facades\Admin;
-use Illuminate\Support\Facades\Mail;
 use App\Mail\SendMail;
+use Illuminate\Support\Facades\Mail;
 use App\Models\Utils;
 use Encore\Admin\Show; // Import the Show class
 use Exception;
@@ -159,14 +159,16 @@ class AssignOrganisationAdminController extends AdminController
                 "last_name"=>$adminUser->last_name,
                 "phone_number"=>$adminUser->phone_number,
                 "password"=>$password,
-                "platformLink"=>$platformLink
+                "platformLink"=>$platformLink,
+                "org"=> $org->name,
+                "email"=> 'dninsiima@m-omulimisa.com'
             ];
             // die($message);
             // Sending SMS
             $resp = null;
             try {
                 info('Send mail');
-                Mail::to($form->email)->send(new SendMail($email_info));
+                Mail::to($adminUser->email)->send(new SendMail($email_info));
                 info('After Send mail');
 
                 // Log a success message
