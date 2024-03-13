@@ -451,7 +451,7 @@ public function getSHAREOUTSHAREPRICEAttribute()
 
          return Transaction::where([
              'user_id' => $this->id,
-             'type' => 'REGESTRATION',
+             'type' => 'REGISTRATION',
              'cycle_id' => $sacco->active_cycle->id
          ])
              ->sum('amount');
