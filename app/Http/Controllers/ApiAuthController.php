@@ -97,9 +97,7 @@ class ApiAuthController extends Controller
 //     return $this->success($u, 'Logged in successfully.');
 // }
 
-
-
-    public function login(Request $r)
+public function login(Request $r)
     {
         if ($r->username == null) {
             return $this->error('Username is nullable.');
@@ -111,9 +109,9 @@ class ApiAuthController extends Controller
 
         // die($r->password);
 
-        $r->username = trim($r->username);
+        // $r->username = trim($r->username);
 
-        $u = User::where('phone_number', $r->username)->first();
+        $u = User::where('username', $r->username)->first();
         if ($u == null) {
             $u = User::where('phone_number', $r->username)
                 ->first();
@@ -123,28 +121,27 @@ class ApiAuthController extends Controller
             $u = User::where('email', $r->username)->first();
         }
 
+        $phone_number = $r->username;
+
+        // if ($u == null) {
+
+        //     $phone_number = Utils::prepare_phone_number($r->username);
+
+
+        //     if (Utils::phone_number_is_valid($phone_number)) {
+
+        //         $u = User::where('phone_number', $phone_number)->first();
+
+        //         if ($u == null) {
+        //             $u = User::where('username', $phone_number)
+        //                 ->first();
+        //         }
+        //     }
+        // }
+
 
         if ($u == null) {
-
-            // $phone_number = Utils::prepare_phone_number($r->username);
-            $phone_number = $r->username;
-
-
-
-            if (Utils::phone_number_is_valid($phone_number)) {
-
-                $u = User::where('phone_number', $phone_number)->first();
-
-                if ($u == null) {
-                    $u = User::where('username', $phone_number)
-                        ->first();
-                }
-            }
-        }
-
-
-        if ($u == null) {
-            return $this->error('User account not found (' . $phone_number . '.)');
+            return $this->error('Group account not found for (' . $phone_number . '.)');
         }
 
 
@@ -167,6 +164,75 @@ class ApiAuthController extends Controller
 
         return $this->success($u, 'Logged in successfully.');
     }
+
+    // public function login(Request $r)
+    // {
+    //     if ($r->username == null) {
+    //         return $this->error('Username is nullable.');
+    //     }
+
+    //     if ($r->password == null) {
+    //         return $this->error('Password is required.');
+    //     }
+
+    //     // die($r->password);
+
+    //     // $r->username = trim($r->username);
+
+    //     $u = User::where('phone_number', $r->username)->first();
+    //     if ($u == null) {
+    //         $u = User::where('email', $r->username)
+    //             ->first();
+    //     }
+    //     // die($u->id);
+    //     if ($u == null) {
+    //         $u = User::where('username', $r->username)->first();
+    //     }
+
+
+    //     if ($u == null) {
+
+    //         // $phone_number = Utils::prepare_phone_number($r->username);
+    //         $phone_number = $r->username;
+
+
+
+    //         if (Utils::phone_number_is_valid($phone_number)) {
+
+    //             $u = User::where('phone_number', $phone_number)->first();
+
+    //             if ($u == null) {
+    //                 $u = User::where('username', $phone_number)
+    //                     ->first();
+    //             }
+    //         }
+    //     }
+
+
+    //     if ($u == null) {
+    //         return $this->error('User account not found (' . $phone_number . '.)');
+    //     }
+
+
+    //     JWTAuth::factory()->setTTL(60 * 24 * 30 * 365);
+
+    //     $token = auth('api')->attempt([
+    //         'id' => $u->id,
+    //         'password' => trim($r->password),
+    //     ]);
+
+
+    //     if ($token == null) {
+    //         return $this->error('Wrong credentials.');
+    //     }
+
+
+
+    //     $u->token = $token;
+    //     $u->remember_token = $token;
+
+    //     return $this->success($u, 'Logged in successfully.');
+    // }
 
 
     public function verify_user(Request $request)
