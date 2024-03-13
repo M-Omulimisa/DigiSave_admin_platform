@@ -57,13 +57,13 @@ class TransactionController extends AdminController
             //date range
             $filter->between('created_at', 'Created')->date();
         });
-        $grid->column('id', __('ID'))
-            ->sortable();
-        $grid->column('created_at', __('DATE'))
-            ->sortable()
-            ->display(function ($x) {
-                return Utils::my_date_time($x);
-            });
+        // $grid->column('id', __('ID'))
+        //     ->sortable();
+        // $grid->column('created_at', __('DATE'))
+            // ->sortable()
+            // ->display(function ($x) {
+            //     return Utils::my_date_time($x);
+            // });
 
 
         $grid->column('user_id', __('Account'))
@@ -82,10 +82,15 @@ class TransactionController extends AdminController
                 }
                 return $user->name;
             })->sortable()
-            ->hide();
-        $grid->column('type', __('Transaction Type'))
-            ->sortable();
-        $grid->column('description', __('Description'));
+            ->hide();$grid->column('type', __('Transaction Type'))
+            ->sortable()
+            ->display(function ($type) {
+                // Correct spelling if the type is "regestration"
+                if (strtolower($type) === 'regestration') {
+                    $type = 'Registration';
+                }
+                return ucwords(strtolower($type));
+            });
         $grid->column('amount', __('Amount (UGX)'))
             ->display(function ($price) {
                 return number_format($price);
@@ -93,12 +98,13 @@ class TransactionController extends AdminController
             ->totalRow(function ($amount) {
                 return "<strong>Total: " . number_format($amount) . "</strong>";
             });
+        $grid->column('description', __('Description'));
 
         $grid->column('details', __('Details'))->hide();
-        $grid->column('created_at', __('Created'))->display(function ($date) {
-            //retrn data and time
-            return date('d M, Y - h:i:s', strtotime($date));
-        })->sortable();
+        $grid->column('created_at', __('Created'))->sortable()
+        ->display(function ($createdAt) {
+            return date('Y-m-d', strtotime($createdAt));
+        });
         $grid->disableActions();
         $grid->disableBatchActions();
         return $grid;
