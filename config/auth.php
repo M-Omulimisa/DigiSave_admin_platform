@@ -14,7 +14,7 @@ return [
     */
 
     'defaults' => [
-        'guard' => 'web', 
+        'guard' => 'web',
         'passwords' => 'users',
     ],
 
@@ -70,12 +70,12 @@ return [
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
-            'model' => Encore\Admin\Auth\Database\Administrator::class, 
+            'model' => App\Models\User::class,
         ],
-        'village_agents' => [
-            'driver' => 'eloquent',
-            'model' => App\Models\Agent::class,
-        ]
+        // 'village_agents' => [
+        //     'driver' => 'eloquent',
+        //     'model' => App\Models\Agent::class,
+        // ]
 
         // 'users' => [
         //     'driver' => 'database',
