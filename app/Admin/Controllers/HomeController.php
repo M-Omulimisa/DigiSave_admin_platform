@@ -92,7 +92,7 @@ $filteredUsers = $filteredUsers->filter(function ($user) {
               $orgName = $organization->name ;
               $logoUrl = env('APP_URL') .'storage' .'/' . $organization->logo;
             //   $logoUrl = 'http://127.0.0.1:8000/storage/' . $organization->logo;
-              $organizationContainer = '<div style="text-align: center; padding-bottom: 25px;"><img src="' . $logoUrl . '" alt="' . $organization->name . ' Logo class="img-fluid rounded-circle" style="max-width: 150px;"></div>';
+            $organizationContainer = '<div style="text-align: center; padding-bottom: 25px;"><img src="' . $logoUrl . '" alt="' . $organization->name . '" class="img-fluid rounded-circle" style="max-width: 150px;"></div>';
 
             // $orgIds = OrgAllocation::where('user_id', $admin->user_id)->pluck('vsla_organisation_id')->toArray();
 
