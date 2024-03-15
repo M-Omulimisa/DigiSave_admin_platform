@@ -32,6 +32,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\View;
 use SplFileObject;
 
 class HomeController extends Controller
@@ -92,7 +93,12 @@ $filteredUsers = $filteredUsers->filter(function ($user) {
               $orgName = $organization->name ;
               $logoUrl = env('APP_URL') .'storage' .'/' . $organization->logo;
             //   $logoUrl = 'http://127.0.0.1:8000/storage/' . $organization->logo;
-            $organizationContainer = '<div style="text-align: center; padding-bottom: 25px;"><img src="https://digisave.m-omulimisa.com/storage/images/13f41c3cdf7e01ad1be3c6b3ff54f2c0.png alt="' . $organization->name . '" class="img-fluid rounded-circle" style="max-width: 150px;"></div>';
+            // Render the Blade view with the necessary data
+            // $organizationContainer = View::make('organization', [
+            //     'logoUrl' => $logoUrl,
+            //     'organization' => $organization,
+            // ])->render();
+            // $organizationContainer = '<div style="text-align: center; padding-bottom: 25px;"><img src="' . $logoUrl . '" alt="' . $organization->name . '" class="img-fluid rounded-circle" style="max-width: 150px;"></div>';
 
             // $orgIds = OrgAllocation::where('user_id', $admin->user_id)->pluck('vsla_organisation_id')->toArray();
 
@@ -330,7 +336,10 @@ $filteredUsers = $filteredUsers->filter(function ($user) {
 
             return $content
             ->header('<div style="text-align: center; color: #039103; font-size: 30px; font-weight: bold; padding-top: 20px;">' . $orgName . '</div>')
-            ->body($organizationContainer .'<div style="background-color: #E9F9E9; padding: 10px; padding-top: 5px; border-radius: 5px;">' .
+            ->body(view('widgets.organization', [
+                'logoUrl' => $logoUrl,
+                'organization' => $organization
+            ]) .'<div style="background-color: #E9F9E9; padding: 10px; padding-top: 5px; border-radius: 5px;">' .
                 view('widgets.statistics', [
                     'totalSaccos' => $totalSaccos,
                     'villageAgents' => $villageAgents,
