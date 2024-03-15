@@ -91,7 +91,7 @@ $filteredUsers = $filteredUsers->filter(function ($user) {
               }
               $orgIds = $orgAllocation->vsla_organisation_id;
               $orgName = $organization->name ;
-              $logoUrl = env('APP_URL') .'storage' .'/' . $organization->logo;
+              $logoUrl = '/' .'storage' .'/' . $organization->logo;
             //   $logoUrl = 'http://127.0.0.1:8000/storage/' . $organization->logo;
             // Render the Blade view with the necessary data
             // $organizationContainer = View::make('organization', [
