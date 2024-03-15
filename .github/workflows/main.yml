@@ -22,4 +22,4 @@ jobs:
         host: ${{ secrets.SSH_HOST }}
         port: ${{ secrets.SSH_PORT }}
         password: ${{ secrets.SSH_PASSWORD }}
-        script: 'cd /usr/share/nginx/html/DIGI_SAVE && sudo chmod +x server_deploy.sh && ./server_deploy.sh'
+        script: 'cd /usr/share/nginx/html/DIGI-SAVE && sudo chmod +x server_deploy.sh && ./server_deploy.sh'
