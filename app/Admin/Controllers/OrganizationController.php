@@ -80,61 +80,32 @@ class OrganizationController extends AdminController
     }
 
 
-    // protected function form()
-    // {
-    //     $form = new Form(new VslaOrganisation());
-
-    //     $u = Admin::user();
-
-    //     if (!$u->isRole('admin')) {
-    //         if ($form->isCreating()) {
-    //             admin_error("You are not allowed to create a new organization");
-    //             return back();
-    //         }
-    //     }
-
-    //     $form->display('id', 'ID');
-    //     $form->text('name', 'Name')->rules('required');
-    //     $form->text('phone_number', 'Phone Number')->rules('required');
-    //     $form->text('unique_code', 'Unique Code')->readonly();
-    //     $form->text('email', 'Email Address');
-
-    //     // Add the image field for organization logo
-    //     $form->image('logo', 'Organization Logo')
-    // ->rules('image|mimes:jpeg,png,jpg,gif')
-    // ->help('Upload a logo for the organization.');
-
-    //     return $form;
-    // }
-
     protected function form()
-{
-    $form = new Form(new VslaOrganisation());
+    {
+        $form = new Form(new VslaOrganisation());
 
-    $u = Admin::user();
+        $u = Admin::user();
 
-    if (!$u->isRole('admin')) {
-        if ($form->isCreating()) {
-            admin_error("You are not allowed to create a new organization");
-            return back();
+        if (!$u->isRole('admin')) {
+            if ($form->isCreating()) {
+                admin_error("You are not allowed to create a new organization");
+                return back();
+            }
         }
+
+        $form->display('id', 'ID');
+        $form->text('name', 'Name')->rules('required');
+        $form->text('phone_number', 'Phone Number')->rules('required');
+        $form->text('unique_code', 'Unique Code')->readonly();
+        $form->text('email', 'Email Address');
+
+        // Add the image field for organization logo
+        $form->image('logo', 'Organization Logo')
+    ->rules('image|mimes:jpeg,png,jpg,gif')
+    ->help('Upload a logo for the organization.');
+
+        return $form;
     }
-
-    $form->display('id', 'ID');
-    $form->text('name', 'Name')->rules('required');
-    $form->text('phone_number', 'Phone Number')->rules('required');
-    $form->text('unique_code', 'Unique Code')->readonly();
-    $form->text('email', 'Email Address');
-
-    // Add the image field for organization logo
-    $form->image('logo', 'Organization Logo')
-        ->rules('image|mimes:jpeg,png,jpg,gif')
-        ->help('Upload a logo for the organization.')
-        ->move('/storage/images'); // Specify the path here
-
-    return $form;
-}
-
 
 
 }
