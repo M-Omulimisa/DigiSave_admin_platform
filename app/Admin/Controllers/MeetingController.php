@@ -16,21 +16,21 @@ class MeetingController extends AdminController
     protected function grid()
     {
         $grid = new Grid(new Meeting());
-    
+
         $u = Auth::user();
-    
+
         if (!$u->isRole('admin')) {
             // $grid->disableCreateButton();
             // $grid->actions(function (Grid\Displayers\Actions $actions) {
             //     $actions->disableDelete();
             // });
             // $grid->disableFilter();
-    
+
             // Ensure the user is the Sacco admin and the administrator_id matches
             // $grid->model()->where('sacco_id', $u->sacco_id)->where('administrator_id', $u->id);
         }
-    
-        $grid->model()->where('sacco_id', $u->sacco_id)->where('administrator_id', $u->id);
+
+        // $grid->model()->where('sacco_id', $u->sacco_id);
         $grid->column('id', __('Id'));
         $grid->column('created_at', __('Created'))->sortable();
         $grid->column('name', __('Name'))->editable()->sortable();
@@ -38,16 +38,15 @@ class MeetingController extends AdminController
         $grid->column('location', __('Location'));
         $grid->column('sacco_id', __('Sacco id'));
         $grid->column('administrator_id', __('Administrator id'));
-        $grid->column('members', __('Members'));
+        $grid->column('members', __('Attendence'));
         $grid->column('minutes', __('Minutes'));
-        $grid->column('attendance', __('Attendance'));
         $grid->column('cycle_id', __('Cycle ID'));
-    
+
         return $grid;
     }
-    
+
     // Other methods: detail() and form() remain unchanged
-    
+
 
 // Other methods: detail() and form() remain unchanged
 
@@ -67,7 +66,7 @@ class MeetingController extends AdminController
         $show->field('members', __('Members'));
         $show->field('minutes', __('Minutes'));
         $show->field('attendance', __('Attendance'));
-        $show->field('cycle_id', __('Cycle ID')); 
+        $show->field('cycle_id', __('Cycle ID'));
 
         return $show;
     }
@@ -75,25 +74,25 @@ class MeetingController extends AdminController
     protected function form()
     {
         $u = Auth::user();
-    
+
         $form = new Form(new Meeting());
-    
+
         $sacco_id = $u->sacco_id;
-    
+
         $activeCycle = \App\Models\Cycle::where('sacco_id', $sacco_id)->where('status', 'Active')->first();
-    
+
         if ($activeCycle) {
             $form->hidden('cycle_id')->default($activeCycle->id);
         } else {
             $form->hidden('cycle_id')->default(0);
         }
-    
+
         $form->hidden('sacco_id')->default($sacco_id);
         $form->hidden('administrator_id')->default($u->id);
         $form->text('name', __('Name'))->rules('required');
         $form->date('date', __('Date'))->default(date('Y-m-d'))->rules('required');
         $form->text('location', __('Location'))->rules('required');
-    
+
         // Only allow selecting members if the user is the administrator
         if ($u->isRole('admin')) {
             $users = \App\Models\User::where('sacco_id', $sacco_id)->get();
@@ -103,11 +102,11 @@ class MeetingController extends AdminController
         } else {
             $form->hidden('members')->default($u->id); // Automatically assign the admin as the member
         }
-    
+
         $form->quill('minutes', __('Minutes'));
         $form->textarea('attendance', __('Attendance'));
-    
+
         return $form;
     }
-    
+
 }

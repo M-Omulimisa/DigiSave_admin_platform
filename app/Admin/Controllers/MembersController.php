@@ -63,16 +63,17 @@ class MembersController extends AdminController
 
         $grid->column('first_name', __('First name'))->sortable();
         $grid->column('last_name', __('Last name'))->sortable();
-        $grid->column('email', __('Email'))->sortable();
+        // $grid->column('email', __('Email'))->sortable();
         $grid->column('sex', __('Gender'))->sortable();
         $grid->column('phone_number', __('Phone Number'));
+        $grid->column('sacco.name', __('Group Name'))->sortable();
         // $grid->column('sacco_join_status', __('Status'))
         //     ->label([
         //         'Pending' => 'warning',
         //         'Approved' => 'success',
         //     ])
         //     ->sortable();
-        $grid->column('address', __('Address'));
+        // $grid->column('address', __('Address'));
         $grid->column('created_at', __('Date Joined'))
             ->display(function ($date) {
                 return date('d M Y', strtotime($date));

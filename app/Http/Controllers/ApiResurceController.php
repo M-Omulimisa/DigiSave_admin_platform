@@ -1515,52 +1515,152 @@ try {
     }
 
     public function register_meeting(Request $request)
-{
-    $admin = auth('api')->user();
+    {
+        $admin = auth('api')->user();
 
-    if ($admin === null) {
-        return $this->error('User not found.');
+        if ($admin === null) {
+            return $this->error('User not found.');
+        }
+
+        // Get the SACCO ID based on the admin user
+        $sacco = Sacco::where('administrator_id', $admin->id)->first();
+
+        if ($sacco === null) {
+            return $this->error('Group not found for the administrator.');
+        }
+
+        // Get the current active cycle for the SACCO
+        $activeCycle = Cycle::where('sacco_id', $sacco->id)
+                            ->where('status', 'Active')
+                            ->first();
+
+        if ($activeCycle === null) {
+            return $this->error('No active cycle found for the Group.');
+        }
+
+        $meeting = new Meeting();
+        $meeting->name = $request->input('name');
+        $meeting->date = $request->input('date');
+        $meeting->location = $request->input('location');
+        $meeting->sacco_id = $sacco->id;
+        $meeting->administrator_id = $admin->id;
+        $meeting->members = $request->input('members');
+        $meeting->minutes = $request->input('minutes');
+        $meeting->attendance = $request->input('attendance');
+        $meeting->cycle_id = $activeCycle->id; // Set the active cycle's ID
+
+        try {
+            $meeting->save();
+
+            // Extract member IDs from the input
+            $membersString = $request->input('members');
+            preg_match_all('/\d+/', $membersString, $matches);
+            $presentMemberIds = $matches[0];
+
+            // Fetch all users whose SACCO ID matches the one in the meeting
+            // Fetch all users whose SACCO ID matches the one in the meeting and user_type is not admin
+            $users = User::where('sacco_id', $sacco->id)
+            //    ->where('user_type', '!=', 'admin')
+               ->get();
+
+            // Filter out absent members
+            $absentMembers = $users->filter(function ($user) use ($presentMemberIds) {
+                return !in_array($user->id, $presentMemberIds);
+            });
+
+            // Extract opening and closing summaries
+            $minutes = json_decode($request->input('minutes'), true);
+            $openingSummary = $closingSummary = '';
+            if (isset($minutes['opening_summary'])) {
+                $openingSummary = "Opening Summary:\n";
+                foreach ($minutes['opening_summary'] as $summary) {
+                    $openingSummary .= "{$summary['title']}: {$summary['value']}\n";
+                }
+            }
+            if (isset($minutes['closing_summary'])) {
+                $closingSummary = "\nClosing Summary:\n";
+                foreach ($minutes['closing_summary'] as $summary) {
+                    $closingSummary .= "{$summary['title']}: {$summary['value']}\n";
+                }
+            }
+
+            // Construct message
+            $message = "Meeting details for {$meeting->name} held on {$meeting->date} for Group: {$sacco->name}:\n";
+            $message .= "Members present:\n";
+            foreach ($presentMemberIds as $memberId) {
+                $member = User::find($memberId);
+                if ($member) {
+                    $message .= "- {$member->name}\n";
+                }
+            }
+            $message .= "\nAbsent Members:\n";
+            foreach ($absentMembers as $absentMember) {
+                $message .= "- {$absentMember->name}\n";
+            }
+            $message .= "\n{$openingSummary}\n{$closingSummary}";
+
+            // Send SMS to each user
+            foreach ($users as $user) {
+                $phone_number = $user->phone_number;
+
+                // Send SMS to each user
+                Utils::send_sms($phone_number, $message);
+            }
+
+            return $this->success($meeting, $message = "Meeting created successfully.", 200);
+        } catch (\Throwable $th) {
+            return $this->error('Failed to create meeting: ' . $th->getMessage());
+        }
     }
 
-    // Check if the user is a SACCO admin
-    if (!$admin->isRole('sacco')) {
-        return $this->error('User is not a SACCO admin.');
-    }
 
-    // Get the SACCO ID based on the admin user
-    $sacco = Sacco::where('administrator_id', $admin->id)->first();
+//     public function register_meeting(Request $request)
+// {
+//     $admin = auth('api')->user();
 
-    if ($sacco === null) {
-        return $this->error('SACCO not found for the administrator.');
-    }
+//     if ($admin === null) {
+//         return $this->error('User not found.');
+//     }
 
-    // Get the current active cycle for the SACCO
-    $activeCycle = Cycle::where('sacco_id', $sacco->id)
-                        ->where('status', 'Active')
-                        ->first();
+//     // Check if the user is a SACCO admin
+//     if (!$admin->isRole('sacco')) {
+//         return $this->error('User is not a SACCO admin.');
+//     }
 
-    if ($activeCycle === null) {
-        return $this->error('No active cycle found for the SACCO.');
-    }
+//     // Get the SACCO ID based on the admin user
+//     $sacco = Sacco::where('administrator_id', $admin->id)->first();
 
-    $meeting = new Meeting();
-    $meeting->name = $request->input('name');
-    $meeting->date = $request->input('date');
-    $meeting->location = $request->input('location');
-    $meeting->sacco_id = $sacco->id;
-    $meeting->administrator_id = $admin->id;
-    $meeting->members = $request->input('members');
-    $meeting->minutes = $request->input('minutes');
-    $meeting->attendance = $request->input('attendance');
-    $meeting->cycle_id = $activeCycle->id; // Set the active cycle's ID
+//     if ($sacco === null) {
+//         return $this->error('SACCO not found for the administrator.');
+//     }
 
-    try {
-        $meeting->save();
-        return $this->success($meeting, $message = "Meeting created successfully.", 200);
-    } catch (\Throwable $th) {
-        return $this->error('Failed to create meeting: ' . $th->getMessage());
-    }
-}
+//     // Get the current active cycle for the SACCO
+//     $activeCycle = Cycle::where('sacco_id', $sacco->id)
+//                         ->where('status', 'Active')
+//                         ->first();
+
+//     if ($activeCycle === null) {
+//         return $this->error('No active cycle found for the SACCO.');
+//     }
+
+//     $meeting = new Meeting();
+//     $meeting->name = $request->input('name');
+//     $meeting->date = $request->input('date');
+//     $meeting->location = $request->input('location');
+//     $meeting->sacco_id = $sacco->id;
+//     $meeting->administrator_id = $admin->id;
+//     $meeting->members = $request->input('members');
+//     $meeting->minutes = $request->input('minutes');
+//     $meeting->attendance = $request->input('attendance');
+//     $meeting->cycle_id = $activeCycle->id; // Set the active cycle's ID
+
+//     try {
+//         $meeting->save();
+//         return $this->success($meeting, $message = "Meeting created successfully.", 200);
+//     } catch (\Throwable $th) {
+//         return $this->error('Failed to create meeting: ' . $th->getMessage());
+//     }
+// }
 
     public function cycles_update(Request $r, $saccoId, $cycleId)
     {

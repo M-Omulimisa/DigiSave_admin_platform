@@ -1035,6 +1035,14 @@ public function login(Request $r)
           $acc->save();
           $amount = abs($sacco->register_fee);
 
+          // Get group name based on SACCO ID in user
+        $groupName = $acc->sacco->name;
+
+        // Send SMS notification to the newly registered user
+        $phone_number = $acc->phone_number;
+        $message = "Congradulations $acc->name 🎉🎉🥳, you have been successfully registered as a member of $groupName!";
+        Utils::send_sms($phone_number, $message);
+
           try {
             DB::beginTransaction();
             //add balance to sacc account
