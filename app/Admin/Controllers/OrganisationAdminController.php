@@ -96,13 +96,20 @@ class OrganisationAdminController extends AdminController
         $form->hidden('username')->default($form->phone_number);
 
         $form->saving(function (Form $form) use ($password) {
-            // Check if a user with the same phone number already exists
-            $existingUser = User::where('phone_number', $form->phone_number)->first();
+            if ($form->isCreating() || $form->isEditing()) {
+                // Get the current user being edited
+                $currentUser = $form->model();
 
-            if ($existingUser) {
-                // User with the same phone number already exists, send message and prevent creation
-                admin_error("A user with the same phone number already exists.");
-                return back();
+                // Check if a user with the same phone number already exists
+                $existingUser = User::where('phone_number', $form->phone_number)
+                                    ->where('id', '!=', $currentUser->id) // Exclude the current user being edited
+                                    ->first();
+
+                if ($existingUser) {
+                    // User with the same phone number already exists, send message and prevent creation
+                    admin_error("A user with the same phone number already exists.");
+                    return back();
+                }
             }
 
             // If no user with the same phone number exists, continue saving
