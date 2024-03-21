@@ -22,7 +22,7 @@ class SaccoController extends AdminController
      *
      * @var string
      */
-    protected $title = 'Test VLSA Groups';
+    protected $title = 'VLSA Groups';
 
 
 
@@ -65,15 +65,17 @@ class SaccoController extends AdminController
         $grid->model()->orderBy('name', 'desc');
         $grid->column('name', __('Name'))->sortable();
         $grid->column('phone_number', __('Phone number'))
-        ->sortable()
-        ->display(function () {
-            // Assuming you have a 'users' table
-            $chairperson = \App\Models\User::where('sacco_id', $this->id)
-                ->where('position_id', 1)
-                ->first();
+    ->sortable()
+    ->display(function () {
+        // Assuming you have a 'users' table
+        $chairperson = \App\Models\User::where('sacco_id', $this->id)
+            ->whereHas('position', function ($query) {
+                $query->where('name', 'Chairperson');
+            })
+            ->first();
 
-            return $chairperson ? $chairperson->phone_number : '';
-        });
+        return $chairperson ? $chairperson->phone_number : '';
+    });
         $grid->column('share_price', __('Share (UGX)'))
             ->display(function ($price) {
                 return number_format($price);
