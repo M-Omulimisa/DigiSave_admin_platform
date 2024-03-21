@@ -99,7 +99,7 @@ class SaccoController extends AdminController
         // $grid->column('chairperson_email_address', __('Chairperson email address'))->hide();
         $grid->column('about', __('About'))->hide();
         $grid->column('terms', __('Terms'))->hide();
-        $grid->column('mission', __('Mission'));
+        $grid->column('mission', __('Mission'))->hide();
         $grid->column('vision', __('Vision'))->hide();
         $grid->column('logo', __('Logo'))->hide();
         $grid->showExportBtn();
