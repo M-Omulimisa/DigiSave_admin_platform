@@ -22,7 +22,7 @@ class SaccoController extends AdminController
      *
      * @var string
      */
-    protected $title = 'VLSA Groups';
+    protected $title = 'Test VLSA Groups';
 
 
 
