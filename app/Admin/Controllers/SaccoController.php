@@ -83,12 +83,14 @@ class SaccoController extends AdminController
             ->display(function ($date) {
                 return date('d M Y', strtotime($date));
             })->sortable();
-            $grid->column('chairperson_name', __('Chairperson name'))
+        $grid->column('chairperson_name', __('Chairperson name'))
             ->sortable()
             ->display(function () {
                 // Assuming you have a 'users' table
                 $chairperson = \App\Models\User::where('sacco_id', $this->id)
-                    ->where('position_id', 1)
+                    ->whereHas('position', function ($query) {
+                        $query->where('name', 'Chairperson');
+                    })
                     ->first();
 
                 return $chairperson ? $chairperson->name : '';
