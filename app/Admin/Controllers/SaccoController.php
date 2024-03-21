@@ -64,7 +64,16 @@ class SaccoController extends AdminController
         $grid->quickSearch('name')->placeholder('Search by name');
         $grid->model()->orderBy('name', 'desc');
         $grid->column('name', __('Name'))->sortable();
-        $grid->column('phone_number', __('Phone number'))->sortable();
+        $grid->column('phone_number', __('Phone number'))
+        ->sortable()
+        ->display(function () {
+            // Assuming you have a 'users' table
+            $chairperson = \App\Models\User::where('sacco_id', $this->id)
+                ->where('position_id', 1)
+                ->first();
+
+            return $chairperson ? $chairperson->phone_number : '';
+        });
         $grid->column('share_price', __('Share (UGX)'))
             ->display(function ($price) {
                 return number_format($price);
@@ -74,9 +83,18 @@ class SaccoController extends AdminController
             ->display(function ($date) {
                 return date('d M Y', strtotime($date));
             })->sortable();
-        $grid->column('chairperson_name', __('Chairperson name'))->sortable();
+            $grid->column('chairperson_name', __('Chairperson name'))
+            ->sortable()
+            ->display(function () {
+                // Assuming you have a 'users' table
+                $chairperson = \App\Models\User::where('sacco_id', $this->id)
+                    ->where('position_id', 1)
+                    ->first();
+
+                return $chairperson ? $chairperson->name : '';
+            });
         $grid->column('chairperson_phone_number', __('Chairperson phone number'))->hide();
-        $grid->column('chairperson_email_address', __('Chairperson email address'))->hide();
+        // $grid->column('chairperson_email_address', __('Chairperson email address'))->hide();
         $grid->column('about', __('About'))->hide();
         $grid->column('terms', __('Terms'))->hide();
         $grid->column('mission', __('Mission'));
