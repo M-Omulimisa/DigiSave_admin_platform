@@ -64,7 +64,7 @@ class SaccoController extends AdminController
         $grid->quickSearch('name')->placeholder('Search by name');
         $grid->model()->orderBy('name', 'desc');
         $grid->column('name', __('Name'))->sortable();
-        $grid->column('phone_number', __('Phone number'))
+        $grid->column('phone_number', __('Phone Number'))
     ->sortable()
     ->display(function () {
         // Assuming you have a 'users' table
@@ -80,12 +80,12 @@ class SaccoController extends AdminController
             ->display(function ($price) {
                 return number_format($price);
             })->sortable();
-        $grid->column('physical_address', __('Physical address'))->sortable();
+        $grid->column('physical_address', __('Physical Address'))->sortable();
         $grid->column('created_at', __('Established'))
             ->display(function ($date) {
                 return date('d M Y', strtotime($date));
             })->sortable();
-        $grid->column('chairperson_name', __('Chairperson name'))
+        $grid->column('chairperson_name', __('Chairperson Name'))
             ->sortable()
             ->display(function () {
                 // Assuming you have a 'users' table
