@@ -1017,18 +1017,18 @@ public function login(Request $r)
         }
 
         // Send SMS with the generated password
-        // $message = "Success, your admin account has been created successfully. Use Phone number: $phone_number and Passcode: $password to login into your VSLA group";
+        $message = "Congradulations $acc->name 🎉🎉🥳. Use Phone number: $phone_number and Passcode: $password to login into your VSLA group";
 
-        // $resp = null;
-        // try {
-        //     $resp = Utils::send_sms($phone_number, $message);
-        // } catch (Exception $e) {
-        //     return $this->error('Failed to send OTP because ' . $e->getMessage());
-        // }
+        $resp = null;
+        try {
+            $resp = Utils::send_sms($phone_number, $message);
+        } catch (Exception $e) {
+            return $this->error('Failed to send OTP because ' . $e->getMessage());
+        }
 
-        // if ($resp != 'success') {
-        //     return $this->error('Failed to send OTP because ' . $resp);
-        // }
+        if ($resp != 'success') {
+            return $this->error('Failed to send OTP because ' . $resp);
+        }
 
       try {
 
@@ -1039,9 +1039,9 @@ public function login(Request $r)
         // $groupName = $acc->sacco->name;
 
         // Send SMS notification to the newly registered user
-        $phone_number = $acc->phone_number;
-        $message = "Congradulations $acc->name 🎉🎉🥳, you have been successfully registered as a member of...";
-        Utils::send_sms($phone_number, $message);
+        // $phone_number = $acc->phone_number;
+        // $message = "Congradulations $acc->name 🎉🎉🥳, you have been successfully registered as a member of...";
+        // Utils::send_sms($phone_number, $message);
 
           try {
             DB::beginTransaction();
