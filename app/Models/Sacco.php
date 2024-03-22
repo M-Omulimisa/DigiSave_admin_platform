@@ -356,23 +356,43 @@ public function getSHARECOUNTAttribute()
     // }
 
     public function getLOANAttribute()
-    {
-        $admin = Sacco::find($this->administrator_id);
-        $active_cycle = Sacco::find($this->cycle_id);
+{
+    $admin = Sacco::find($this->administrator_id);
+    $active_cycle = Sacco::find($this->cycle_id);
 
-        if ($admin == null) {
+           if ($admin == null) {
             return 0;
         }
         if ($this->active_cycle == null) {
             return 0;
         }
-        return Transaction::where([
-            'sacco_id' => $this->id,
-            'type' => 'LOAN',
-            'cycle_id' => $this->$active_cycle->id
-        ])
-            ->sum('amount');
-    }
+
+    return Transaction::where([
+        'sacco_id' => $this->id,
+        'type' => 'LOAN',
+        'cycle_id' => $active_cycle->id  // Corrected syntax
+    ])->sum('amount');
+}
+
+
+    // public function getLOANAttribute()
+    // {
+    //     $admin = Sacco::find($this->administrator_id);
+    //     $active_cycle = Sacco::find($this->cycle_id);
+
+    //     if ($admin == null) {
+    //         return 0;
+    //     }
+    //     if ($this->active_cycle == null) {
+    //         return 0;
+    //     }
+    //     return Transaction::where([
+    //         'sacco_id' => $this->id,
+    //         'type' => 'LOAN',
+    //         'cycle_id' => $this->$active_cycle->id
+    //     ])
+    //         ->sum('amount');
+    // }
 
     // public function getSHARECOUNTAttribute()
     // {
