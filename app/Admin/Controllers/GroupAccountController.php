@@ -29,37 +29,51 @@ class GroupAccountController extends AdminController
      */
     protected function grid()
 {
-    $grid = new Grid(new User());
-    $u = Admin::user();
-    $admin = Admin::user();
-    $adminId = $admin->id;
+    try {
+        $grid = new Grid(new User());
+        $u = Admin::user();
+        $admin = Admin::user();
+        $adminId = $admin->id;
+        if (!$admin->isRole('admin')) {
 
-    if (!$admin->isRole('admin')) {
-        $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
-        if ($orgAllocation) {
-            $orgId = $orgAllocation->vsla_organisation_id;
-            $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
-            $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
-            $grid->model()->whereIn('sacco_id', $saccoIds);
+            $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+            if ($orgAllocation) {
+                $orgId = $orgAllocation->vsla_organisation_id;
+                $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
+
+                // Extracting Sacco IDs from the assignments
+                $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
+
+                $grid->model()->whereIn('sacco_id', $saccoIds);
+            } else {
+                // Handle case when orgAllocation is null
+                $grid->model()->whereNotNull('id'); // Or any other condition to ensure records are retrieved
+            }
+
             $grid->disableCreateButton();
             $grid->actions(function (Grid\Displayers\Actions $actions) {
                 $actions->disableDelete();
             });
             $grid->disableFilter();
+        } else {
+            $grid->model()->where('user_type', 'Admin');
         }
+
+        $grid->disableBatchActions();
+        $grid->quickSearch('first_name', 'last_name', 'email', 'phone_number')->placeholder('Search by name, email or phone number');
+
+        $grid->column('name', __('Account Name'))->display(function () {
+            return $this->first_name . ' ' . $this->last_name;
+        });
+        $grid->column('phone_number', __('Contact'));
+        $grid->column('created_at', __('Date Created'))->sortable();
+
+        return $grid;
+    } catch (\Exception $e) {
+        // Log or handle the exception as needed
+        // For now, returning an empty grid
+        return new Grid(new User());
     }
-
-    $grid->model()->where('user_type', 'Admin');
-    $grid->disableBatchActions();
-    $grid->quickSearch('first_name', 'last_name', 'email', 'phone_number')->placeholder('Search by name, email or phone number');
-
-    $grid->column('name', __('Account Name'))->display(function () {
-        return $this->first_name . ' ' . $this->last_name;
-    });
-    $grid->column('phone_number', __('Contact'));
-    $grid->column('created_at', __('Date Created'))->sortable();
-
-    return $grid;
 }
 
     // protected function grid()
@@ -88,6 +102,7 @@ class GroupAccountController extends AdminController
     //             $grid->disableFilter();
     //         }
     //     }
+
     //     $grid->model()->where('user_type', 'Admin');
 
     //     $grid->disableBatchActions();
