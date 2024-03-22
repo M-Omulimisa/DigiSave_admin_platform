@@ -12,6 +12,7 @@ use Encore\Admin\Facades\Admin;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Encore\Admin\Show;
+use Illuminate\Support\Facades\Log;
 
 class GroupAccountController extends AdminController
 {
@@ -20,7 +21,7 @@ class GroupAccountController extends AdminController
      *
      * @var string
      */
-    protected $title = 'Group Accounts';
+    protected $title = 'Accounts';
 
     /**
      * Make a grid builder.
@@ -29,51 +30,46 @@ class GroupAccountController extends AdminController
      */
     protected function grid()
 {
-    try {
-        $grid = new Grid(new User());
-        $u = Admin::user();
-        $admin = Admin::user();
-        $adminId = $admin->id;
-        if (!$admin->isRole('admin')) {
+    $grid = new Grid(new User());
+    $u = Admin::user();
+    $admin = Admin::user();
+    $adminId = $admin->id;
 
-            $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
-            if ($orgAllocation) {
-                $orgId = $orgAllocation->vsla_organisation_id;
-                $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
+    if (!$admin->isRole('admin')) {
+        $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
 
-                // Extracting Sacco IDs from the assignments
-                $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
-
-                $grid->model()->whereIn('sacco_id', $saccoIds);
-            } else {
-                // Handle case when orgAllocation is null
-                $grid->model()->whereNotNull('id'); // Or any other condition to ensure records are retrieved
-            }
-
+        if ($orgAllocation) {
+            $orgId = $orgAllocation->vsla_organisation_id;
+            $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
+            $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
+            $grid->model()->whereIn('sacco_id', $saccoIds);
             $grid->disableCreateButton();
             $grid->actions(function (Grid\Displayers\Actions $actions) {
                 $actions->disableDelete();
             });
             $grid->disableFilter();
-        } else {
-            $grid->model()->where('user_type', 'Admin');
         }
-
-        $grid->disableBatchActions();
-        $grid->quickSearch('first_name', 'last_name', 'email', 'phone_number')->placeholder('Search by name, email or phone number');
-
-        $grid->column('name', __('Account Name'))->display(function () {
-            return $this->first_name . ' ' . $this->last_name;
-        });
-        $grid->column('phone_number', __('Contact'));
-        $grid->column('created_at', __('Date Created'))->sortable();
-
-        return $grid;
-    } catch (\Exception $e) {
-        // Log or handle the exception as needed
-        // For now, returning an empty grid
-        return new Grid(new User());
     }
+
+    // Wrap fetching data in a try-catch block
+    try {
+        $grid->model()->where('user_type', 'Admin')->get();
+    } catch (\Exception $e) {
+        // Log the error or handle it as needed
+        \Log::error('Error fetching data: ' . $e->getMessage());
+        // Continue without the problematic data
+        $grid->model()->where('user_type', 'Admin')->whereNotNull('id')->get();
+    }
+
+    $grid->disableBatchActions();
+    $grid->quickSearch('first_name', 'last_name', 'email', 'phone_number')->placeholder('Search by name, email, or phone number');
+    $grid->column('name', __('Account Name'))->display(function () {
+        return $this->first_name . ' ' . $this->last_name;
+    });
+    $grid->column('phone_number', __('Contact'));
+    $grid->column('created_at', __('Date Created'))->sortable();
+
+    return $grid;
 }
 
     // protected function grid()
