@@ -1017,7 +1017,7 @@ public function login(Request $r)
         }
 
         // Send SMS with the generated password
-        $message = "Congradulations $acc->name 🎉🎉🥳. Use Phone number: $phone_number and Passcode: $password to login into your VSLA group";
+        $message = "Success, your admin account has been created successfully. Use Phone number: $phone_number and Passcode: $password to login into your VSLA group";
 
         $resp = null;
         try {
