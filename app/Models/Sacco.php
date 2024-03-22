@@ -413,20 +413,25 @@ public function getSHARECOUNTAttribute()
     // }
 
     public function getLOANCOUNTAttribute()
-    {
+{
+    try {
         $admin = Sacco::find($this->administrator_id);
-        $active_cycle = Sacco::find($this->cycle_id);
+        $activeCycle = $this->active_cycle;
 
-        if ($admin == null) {
+        if ($admin == null || $activeCycle == null) {
             return 0;
         }
-        if ($this->active_cycle == null) {
-            return 0;
-        }
+
         return Loan::where([
             'sacco_id' => $this->id,
-            'cycle_id' => $this->$active_cycle->id
-        ])
-            ->count();
+            'cycle_id' => $activeCycle->id
+        ])->count();
+    } catch (\Exception $e) {
+        // Log the error for debugging purposes
+        Log::error('Error in getLOANCOUNTAttribute: ' . $e->getMessage());
+        // Return 0 or handle the error based on your application's requirements
+        return 0;
     }
+}
+
 }

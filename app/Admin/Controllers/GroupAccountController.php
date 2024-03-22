@@ -21,7 +21,7 @@ class GroupAccountController extends AdminController
      *
      * @var string
      */
-    protected $title = 'Accounts';
+    protected $title = 'Group Accounts';
 
     /**
      * Make a grid builder.
