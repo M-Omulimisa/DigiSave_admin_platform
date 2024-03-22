@@ -53,13 +53,14 @@ class GroupAccountController extends AdminController
 
     // Wrap fetching data in a try-catch block
     try {
-        $grid->model()->where('user_type', 'Admin')->get();
+        $grid->model()->where('user_type', 'Admin')->paginate(10);
     } catch (\Exception $e) {
         // Log the error or handle it as needed
-        \Log::error('Error fetching data: ' . $e->getMessage());
+        Log::error('Error fetching data: ' . $e->getMessage());
         // Continue without the problematic data
-        $grid->model()->where('user_type', 'Admin')->whereNotNull('id')->get();
+        $grid->model()->where('user_type', 'Admin')->whereNotNull('id')->paginate(10);
     }
+
 
     $grid->disableBatchActions();
     $grid->quickSearch('first_name', 'last_name', 'email', 'phone_number')->placeholder('Search by name, email, or phone number');
