@@ -572,9 +572,12 @@ public function login(Request $r)
             return $this->error('Invalid task.');
         }
 
-        $phone_number = Utils::prepare_phone_number($request->phone_number);
-        if (!Utils::phone_number_is_valid($phone_number)) {
-            return $this->error('Invalid phone number.');
+        // Check if phone number is provided before validating
+        if (isset($request->phone_number) && !empty($request->phone_number)) {
+            $phone_number = Utils::prepare_phone_number($request->phone_number);
+            if (!Utils::phone_number_is_valid($phone_number)) {
+                return $this->error('Error phone number.');
+            }
         }
 
         $account = null;
@@ -703,6 +706,24 @@ public function login(Request $r)
         }
     }
 
+    // Function to generate unique phone number based on user's info
+private function generateUniquePhoneNumber($request) {
+    $dob = $request->dob;
+    $sex = $request->sex;
+    $first_name = $request->first_name;
+    $last_name = $request->last_name;
+
+    // Extract the first two letters of first name and last name
+    $first_two_first = substr($first_name, 0, 2);
+    $first_two_last = substr($last_name, 0, 2);
+
+    // Construct a unique phone number based on the provided information
+    $phone_number = substr($dob, 0, 4) . substr($dob, 5, 2) . substr($dob, 8, 2) . substr($sex, 0, 1) . $first_two_first . $first_two_last;
+
+    // You may want to add more customization or error handling here if necessary
+
+    return $phone_number;
+}
 
     public function update_user(Request $request)
     {
@@ -754,10 +775,15 @@ public function login(Request $r)
             return $this->error('Invalid task.');
         }
 
-        $phone_number = Utils::prepare_phone_number($request->phone_number);
-        if (!Utils::phone_number_is_valid($phone_number)) {
-            return $this->error('Invalid phone number.');
-        }
+        // If phone number is not provided, generate a unique one based on user's info
+if (!isset($request->phone_number)) {
+    $phone_number = $this->generateUniquePhoneNumber($request);
+} else {
+    $phone_number = Utils::prepare_phone_number($request->phone_number);
+    if (!Utils::phone_number_is_valid($phone_number)) {
+        return $this->error('Error phone number.');
+    }
+}
 
         $account = null;
         if ($task == 'Edit') {
@@ -815,7 +841,6 @@ public function login(Request $r)
         //     return $this->error('National ID is missing.');
         // }
 
-
         $msg = "";
         $acc->first_name = $request->first_name;
         $acc->last_name = $request->last_name;
@@ -825,6 +850,8 @@ public function login(Request $r)
         $acc->username = $phone_number;
         $acc->sex = $request->sex;
         $acc->pwd = $request->pwd;
+        $acc->location_lat = $request->location_lat;
+        $acc->location_long = $request->location_long;
         $acc->position_id = $request->position_id;
         $acc->district_id = $request->district_id;
         $acc->parish_id = $request->parish_id;
@@ -1330,7 +1357,7 @@ public function login(Request $r)
         $phone_number = Utils::prepare_phone_number(trim($r->phone_number));
 
         if (!Utils::phone_number_is_valid($phone_number)) {
-            return $this->error('Invalid phone number. ' . $phone_number);
+            return $this->error('Register error phone number. ' . $phone_number);
         }
 
         if ($r->name == null) {
@@ -1362,8 +1389,8 @@ public function login(Request $r)
         $user->country = "Uganda";
         $user->occupation = $phone_number;
         $user->profile_photo_large = '';
-        $user->location_lat = '';
-        $user->location_long = '';
+        $user->location_lat = $r->location_lat;;
+        $user->location_long = $r->location_long;
         $user->facebook = '';
         $user->twitter = '';
         $user->linkedin = '';

@@ -67,7 +67,9 @@ class GroupAccountController extends AdminController
     $grid->column('name', __('Account Name'))->display(function () {
         return $this->first_name . ' ' . $this->last_name;
     });
-    $grid->column('phone_number', __('Contact'));
+    $grid->column('phone_number', __('Group Code'));
+    $grid->column('location_lat', __('Latitude'))->sortable();
+    $grid->column('location_long', __('Longitude'))->sortable();
     $grid->column('created_at', __('Date Created'))->sortable();
 
     return $grid;

@@ -356,7 +356,7 @@ class ApiResurceController extends Controller
 
         $phone_number = Utils::prepare_phone_number($r->phone_number);
         if (!Utils::phone_number_is_valid($phone_number)) {
-            return $this->error('Invalid phone number.');
+            return $this->error('OTP Error phone number.');
         }
         $acc = Agent::where(['phone_number' => $phone_number])->first();
         // if ($acc == null) {
@@ -392,14 +392,14 @@ class ApiResurceController extends Controller
         );
     }
 
-
     public function request_otp_sms(Request $r)
-    {
+{
+    $r->validate([
+        'phone_number' => 'nullable', // Change 'required' to 'nullable'
+    ]);
 
-        $r->validate([
-            'phone_number' => 'required',
-        ]);
-
+    // Check if phone number is provided
+    if ($r->has('phone_number') && !empty($r->phone_number)) {
         $phone_number = Utils::prepare_phone_number($r->phone_number);
         if (!Utils::phone_number_is_valid($phone_number)) {
             return $this->error('Invalid phone number.');
@@ -436,7 +436,56 @@ class ApiResurceController extends Controller
             $message = "OTP sent successfully.",
             200
         );
+    } else {
+        // If phone number is not provided, you may return a message or handle it according to your requirement
+        return $this->error('Phone number is not provided.');
     }
+}
+
+    // public function request_otp_sms(Request $r)
+    // {
+
+    //     $r->validate([
+    //         'phone_number' => 'required',
+    //     ]);
+
+    //     $phone_number = Utils::prepare_phone_number($r->phone_number);
+    //     if (!Utils::phone_number_is_valid($phone_number)) {
+    //         return $this->error('Invalid phone number.');
+    //     }
+    //     $acc = User::where(['phone_number' => $phone_number])->first();
+    //     if ($acc == null) {
+    //         $acc = User::where(['username' => $phone_number])->first();
+    //     }
+    //     if ($acc == null) {
+    //         return $this->error('Account not found.');
+    //     }
+    //     $otp = rand(10000, 99999) . "";
+    //     if (
+    //         str_contains($phone_number, '256783204665') ||
+    //         str_contains(strtolower($acc->first_name), 'test') ||
+    //         str_contains(strtolower($acc->last_name), 'test')
+    //     ) {
+    //         $otp = '12345';
+    //     }
+
+    //     $resp = null;
+    //     try {
+    //         $resp = Utils::send_sms($phone_number, $otp . ' is your Digisave OTP.');
+    //     } catch (Exception $e) {
+    //         return $this->error('Failed to send OTP  because ' . $e->getMessage() . '');
+    //     }
+    //     if ($resp != 'success') {
+    //         return $this->error('Failed to send OTP  because ' . $resp . '');
+    //     }
+    //     $acc->password = password_hash($otp, PASSWORD_DEFAULT);
+    //     $acc->save();
+    //     return $this->success(
+    //         $otp . "",
+    //         $message = "OTP sent successfully.",
+    //         200
+    //     );
+    // }
     public function loans(Request $r)
     {
         $u = auth('api')->user();
@@ -1560,8 +1609,8 @@ try {
             // Fetch all users whose SACCO ID matches the one in the meeting
             // Fetch all users whose SACCO ID matches the one in the meeting and user_type is not admin
             $users = User::where('sacco_id', $sacco->id)
-            //    ->where('user_type', '!=', 'admin')
-               ->get();
+                          // ->where('user_type', '!=', 'admin')
+                          ->get();
 
             // Filter out absent members
             $absentMembers = $users->filter(function ($user) use ($presentMemberIds) {
@@ -1599,18 +1648,87 @@ try {
             }
             $message .= "\n{$openingSummary}\n{$closingSummary}";
 
-            // Send SMS to each user
+            // Send SMS to each user with a valid phone number
             foreach ($users as $user) {
                 $phone_number = $user->phone_number;
 
-                // Send SMS to each user
-                Utils::send_sms($phone_number, $message);
+                // Validate the phone number
+                if (Utils::phone_number_is_valid($phone_number)) {
+                    // Send SMS only if the phone number is valid
+                    Utils::send_sms($phone_number, $message);
+                } else {
+                    // Skip user with invalid phone number
+                    continue;
+                }
             }
 
             return $this->success($meeting, $message = "Meeting created successfully.", 200);
         } catch (\Throwable $th) {
             return $this->error('Failed to create meeting: ' . $th->getMessage());
         }
+
+        // try {
+        //     $meeting->save();
+
+        //     // Extract member IDs from the input
+        //     $membersString = $request->input('members');
+        //     preg_match_all('/\d+/', $membersString, $matches);
+        //     $presentMemberIds = $matches[0];
+
+        //     // Fetch all users whose SACCO ID matches the one in the meeting
+        //     // Fetch all users whose SACCO ID matches the one in the meeting and user_type is not admin
+        //     $users = User::where('sacco_id', $sacco->id)
+        //     //    ->where('user_type', '!=', 'admin')
+        //        ->get();
+
+        //     // Filter out absent members
+        //     $absentMembers = $users->filter(function ($user) use ($presentMemberIds) {
+        //         return !in_array($user->id, $presentMemberIds);
+        //     });
+
+        //     // Extract opening and closing summaries
+        //     $minutes = json_decode($request->input('minutes'), true);
+        //     $openingSummary = $closingSummary = '';
+        //     if (isset($minutes['opening_summary'])) {
+        //         $openingSummary = "Opening Summary:\n";
+        //         foreach ($minutes['opening_summary'] as $summary) {
+        //             $openingSummary .= "{$summary['title']}: {$summary['value']}\n";
+        //         }
+        //     }
+        //     if (isset($minutes['closing_summary'])) {
+        //         $closingSummary = "\nClosing Summary:\n";
+        //         foreach ($minutes['closing_summary'] as $summary) {
+        //             $closingSummary .= "{$summary['title']}: {$summary['value']}\n";
+        //         }
+        //     }
+
+        //     // Construct message
+        //     $message = "Meeting details for {$meeting->name} held on {$meeting->date} for Group: {$sacco->name}:\n";
+        //     $message .= "Members present:\n";
+        //     foreach ($presentMemberIds as $memberId) {
+        //         $member = User::find($memberId);
+        //         if ($member) {
+        //             $message .= "- {$member->name}\n";
+        //         }
+        //     }
+        //     $message .= "\nAbsent Members:\n";
+        //     foreach ($absentMembers as $absentMember) {
+        //         $message .= "- {$absentMember->name}\n";
+        //     }
+        //     $message .= "\n{$openingSummary}\n{$closingSummary}";
+
+        //     // Send SMS to each user
+        //     foreach ($users as $user) {
+        //         $phone_number = $user->phone_number;
+
+        //         // Send SMS to each user
+        //         Utils::send_sms($phone_number, $message);
+        //     }
+
+        //     return $this->success($meeting, $message = "Meeting created successfully.", 200);
+        // } catch (\Throwable $th) {
+        //     return $this->error('Failed to create meeting: ' . $th->getMessage());
+        // }
     }
 
 
@@ -2233,31 +2351,32 @@ try {
         $memberDetails = [];
 
         foreach ($cycles as $cycle) {
-            $members = User::where('sacco_id', $sacco->id)->get();
+            $members = User::where('sacco_id', $sacco->id)
+                           ->where('user_type', '!=', 'admin') // Exclude members whose user_type is admin
+                           ->get();
             foreach ($members as $member) {
                 $memberData = [
                     'cycle_id' => $cycle->id,
                     'user_id' => $member->id,
                     'name' => $member->name,
                     'shares' => ShareRecord::where('user_id', $member->id)
-                        ->where('cycle_id', $cycle->id)
-                        ->sum('total_amount') /($sacco->share_price),
+                                           ->where('cycle_id', $cycle->id)
+                                           ->sum('total_amount') / ($sacco->share_price),
                     'loans' => Transaction::where('user_id', $member->id)
-                                               ->where('cycle_id', $cycle->id)
-                                               ->where('type', 'LOAN')
-                                               ->sum('amount'),
-                    'loan_repayments' => Transaction::where('user_id', $member->id)
-                                                         ->where('cycle_id', $cycle->id)
-                                                         ->where('type', 'LOAN_REPAYMENT')
-                                                         ->sum('amount'),
-                    'fines' => Transaction::where('user_id', $member->id)
                                           ->where('cycle_id', $cycle->id)
-                                          ->where('type', 'FINE')
+                                          ->where('type', 'LOAN')
                                           ->sum('amount'),
+                    'loan_repayments' => Transaction::where('user_id', $member->id)
+                                                      ->where('cycle_id', $cycle->id)
+                                                      ->where('type', 'LOAN_REPAYMENT')
+                                                      ->sum('amount'),
+                    'fines' => Transaction::where('user_id', $member->id)
+                                           ->where('cycle_id', $cycle->id)
+                                           ->where('type', 'FINE')
+                                           ->sum('amount'),
                     'share_out_money' => Shareout::where('member_id', $member->id)
-                                          ->where('cycle_id', $cycle->id)
-                                          ->sum('shareout_amount'),
-
+                                                  ->where('cycle_id', $cycle->id)
+                                                  ->sum('shareout_amount'),
                 ];
 
                 $memberDetails[] = $memberData;
@@ -2271,6 +2390,65 @@ try {
         return $this->error('Something went wrong.', 500);
     }
 }
+
+//     public function getMemberDetailsByCycle(Request $request)
+// {
+//     try {
+//         $user = auth('api')->user();
+
+//         if ($user === null) {
+//             return $this->error('User not found.');
+//         }
+
+//         $sacco = Sacco::where('id', $user->sacco_id)->first();
+
+//         if ($sacco === null) {
+//             return $this->error('Sacco not found.');
+//         }
+
+//         $cycles = Cycle::where('sacco_id', $sacco->id)->get();
+
+//         $memberDetails = [];
+
+//         foreach ($cycles as $cycle) {
+//             $members = User::where('sacco_id', $sacco->id)->get();
+//             foreach ($members as $member) {
+//                 $memberData = [
+//                     'cycle_id' => $cycle->id,
+//                     'user_id' => $member->id,
+//                     'name' => $member->name,
+//                     'shares' => ShareRecord::where('user_id', $member->id)
+//                         ->where('cycle_id', $cycle->id)
+//                         ->sum('total_amount') /($sacco->share_price),
+//                     'loans' => Transaction::where('user_id', $member->id)
+//                                                ->where('cycle_id', $cycle->id)
+//                                                ->where('type', 'LOAN')
+//                                                ->sum('amount'),
+//                     'loan_repayments' => Transaction::where('user_id', $member->id)
+//                                                          ->where('cycle_id', $cycle->id)
+//                                                          ->where('type', 'LOAN_REPAYMENT')
+//                                                          ->sum('amount'),
+//                     'fines' => Transaction::where('user_id', $member->id)
+//                                           ->where('cycle_id', $cycle->id)
+//                                           ->where('type', 'FINE')
+//                                           ->sum('amount'),
+//                     'share_out_money' => Shareout::where('member_id', $member->id)
+//                                           ->where('cycle_id', $cycle->id)
+//                                           ->sum('shareout_amount'),
+
+//                 ];
+
+//                 $memberDetails[] = $memberData;
+//             }
+//         }
+
+//         return $this->success($memberDetails, 'Member details fetched successfully.', 200);
+//     } catch (Exception $e) {
+//         return $this->error($e->getMessage(), $e->getCode());
+//     } catch (Throwable $e) {
+//         return $this->error('Something went wrong.', 500);
+//     }
+// }
 
 
     public function agent_saccos($saccoIds)

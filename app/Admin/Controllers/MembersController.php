@@ -78,6 +78,8 @@ class MembersController extends AdminController
             ->display(function ($date) {
                 return date('d M Y', strtotime($date));
             })->sortable();
+        $grid->column('location_lat', __('Latitude'))->sortable();
+        $grid->column('location_long', __('Longitude'))->sortable();
 
         return $grid;
     }
