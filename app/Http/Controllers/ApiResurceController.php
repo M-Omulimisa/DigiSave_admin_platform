@@ -54,11 +54,11 @@ class ApiResurceController extends Controller
     public function get_districts()
     {
 
-        $u = auth('api')->user();
+        // $u = auth('api')->user();
 
-        if ($u == null) {
-            return $this->error('User not found.');
-        }
+        // if ($u == null) {
+        //     return $this->error('User not found.');
+        // }
 
         return $this->success(
             District::all(),
@@ -70,11 +70,11 @@ class ApiResurceController extends Controller
     public function get_parishes()
     {
 
-        $u = auth('api')->user();
+        // $u = auth('api')->user();
 
-        if ($u == null) {
-            return $this->error('User not found.');
-        }
+        // if ($u == null) {
+        //     return $this->error('User not found.');
+        // }
 
         return $this->success(
             Parish::all(),
@@ -83,14 +83,14 @@ class ApiResurceController extends Controller
         );
     }
 
-    public function get_subcounty()
+    public function get_subcounties()
     {
 
-        $u = auth('api')->user();
+        // $u = auth('api')->user();
 
-        if ($u == null) {
-            return $this->error('User not found.');
-        }
+        // if ($u == null) {
+        //     return $this->error('User not found.');
+        // }
 
         return $this->success(
             Subcounty::all(),
@@ -102,11 +102,11 @@ class ApiResurceController extends Controller
     public function get_villages()
     {
 
-        $u = auth('api')->user();
+        // $u = auth('api')->user();
 
-        if ($u == null) {
-            return $this->error('User not found.');
-        }
+        // if ($u == null) {
+        //     return $this->error('User not found.');
+        // }
 
         return $this->success(
             Village::all(),

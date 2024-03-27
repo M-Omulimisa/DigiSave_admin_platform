@@ -9,7 +9,7 @@ class Subcounty extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['subcounty_name', 'district_id'];
+    protected $fillable = ['sub_county', 'district_id'];
 
     public function parishes()
     {

@@ -45,6 +45,7 @@ Route::POST("transactions-transfer", [ApiResurceController::class, "transactions
 Route::get('district', [ApiResurceController::class, 'get_districts']);
 Route::get('parish', [ApiResurceController::class, 'get_parishes']);
 Route::get('village', [ApiResurceController::class, 'get_villages']);
+Route::get('subcounty', [ApiResurceController::class, 'get_subcounties']);
 
 
 Route::post("agent-meeting", [ApiResurceController::class, "scheduleMeeting"]);
