@@ -34,6 +34,7 @@ use App\Models\ServiceProvider;
 use App\Models\Shareout;
 use App\Models\ShareRecord;
 use App\Models\SocialFund;
+use App\Models\Subcounty;
 use App\Models\User;
 use App\Models\Utils;
 use App\Models\Village;
@@ -77,6 +78,22 @@ class ApiResurceController extends Controller
 
         return $this->success(
             Parish::all(),
+            $message = "Success.",
+            200
+        );
+    }
+
+    public function get_subcounty()
+    {
+
+        $u = auth('api')->user();
+
+        if ($u == null) {
+            return $this->error('User not found.');
+        }
+
+        return $this->success(
+            Subcounty::all(),
             $message = "Success.",
             200
         );
