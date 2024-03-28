@@ -1652,18 +1652,17 @@ try {
 
             // Construct message
             $message = "Meeting details for {$meeting->name} held on {$meeting->date} for Group: {$sacco->name}:\n";
-            $message .= "Members present:\n";
-            foreach ($presentMemberIds as $memberId) {
-                $member = User::find($memberId);
-                if ($member) {
-                    $message .= "- {$member->name}\n";
-                }
-            }
-            $message .= "\nAbsent Members:\n";
-            foreach ($absentMembers as $absentMember) {
-                $message .= "- {$absentMember->name}\n";
-            }
-            $message .= "\n{$openingSummary}\n{$closingSummary}";
+            // Count present members
+            $presentMembersCount = count($presentMemberIds);
+
+            // Add present members count to message
+            $message .= "Members present: $presentMembersCount\n";
+
+            // Count absent members
+            $absentMembersCount = count($absentMembers);
+
+            // Add absent members count to message
+            $message .= "Absent Members: $absentMembersCount\n";
 
             // Send SMS to each user with a valid phone number
             foreach ($users as $user) {
