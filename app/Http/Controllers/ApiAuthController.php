@@ -1438,7 +1438,9 @@ if (!isset($request->phone_number)) {
 
         // $new_user->token = $token;
         // $new_user->remember_token = $token;
+        $new_user->setAttribute('access_code', $code);
         return $this->success($new_user, 'Account created successfully.');
+        // return $this->success($new_user, 'Account created successfully.');
     }
 
 
