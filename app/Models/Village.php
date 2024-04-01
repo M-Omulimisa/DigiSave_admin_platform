@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class Village extends Model
 {
-
     use HasFactory;
 
     protected $primaryKey = 'village_id';
@@ -16,6 +15,6 @@ class Village extends Model
 
     public function parish()
     {
-        return $this->belongsTo(Parish::class);
+        return $this->belongsTo(Parish::class, 'parish_id');
     }
 }

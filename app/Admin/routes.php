@@ -17,6 +17,9 @@ Route::group([
     $router->resource('gens', GenController::class);
     $router->resource('saccos', SaccoController::class);
     $router->resource('districts', DistrictsController::class);
+    $router->resource('subcounties', SubcountiesController::class);
+    $router->resource('parishes', ParishesController::class);
+    $router->resource('villages', VillagesController::class);
     $router->post('districts/import-csv', 'DistrictsController@importCsv')->name('districts.import.csv');
     $router->resource('agents', AgentController::class);
     $router->resource('organisation', OrganizationController::class);
