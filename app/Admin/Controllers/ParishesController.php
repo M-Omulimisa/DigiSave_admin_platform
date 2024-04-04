@@ -31,7 +31,18 @@ class ParishesController extends AdminController
         $grid->column('parish_name', __('Parish Name'));
         $grid->column('subcounty.sub_county', __('Subcounty'));
 
-        // Add other columns as needed
+        // Add search filter
+        $grid->filter(function($filter){
+            // Disable the default id filter
+            $filter->disableIdFilter();
+
+            // Add a dropdown filter for subcounties
+            $filter->equal('subcounty_id', __('Subcounty'))->select(Subcounty::pluck('sub_county', 'id'));
+
+            // Add more filters as needed
+        });
+
+        // Add other columns or configurations as needed
 
         return $grid;
     }
@@ -61,14 +72,38 @@ class ParishesController extends AdminController
      * @return Form
      */
     protected function form()
-    {
-        $form = new Form(new Parish());
+{
+    $form = new Form(new Parish());
 
-        $form->text('parish_name', __('Parish Name'));
-        $form->select('subcounty_id', __('Subcounty'))->options(Subcounty::pluck('sub_county', 'id'));
+    // Use a textarea for inputting multiple parish names, instructing the user to separate names by commas or new lines.
+    $form->textarea('parish_names', __('Parish Names'))
+         ->help('Enter multiple parish names separated by commas or new lines.');
 
-        // Add other fields as needed
+    $form->select('subcounty_id', __('Subcounty'))->options(Subcounty::pluck('sub_county', 'id'));
 
-        return $form;
-    }
+    // Handle the custom logic for creating multiple Parish entities on form submission.
+    $form->saving(function (Form $form) {
+        // First, cancel the default saving operation to handle it manually.
+        $form->model()->exists = true; // Trick to prevent saving the model directly.
+
+        $parishNames = preg_split('/\r\n|[\r\n,]/', request()->input('parish_names')); // Split input by new line or comma.
+        $subcountyId = request()->input('subcounty_id');
+
+        foreach ($parishNames as $parishName) {
+            $parishName = trim($parishName);
+            if (!empty($parishName)) {
+                Parish::create([
+                    'parish_name' => $parishName,
+                    'subcounty_id' => $subcountyId,
+                ]);
+            }
+        }
+
+        // Redirect after saving to prevent the form from trying to save the non-existent 'parish_names' field.
+        return redirect(admin_url('parishes'))->with('status', 'Parishes added successfully!');
+    });
+
+    return $form;
+}
+
 }

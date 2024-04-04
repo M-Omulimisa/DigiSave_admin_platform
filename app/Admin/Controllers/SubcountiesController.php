@@ -32,6 +32,18 @@ class SubcountiesController extends AdminController
         $grid->column('sub_county', __('Subcounty Name'));
         $grid->column('district.name', __('District'));
 
+        // Add search filter
+        $grid->filter(function($filter){
+            // Disable the default id filter
+            $filter->disableIdFilter();
+
+            // Add a dropdown filter for districts
+            $filter->equal('district_id', __('District'))->select(District::pluck('name', 'id'));
+
+            // You can add more filters as needed
+        });
+
+        // Add other configurations as needed
 
         return $grid;
     }
@@ -61,14 +73,38 @@ class SubcountiesController extends AdminController
      * @return Form
      */
     protected function form()
-    {
-        $form = new Form(new Subcounty());
+{
+    $form = new Form(new Subcounty());
 
-        $form->text('sub_county', __('Subcounty Name'));
-        $form->select('district_id', __('District'))->options(District::pluck('name', 'id'));
+    // Use a textarea for inputting multiple subcounty names, instructing the user to separate names by commas or new lines.
+    $form->textarea('sub_county_names', __('Subcounty Names'))
+         ->help('Enter multiple subcounty names separated by commas or new lines.');
 
-        // Add other fields as needed
+    $form->select('district_id', __('District'))->options(District::pluck('name', 'id'));
 
-        return $form;
-    }
+    // Handle the custom logic for creating multiple Subcounty entities on form submission.
+    $form->saving(function (Form $form) {
+        // Prevent the default saving mechanism from proceeding since we're handling it manually.
+        $form->model()->exists = true; // A trick to prevent Laravel Admin from attempting to save directly.
+
+        $subCountyNames = preg_split('/\r\n|[\r\n,]/', request()->input('sub_county_names')); // Split input by new line or comma.
+        $districtId = request()->input('district_id');
+
+        foreach ($subCountyNames as $subCountyName) {
+            $subCountyName = trim($subCountyName);
+            if (!empty($subCountyName)) {
+                Subcounty::create([
+                    'sub_county' => $subCountyName,
+                    'district_id' => $districtId,
+                ]);
+            }
+        }
+
+        // After saving, redirect to a given path to avoid trying to save the non-existent 'sub_county_names' input as a field.
+        return redirect(admin_url('subcounties'))->with('status', 'Subcounties added successfully!');
+    });
+
+    return $form;
+}
+
 }
