@@ -22,6 +22,10 @@ use Illuminate\Support\Facades\Route;
 Route::get("manifest", [ApiResurceController::class, "manifest"]);
 Route::get("loan-schemes", [ApiResurceController::class, "loan_schemes"]);
 Route::post("loan-schemes", [ApiAuthController::class, "create_scheme"]);
+Route::post("get-geo-data", [ApiResurceController::class, "getGeographicalDataByDistrict"]);
+Route::post("get-subcounties", [ApiResurceController::class, "getSubcountiesByDistrict"]);
+Route::post('get-parishes', [ApiResurceController::class, 'getParishesBySubcounties']);
+Route::post('get-villages', [ApiResurceController::class, 'getVillagesByParishes']);
 Route::get("loans", [ApiResurceController::class, "fetchUserLoans"]);
 Route::get("cycles", [ApiResurceController::class, "cycles"]);
 Route::get("organisation", [ApiResurceController::class, "get_orgs"]);
@@ -77,6 +81,7 @@ Route::get('agent-saccos/{saccoIds}', [ApiResurceController::class, 'agent_sacco
 
 
 Route::POST("users/login", [ApiAuthController::class, "login"]);
+// Route::post("test-sms", [ApiResurceController::class], "send_SMS");
 Route::POST("login", [ApiAuthController::class, "login"]);
 Route::POST("admin/auth", [ApiAuthController::class, "verify_user"]);
 Route::POST("shareout", [ApiAuthController::class, "new_shareout"]);
@@ -103,7 +108,7 @@ Route::get('products', [ApiResurceController::class, 'products']);
 Route::get('events', [ApiResurceController::class, 'events']);
 Route::get('news-posts', [ApiResurceController::class, 'news_posts']);
 
-Route::put('/update/{userId}', [ApiAuthController::class,'updateUser']);
+Route::put('/update/{userId}', [ApiAuthController::class, 'updateUser']);
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();

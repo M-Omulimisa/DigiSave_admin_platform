@@ -17,4 +17,14 @@ class Village extends Model
     {
         return $this->belongsTo(Parish::class, 'parish_id');
     }
+    /**
+     * Retrieves all villages for a specific parish.
+     *
+     * @param int $parishId The ID of the parish.
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public static function getByParishId($parishId)
+    {
+        return self::where('parish_id', $parishId)->get();
+    }
 }

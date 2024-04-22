@@ -51,11 +51,11 @@ class Utils extends Model
         $url .= "&sppass=mul1m1s4";
         $url .= "&numbers=$phone";
         $url .= "&msg=$sms";
-        $url .= "&type=json"; 
+        $url .= "&type=json";
 
         $url = "https://sms.dmarkmobile.com/v2/api/send_sms/".$url;
- 
-        //use guzzle to make the request 
+
+        //use guzzle to make the request
         $body = null;
         try {
             //use use curl to make the request
@@ -93,42 +93,42 @@ class Utils extends Model
         }
         return 'success';
     }
-    /* 
-/* 
+    /*
+/*
 
 Full texts
-id	
-created_at	
-updated_at	
-association_id	
-group_id	
-name	
-address	
-parish	
-village	
-phone_number	
-email		
-subcounty_id	
-	
-phone_number_2	
-dob	
-sex	
-	 
-	
-caregiver_sex	
-caregiver_phone_number	
-caregiver_age	
-caregiver_relationship	
-photo	
-deleted_at	
-status	
-administrator_id	
-	
+id
+created_at
+updated_at
+association_id
+group_id
+name
+address
+parish
+village
+phone_number
+email
+subcounty_id
+
+phone_number_2
+dob
+sex
+
+
+caregiver_sex
+caregiver_phone_number
+caregiver_age
+caregiver_relationship
+photo
+deleted_at
+status
+administrator_id
+
 */
 
-    /* 
-  
-[] => 
+    /*
+
+[] =>
 [9] => RELATIONSHIP WITH CAREGIVER
 [] => District
 */
@@ -511,9 +511,9 @@ administrator_id
         }
 
 
-        /* 
+        /*
          "/home/ulitscom_html/public/storage/images/956000011639246-(m).JPG
-        
+
         public_html/public/storage/images
         */
         return $r;

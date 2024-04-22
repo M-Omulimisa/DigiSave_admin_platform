@@ -63,155 +63,156 @@ class ApiAuthController extends Controller
         return $this->success($query, $message = "Profile details", 200);
     }
 
-//     public function login(Request $r)
-// {
-//     if ($r->username == null || $r->password == null) {
-//         return $this->error('Username and password are required.');
-//     }
 
-//     $u = User::where('phone_number', $r->username)
-//         ->orWhere('email', $r->username)
-//         ->orWhere('username', $r->username)
-//         ->first();
+    //     public function login(Request $r)
+    // {
+    //     if ($r->username == null || $r->password == null) {
+    //         return $this->error('Username and password are required.');
+    //     }
 
-//     if ($u == null) {
-//         return $this->error('User account not found.');
-//     }
+    //     $u = User::where('phone_number', $r->username)
+    //         ->orWhere('email', $r->username)
+    //         ->orWhere('username', $r->username)
+    //         ->first();
 
-//     // Ensure that the login credentials match the registration credentials
-//     if ($u->password !== $r->password) {
-//         return $this->error('Wrong credentials.');
-//     }
+    //     if ($u == null) {
+    //         return $this->error('User account not found.');
+    //     }
 
-//     JWTAuth::factory()->setTTL(60 * 24 * 30 * 365);
+    //     // Ensure that the login credentials match the registration credentials
+    //     if ($u->password !== $r->password) {
+    //         return $this->error('Wrong credentials.');
+    //     }
 
-//     $token = auth('api')->login($u); // Authenticate the user using their model instance
+    //     JWTAuth::factory()->setTTL(60 * 24 * 30 * 365);
 
-//     if ($token == null) {
-//         return $this->error('Failed to authenticate user.');
-//     }
+    //     $token = auth('api')->login($u); // Authenticate the user using their model instance
 
-//     $u->token = $token;
-//     $u->remember_token = $token;
+    //     if ($token == null) {
+    //         return $this->error('Failed to authenticate user.');
+    //     }
 
-//     return $this->success($u, 'Logged in successfully.');
-// }
+    //     $u->token = $token;
+    //     $u->remember_token = $token;
 
-public function login(Request $r)
-{
-    if ($r->username == null) {
-        return $this->error('Username is nullable.');
+    //     return $this->success($u, 'Logged in successfully.');
+    // }
+
+    public function login(Request $r)
+    {
+        if ($r->username == null) {
+            return $this->error('Username is nullable.');
+        }
+
+        if ($r->password == null) {
+            return $this->error('Password is required.');
+        }
+
+        // Check if the user exists by username, email, or phone number
+        $u = User::where('username', $r->username)->first();
+        if ($u == null) {
+            $u = User::where('phone_number', $r->username)->first();
+        }
+        if ($u == null) {
+            $u = User::where('email', $r->username)->first();
+        }
+
+        if ($u == null) {
+            return $this->error('User account not found.');
+        }
+
+        // Verify the password
+        if (!Hash::check($r->password, $u->password)) {
+            return $this->error('Wrong credentials.');
+        }
+
+        // Generate JWT token
+        JWTAuth::factory()->setTTL(60 * 24 * 30 * 365);
+
+        $token = auth('api')->attempt([
+            'username' => $u->username,
+            'password' => $r->password,
+        ]);
+
+        if ($token == null) {
+            return $this->error('Failed to authenticate user.');
+        }
+
+        // Attach token to user object
+        $u->token = $token;
+        $u->remember_token = $token;
+
+        return $this->success($u, 'Logged in successfully.');
     }
 
-    if ($r->password == null) {
-        return $this->error('Password is required.');
-    }
 
-    // Check if the user exists by username, email, or phone number
-    $u = User::where('username', $r->username)->first();
-    if ($u == null) {
-        $u = User::where('phone_number', $r->username)->first();
-    }
-    if ($u == null) {
-        $u = User::where('email', $r->username)->first();
-    }
+    //    public function login(Request $r)
+    //     {
+    //         if ($r->username == null) {
+    //             return $this->error('Username is nullable.');
+    //         }
 
-    if ($u == null) {
-        return $this->error('User account not found.');
-    }
+    //         if ($r->password == null) {
+    //             return $this->error('Password is required.');
+    //         }
 
-    // Verify the password
-    if (!Hash::check($r->password, $u->password)) {
-        return $this->error('Wrong credentials.');
-    }
+    //         // die($r->password);
 
-    // Generate JWT token
-     JWTAuth::factory()->setTTL(60 * 24 * 30 * 365);
+    //         // $r->username = trim($r->username);
 
-    $token = auth('api')->attempt([
-        'username' => $u->username,
-        'password' => $r->password,
-    ]);
+    //         $u = User::where('username', $r->username)->first();
+    //         if ($u == null) {
+    //             $u = User::where('phone_number', $r->username)
+    //                 ->first();
+    //         }
+    //         // die($u->id);
+    //         if ($u == null) {
+    //             $u = User::where('email', $r->username)->first();
+    //         }
 
-    if ($token == null) {
-        return $this->error('Failed to authenticate user.');
-    }
+    //         $phone_number = $r->username;
 
-    // Attach token to user object
-    $u->token = $token;
-    $u->remember_token = $token;
+    //         // if ($u == null) {
 
-    return $this->success($u, 'Logged in successfully.');
-}
+    //         //     $phone_number = Utils::prepare_phone_number($r->username);
 
 
-//    public function login(Request $r)
-//     {
-//         if ($r->username == null) {
-//             return $this->error('Username is nullable.');
-//         }
+    //         //     if (Utils::phone_number_is_valid($phone_number)) {
 
-//         if ($r->password == null) {
-//             return $this->error('Password is required.');
-//         }
+    //         //         $u = User::where('phone_number', $phone_number)->first();
 
-//         // die($r->password);
-
-//         // $r->username = trim($r->username);
-
-//         $u = User::where('username', $r->username)->first();
-//         if ($u == null) {
-//             $u = User::where('phone_number', $r->username)
-//                 ->first();
-//         }
-//         // die($u->id);
-//         if ($u == null) {
-//             $u = User::where('email', $r->username)->first();
-//         }
-
-//         $phone_number = $r->username;
-
-//         // if ($u == null) {
-
-//         //     $phone_number = Utils::prepare_phone_number($r->username);
+    //         //         if ($u == null) {
+    //         //             $u = User::where('username', $phone_number)
+    //         //                 ->first();
+    //         //         }
+    //         //     }
+    //         // }
 
 
-//         //     if (Utils::phone_number_is_valid($phone_number)) {
-
-//         //         $u = User::where('phone_number', $phone_number)->first();
-
-//         //         if ($u == null) {
-//         //             $u = User::where('username', $phone_number)
-//         //                 ->first();
-//         //         }
-//         //     }
-//         // }
+    //         if ($u == null) {
+    //             return $this->error('Group account not found for (' . $phone_number . '.)');
+    //         }
 
 
-//         if ($u == null) {
-//             return $this->error('Group account not found for (' . $phone_number . '.)');
-//         }
+    //         JWTAuth::factory()->setTTL(60 * 24 * 30 * 365);
+
+    //         $token = auth('api')->attempt([
+    //             'id' => $u->id,
+    //             'password' => trim($r->password),
+    //         ]);
 
 
-//         JWTAuth::factory()->setTTL(60 * 24 * 30 * 365);
-
-//         $token = auth('api')->attempt([
-//             'id' => $u->id,
-//             'password' => trim($r->password),
-//         ]);
-
-
-//         if ($token == null) {
-//             return $this->error('Wrong credentials.');
-//         }
+    //         if ($token == null) {
+    //             return $this->error('Wrong credentials.');
+    //         }
 
 
 
-//         $u->token = $token;
-//         $u->remember_token = $token;
+    //         $u->token = $token;
+    //         $u->remember_token = $token;
 
-//         return $this->success($u, 'Logged in successfully.');
-//     }
+    //         return $this->success($u, 'Logged in successfully.');
+    //     }
 
     // public function login(Request $r)
     // {
@@ -284,160 +285,160 @@ public function login(Request $r)
 
 
     public function verify_user(Request $request)
-   {
-    // Get the logged-in admin
-    $admin = auth('api')->user();
-    if ($admin == null) {
-        return $this->error('User not found.');
+    {
+        // Get the logged-in admin
+        $admin = auth('api')->user();
+        if ($admin == null) {
+            return $this->error('User not found.');
+        }
+
+        $loggedIn = Administrator::find($admin->id);
+        if ($loggedIn == null) {
+            return $this->error('User not found.');
+        }
+        $sacco = Sacco::find($loggedIn->sacco_id);
+
+        if ($sacco == null) {
+            return $this->error('VSLA group not found.');
+        }
+        $sacco_id = $sacco->id;
+
+        // Get the input parameters
+        $username = $request->username;
+        $passcode = $request->passcode;
+        $position_id = $request->position_id;
+
+        // Find the user with the given parameters
+        $user = User::where('sacco_id', $sacco_id)
+            ->where('username', $username)
+            ->where('position_id', $position_id)
+            ->first();
+
+        if (!$user) {
+            return $this->error('User not found or invalid credentials.');
+        }
+
+        JWTAuth::factory()->setTTL(60 * 24 * 30 * 365);
+
+        $token = auth('api')->attempt([
+            'id' => $user->id,
+            'password' => trim($request->password),
+        ]);
+
+
+        if ($token == null) {
+            return $this->error('Wrong credentials.');
+        }
+
+
+
+        $user->token = $token;
+        $user->remember_token = $token;
+
+        // If the user is found, return success response
+        return $this->success($user, 'Logged in successfully.');
     }
-
-    $loggedIn = Administrator::find($admin->id);
-    if ($loggedIn == null) {
-        return $this->error('User not found.');
-    }
-    $sacco = Sacco::find($loggedIn->sacco_id);
-
-    if ($sacco == null) {
-        return $this->error('VSLA group not found.');
-    }
-    $sacco_id = $sacco->id;
-
-    // Get the input parameters
-    $username = $request->username;
-    $passcode = $request->passcode;
-    $position_id = $request->position_id;
-
-    // Find the user with the given parameters
-    $user = User::where('sacco_id', $sacco_id)
-                ->where('username', $username)
-                ->where('position_id', $position_id)
-                ->first();
-
-    if (!$user) {
-        return $this->error('User not found or invalid credentials.');
-    }
-
-    JWTAuth::factory()->setTTL(60 * 24 * 30 * 365);
-
-    $token = auth('api')->attempt([
-        'id' => $user->id,
-        'password' => trim($request->password),
-    ]);
-
-
-    if ($token == null) {
-        return $this->error('Wrong credentials.');
-    }
-
-
-
-    $user->token = $token;
-    $user->remember_token = $token;
-
-    // If the user is found, return success response
-    return $this->success($user, 'Logged in successfully.');
-  }
 
 
 
     public function agent_login(Request $r)
-{
-    if ($r->username == null) {
-        return $this->error('Username is nullable.');
-    }
-
-    if ($r->password == null) {
-        return $this->error('Password is required.');
-    }
-
-    $r->username = trim($r->username);
-
-    $u = User::where('phone_number', $r->username)->orWhere('email', $r->username)->first();
-
-    if ($u == null) {
-        // Normalize and check phone number
-        $phone_number = Utils::prepare_phone_number($r->username);
-
-        if (Utils::phone_number_is_valid($phone_number)) {
-            $u = User::where('phone_number', $phone_number)->orWhere('username', $phone_number)->first();
+    {
+        if ($r->username == null) {
+            return $this->error('Username is nullable.');
         }
+
+        if ($r->password == null) {
+            return $this->error('Password is required.');
+        }
+
+        $r->username = trim($r->username);
+
+        $u = User::where('phone_number', $r->username)->orWhere('email', $r->username)->first();
+
+        if ($u == null) {
+            // Normalize and check phone number
+            $phone_number = Utils::prepare_phone_number($r->username);
+
+            if (Utils::phone_number_is_valid($phone_number)) {
+                $u = User::where('phone_number', $phone_number)->orWhere('username', $phone_number)->first();
+            }
+        }
+
+        if ($u == null) {
+            return $this->error('User account not found (' . $r->username . ').');
+        }
+
+        // Check if the user type corresponds to the 'agent' role
+        $agentRoleId = $u->user_type;
+
+        $agentRole = AdminRole::where('id', $agentRoleId)->where('name', 'agent')->first();
+
+        if (!$agentRole) {
+            return $this->error('You do not have permission to log in as an agent.');
+        }
+
+        JWTAuth::factory()->setTTL(60 * 24 * 30 * 365);
+
+        $token = auth('api')->attempt([
+            'id' => $u->id,
+            'password' => trim($r->password),
+        ]);
+
+        if ($token == null) {
+            return $this->error('Wrong credentials.');
+        }
+
+        $u->token = $token;
+        $u->remember_token = $token;
+
+        return $this->success($u, 'Logged in successfully.');
     }
 
-    if ($u == null) {
-        return $this->error('User account not found (' . $r->username . ').');
-    }
 
-    // Check if the user type corresponds to the 'agent' role
-    $agentRoleId = $u->user_type;
+    //     public function agent_login(Request $request)
+    // {
+    //     // Trim whitespace from input parameters
+    //     $request->merge([
+    //         'phone_number' => trim($request->phone_number),
+    //         'password' => trim($request->password),
+    //     ]);
 
-    $agentRole = AdminRole::where('id', $agentRoleId)->where('name', 'agent')->first();
+    //     $validator = Validator::make($request->all(), [
+    //         'phone_number' => 'required',
+    //         'password' => 'required',
+    //     ]);
 
-    if (!$agentRole) {
-        return $this->error('You do not have permission to log in as an agent.');
-    }
+    //     if ($validator->fails()) {
+    //         return response()->json(['error' => $validator->errors()], 400);
+    //     }
 
-    JWTAuth::factory()->setTTL(60 * 24 * 30 * 365);
+    //     $user = User::where('phone_number', $request->phone_number)
+    //                 ->whereHas('adminRole', function ($query) {
+    //                     $query->where('name', 'agent');
+    //                 })
+    //                 ->first();
 
-    $token = auth('api')->attempt([
-        'id' => $u->id,
-        'password' => trim($r->password),
-    ]);
+    //     $phone_number = Utils::prepare_phone_number($request->phone_number);
 
-    if ($token == null) {
-        return $this->error('Wrong credentials.');
-    }
+    //     if (!$user) {
+    //         return $this->error('User account not found (' . $phone_number . ').');
+    //     }
 
-    $u->token = $token;
-    $u->remember_token = $token;
+    //     // Check the provided password against the hashed password in the database
+    //     if (Hash::check($request->password, $user->password)) {
+    //         Auth::login($user);
 
-    return $this->success($u, 'Logged in successfully.');
-}
+    //         // Generate JWT token
+    //         $token = JWTAuth::fromUser($user);
+    //         $user->setRememberToken($token);
 
+    //         $user->save();
 
-//     public function agent_login(Request $request)
-// {
-//     // Trim whitespace from input parameters
-//     $request->merge([
-//         'phone_number' => trim($request->phone_number),
-//         'password' => trim($request->password),
-//     ]);
-
-//     $validator = Validator::make($request->all(), [
-//         'phone_number' => 'required',
-//         'password' => 'required',
-//     ]);
-
-//     if ($validator->fails()) {
-//         return response()->json(['error' => $validator->errors()], 400);
-//     }
-
-//     $user = User::where('phone_number', $request->phone_number)
-//                 ->whereHas('adminRole', function ($query) {
-//                     $query->where('name', 'agent');
-//                 })
-//                 ->first();
-
-//     $phone_number = Utils::prepare_phone_number($request->phone_number);
-
-//     if (!$user) {
-//         return $this->error('User account not found (' . $phone_number . ').');
-//     }
-
-//     // Check the provided password against the hashed password in the database
-//     if (Hash::check($request->password, $user->password)) {
-//         Auth::login($user);
-
-//         // Generate JWT token
-//         $token = JWTAuth::fromUser($user);
-//         $user->setRememberToken($token);
-
-//         $user->save();
-
-//         return $this->success($user, 'Logged in successfully.');
-//     } else {
-//         return $this->error('Wrong credentials.');
-//     }
-// }
+    //         return $this->success($user, 'Logged in successfully.');
+    //     } else {
+    //         return $this->error('Wrong credentials.');
+    //     }
+    // }
 
 
 
@@ -445,30 +446,30 @@ public function login(Request $r)
     public function new_position(Request $request)
     {
         // Check if the user is authenticated
-    $admin = auth('api')->user();
-    if ($admin == null) {
-        $adminId = $request->input('admin_id');
-        $admin = User::find($adminId);
-        $loggedInAdmin = Administrator::find($admin->id);
-    }
-    if ($loggedInAdmin == null) {
+        $admin = auth('api')->user();
+        if ($admin == null) {
+            $adminId = $request->input('admin_id');
+            $admin = User::find($adminId);
+            $loggedInAdmin = Administrator::find($admin->id);
+        }
+        if ($loggedInAdmin == null) {
             // Handle case where requested admin user is not found
             return $this->error('Requested admin user not found.');
 
-        // Check if the authenticated user has the same sacco_id as the requested admin
-        if ($admin->sacco_id !== $loggedInAdmin->sacco_id) {
-            return $this->error('You do not have permission to perform this action.');
+            // Check if the authenticated user has the same sacco_id as the requested admin
+            if ($admin->sacco_id !== $loggedInAdmin->sacco_id) {
+                return $this->error('You do not have permission to perform this action.');
+            }
         }
-    }
 
-    // Continue with the logic for creating a new position in the specified sacco
-    $saccoId = $request->input('sacco_id');
-    $sacco = Sacco::find($saccoId);
+        // Continue with the logic for creating a new position in the specified sacco
+        $saccoId = $request->input('sacco_id');
+        $sacco = Sacco::find($saccoId);
 
         // Check if the Sacco model is found
-       if ($sacco == null) {
-          // Handle case where Sacco is not found
-          return $this->error('Sacco not found.');
+        if ($sacco == null) {
+            // Handle case where Sacco is not found
+            return $this->error('Sacco not found.');
         }
 
         // Validate incoming request data
@@ -512,25 +513,25 @@ public function login(Request $r)
         if ($sacco == null) {
             return $this->error('Sacco not found.');
         }
-            // Create a new LoanScheme instance
-            $loanScheme = new LoanScheem();
+        // Create a new LoanScheme instance
+        $loanScheme = new LoanScheem();
 
-            // Assign values from the request data
-            $loanScheme->sacco_id = $sacco -> id;
-            $loanScheme->name = $request->input('name');
-            $loanScheme->description = $request->input('description');
-            $loanScheme->initial_interest_type = $request->input('initial_interest_type');
-            $loanScheme->initial_interest_flat_amount = $request->input('initial_interest_flat_amount');
-            $loanScheme->initial_interest_percentage = $request->input('initial_interest_percentage');
-            $loanScheme->bill_periodically = $request->input('bill_periodically');
-            $loanScheme->billing_period = $request->input('billing_period');
-            $loanScheme->periodic_interest_type = $request->input('periodic_interest_type');
-            $loanScheme->periodic_interest_percentage = $request->input('periodic_interest_percentage');
-            $loanScheme->periodic_interest_flat_amount = $request->input('periodic_interest_flat_amount');
-            $loanScheme->min_amount = $request->input('min_amount');
-            $loanScheme->max_amount = $request->input('max_amount');
-            $loanScheme->min_balance = $request->input('min_balance');
-            $loanScheme->max_balance = $request->input('max_balance');
+        // Assign values from the request data
+        $loanScheme->sacco_id = $sacco->id;
+        $loanScheme->name = $request->input('name');
+        $loanScheme->description = $request->input('description');
+        $loanScheme->initial_interest_type = $request->input('initial_interest_type');
+        $loanScheme->initial_interest_flat_amount = $request->input('initial_interest_flat_amount');
+        $loanScheme->initial_interest_percentage = $request->input('initial_interest_percentage');
+        $loanScheme->bill_periodically = $request->input('bill_periodically');
+        $loanScheme->billing_period = $request->input('billing_period');
+        $loanScheme->periodic_interest_type = $request->input('periodic_interest_type');
+        $loanScheme->periodic_interest_percentage = $request->input('periodic_interest_percentage');
+        $loanScheme->periodic_interest_flat_amount = $request->input('periodic_interest_flat_amount');
+        $loanScheme->min_amount = $request->input('min_amount');
+        $loanScheme->max_amount = $request->input('max_amount');
+        $loanScheme->min_balance = $request->input('min_balance');
+        $loanScheme->max_balance = $request->input('max_balance');
 
         try {
             $loanScheme->save();
@@ -664,19 +665,19 @@ public function login(Request $r)
 
         $code = 1;
 
-      try {
+        try {
 
-          $acc->save();
-       } catch (\Throwable $th) {
-         $msg = $th->getMessage();
-         $code = 0;
-         return $this->error($msg);
-       }
-       return $this->success(
-        $acc,
-        $message = "User account updated successfully",
-        $code
-    );
+            $acc->save();
+        } catch (\Throwable $th) {
+            $msg = $th->getMessage();
+            $code = 0;
+            return $this->error($msg);
+        }
+        return $this->success(
+            $acc,
+            $message = "User account updated successfully",
+            $code
+        );
     }
 
     public function update_group(Request $request)
@@ -707,41 +708,42 @@ public function login(Request $r)
     }
 
     // Function to generate unique phone number based on user's info
-private function generateUniquePhoneNumber($request) {
-    $dob = $request->dob;
-    $sex = $request->sex;
-    $first_name = $request->first_name;
-    $last_name = $request->last_name;
+    private function generateUniquePhoneNumber($request)
+    {
+        $dob = $request->dob;
+        $sex = $request->sex;
+        $first_name = $request->first_name;
+        $last_name = $request->last_name;
 
-    // Extract the first two letters of first name and last name
-    $first_two_first = substr($first_name, 0, 2);
-    $first_two_last = substr($last_name, 0, 2);
+        // Extract the first two letters of first name and last name
+        $first_two_first = substr($first_name, 0, 2);
+        $first_two_last = substr($last_name, 0, 2);
 
-    // Construct a unique phone number based on the provided information
-    $phone_number = substr($dob, 0, 4) . substr($dob, 5, 2) . substr($dob, 8, 2) . substr($sex, 0, 1) . $first_two_first . $first_two_last;
+        // Construct a unique phone number based on the provided information
+        $phone_number = substr($dob, 0, 4) . substr($dob, 5, 2) . substr($dob, 8, 2) . substr($sex, 0, 1) . $first_two_first . $first_two_last;
 
-    // You may want to add more customization or error handling here if necessary
+        // You may want to add more customization or error handling here if necessary
 
-    return $phone_number;
-}
+        return $phone_number;
+    }
 
     public function update_user(Request $request)
     {
         $admin = auth('api')->user();
-            if (!$admin) {
+        if (!$admin) {
 
-                // Extract the admin user's ID from the request data
-                $adminId = $request->input('admin_id');
+            // Extract the admin user's ID from the request data
+            $adminId = $request->input('admin_id');
 
-                // Use the admin user's ID to find the corresponding User model
-                $admin = User::find($adminId);
+            // Use the admin user's ID to find the corresponding User model
+            $admin = User::find($adminId);
 
-               // Check if the admin user is found
-               if ($admin == null) {
-              // Handle case where admin user is not found
+            // Check if the admin user is found
+            if ($admin == null) {
+                // Handle case where admin user is not found
                 return $this->error('Admin user not found.');
-                }
             }
+        }
 
 
 
@@ -759,9 +761,9 @@ private function generateUniquePhoneNumber($request) {
             $sacco = Sacco::find($saccoId);
 
             // Check if the Sacco model is found
-           if ($sacco == null) {
-              // Handle case where Sacco is not found
-              return $this->error('Sacco not found.');
+            if ($sacco == null) {
+                // Handle case where Sacco is not found
+                return $this->error('Sacco not found.');
             }
         }
 
@@ -776,14 +778,14 @@ private function generateUniquePhoneNumber($request) {
         }
 
         // If phone number is not provided, generate a unique one based on user's info
-if (!isset($request->phone_number)) {
-    $phone_number = $this->generateUniquePhoneNumber($request);
-} else {
-    $phone_number = Utils::prepare_phone_number($request->phone_number);
-    if (!Utils::phone_number_is_valid($phone_number)) {
-        return $this->error('Error phone number.');
-    }
-}
+        if (!isset($request->phone_number)) {
+            $phone_number = $this->generateUniquePhoneNumber($request);
+        } else {
+            $phone_number = Utils::prepare_phone_number($request->phone_number);
+            if (!Utils::phone_number_is_valid($phone_number)) {
+                return $this->error('Error phone number.');
+            }
+        }
 
         $account = null;
         if ($task == 'Edit') {
@@ -870,64 +872,65 @@ if (!isset($request->phone_number)) {
 
         $code = 1;
 
-      try {
+        try {
 
-          $acc->save();
-          $amount = abs($sacco->register_fee);
+            $acc->save();
+            $amount = abs($sacco->register_fee);
 
-          try {
-            DB::beginTransaction();
-            //add balance to sacc account
-            $transaction_sacco = new Transaction();
-            $transaction_sacco->user_id = $admin->id;
-            $transaction_sacco->source_user_id = $acc->id;
-            $transaction_sacco->sacco_id = $acc->sacco_id;
-            $transaction_sacco->type = 'REGESTRATION';
-            $transaction_sacco->source_type = 'REGESTRATION';
-            $transaction_sacco->amount = $amount;
-            $transaction_sacco->description = "Registration fees of UGX " . number_format($amount) . " from {$acc->phone_number} - $acc->name.";
             try {
-                $transaction_sacco->save();
-            } catch (\Throwable $th) {
-                DB::rollback();
-                return $this->error('Failed to save transaction, because ' . $th->getMessage() . '');
-            }
-            try {
-                $transaction_sacco->save();
-            } catch (\Throwable $th) {
-                DB::rollback();
-                return $this->error('Failed to save transaction, because ' . $th->getMessage() . '');
-            }
+                DB::beginTransaction();
+                //add balance to sacc account
+                $transaction_sacco = new Transaction();
+                $transaction_sacco->user_id = $admin->id;
+                $transaction_sacco->source_user_id = $acc->id;
+                $transaction_sacco->sacco_id = $acc->sacco_id;
+                $transaction_sacco->type = 'REGESTRATION';
+                $transaction_sacco->source_type = 'REGESTRATION';
+                $transaction_sacco->amount = $amount;
+                $transaction_sacco->description = "Registration fees of UGX " . number_format($amount) . " from {$acc->phone_number} - $acc->name.";
+                try {
+                    $transaction_sacco->save();
+                } catch (\Throwable $th) {
+                    DB::rollback();
+                    return $this->error('Failed to save transaction, because ' . $th->getMessage() . '');
+                }
+                try {
+                    $transaction_sacco->save();
+                } catch (\Throwable $th) {
+                    DB::rollback();
+                    return $this->error('Failed to save transaction, because ' . $th->getMessage() . '');
+                }
 
-            DB::commit();
-            return $this->success(null, "Registration fees of UGX " . number_format($amount) . " was successful. Your balance is now UGX " . number_format($admin->balance) . ".", 200);
-          } catch (\Exception $e) {
-            DB::rollback();
-            // something went wrong
-            return $this->error('Failed to save transaction, because ' . $e->getMessage() . '');
-          }
-       } catch (\Throwable $th) {
-         $msg = $th->getMessage();
-         $code = 0;
-         return $this->error($msg);
-       }
-       return $this->success(null, $msg, $code);
-       $msg = 'Account ' . $task . 'ed successfully.';
-       return $this->success($acc, $msg, $code);
+                DB::commit();
+                return $this->success(null, "Registration fees of UGX " . number_format($amount) . " was successful. Your balance is now UGX " . number_format($admin->balance) . ".", 200);
+            } catch (\Exception $e) {
+                DB::rollback();
+                // something went wrong
+                return $this->error('Failed to save transaction, because ' . $e->getMessage() . '');
+            }
+        } catch (\Throwable $th) {
+            $msg = $th->getMessage();
+            $code = 0;
+            return $this->error($msg);
+        }
+        return $this->success(null, $msg, $code);
+        $msg = 'Account ' . $task . 'created successfully.';
+        return $this->success($acc, $msg, $code);
     }
+
 
     public function update_admin(Request $request)
     {
         // Extract the admin user's ID from the request data
         $adminId = $request->input('admin_id');
 
-       // Use the admin user's ID to find the corresponding User model
-       $admin = User::find($adminId);
+        // Use the admin user's ID to find the corresponding User model
+        $admin = User::find($adminId);
 
-       // Check if the admin user is found
-       if ($admin == null) {
-          // Handle case where admin user is not found
-          return $this->error('Admin user not found.');
+        // Check if the admin user is found
+        if ($admin == null) {
+            // Handle case where admin user is not found
+            return $this->error('Admin user not found.');
         }
 
         $saccoId = $request->input('sacco_id');
@@ -936,9 +939,9 @@ if (!isset($request->phone_number)) {
         $sacco = Sacco::find($saccoId);
 
         // Check if the Sacco model is found
-       if ($sacco == null) {
-          // Handle case where Sacco is not found
-          return $this->error('Group not found.');
+        if ($sacco == null) {
+            // Handle case where Sacco is not found
+            return $this->error('Group not found.');
         }
 
         if (!isset($request->task)) {
@@ -971,8 +974,7 @@ if (!isset($request->phone_number)) {
             if ($old != null) {
                 return $this->error('User with same phone number already exists. ' . $old->id . ' ' . $old->phone_number . ' ' . $old->first_name . ' ' . $old->last_name);
             }
-        }
-        else {
+        } else {
 
             $old = Administrator::where('phone_number', $phone_number)
                 ->first();
@@ -1047,68 +1049,77 @@ if (!isset($request->phone_number)) {
         $message = "Success, your admin account has been created successfully. Use Phone number: $phone_number and Passcode: $password to login into your VSLA group";
 
         $resp = null;
+        // Validate the phone number
+        if (Utils::phone_number_is_valid($phone_number)) {
         try {
             $resp = Utils::send_sms($phone_number, $message);
         } catch (Exception $e) {
             return $this->error('Failed to send OTP because ' . $e->getMessage());
         }
-
-        if ($resp != 'success') {
-            return $this->error('Failed to send OTP because ' . $resp);
+            // Send SMS only if the phone number is valid
+            // Utils::send_sms($phone_number, $message);
         }
 
-      try {
+        // if ($resp != 'success') {
+        //     return $this->error('Failed to send OTP because ' . $resp);
+        // }
 
-          $acc->save();
-          $amount = abs($sacco->register_fee);
+        try {
 
-          // Get group name based on SACCO ID in user
-        // $groupName = $acc->sacco->name;
+            $acc->save();
+            $amount = abs($sacco->register_fee);
 
-        // Send SMS notification to the newly registered user
-        // $phone_number = $acc->phone_number;
-        // $message = "Congradulations $acc->name 🎉🎉🥳, you have been successfully registered as a member of...";
-        // Utils::send_sms($phone_number, $message);
+            // Get group name based on SACCO ID in user
+            // $groupName = $acc->sacco->name;
 
-          try {
-            DB::beginTransaction();
-            //add balance to sacc account
-            $transaction_sacco = new Transaction();
-            $transaction_sacco->user_id = $admin->id;
-            $transaction_sacco->source_user_id = $acc->id;
-            $transaction_sacco->sacco_id = $acc->sacco_id;
-            $transaction_sacco->type = 'REGESTRATION';
-            $transaction_sacco->source_type = 'REGESTRATION';
-            $transaction_sacco->amount = $amount;
-            $transaction_sacco->description = "Registration fees of UGX " . number_format($amount) . " from {$acc->phone_number} - $acc->name.";
+            // Send SMS notification to the newly registered user
+            // $phone_number = $acc->phone_number;
+            // $message = "Congradulations $acc->name 🎉🎉🥳, you have been successfully registered as a member of...";
+            // Utils::send_sms($phone_number, $message);
+
             try {
-                $transaction_sacco->save();
-            } catch (\Throwable $th) {
-                DB::rollback();
-                return $this->error('Failed to save transaction, because ' . $th->getMessage() . '');
-            }
-            try {
-                $transaction_sacco->save();
-            } catch (\Throwable $th) {
-                DB::rollback();
-                return $this->error('Failed to save transaction, because ' . $th->getMessage() . '');
-            }
+                DB::beginTransaction();
+                //add balance to sacc account
+                $transaction_sacco = new Transaction();
+                $transaction_sacco->user_id = $admin->id;
+                $transaction_sacco->source_user_id = $acc->id;
+                $transaction_sacco->sacco_id = $acc->sacco_id;
+                $transaction_sacco->type = 'REGESTRATION';
+                $transaction_sacco->source_type = 'REGESTRATION';
+                $transaction_sacco->amount = $amount;
+                $transaction_sacco->description = "Registration fees of UGX " . number_format($amount) . " from {$acc->phone_number} - $acc->name.";
+                try {
+                    $transaction_sacco->save();
+                } catch (\Throwable $th) {
+                    DB::rollback();
+                    return $this->error('Failed to save transaction, because ' . $th->getMessage() . '');
+                }
+                try {
+                    $transaction_sacco->save();
+                } catch (\Throwable $th) {
+                    DB::rollback();
+                    return $this->error('Failed to save transaction, because ' . $th->getMessage() . '');
+                }
 
-            DB::commit();
-            return $this->success(null, "Registration fees of UGX " . number_format($amount) . " was successful. Your balance is now UGX " . number_format($admin->balance) . ".", 200);
-          } catch (\Exception $e) {
-            DB::rollback();
-            // something went wrong
-            return $this->error('Failed to save transaction, because ' . $e->getMessage() . '');
-          }
-       } catch (\Throwable $th) {
-         $msg = $th->getMessage();
-         $code = 0;
-         return $this->error($msg);
-       }
-       return $this->success(null, $msg, $code);
-       $msg = 'Account ' . $task . 'ed successfully.';
-       return $this->success($acc, $msg, $code);
+                DB::commit();
+
+                $message = "Admin account created successfully. Use Phone number: $phone_number and Passcode: $password to login into your VSLA group";
+
+                // return $this->success(null, "Registration fees of UGX " . number_format($amount) . " was successful. Your balance is now UGX " . number_format($admin->balance) . ".", 200);
+                return $this->success($message);
+            } catch (\Exception $e) {
+                DB::rollback();
+                // something went wrong
+                return $this->error('Failed to save transaction, because ' . $e->getMessage() . '');
+            }
+        } catch (\Throwable $th) {
+            $msg = $th->getMessage();
+            $code = 0;
+            return $this->error($msg);
+        }
+        $message = "Success, your admin account has been created successfully. Use Phone number: $phone_number and Passcode: $password to login into your VSLA group";
+        // $msg = 'Account ' . $task . 'ed successfully.';
+        return $this->success($acc, $message, $code);
     }
 
 
@@ -1137,7 +1148,7 @@ if (!isset($request->phone_number)) {
 
         $sacco = Sacco::find($loggedIn->sacco_id);
         $cycle_id =  $sacco->cycle_id;
-        if($cycle_id==null) {
+        if ($cycle_id == null) {
             return $this->error('No active cycle found.');
         }
 
@@ -1152,9 +1163,9 @@ if (!isset($request->phone_number)) {
                 $shareout->save();
             }
 
-                $cycle = Cycle::find($cycle_id);
-                $cycle->status = "Inactive";
-                $cycle->save();
+            $cycle = Cycle::find($cycle_id);
+            $cycle->status = "Inactive";
+            $cycle->save();
 
 
             return $this->success(null, 'Shareouts created successfully.');
@@ -1204,34 +1215,34 @@ if (!isset($request->phone_number)) {
     // }
 
 
-// public function new_shareout(Request $r)
-// {
-//     $admin = auth('api')->user();
-//     if ($admin == null) {
-//         return $this->error('User not found.');
-//     }
+    // public function new_shareout(Request $r)
+    // {
+    //     $admin = auth('api')->user();
+    //     if ($admin == null) {
+    //         return $this->error('User not found.');
+    //     }
 
-//     $loggedIn = Administrator::find($admin->id);
-//     if ($loggedIn == null) {
-//         return $this->error('User not found.');
-//     }
+    //     $loggedIn = Administrator::find($admin->id);
+    //     if ($loggedIn == null) {
+    //         return $this->error('User not found.');
+    //     }
 
-//     $sacco = Sacco::find($loggedIn->sacco_id);
+    //     $sacco = Sacco::find($loggedIn->sacco_id);
 
-//     $shareout = new Shareout();
-//     $shareout->sacco_id = $sacco->id;
-//     $shareout->cycle_id = $sacco->cycle_id;
-//     $shareout->member_id = $r->user_id;
-//     $shareout->shareout_amount = $r->savings;
-//     $shareout->shareout_date = Carbon::now();
+    //     $shareout = new Shareout();
+    //     $shareout->sacco_id = $sacco->id;
+    //     $shareout->cycle_id = $sacco->cycle_id;
+    //     $shareout->member_id = $r->user_id;
+    //     $shareout->shareout_amount = $r->savings;
+    //     $shareout->shareout_date = Carbon::now();
 
-//     try {
-//         $shareout->save();
-//         return $this->success($shareout, 'Shareout created successfully.');
-//     } catch (\Throwable $th) {
-//         return $this->error('Failed to create shareout: ' . $th->getMessage());
-//     }
-// }
+    //     try {
+    //         $shareout->save();
+    //         return $this->success($shareout, 'Shareout created successfully.');
+    //     } catch (\Throwable $th) {
+    //         return $this->error('Failed to create shareout: ' . $th->getMessage());
+    //     }
+    // }
 
 
     // public function register(Request $r)
@@ -1478,10 +1489,10 @@ if (!isset($request->phone_number)) {
             ];
             $saccoRecord = VslaOrganisationSacco::createSacco($saccoData);
 
-        if (isset($group['error'])) {
-            // If an error occurred during creation, return the error response
-            return response()->json(['error' => $group['error']], 400);
-        }
+            if (isset($group['error'])) {
+                // If an error occurred during creation, return the error response
+                return response()->json(['error' => $group['error']], 400);
+            }
 
             // Return success response
             return response()->json(['message' => 'Group registered successfully', 'data' => $group], 201);
@@ -1561,5 +1572,4 @@ if (!isset($request->phone_number)) {
             return response()->json(['error' => 'Failed to update user: ' . $e->getMessage()], 500);
         }
     }
-
 }

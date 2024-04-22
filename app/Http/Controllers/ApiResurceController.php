@@ -45,6 +45,7 @@ use Encore\Admin\Auth\Database\Administrator;
 use Exception;
 use Illuminate\Http\Request;
 use Throwable;
+use Illuminate\Support\Facades\Log;
 
 class ApiResurceController extends Controller
 {
@@ -52,19 +53,19 @@ class ApiResurceController extends Controller
     use ApiResponser;
 
     public function fetchUserLoans()
-{
-    $user = auth('api')->user();
+    {
+        $user = auth('api')->user();
 
-    if ($user == null) {
-        return $this->error('User not found.');
+        if ($user == null) {
+            return $this->error('User not found.');
+        }
+
+        $saccoId = $user->sacco_id;
+
+        $loans = Loan::where('sacco_id', $saccoId)->get();
+
+        return $this->success($loans, $message = "Successfully fetched loans");
     }
-
-    $saccoId = $user->sacco_id;
-
-    $loans = Loan::where('sacco_id', $saccoId)->get();
-
-    return $this->success($loans, $message="Successfully fetched loans");
-}
 
     public function get_districts()
     {
@@ -82,6 +83,33 @@ class ApiResurceController extends Controller
         );
     }
 
+    /**
+     * Fetch all geographical data based on the district ID using eager loading.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function getGeographicalDataByDistrict(Request $request)
+    {
+        $districtId = $request->input('district_id');
+
+        if (empty($districtId)) {
+            return $this->error('District ID is required.', 422);
+        }
+
+        try {
+            // Fetch subcounties along with their parishes and villages using eager loading
+            $subcounties = Subcounty::with(['parishes.villages'])
+                ->where('district_id', $districtId)
+                ->get();
+
+            return $this->success($subcounties, 'Successfully fetched geographical data.');
+        } catch (Exception $e) {
+            Log::error('Failed to fetch geographical data: ' . $e->getMessage());
+            return $this->error('Failed to fetch geographical data.' . $e->getMessage(), 500);
+        }
+    }
+
     public function get_parishes()
     {
 
@@ -97,6 +125,83 @@ class ApiResurceController extends Controller
             200
         );
     }
+
+    /**
+     * Fetch villages based on multiple parish IDs.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function getVillagesByParishes(Request $request)
+    {
+        $parishIds = $request->input('parish_ids');
+
+        // Validate the input to ensure it is an array and not empty
+        if (empty($parishIds) || !is_array($parishIds)) {
+            return $this->error('Parish IDs are required and must be an array.', 422);
+        }
+
+        try {
+            // Use the `whereIn` method to retrieve villages that belong to the given parish IDs
+            $villages = Village::whereIn('parish_id', $parishIds)->get();
+            return $this->success($villages, 'Successfully fetched villages.');
+        } catch (Exception $e) {
+            Log::error('Failed to fetch villages: ' . $e->getMessage());
+            return $this->error('Failed to fetch villages.', 500);
+        }
+    }
+
+
+    /**
+     * Fetch parishes based on multiple subcounty IDs.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function getParishesBySubcounties(Request $request)
+    {
+        $subcountyIds = $request->input('subcounty_ids');
+
+        // Validate the input to ensure it is an array and not empty
+        if (empty($subcountyIds) || !is_array($subcountyIds)) {
+            return $this->error('Subcounty IDs are required and must be an array.', 422);
+        }
+
+        try {
+            // Use the `whereIn` method to retrieve parishes that belong to the given subcounty IDs
+            $parishes = Parish::whereIn('subcounty_id', $subcountyIds)->get();
+            return $this->success($parishes, 'Successfully fetched parishes.');
+        } catch (Exception $e) {
+            Log::error('Failed to fetch parishes: ' . $e->getMessage());
+            return $this->error('Failed to fetch parishes.', 500);
+        }
+    }
+
+
+    /**
+     * Fetch subcounties based on the district ID.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function getSubcountiesByDistrict(Request $request)
+    {
+        $districtId = $request->input('district_id');
+
+        if (empty($districtId)) {
+            return $this->error('District ID is required.', 422);
+        }
+
+        try {
+            $subcounties = Subcounty::getByDistrictId($districtId);
+            return $this->success($subcounties, 'Successfully fetched subcounties.');
+        } catch (Exception $e) {
+            Log::error('Failed to fetch subcounties: ' . $e->getMessage());
+            return $this->error('Failed to fetch subcounties.', 500);
+        }
+    }
+
+
 
     public function get_subcounties()
     {
@@ -130,6 +235,29 @@ class ApiResurceController extends Controller
         );
     }
 
+
+
+    public function send_SMS(Request $request)
+    {
+        // Extract phone number and message from the request
+        $phone_number = $request->input('phone_number');
+        $message = $request->input('message');
+
+        // Validate inputs
+        if (!$phone_number || !$message) {
+            return 'Phone number or message is missing.';
+        }
+
+        // Call the SMS utility function
+        $resp = Utils::send_sms($phone_number, $message);
+
+        // Handle response
+        if ($resp !== 'success') {
+            return 'Failed to send OTP to ' . $phone_number . ' because ' . $resp;
+        }
+        return $this->success('SMS sent successfully to ' . $phone_number);
+    }
+
     public function loan_schemes(Request $r)
     {
         $u = auth('api')->user();
@@ -149,21 +277,21 @@ class ApiResurceController extends Controller
         );
     }
 
-//     public function getPositionsBySaccoId(Request $request)
-// {
-//     $validatedData = $request->validate([
-//         'sacco_id' => 'required|exists:saccos,id',
-//     ]);
+    //     public function getPositionsBySaccoId(Request $request)
+    // {
+    //     $validatedData = $request->validate([
+    //         'sacco_id' => 'required|exists:saccos,id',
+    //     ]);
 
-//     $saccoId = $validatedData['sacco_id'];
+    //     $saccoId = $validatedData['sacco_id'];
 
-//     $positions = MemberPosition::where('sacco_id', $saccoId)->get();
+    //     $positions = MemberPosition::where('sacco_id', $saccoId)->get();
 
-//     return $this->success(
-//         $positions,
-//         $message = "Success",
-//         $statusCode = 200);
-// }
+    //     return $this->success(
+    //         $positions,
+    //         $message = "Success",
+    //         $statusCode = 200);
+    // }
 
     public function loan_transactions(Request $r)
     {
@@ -326,8 +454,8 @@ class ApiResurceController extends Controller
 
         // Fetch the active cycle for the user's SACCO
         $activeCycle = Cycle::where('sacco_id', $sacco->id)
-                        ->where('status', 'Active')
-                        ->first();
+            ->where('status', 'Active')
+            ->first();
 
         if (!$activeCycle) {
             return $this->error('Active cycle not found for the SACCO.');
@@ -425,54 +553,112 @@ class ApiResurceController extends Controller
     }
 
     public function request_otp_sms(Request $r)
-{
-    $r->validate([
-        'phone_number' => 'nullable', // Change 'required' to 'nullable'
-    ]);
+    {
+        $r->validate([
+            'phone_number' => 'nullable', // Change 'required' to 'nullable'
+        ]);
 
-    // Check if phone number is provided
-    if ($r->has('phone_number') && !empty($r->phone_number)) {
-        $phone_number = Utils::prepare_phone_number($r->phone_number);
-        if (!Utils::phone_number_is_valid($phone_number)) {
-            return $this->error('Invalid phone number.');
-        }
-        $acc = User::where(['phone_number' => $phone_number])->first();
-        if ($acc == null) {
-            $acc = User::where(['username' => $phone_number])->first();
-        }
-        if ($acc == null) {
-            return $this->error('Account not found.');
-        }
-        $otp = rand(10000, 99999) . "";
-        if (
-            str_contains($phone_number, '256783204665') ||
-            str_contains(strtolower($acc->first_name), 'test') ||
-            str_contains(strtolower($acc->last_name), 'test')
-        ) {
-            $otp = '12345';
-        }
+        // Check if phone number is provided
+        if ($r->has('phone_number') && !empty($r->phone_number)) {
+            $phone_number = Utils::prepare_phone_number($r->phone_number);
+            if (!Utils::phone_number_is_valid($phone_number)) {
+                return $this->error('Invalid phone number.');
+            }
+            $acc = User::where(['phone_number' => $phone_number])->first();
+            if ($acc == null) {
+                $acc = User::where(['username' => $phone_number])->first();
+            }
+            if ($acc == null) {
+                return $this->error('Account not found.');
+            }
+            $otp = rand(10000, 99999) . "";
+            if (
+                str_contains($phone_number, '256783204665') ||
+                str_contains(strtolower($acc->first_name), 'test') ||
+                str_contains(strtolower($acc->last_name), 'test')
+            ) {
+                $otp = '12345';
+            }
 
-        $resp = null;
-        try {
-            $resp = Utils::send_sms($phone_number, $otp . ' is your Digisave OTP.');
-        } catch (Exception $e) {
-            return $this->error('Failed to send OTP  because ' . $e->getMessage() . '');
+            // Attempt to send OTP
+            $resp = null;
+            if (Utils::phone_number_is_valid($phone_number)) {
+
+                try {
+                    $resp = Utils::send_sms($phone_number, $otp . ' is your Digisave OTP.');
+                } catch (Exception $e) {
+                    // Log the error, but proceed with the response
+                    Log::error('Failed to send OTP because ' . $e->getMessage());
+                }
+                // Send SMS only if the phone number is valid
+                // Utils::send_sms($phone_number, $message);
+            }
+
+            // Update user's password with OTP hash
+            $acc->password = password_hash($otp, PASSWORD_DEFAULT);
+            $acc->save();
+
+            // Return success response with OTP
+            return $this->success(
+                $otp . "",
+                $message = "OTP sent successfully. $resp",
+                200
+            );
+        } else {
+            // If phone number is not provided, you may return a message or handle it according to your requirement
+            return $this->error('Phone number is not provided.');
         }
-        if ($resp != 'success') {
-            return $this->error('Failed to send OTP  because ' . $resp . '');
-        }
-        $acc->password = password_hash($otp, PASSWORD_DEFAULT);
-        $acc->save();
-        return $this->success(
-            $otp . "",
-            $message = "OTP sent successfully.",
-            200
-        );
-    } else {
-        // If phone number is not provided, you may return a message or handle it according to your requirement
-        return $this->error('Phone number is not provided.');
     }
-}
+
+    //     public function request_otp_sms(Request $r)
+    // {
+    //     $r->validate([
+    //         'phone_number' => 'nullable', // Change 'required' to 'nullable'
+    //     ]);
+
+    //     // Check if phone number is provided
+    //     if ($r->has('phone_number') && !empty($r->phone_number)) {
+    //         $phone_number = Utils::prepare_phone_number($r->phone_number);
+    //         if (!Utils::phone_number_is_valid($phone_number)) {
+    //             return $this->error('Invalid phone number.');
+    //         }
+    //         $acc = User::where(['phone_number' => $phone_number])->first();
+    //         if ($acc == null) {
+    //             $acc = User::where(['username' => $phone_number])->first();
+    //         }
+    //         if ($acc == null) {
+    //             return $this->error('Account not found.');
+    //         }
+    //         $otp = rand(10000, 99999) . "";
+    //         if (
+    //             str_contains($phone_number, '256783204665') ||
+    //             str_contains(strtolower($acc->first_name), 'test') ||
+    //             str_contains(strtolower($acc->last_name), 'test')
+    //         ) {
+    //             $otp = '12345';
+    //         }
+
+    //         $resp = null;
+    //         try {
+    //             $resp = Utils::send_sms($phone_number, $otp . ' is your Digisave OTP.');
+    //         } catch (Exception $e) {
+    //             return $this->error('Failed to send OTP  because ' . $e->getMessage() . '');
+    //         }
+    //         if ($resp != 'success') {
+    //             return $this->error('Failed to send OTP  because ' . $resp . '');
+    //         }
+    //         $acc->password = password_hash($otp, PASSWORD_DEFAULT);
+    //         $acc->save();
+    //         return $this->success(
+    //             $otp . "",
+    //             $message = "OTP sent successfully.",
+    //             200
+    //         );
+    //     } else {
+    //         // If phone number is not provided, you may return a message or handle it according to your requirement
+    //         return $this->error('Phone number is not provided.');
+    //     }
+    // }
 
     // public function request_otp_sms(Request $r)
     // {
@@ -631,40 +817,40 @@ class ApiResurceController extends Controller
         }
     }
 
-//     public function get_positions()
-// {
-//     $u = auth('api')->user();
-//     if ($u == null) {
-//         return $this->error('User not found.');
-//     }
+    //     public function get_positions()
+    // {
+    //     $u = auth('api')->user();
+    //     if ($u == null) {
+    //         return $this->error('User not found.');
+    //     }
 
-//     $conds = [];
-//     $positions = [];
+    //     $conds = [];
+    //     $positions = [];
 
-//     if ($u->isRole('sacco')) {
-//         $conds = ['sacco_id' => $u->sacco_id];
-//     } else {
-//         $conds = ['user_id' => $u->id];
-//     }
+    //     if ($u->isRole('sacco')) {
+    //         $conds = ['sacco_id' => $u->sacco_id];
+    //     } else {
+    //         $conds = ['user_id' => $u->id];
+    //     }
 
-//     $positions = MemberPosition::where($conds)->orderBy('id', 'desc')->get();
+    //     $positions = MemberPosition::where($conds)->orderBy('id', 'desc')->get();
 
-//     if ($positions->isEmpty()) {
-//         return $this->error('No positions found for the user.');
-//     }
+    //     if ($positions->isEmpty()) {
+    //         return $this->error('No positions found for the user.');
+    //     }
 
-//     // Build the response data including user and positions
-//     $responseData = [
-//         'user' => $u, // Include user information
-//         'positions' => $positions,
-//     ];
+    //     // Build the response data including user and positions
+    //     $responseData = [
+    //         'user' => $u, // Include user information
+    //         'positions' => $positions,
+    //     ];
 
-//     return $this->success(
-//         $responseData,
-//         $message = "Success",
-//         $statusCode = 200
-//     );
-// }
+    //     return $this->success(
+    //         $responseData,
+    //         $message = "Success",
+    //         $statusCode = 200
+    //     );
+    // }
 
 
     public function share_records(Request $r)
@@ -714,8 +900,8 @@ class ApiResurceController extends Controller
 
         // Fetch the active cycle's required amount
         $activeCycle = Cycle::where('status', 'Active')
-                        ->where('sacco_id', $user->sacco_id) // Adjust this condition if needed
-                        ->first();
+            ->where('sacco_id', $user->sacco_id) // Adjust this condition if needed
+            ->first();
 
         if (!$activeCycle) {
             return $this->error('Active cycle not found.');
@@ -724,8 +910,8 @@ class ApiResurceController extends Controller
         $requiredAmount = $activeCycle->amount_required_per_meeting;
 
         $socialFunds = SocialFund::where($conditions)
-                        ->orderBy('id', 'desc')
-                        ->get();
+            ->orderBy('id', 'desc')
+            ->get();
 
         // Append the required amount to each social fund record
         $socialFunds->each(function ($socialFund) use ($requiredAmount) {
@@ -805,6 +991,7 @@ class ApiResurceController extends Controller
         }
 
         $loan_scheem = LoanScheem::find($r->loan_scheem_id);
+
         if ($loan_scheem == null) {
             return $this->error('Loan scheem not found.');
         }
@@ -815,9 +1002,21 @@ class ApiResurceController extends Controller
             ->where('amount', '>', 0)
             ->sum('amount');
 
-        if ($loan_scheem->min_balance > $total_deposit) {
-            return $this->error('You have not saved enough money to apply for this loan. You need to save at least UGX ' . number_format($loan_scheem->min_balance) . ' to apply for this loan.');
+                    // New condition for the Loan Fund scheme based on a percentage of savings
+        if ($loan_scheem->name == 'Loan Fund') {
+            $required_deposit = ($loan_scheem->savings_percentage / 100) * $r->amount;
+            if ($required_deposit > $total_deposit) {
+                return $this->error("You have not saved enough money to apply for this loan. You need to have saved at least " . number_format($required_deposit) . " UGX, which is {$loan_scheem->savings_percentage}% of the desired loan amount, to apply for this loan.");
+            }
+        } else {
+            if ($loan_scheem->min_balance > $total_deposit) {
+                return $this->error('You have not saved enough money to apply for this loan. You need to save at least UGX ' . number_format($loan_scheem->min_balance) . ' to apply for this loan.');
+            }
         }
+
+        // if ($loan_scheem->min_balance > $total_deposit) {
+        //     return $this->error('You have not saved enough money to apply for this loan. You need to save at least UGX ' . number_format($loan_scheem->min_balance) . ' to apply for this loan.');
+        // }
 
         $oldLoans = Loan::where([
             'user_id' => $u->id,
@@ -900,7 +1099,7 @@ class ApiResurceController extends Controller
             $sacco_transactions->desination_mobile_money_number = $u->phone_number;
             $sacco_transactions->desination_mobile_money_transaction_id = null;
             $sacco_transactions->desination_bank_transaction_id = null;
-            $sacco_transactions->amount = (-1*(abs($loanAmount)));
+            $sacco_transactions->amount = (-1 * (abs($loanAmount)));
             $sacco_transactions->description = "Loan Disbursement of UGX " . number_format($loanAmount) . " to {$u->phone_number} - $u->name. Loan Scheem: {$loan_scheem->name}. Reference: {$loan->id}.";
             $sacco_transactions->details = "Loan Disbursement of UGX " . number_format($loanAmount) . " to {$u->phone_number} - $u->name. Loan Scheem: {$loan_scheem->name}. Reference: {$loan->id}.";
             try {
@@ -977,7 +1176,6 @@ class ApiResurceController extends Controller
                 //success
                 DB::commit();
                 return $this->success($loan, $message = "Loan created successfully.", 200);
-
             } catch (\Throwable $th) {
                 DB::rollBack();
                 return $this->error('Failed to save loan, because ' . $th->getMessage() . '');
@@ -1042,7 +1240,6 @@ class ApiResurceController extends Controller
                 $transaction_user->description = "Withdrawal of UGX " . number_format($amount) . " from {$u->phone_number} - $u->name.";
                 try {
                     $transaction_user->save();
-
                 } catch (\Throwable $th) {
                     DB::rollback();
                     return $this->error('Failed to save transaction, because ' . $th->getMessage() . '');
@@ -1072,7 +1269,7 @@ class ApiResurceController extends Controller
                 }
 
                 DB::commit();
-                    return $this->success(null, "Withdrawal of UGX " . number_format($amount) . " was successful. Your balance is now UGX " . number_format($u->balance) . ".", 200);
+                return $this->success(null, "Withdrawal of UGX " . number_format($amount) . " was successful. Your balance is now UGX " . number_format($u->balance) . ".", 200);
             } catch (\Exception $e) {
                 DB::rollback();
                 // something went wrong
@@ -1124,13 +1321,12 @@ class ApiResurceController extends Controller
 
                 DB::commit();
                 return $this->success(null, "Fine of UGX " . number_format($amount) . " was successfully applied.", 200);
-
             } catch (\Exception $e) {
                 DB::rollback();
                 // something went wrong
                 return $this->error('Failed to save transaction, because ' . $e->getMessage() . '');
             }
-        }else if ($r->type == 'REGESTRATION') {
+        } else if ($r->type == 'REGESTRATION') {
 
             $amount = abs($r->amount);
             try {
@@ -1168,9 +1364,7 @@ class ApiResurceController extends Controller
 
 
             //create positive transaction for sacco
-        }
-
-         else if ($r->type == 'SAVING') {
+        } else if ($r->type == 'SAVING') {
 
             $amount = abs($r->amount);
             try {
@@ -1225,8 +1419,7 @@ class ApiResurceController extends Controller
 
 
             //create positive transaction for sacco
-        }
-        else if ($r->type == 'LOAN_REPAYMENT') {
+        } else if ($r->type == 'LOAN_REPAYMENT') {
             $loan = Loan::find($r->loan_id);
             if ($loan == null) {
                 return $this->error('Loan not found.');
@@ -1288,22 +1481,22 @@ class ApiResurceController extends Controller
 
                 //create loan transaction
                 $loan_transaction = new LoanTransaction();
-$loan_transaction->user_id = $u->id;
-$loan_transaction->loan_id = $loan->id;
-$loan_transaction->sacco_id = $u->sacco_id;
-$loan_transaction->amount = $amount;
+                $loan_transaction->user_id = $u->id;
+                $loan_transaction->loan_id = $loan->id;
+                $loan_transaction->sacco_id = $u->sacco_id;
+                $loan_transaction->amount = $amount;
 
-// Set balance value here (example: subtract the amount from the user's balance)
-$loan_transaction->balance = $u->balance - $amount;
+                // Set balance value here (example: subtract the amount from the user's balance)
+                $loan_transaction->balance = $u->balance - $amount;
 
-$loan_transaction->description = "Loan Repayment of UGX " . number_format($amount) . " from {$u->phone_number} - $u->name. Loan Scheme: {$loan->scheme_name}. Reference: {$loan->id}.";
+                $loan_transaction->description = "Loan Repayment of UGX " . number_format($amount) . " from {$u->phone_number} - $u->name. Loan Scheme: {$loan->scheme_name}. Reference: {$loan->id}.";
 
-try {
-    $loan_transaction->save();
-} catch (\Throwable $th) {
-    DB::rollback();
-    return $this->error('Failed to save transaction, because ' . $th->getMessage() . '');
-}
+                try {
+                    $loan_transaction->save();
+                } catch (\Throwable $th) {
+                    DB::rollback();
+                    return $this->error('Failed to save transaction, because ' . $th->getMessage() . '');
+                }
                 if ($loan->balance == 0) {
                     $loan->is_fully_paid = 'Yes';
                     try {
@@ -1490,43 +1683,43 @@ try {
             return $this->error('User not found.');
         }
         $u = User::find($request->user_id);
-            // Create a new meeting using the AgentMeeting model
-            $meeting = new AgentMeeting();
-            $meeting->user_id = $u->id;
-            $meeting->sacco_id = $request->input('sacco_id');
-            $meeting->meeting_date = $request->input('meeting_date');
-            $meeting->meeting_time = $request->input('meeting_time');
-            $meeting->meeting_description = $request->input('meeting_description');
+        // Create a new meeting using the AgentMeeting model
+        $meeting = new AgentMeeting();
+        $meeting->user_id = $u->id;
+        $meeting->sacco_id = $request->input('sacco_id');
+        $meeting->meeting_date = $request->input('meeting_date');
+        $meeting->meeting_time = $request->input('meeting_time');
+        $meeting->meeting_description = $request->input('meeting_description');
 
 
-            try {
-                $meeting->save();
-            } catch (\Throwable $th) {
-                return $this->error('Failed to schedule meeting record, because ' . $th->getMessage() . '');
-            }
-            return $this->success(
-                $meeting,
-                $message = "Success",
-                200
-            );
+        try {
+            $meeting->save();
+        } catch (\Throwable $th) {
+            return $this->error('Failed to schedule meeting record, because ' . $th->getMessage() . '');
+        }
+        return $this->success(
+            $meeting,
+            $message = "Success",
+            200
+        );
     }
 
     public function get_agent_meetings(Request $request)
-{
-    $user = auth('api')->user();
-    if (!$user) {
-        return $this->error('User not found.');
+    {
+        $user = auth('api')->user();
+        if (!$user) {
+            return $this->error('User not found.');
+        }
+
+        // Retrieve meetings associated with the logged-in user
+        $meetings = AgentMeeting::where('user_id', $user->id)->get();
+
+        if ($meetings->isEmpty()) {
+            return $this->error('No meetings found for the user.');
+        }
+
+        return $this->success($meetings, $message = "Meetings retrieved successfully", 200);
     }
-
-    // Retrieve meetings associated with the logged-in user
-    $meetings = AgentMeeting::where('user_id', $user->id)->get();
-
-    if ($meetings->isEmpty()) {
-        return $this->error('No meetings found for the user.');
-    }
-
-    return $this->success($meetings, $message="Meetings retrieved successfully", 200);
-}
 
 
 
@@ -1557,30 +1750,30 @@ try {
     }
 
     public function deactivateCycle($cycleId)
-{
-    $u = auth('api')->user();
+    {
+        $u = auth('api')->user();
 
-    if ($u == null) {
-        return $this->error('User not found.');
-    }
+        if ($u == null) {
+            return $this->error('User not found.');
+        }
 
-    $cycle = Cycle::find($cycleId);
+        $cycle = Cycle::find($cycleId);
 
-    if ($cycle == null) {
-        return $this->error('Cycle not found.');
-    }
-    if ($u->sacco_id != $cycle->sacco_id) {
-        return $this->error('You do not have permission to update this cycle.');
-    }
+        if ($cycle == null) {
+            return $this->error('Cycle not found.');
+        }
+        if ($u->sacco_id != $cycle->sacco_id) {
+            return $this->error('You do not have permission to update this cycle.');
+        }
 
-    try {
-        $cycle->status = 'Inactive';
-        $cycle->save();
-        return $this->success($cycle, $message = "Cycle ended successfully!", 200);
-    } catch (\Throwable $th) {
-        return $this->error('Failed to end cycle, because ' . $th->getMessage());
+        try {
+            $cycle->status = 'Inactive';
+            $cycle->save();
+            return $this->success($cycle, $message = "Cycle ended successfully!", 200);
+        } catch (\Throwable $th) {
+            return $this->error('Failed to end cycle, because ' . $th->getMessage());
+        }
     }
-}
 
 
     public function meetings()
@@ -1622,8 +1815,8 @@ try {
 
         // Get the current active cycle for the SACCO
         $activeCycle = Cycle::where('sacco_id', $sacco->id)
-                            ->where('status', 'Active')
-                            ->first();
+            ->where('status', 'Active')
+            ->first();
 
         if ($activeCycle === null) {
             return $this->error('No active cycle found for the Group.');
@@ -1651,8 +1844,8 @@ try {
             // Fetch all users whose SACCO ID matches the one in the meeting
             // Fetch all users whose SACCO ID matches the one in the meeting and user_type is not admin
             $users = User::where('sacco_id', $sacco->id)
-                          // ->where('user_type', '!=', 'admin')
-                          ->get();
+                // ->where('user_type', '!=', 'admin')
+                ->get();
 
             // Filter out absent members
             $absentMembers = $users->filter(function ($user) use ($presentMemberIds) {
@@ -1773,53 +1966,53 @@ try {
     }
 
 
-//     public function register_meeting(Request $request)
-// {
-//     $admin = auth('api')->user();
+    //     public function register_meeting(Request $request)
+    // {
+    //     $admin = auth('api')->user();
 
-//     if ($admin === null) {
-//         return $this->error('User not found.');
-//     }
+    //     if ($admin === null) {
+    //         return $this->error('User not found.');
+    //     }
 
-//     // Check if the user is a SACCO admin
-//     if (!$admin->isRole('sacco')) {
-//         return $this->error('User is not a SACCO admin.');
-//     }
+    //     // Check if the user is a SACCO admin
+    //     if (!$admin->isRole('sacco')) {
+    //         return $this->error('User is not a SACCO admin.');
+    //     }
 
-//     // Get the SACCO ID based on the admin user
-//     $sacco = Sacco::where('administrator_id', $admin->id)->first();
+    //     // Get the SACCO ID based on the admin user
+    //     $sacco = Sacco::where('administrator_id', $admin->id)->first();
 
-//     if ($sacco === null) {
-//         return $this->error('SACCO not found for the administrator.');
-//     }
+    //     if ($sacco === null) {
+    //         return $this->error('SACCO not found for the administrator.');
+    //     }
 
-//     // Get the current active cycle for the SACCO
-//     $activeCycle = Cycle::where('sacco_id', $sacco->id)
-//                         ->where('status', 'Active')
-//                         ->first();
+    //     // Get the current active cycle for the SACCO
+    //     $activeCycle = Cycle::where('sacco_id', $sacco->id)
+    //                         ->where('status', 'Active')
+    //                         ->first();
 
-//     if ($activeCycle === null) {
-//         return $this->error('No active cycle found for the SACCO.');
-//     }
+    //     if ($activeCycle === null) {
+    //         return $this->error('No active cycle found for the SACCO.');
+    //     }
 
-//     $meeting = new Meeting();
-//     $meeting->name = $request->input('name');
-//     $meeting->date = $request->input('date');
-//     $meeting->location = $request->input('location');
-//     $meeting->sacco_id = $sacco->id;
-//     $meeting->administrator_id = $admin->id;
-//     $meeting->members = $request->input('members');
-//     $meeting->minutes = $request->input('minutes');
-//     $meeting->attendance = $request->input('attendance');
-//     $meeting->cycle_id = $activeCycle->id; // Set the active cycle's ID
+    //     $meeting = new Meeting();
+    //     $meeting->name = $request->input('name');
+    //     $meeting->date = $request->input('date');
+    //     $meeting->location = $request->input('location');
+    //     $meeting->sacco_id = $sacco->id;
+    //     $meeting->administrator_id = $admin->id;
+    //     $meeting->members = $request->input('members');
+    //     $meeting->minutes = $request->input('minutes');
+    //     $meeting->attendance = $request->input('attendance');
+    //     $meeting->cycle_id = $activeCycle->id; // Set the active cycle's ID
 
-//     try {
-//         $meeting->save();
-//         return $this->success($meeting, $message = "Meeting created successfully.", 200);
-//     } catch (\Throwable $th) {
-//         return $this->error('Failed to create meeting: ' . $th->getMessage());
-//     }
-// }
+    //     try {
+    //         $meeting->save();
+    //         return $this->success($meeting, $message = "Meeting created successfully.", 200);
+    //     } catch (\Throwable $th) {
+    //         return $this->error('Failed to create meeting: ' . $th->getMessage());
+    //     }
+    // }
 
     public function cycles_update(Request $r, $saccoId, $cycleId)
     {
@@ -2373,174 +2566,174 @@ try {
     }
 
     public function getMemberDetailsByCycle(Request $request)
-{
-    try {
-        $user = auth('api')->user();
+    {
+        try {
+            $user = auth('api')->user();
 
-        if ($user === null) {
-            return $this->error('User not found.');
-        }
-
-        $sacco = Sacco::where('id', $user->sacco_id)->first();
-
-        if ($sacco === null) {
-            return $this->error('Sacco not found.');
-        }
-
-        $cycles = Cycle::where('sacco_id', $sacco->id)->get();
-
-        $memberDetails = [];
-
-        foreach ($cycles as $cycle) {
-            $members = User::where('sacco_id', $sacco->id)
-                           ->where('user_type', '!=', 'admin') // Exclude members whose user_type is admin
-                           ->get();
-            foreach ($members as $member) {
-                $memberData = [
-                    'cycle_id' => $cycle->id,
-                    'user_id' => $member->id,
-                    'name' => $member->name,
-                    'shares' => ShareRecord::where('user_id', $member->id)
-                                           ->where('cycle_id', $cycle->id)
-                                           ->sum('total_amount') / ($sacco->share_price),
-                    'loans' => Transaction::where('user_id', $member->id)
-                                          ->where('cycle_id', $cycle->id)
-                                          ->where('type', 'LOAN')
-                                          ->sum('amount'),
-                    'loan_repayments' => Transaction::where('user_id', $member->id)
-                                                      ->where('cycle_id', $cycle->id)
-                                                      ->where('type', 'LOAN_REPAYMENT')
-                                                      ->sum('amount'),
-                    'fines' => Transaction::where('user_id', $member->id)
-                                           ->where('cycle_id', $cycle->id)
-                                           ->where('type', 'FINE')
-                                           ->sum('amount'),
-                    'share_out_money' => Shareout::where('member_id', $member->id)
-                                                  ->where('cycle_id', $cycle->id)
-                                                  ->sum('shareout_amount'),
-                ];
-
-                $memberDetails[] = $memberData;
+            if ($user === null) {
+                return $this->error('User not found.');
             }
+
+            $sacco = Sacco::where('id', $user->sacco_id)->first();
+
+            if ($sacco === null) {
+                return $this->error('Sacco not found.');
+            }
+
+            $cycles = Cycle::where('sacco_id', $sacco->id)->get();
+
+            $memberDetails = [];
+
+            foreach ($cycles as $cycle) {
+                $members = User::where('sacco_id', $sacco->id)
+                    ->where('user_type', '!=', 'admin') // Exclude members whose user_type is admin
+                    ->get();
+                foreach ($members as $member) {
+                    $memberData = [
+                        'cycle_id' => $cycle->id,
+                        'user_id' => $member->id,
+                        'name' => $member->name,
+                        'shares' => ShareRecord::where('user_id', $member->id)
+                            ->where('cycle_id', $cycle->id)
+                            ->sum('total_amount') / ($sacco->share_price),
+                        'loans' => Transaction::where('user_id', $member->id)
+                            ->where('cycle_id', $cycle->id)
+                            ->where('type', 'LOAN')
+                            ->sum('amount'),
+                        'loan_repayments' => Transaction::where('user_id', $member->id)
+                            ->where('cycle_id', $cycle->id)
+                            ->where('type', 'LOAN_REPAYMENT')
+                            ->sum('amount'),
+                        'fines' => Transaction::where('user_id', $member->id)
+                            ->where('cycle_id', $cycle->id)
+                            ->where('type', 'FINE')
+                            ->sum('amount'),
+                        'share_out_money' => Shareout::where('member_id', $member->id)
+                            ->where('cycle_id', $cycle->id)
+                            ->sum('shareout_amount'),
+                    ];
+
+                    $memberDetails[] = $memberData;
+                }
+            }
+
+            return $this->success($memberDetails, 'Member details fetched successfully.', 200);
+        } catch (Exception $e) {
+            return $this->error($e->getMessage(), $e->getCode());
+        } catch (Throwable $e) {
+            return $this->error('Something went wrong.', 500);
         }
-
-        return $this->success($memberDetails, 'Member details fetched successfully.', 200);
-    } catch (Exception $e) {
-        return $this->error($e->getMessage(), $e->getCode());
-    } catch (Throwable $e) {
-        return $this->error('Something went wrong.', 500);
     }
-}
 
-//     public function getMemberDetailsByCycle(Request $request)
-// {
-//     try {
-//         $user = auth('api')->user();
+    //     public function getMemberDetailsByCycle(Request $request)
+    // {
+    //     try {
+    //         $user = auth('api')->user();
 
-//         if ($user === null) {
-//             return $this->error('User not found.');
-//         }
+    //         if ($user === null) {
+    //             return $this->error('User not found.');
+    //         }
 
-//         $sacco = Sacco::where('id', $user->sacco_id)->first();
+    //         $sacco = Sacco::where('id', $user->sacco_id)->first();
 
-//         if ($sacco === null) {
-//             return $this->error('Sacco not found.');
-//         }
+    //         if ($sacco === null) {
+    //             return $this->error('Sacco not found.');
+    //         }
 
-//         $cycles = Cycle::where('sacco_id', $sacco->id)->get();
+    //         $cycles = Cycle::where('sacco_id', $sacco->id)->get();
 
-//         $memberDetails = [];
+    //         $memberDetails = [];
 
-//         foreach ($cycles as $cycle) {
-//             $members = User::where('sacco_id', $sacco->id)->get();
-//             foreach ($members as $member) {
-//                 $memberData = [
-//                     'cycle_id' => $cycle->id,
-//                     'user_id' => $member->id,
-//                     'name' => $member->name,
-//                     'shares' => ShareRecord::where('user_id', $member->id)
-//                         ->where('cycle_id', $cycle->id)
-//                         ->sum('total_amount') /($sacco->share_price),
-//                     'loans' => Transaction::where('user_id', $member->id)
-//                                                ->where('cycle_id', $cycle->id)
-//                                                ->where('type', 'LOAN')
-//                                                ->sum('amount'),
-//                     'loan_repayments' => Transaction::where('user_id', $member->id)
-//                                                          ->where('cycle_id', $cycle->id)
-//                                                          ->where('type', 'LOAN_REPAYMENT')
-//                                                          ->sum('amount'),
-//                     'fines' => Transaction::where('user_id', $member->id)
-//                                           ->where('cycle_id', $cycle->id)
-//                                           ->where('type', 'FINE')
-//                                           ->sum('amount'),
-//                     'share_out_money' => Shareout::where('member_id', $member->id)
-//                                           ->where('cycle_id', $cycle->id)
-//                                           ->sum('shareout_amount'),
+    //         foreach ($cycles as $cycle) {
+    //             $members = User::where('sacco_id', $sacco->id)->get();
+    //             foreach ($members as $member) {
+    //                 $memberData = [
+    //                     'cycle_id' => $cycle->id,
+    //                     'user_id' => $member->id,
+    //                     'name' => $member->name,
+    //                     'shares' => ShareRecord::where('user_id', $member->id)
+    //                         ->where('cycle_id', $cycle->id)
+    //                         ->sum('total_amount') /($sacco->share_price),
+    //                     'loans' => Transaction::where('user_id', $member->id)
+    //                                                ->where('cycle_id', $cycle->id)
+    //                                                ->where('type', 'LOAN')
+    //                                                ->sum('amount'),
+    //                     'loan_repayments' => Transaction::where('user_id', $member->id)
+    //                                                          ->where('cycle_id', $cycle->id)
+    //                                                          ->where('type', 'LOAN_REPAYMENT')
+    //                                                          ->sum('amount'),
+    //                     'fines' => Transaction::where('user_id', $member->id)
+    //                                           ->where('cycle_id', $cycle->id)
+    //                                           ->where('type', 'FINE')
+    //                                           ->sum('amount'),
+    //                     'share_out_money' => Shareout::where('member_id', $member->id)
+    //                                           ->where('cycle_id', $cycle->id)
+    //                                           ->sum('shareout_amount'),
 
-//                 ];
+    //                 ];
 
-//                 $memberDetails[] = $memberData;
-//             }
-//         }
+    //                 $memberDetails[] = $memberData;
+    //             }
+    //         }
 
-//         return $this->success($memberDetails, 'Member details fetched successfully.', 200);
-//     } catch (Exception $e) {
-//         return $this->error($e->getMessage(), $e->getCode());
-//     } catch (Throwable $e) {
-//         return $this->error('Something went wrong.', 500);
-//     }
-// }
+    //         return $this->success($memberDetails, 'Member details fetched successfully.', 200);
+    //     } catch (Exception $e) {
+    //         return $this->error($e->getMessage(), $e->getCode());
+    //     } catch (Throwable $e) {
+    //         return $this->error('Something went wrong.', 500);
+    //     }
+    // }
 
 
     public function agent_saccos($saccoIds)
-{
-    $villageAgent = auth('village_agents')->user();
+    {
+        $villageAgent = auth('village_agents')->user();
 
-    if ($villageAgent == null) {
-        return $this->error('Village agent not found.');
+        if ($villageAgent == null) {
+            return $this->error('Village agent not found.');
+        }
+
+        // Convert the comma-separated string to an array of integers
+        $saccoIdsArray = explode(',', $saccoIds);
+        $saccoIdsArray = array_map('intval', $saccoIdsArray);
+
+        if (empty($saccoIdsArray)) {
+            return $this->error('No Sacco IDs provided.');
+        }
+
+        $saccos = Sacco::whereIn('id', $saccoIdsArray)->get();
+
+        // Return the response
+        return $this->success(
+            $saccos,
+            $message = "Saccos fetched successfully.",
+            $statusCode = 200
+        );
     }
 
-    // Convert the comma-separated string to an array of integers
-    $saccoIdsArray = explode(',', $saccoIds);
-    $saccoIdsArray = array_map('intval', $saccoIdsArray);
+    //     public function agent_saccos(Request $request)
+    // {
+    //     $villageAgent = auth('village_agents')->user();
 
-    if (empty($saccoIdsArray)) {
-        return $this->error('No Sacco IDs provided.');
-    }
+    //     if ($villageAgent == null) {
+    //         return $this->error('Village agent not found.');
+    //     }
 
-    $saccos = Sacco::whereIn('id', $saccoIdsArray)->get();
+    //     // Extract the list of Sacco IDs from the request query parameters
+    //     $saccoIds = $request->input('sacco_ids', []);
 
-    // Return the response
-    return $this->success(
-        $saccos,
-        $message = "Saccos fetched successfully.",
-        $statusCode = 200
-    );
-}
+    //     if (empty($saccoIds)) {
+    //         return $this->error('No Sacco IDs provided.');
+    //     }
 
-//     public function agent_saccos(Request $request)
-// {
-//     $villageAgent = auth('village_agents')->user();
+    //     $saccos = Sacco::whereIn('id', $saccoIds)->get();
 
-//     if ($villageAgent == null) {
-//         return $this->error('Village agent not found.');
-//     }
-
-//     // Extract the list of Sacco IDs from the request query parameters
-//     $saccoIds = $request->input('sacco_ids', []);
-
-//     if (empty($saccoIds)) {
-//         return $this->error('No Sacco IDs provided.');
-//     }
-
-//     $saccos = Sacco::whereIn('id', $saccoIds)->get();
-
-//     // Return the response
-//     return $this->success(
-//         $saccos,
-//         $message = "Saccos fetched successfully.",
-//         $statusCode = 200
-//     );
-// }
+    //     // Return the response
+    //     return $this->success(
+    //         $saccos,
+    //         $message = "Saccos fetched successfully.",
+    //         $statusCode = 200
+    //     );
+    // }
 
 }

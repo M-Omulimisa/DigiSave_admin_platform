@@ -20,4 +20,15 @@ class Subcounty extends Model
     {
         return $this->belongsTo(District::class);
     }
+    /**
+ * Retrieves all subcounties for a specific district.
+ *
+ * @param int $districtId The ID of the district.
+ * @return \Illuminate\Database\Eloquent\Collection
+ */
+public static function getByDistrictId($districtId)
+{
+    return self::where('district_id', $districtId)->get();
+}
+
 }

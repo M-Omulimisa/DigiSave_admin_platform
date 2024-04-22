@@ -52,7 +52,7 @@ class DistrictsController extends AdminController
 
         return $show;
     }
-    
+
     /**
      * Make a form builder.
      *
@@ -61,11 +61,11 @@ class DistrictsController extends AdminController
     protected function form()
     {
         $form = new Form(new District());
-    
+
         $form->text('name', __('District Name'));
-    
+
         $form->file('csv_file', 'CSV File');
-    
+
         $form->saving(function (Form $form) {
             $csvFile = $form->csv_file;
             if ($csvFile) {
@@ -73,38 +73,38 @@ class DistrictsController extends AdminController
                     // Move the uploaded file to a temporary directory
                     $fileName = uniqid() . '.' . $csvFile->getClientOriginalExtension();
                     $csvFile->move(storage_path('temp'), $fileName);
-    
+
                     // Get the full path to the uploaded file
                     $filePath = storage_path('temp') . '/' . $fileName;
-    
+
                     // Read the CSV file data with header
                     $csvData = array_map('str_getcsv', file($filePath));
                     $headers = array_shift($csvData);
-    
+
                     // Remove the temporary file
                     unlink($filePath);
-    
+
                     // Debugging output
                     echo "<pre>";
                     print_r($csvData);
                     echo "</pre>";
-    
-                    $districtIndex = 1; 
+
+                    $districtIndex = 1;
                     $districtNames = [];
                     foreach ($csvData as $row) {
                         $districtName = $row[$districtIndex] ?? null;
-    
+
                         // Save district names to an array for debugging
                         if ($districtName) {
                             $districtNames[] = $districtName;
                         }
                     }
-    
+
                     // Debugging output: Print all district names
                     echo "<pre>";
                     print_r($districtNames);
                     echo "</pre>";
-    
+
                     // Save district names using District model
                     foreach ($districtNames as $name) {
                         echo "<pre>";
@@ -116,19 +116,19 @@ class DistrictsController extends AdminController
                             District::create(['name' => $name]);
                         }
                     }
-    
+
                     die("Districts successfully saved");
-    
+
                 } catch (\Exception $e) {
                     // Handle any exceptions
                     die("Error: " . $e->getMessage());
                 }
             }
         });
-    
+
         return $form;
     }
-    
+
 
     /**
      * Read CSV file data.
