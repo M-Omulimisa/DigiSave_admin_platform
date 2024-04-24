@@ -22,15 +22,20 @@ class Parish extends Model
     {
         return $this->belongsTo(Subcounty::class, 'subcounty_id');
     }
-    /**
- * Retrieves all parishes for a specific subcounty.
- *
- * @param int $subcountyId The ID of the subcounty.
- * @return \Illuminate\Database\Eloquent\Collection
- */
-public static function getBySubcountyId($subcountyId)
+
+    public function district()
 {
-    return self::where('subcounty_id', $subcountyId)->get();
+    return $this->belongsTo(District::class, 'district_id');
 }
 
+    /**
+     * Retrieves all parishes for a specific subcounty.
+     *
+     * @param int $subcountyId The ID of the subcounty.
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public static function getBySubcountyId($subcountyId)
+    {
+        return self::where('subcounty_id', $subcountyId)->get();
+    }
 }

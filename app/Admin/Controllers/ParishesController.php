@@ -27,22 +27,35 @@ class ParishesController extends AdminController
     {
         $grid = new Grid(new Parish());
 
-        $grid->column('parish_id', __('ID'));
-        $grid->column('parish_name', __('Parish Name'));
-        $grid->column('subcounty.sub_county', __('Subcounty'));
+        $grid->model()->with('subcounty.district');
 
-        // Add search filter
+        $grid->column('parish_id', __('ID'));
+        $grid->column('parish_name', __('Parish Name'))->display(function ($name) {
+            return ucwords(strtolower($name));
+        });
+        $grid->column('subcounty.sub_county', __('Subcounty'))->display(function ($name) {
+            return ucwords(strtolower($name));
+        });
+
+        $grid->column('subcounty.district.name', __('District'))->display(function ($district) {
+            return $district['name']; // Output just the district name
+        });
+
+
+        // // Add district name column
+        // $grid->column('subcounty.district.name', __('District'))->display(function ($name) {
+        //     return $name; // Output the district name directly
+        // });
+
         $grid->filter(function($filter){
-            // Disable the default id filter
             $filter->disableIdFilter();
 
-            // Add a dropdown filter for subcounties
-            $filter->equal('subcounty_id', __('Subcounty'))->select(Subcounty::pluck('sub_county', 'id'));
+            $filter->equal('subcounty_id', __('Subcounty'))->select(Subcounty::pluck('sub_county', 'id')->transform(function ($name) {
+                return ucwords(strtolower($name));
+            }));
 
             // Add more filters as needed
         });
-
-        // Add other columns or configurations as needed
 
         return $grid;
     }

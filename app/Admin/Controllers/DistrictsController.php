@@ -18,17 +18,16 @@ class DistrictsController extends AdminController
      */
     protected $title = 'Districts';
 
-    /**
-     * Make a grid builder.
-     *
-     * @return Grid
-     */
     protected function grid()
     {
         $grid = new Grid(new District());
 
         $grid->column('id', __('ID'));
-        $grid->column('name', __('District Name'));
+
+        // Transform district name to sentence case
+        $grid->column('name', __('District Name'))->display(function ($name) {
+            return ucfirst(strtolower($name));
+        });
 
         // Add other columns as needed
 

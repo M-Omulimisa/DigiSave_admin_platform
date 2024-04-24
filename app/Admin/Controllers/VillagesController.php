@@ -24,28 +24,49 @@ class VillagesController extends AdminController
      * @return Grid
      */
     protected function grid()
-{
-    $grid = new Grid(new Village());
+    {
+        $grid = new Grid(new Village());
 
-    $grid->column('village_id', __('ID'));
-    $grid->column('village_name', __('Village'));
-    $grid->column('parish.parish_name', __('Parish'));
+        $grid->model()->with('parish.subcounty.district');
 
-    // Add search filter
-    $grid->filter(function($filter){
-        // Disable the default id filter
-        $filter->disableIdFilter();
+        $grid->column('village_id', __('ID'));
 
-        // Add a dropdown filter for parishes
-        $filter->equal('parish_id', __('Parish'))->select(Parish::pluck('parish_name', 'parish_id'));
+        // Transform village name to title case
+        $grid->column('village_name', __('Village'))->display(function ($name) {
+            return ucwords(strtolower($name));
+        });
 
-        // Add more filters as needed
-    });
+        // Transform parish name to title case
+        $grid->column('parish.parish_name', __('Parish'))->display(function ($name) {
+            return ucwords(strtolower($name));
+        });
 
-    // Add other columns or configurations as needed
+        $grid->column('parish.subcounty.name', __('Subcounty'))->display(function ($subcounty) {
+            return ucwords(strtolower($subcounty['sub_county'])); // Output just the district name
+        });
 
-    return $grid;
-}
+        // $grid->column('subcounty.district.name', __('District'))->display(function ($district) {
+        //     return optional($this->district)->district->name ?? '';
+        // });
+
+
+        // Add search filter
+        $grid->filter(function($filter){
+            // Disable the default id filter
+            $filter->disableIdFilter();
+
+            // Add a dropdown filter for parishes with title case names
+            $filter->equal('parish_id', __('Parish'))->select(Parish::pluck('parish_name', 'parish_id')->transform(function ($name) {
+                return ucwords(strtolower($name));
+            }));
+
+            // Add more filters as needed
+        });
+
+        // Add other columns or configurations as needed
+
+        return $grid;
+    }
 
     // protected function grid()
     // {

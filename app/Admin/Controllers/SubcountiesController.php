@@ -29,16 +29,26 @@ class SubcountiesController extends AdminController
         $grid = new Grid(new Subcounty());
 
         $grid->column('id', __('ID'));
-        $grid->column('sub_county', __('Subcounty Name'));
-        $grid->column('district.name', __('District'));
+
+        // Transform subcounty name to sentence case
+        $grid->column('sub_county', __('Subcounty Name'))->display(function ($name) {
+            return ucfirst(strtolower($name));
+        });
+
+        // Transform district name to sentence case
+        $grid->column('district.name', __('District'))->display(function ($name) {
+            return ucfirst(strtolower($name));
+        });
 
         // Add search filter
         $grid->filter(function($filter){
             // Disable the default id filter
             $filter->disableIdFilter();
 
-            // Add a dropdown filter for districts
-            $filter->equal('district_id', __('District'))->select(District::pluck('name', 'id'));
+            // Add a dropdown filter for districts with sentence case names
+            $filter->equal('district_id', __('District'))->select(District::pluck('name', 'id')->transform(function ($name) {
+                return ucfirst(strtolower($name));
+            }));
 
             // You can add more filters as needed
         });

@@ -17,6 +17,18 @@ class Village extends Model
     {
         return $this->belongsTo(Parish::class, 'parish_id');
     }
+
+    public function subcounty()
+    {
+        return $this->belongsTo(Subcounty::class, 'subcounty_id');
+    }
+
+    public function district()
+    {
+        return $this->belongsTo(District::class, 'district_id');
+    }
+
+
     /**
      * Retrieves all villages for a specific parish.
      *
