@@ -52,6 +52,22 @@ class ApiResurceController extends Controller
 
     use ApiResponser;
 
+    public function transactions()
+{
+
+    $user = auth('api')->user();
+
+    if ($user == null) {
+        return $this->error('User not found.');
+    }
+
+    $saccoId = $user->sacco_id;
+
+    $loans = Transaction::where('sacco_id', $saccoId)->get();
+
+    return $this->success($loans, $message = "Successfully fetched loans");
+}
+
     public function fetchUserLoans()
     {
         $user = auth('api')->user();
@@ -925,28 +941,28 @@ class ApiResurceController extends Controller
         );
     }
 
-    public function transactions(Request $r)
-    {
-        $u = auth('api')->user();
-        if ($u == null) {
-            return $this->error('User not found.');
-        }
-        $conds = [];
-        if ($u->isRole('sacco')) {
-            $conds = [
-                'sacco_id' => $u->sacco_id
-            ];
-        } else {
-            $conds = [
-                'user_id' => $u->id
-            ];
-        }
-        return $this->success(
-            Transaction::where($conds)->orderby('id', 'desc')->get(),
-            $message = "Success",
-            200
-        );
-    }
+    // public function transactions(Request $r)
+    // {
+    //     $u = auth('api')->user();
+    //     if ($u == null) {
+    //         return $this->error('User not found.');
+    //     }
+    //     $conds = [];
+    //     if ($u->isRole('sacco')) {
+    //         $conds = [
+    //             'sacco_id' => $u->sacco_id
+    //         ];
+    //     } else {
+    //         $conds = [
+    //             'user_id' => $u->id
+    //         ];
+    //     }
+    //     return $this->success(
+    //         Transaction::where($conds)->orderby('id', 'desc')->get(),
+    //         $message = "Success",
+    //         200
+    //     );
+    // }
 
 
     public function saccos(Request $r)
