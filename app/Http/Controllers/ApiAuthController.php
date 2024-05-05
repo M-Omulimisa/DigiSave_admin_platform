@@ -1103,7 +1103,7 @@ class ApiAuthController extends Controller
 
                 DB::commit();
 
-                $message = "Admin account created successfully. Use Phone number: $phone_number and Passcode: $password to login into your VSLA group";
+                $message = "Use Phone number: $phone_number and Passcode: $password to login";
 
                 // return $this->success(null, "Registration fees of UGX " . number_format($amount) . " was successful. Your balance is now UGX " . number_format($admin->balance) . ".", 200);
                 return $this->success($message);
@@ -1137,14 +1137,14 @@ class ApiAuthController extends Controller
             return $this->error('User not found.');
         }
 
-        if ($request->password == null) {
-            return $this->error('Password is required.');
-        }
+        // if ($request->password == null) {
+        //     return $this->error('Password is required.');
+        // }
 
-        // Check if the provided password is correct
-        if (!Hash::check($request->password, $loggedIn->password)) {
-            return $this->error('Incorrect password.');
-        }
+        // // Check if the provided password is correct
+        // if (!Hash::check($request->password, $loggedIn->password)) {
+        //     return $this->error('Incorrect password.');
+        // }
 
         $sacco = Sacco::find($loggedIn->sacco_id);
         $cycle_id =  $sacco->cycle_id;
@@ -1391,6 +1391,9 @@ class ApiAuthController extends Controller
             $user->first_name = $name;
         }
 
+        $lat = $r->latitude;
+        $lon = $r->longitude;
+
         // Generate 8-digit code combining phone number digits, current year, and random letters
         $code = substr($phone_number, 3, 3) . date('Y') . strtoupper(Str::random(2));
         $user->username = $code;
@@ -1400,8 +1403,8 @@ class ApiAuthController extends Controller
         $user->country = "Uganda";
         $user->occupation = $phone_number;
         $user->profile_photo_large = '';
-        $user->location_lat = $r->location_lat;;
-        $user->location_long = $r->location_long;
+        $user->location_lat = $lat;
+        $user->location_long = $lon;
         $user->facebook = '';
         $user->twitter = '';
         $user->linkedin = '';
@@ -1473,7 +1476,8 @@ class ApiAuthController extends Controller
                 'mission' => 'nullable|string|max:500',
                 'vision' => 'nullable|string|max:500',
                 'terms' => 'nullable|string|max:500',
-                'administrator_id' => 'nullable|numeric'
+                'administrator_id' => 'nullable|numeric',
+                'uses_shares' => 'nullable|boolean'
             ]);
 
             // Create a new group record in the database

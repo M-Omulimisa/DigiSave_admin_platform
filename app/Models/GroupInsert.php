@@ -14,6 +14,7 @@ class GroupInsert extends Model
         'name',
         'share_price',
         'register_fee',
+        'uses_shares',
         'phone_number',
         'email_address',
         'physical_address',
