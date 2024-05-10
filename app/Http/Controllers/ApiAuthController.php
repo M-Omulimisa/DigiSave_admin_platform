@@ -575,10 +575,11 @@ class ApiAuthController extends Controller
 
         // Check if phone number is provided before validating
         if (isset($request->phone_number) && !empty($request->phone_number)) {
-            $phone_number = Utils::prepare_phone_number($request->phone_number);
-            if (!Utils::phone_number_is_valid($phone_number)) {
-                return $this->error('Error phone number.');
-            }
+            // $phone_number = Utils::prepare_phone_number($request->phone_number);
+            $phone_number = $request->phone_number;
+            // if (!Utils::phone_number_is_valid($phone_number)) {
+            //     return $this->error('Error phone number.');
+            // }
         }
 
         $account = null;
