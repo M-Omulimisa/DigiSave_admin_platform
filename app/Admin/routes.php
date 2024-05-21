@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\NewAuthController;
 use Illuminate\Routing\Router;
 
 Admin::routes();
@@ -10,6 +11,13 @@ Route::group([
     'middleware'    => config('admin.route.middleware'),
     'as'            => config('admin.route.prefix') . '.',
 ], function (Router $router) {
+
+    // Custom Authentication Routes
+    $router->get('auth/login', [NewAuthController::class, 'getLogin'])->name('login');
+    $router->post('auth/login', [NewAuthController::class, 'postLogin']);
+    $router->get('auth/logout', [NewAuthController::class, 'getLogout'])->name('logout');
+    $router->get('auth/setting', [NewAuthController::class, 'getSetting'])->name('setting');
+    $router->put('auth/setting', [NewAuthController::class, 'putSetting']);
 
 
     $router->resource('trainings', TrainingController::class);

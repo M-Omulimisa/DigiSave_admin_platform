@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Route;
 
 
 Route::get('policy', function(){
-    return view('policy'); 
+    return view('policy');
 });
 
 Route::get('/gen-form', function () {
@@ -26,9 +26,9 @@ Route::get('/gen', function () {
 })->name("register");
 
 
-/* 
+/*
 
-Route::get('generate-variables', [MainController::class, 'generate_variables']); 
+Route::get('generate-variables', [MainController::class, 'generate_variables']);
 Route::get('/', [MainController::class, 'index'])->name('home');
 Route::get('/about-us', [MainController::class, 'about_us']);
 Route::get('/our-team', [MainController::class, 'our_team']);
@@ -39,8 +39,8 @@ Route::get('/news/{id}', [MainController::class, 'news']);
 Route::get('/members', [MainController::class, 'members']);
 Route::get('/dinner', [MainController::class, 'dinner']);
 Route::get('/ucc', function(){ return view('chair-person-message'); });
-Route::get('/vision-mission', function(){ return view('vision-mission'); }); 
-Route::get('/constitution', function(){ return view('constitution'); }); 
+Route::get('/vision-mission', function(){ return view('vision-mission'); });
+Route::get('/constitution', function(){ return view('constitution'); });
 Route::get('/register', [AccountController::class, 'register'])->name('register');
 
 Route::get('/login', [AccountController::class, 'login'])->name('login')
