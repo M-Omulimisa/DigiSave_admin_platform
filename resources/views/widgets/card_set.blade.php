@@ -1,6 +1,6 @@
 <link href="{{ asset('css/app.css') }}" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.0-2/css/fontawesome.min.css" />  
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.0-2/css/all.min.css" />  
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.0-2/css/fontawesome.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.0-2/css/all.min.css" />
 <style>
     /* .small-box .inner h4:hover, .small-box .inner p:hover {
         text-decoration: underline;
@@ -45,7 +45,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="col-md-3">
         <div class="small-box bg-white">
             <div class="inner">

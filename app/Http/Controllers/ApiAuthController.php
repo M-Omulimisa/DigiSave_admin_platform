@@ -7,6 +7,8 @@ use App\Models\AdminRole;
 use App\Models\Agent;
 use App\Models\Cycle;
 use App\Models\Transaction;
+use App\Mail\ResetPasswordMail;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\DB;
 use App\Models\LoanScheem;
 use App\Models\Sacco;
@@ -48,7 +50,7 @@ class ApiAuthController extends Controller
             'password' => 'admin',
         ]);
         die($token); */
-        $this->middleware('auth:api', ['except' => ['login', 'register', 'agent_login', 'registerGroup', 'update_admin', 'new_position', 'updateUser', 'registerRole']]);
+        $this->middleware('auth:api', ['except' => ['login', 'resetPassword', 'register', 'agent_login', 'registerGroup', 'update_admin', 'new_position', 'updateUser', 'registerRole']]);
     }
 
 
@@ -97,6 +99,78 @@ class ApiAuthController extends Controller
 
     //     return $this->success($u, 'Logged in successfully.');
     // }
+
+    public function resetPassword(Request $request)
+    {
+        // Validate the request
+        $validator = Validator::make($request->all(), [
+            'identifier' => 'required|string', // This can be either phone number or email
+        ]);
+
+        if ($validator->fails()) {
+            return $this->error('Validation failed', 422, $validator->errors());
+        }
+
+        // Retrieve the identifier from the request
+        $identifier = $request->input('identifier');
+
+        // Try to find the user by phone number
+        $user = User::where('phone_number', $identifier)->first();
+
+        // If not found, try to find the user by email
+        if (!$user) {
+            $user = User::where('email', $identifier)->first();
+        }
+
+        // If the user is not found, return an error response
+        if (!$user) {
+            return $this->error('User account not found', 404);
+        }
+
+        // Generate a new random password
+        $newPassword = Str::random(8);
+
+        // Update the user's password
+        $user->password = Hash::make($newPassword);
+
+        // Save the user
+        if (!$user->save()) {
+            return $this->error('Failed to reset password', 500);
+        }
+
+        // Send the new password to the user via SMS or email
+        $message = "Your new password is: $newPassword";
+
+        if (Utils::phone_number_is_valid($identifier)) {
+            // Send SMS if the identifier is a valid phone number
+            try {
+                Utils::send_sms($identifier, $message);
+            } catch (Exception $e) {
+                return $this->error('Failed to send SMS: ' . $e->getMessage(), 500);
+            }
+        } else {
+            $platformLink = "https://digisave.m-omulimisa.com/";
+            $email_info = [
+                "first_name" => $user->first_name,
+                "last_name" => $user->last_name,
+                "phone_number" => $user->phone_number,
+                "password" => $newPassword,
+                "platformLink" => $platformLink,
+                "org" => "IIRR",
+                "email" => 'dninsiima@m-omulimisa.com'
+            ];
+            // Send email if the identifier is an email
+            try {
+                Mail::to($user->email)->send(new ResetPasswordMail($email_info, 'emails.password-reset')); // Specify the new view for password reset
+            } catch (Exception $e) {
+                return $this->error('Failed to send email: ' . $e->getMessage(), 500);
+            }
+        }
+
+        // Return a success response
+        return $this->success($newPassword, 'Password reset successfully. Please check your phone or email for the new password.', 200);
+    }
+
 
     public function login(Request $r)
     {
@@ -1052,11 +1126,11 @@ class ApiAuthController extends Controller
         $resp = null;
         // Validate the phone number
         if (Utils::phone_number_is_valid($phone_number)) {
-        try {
-            $resp = Utils::send_sms($phone_number, $message);
-        } catch (Exception $e) {
-            return $this->error('Failed to send OTP because ' . $e->getMessage());
-        }
+            try {
+                $resp = Utils::send_sms($phone_number, $message);
+            } catch (Exception $e) {
+                return $this->error('Failed to send OTP because ' . $e->getMessage());
+            }
             // Send SMS only if the phone number is valid
             // Utils::send_sms($phone_number, $message);
         }
