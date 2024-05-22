@@ -248,7 +248,7 @@
                 var identifier = $('#emailOrPhone').val();
 
                 $.ajax({
-                    url: '/api/reset-password',  // Ensure this is the correct path
+                    url: '/api/reset-password',
                     type: 'POST',
                     data: {
                         identifier: identifier,

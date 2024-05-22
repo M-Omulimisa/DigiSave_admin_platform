@@ -129,14 +129,13 @@ class ApiAuthController extends Controller
 
         // Generate a new random password
         $newPassword = Str::random(8);
+        $new_password = Hash::make($newPassword);
 
         // Update the user's password
-        $user->password = Hash::make($newPassword);
+        $user->password = $new_password;
 
         // Save the user
-        if (!$user->save()) {
-            return $this->error('Failed to reset password', 500);
-        }
+        $user->save();
 
         // Send the new password to the user via SMS or email
         $message = "Your new password is: $newPassword";
