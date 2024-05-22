@@ -13,6 +13,7 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
     <style>
         body {
             margin: 0;
@@ -144,6 +145,47 @@
             transform: translateY(-50%);
             cursor: pointer;
         }
+
+        #loadingAnimation {
+            display: none; /* Hidden by default */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8); /* semi-transparent background */
+            z-index: 1000; /* Ensure it appears above other content */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loader {
+            width: 40px;
+            aspect-ratio: 1;
+            position: relative;
+        }
+
+        .loader:before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            --c: #0000, #f03355 1deg 120deg, #0000 121deg;
+            background:
+            conic-gradient(from 0deg, var(--c)) top right,
+            conic-gradient(from 120deg, var(--c)) bottom,
+            conic-gradient(from 240deg, var(--c)) top left;
+            background-size: 40px 40px;
+            background-repeat: no-repeat;
+            animation: l25 2s infinite cubic-bezier(0.3, 1, 0, 1);
+        }
+
+        @keyframes l25 {
+            33% { inset: -8px; transform: rotate(0deg); }
+            66% { inset: -8px; transform: rotate(180deg); }
+            100% { inset: 0; transform: rotate(180deg); }
+        }
     </style>
 </head>
 
@@ -207,6 +249,11 @@
         </div>
     </div>
 
+    <!-- Custom Loader Animation -->
+    <div id="loadingAnimation">
+        <div class="loader"></div>
+    </div>
+
     <!-- Reset Password Modal -->
     <div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordModalLabel" aria-hidden="true">
         <div class="modal-dialog">
@@ -234,8 +281,20 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <script>
         $(document).ready(function() {
+            function showLoader() {
+                $('#loadingAnimation').show();
+            }
+
+            function hideLoader() {
+                $('#loadingAnimation').hide();
+            }
+
+            // Ensure the loader is hidden when the document is ready
+            hideLoader();
+
             $('#togglePassword').on('click', function() {
                 var passwordInput = $('#password');
                 var type = passwordInput.attr('type') === 'password' ? 'text' : 'password';
@@ -243,10 +302,32 @@
                 $(this).toggleClass('fa-eye fa-eye-slash');
             });
 
+            $('#loginForm').on('submit', function(e) {
+                e.preventDefault();
+                showLoader();
+
+                var form = $(this);
+                $.ajax({
+                    url: form.attr('action'),
+                    type: 'POST',
+                    data: form.serialize(),
+                    success: function(response) {
+                        hideLoader();
+                        toastr.success(response.message || 'Login successful!');
+                        window.location.href = '/'; // Redirect to the home page
+                    },
+                    error: function(xhr) {
+                        hideLoader();
+                        toastr.error(xhr.responseJSON.message || 'Login failed. Please try again.');
+                    }
+                });
+            });
+
             $('#resetPasswordForm').on('submit', function(e) {
                 e.preventDefault();
-                var identifier = $('#emailOrPhone').val();
+                showLoader();
 
+                var identifier = $('#emailOrPhone').val();
                 $.ajax({
                     url: '/api/reset-password',
                     type: 'POST',
@@ -255,11 +336,14 @@
                         _token: '{{ csrf_token() }}'
                     },
                     success: function(response) {
+                        hideLoader();
                         $('#resetPasswordForm').addClass('d-none');
                         $('#resetPasswordSuccess').removeClass('d-none');
+                        toastr.success(response.message || 'Password reset instructions have been sent!');
                     },
                     error: function(xhr) {
-                        alert('Failed to reset password. Please try again.');
+                        hideLoader();
+                        toastr.error(xhr.responseJSON.message || 'Failed to reset password. Please try again.');
                     }
                 });
             });
