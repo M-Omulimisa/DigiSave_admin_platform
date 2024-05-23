@@ -23,7 +23,7 @@ class OrganizationAllocationController extends AdminController
         $admin = Admin::user();
         $adminId = $admin->id;
         if (!$admin->isRole('admin')) {
-    
+
             $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
             if ($orgAllocation) {
                 $orgId = $orgAllocation->vsla_organisation_id;

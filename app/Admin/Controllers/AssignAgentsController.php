@@ -21,37 +21,37 @@ class AssignAgentsController extends AdminController
 {
     protected $title = 'Assign Agents';
 
-    
+
     protected function grid()
     {
         $grid = new Grid(new AgentAllocation());
         $admin = Admin::user();
         $adminId = $admin->id;
-        if (!$admin->isRole('admin')) {
-    
-            $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
-            if ($orgAllocation) {
-                $orgId = $orgAllocation->vsla_organisation_id;
-                // die(print_r($orgId));
-                $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
-                $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
+        // if (!$admin->isRole('admin')) {
 
-                // Extracting Sacco IDs from the assignments
-                $OrgAgents = AgentAllocation::whereIn('sacco_id', $saccoIds)->pluck('agent_id')->toArray();
-                // die(print_r($saccoIds));
+        //     $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+        //     if ($orgAllocation) {
+        //         $orgId = $orgAllocation->vsla_organisation_id;
+        //         // die(print_r($orgId));
+        //         $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
+        //         $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
 
-                $grid->model()->whereIn('sacco_id', $saccoIds);
-                // $grid->disableCreateButton();
-                // $grid->actions(function (Grid\Displayers\Actions $actions) {
-                //     $actions->disableDelete();
-                // });            
-            }
-        }
+        //         // Extracting Sacco IDs from the assignments
+        //         $OrgAgents = AgentAllocation::whereIn('sacco_id', $saccoIds)->pluck('agent_id')->toArray();
+        //         // die(print_r($saccoIds));
+
+        //         $grid->model()->whereIn('sacco_id', $saccoIds);
+        //         // $grid->disableCreateButton();
+        //         // $grid->actions(function (Grid\Displayers\Actions $actions) {
+        //         //     $actions->disableDelete();
+        //         // });
+        //     }
+        // }
 //         $u = Admin::user();
 //         if (!$u->isRole('admin')) {
 //             /* $grid->model()->where('sacco_id', $u->sacco_id);
 //   */           if ($u->isRole('org')) {
-//                // Retrieve the organization IDs assigned to the admin user            
+//                // Retrieve the organization IDs assigned to the admin user
 //                $orgIds = OrgAllocation::where('user_id', $u->user_id)->pluck('vsla_organisation_id')->toArray();
 //                // Retrieve the sacco IDs associated with the organization IDs
 //                $saccoIds = VslaOrganisationSacco::whereIn('vsla_organisation_id', $orgIds)->pluck('sacco_id')->toArray();
@@ -65,43 +65,43 @@ class AssignAgentsController extends AdminController
 //                 $grid->disableFilter();
 //             }
 //         }
-    
+
         $grid->column('id', 'ID')->sortable();
-    
+
         $grid->agent_id('Agent')->display(function ($agentId) {
             $user = User::find($agentId);
             return $user ? $user->first_name . ' ' . $user->last_name : 'N/A';
         })->sortable();
-    
+
         // Display Sacco Name instead of Sacco ID
         $grid->column('sacco_id', 'Vsla Group')->display(function ($saccoId) {
             $sacco = Sacco::find($saccoId);
             return $sacco ? $sacco->name : 'N/A';
         })->sortable();
-    
+
         $grid->created_at('Created At')->sortable();
         $grid->updated_at('Updated At')->sortable();
-    
+
         return $grid;
     }
-    
-    
+
+
 
     protected function form()
     {
         $form = new Form(new AgentAllocation());
-    
+
         $u = Admin::user();
-    
+
         // if (!$u->isRole('admin')) {
         //     if ($form->isCreating()) {
         //         admin_error("You are not allowed to allocate village agent. Contact DigiSave Administartors");
         //         return back();
         //     }
         // }
-    
+
         $form->display('id', 'ID');
-    
+
         // Select only users whose type is 'agent'
         $agentRole = AdminRole::where('name', 'agent')->first();
         $agentUsers = User::where('user_type', $agentRole->id)
@@ -113,15 +113,15 @@ class AssignAgentsController extends AdminController
                               ];
                           })
                           ->pluck('full_name', 'id');
-    
+
         $form->select('agent_id', 'Agent')->options($agentUsers);
-    
+
         $form->select('sacco_id', 'Vsla Group')->options(Sacco::all()->pluck('name', 'id'));
-    
+
         $form->display('created_at', 'Created At');
         $form->display('updated_at', 'Updated At');
-    
+
         return $form;
     }
-    
-}    
+
+}

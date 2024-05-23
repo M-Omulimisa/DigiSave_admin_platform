@@ -35,21 +35,21 @@ class GroupAccountController extends AdminController
     $admin = Admin::user();
     $adminId = $admin->id;
 
-    if (!$admin->isRole('admin')) {
-        $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
-
-        if ($orgAllocation) {
-            $orgId = $orgAllocation->vsla_organisation_id;
-            $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
-            $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
-            $grid->model()->whereIn('sacco_id', $saccoIds);
-            $grid->disableCreateButton();
-            $grid->actions(function (Grid\Displayers\Actions $actions) {
-                $actions->disableDelete();
-            });
-            $grid->disableFilter();
-        }
-    }
+    // if (!$admin->isRole('admin')) {
+    //     $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+    //     dd($orgAllocation);
+    //     if ($orgAllocation) {
+    //         $orgId = $orgAllocation->vsla_organisation_id;
+    //         $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
+    //         $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
+    //         $grid->model()->whereIn('sacco_id', $saccoIds);
+    //         $grid->disableCreateButton();
+    //         $grid->actions(function (Grid\Displayers\Actions $actions) {
+    //             $actions->disableDelete();
+    //         });
+    //         $grid->disableFilter();
+    //     }
+    // }
 
     // Wrap fetching data in a try-catch block
     try {

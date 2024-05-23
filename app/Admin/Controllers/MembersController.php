@@ -33,26 +33,26 @@ class MembersController extends AdminController
 
         $admin = Admin::user();
         $adminId = $admin->id;
-        if (!$admin->isRole('admin')) {
+        // if (!$admin->isRole('admin')) {
 
-            $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
-            if ($orgAllocation) {
-                $orgId = $orgAllocation->vsla_organisation_id;
-                // die(print_r($orgId));
-                $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
+        //     $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+        //     if ($orgAllocation) {
+        //         $orgId = $orgAllocation->vsla_organisation_id;
+        //         // die(print_r($orgId));
+        //         $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
 
-                // Extracting Sacco IDs from the assignments
-                $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
-                // die(print_r($saccoIds));
+        //         // Extracting Sacco IDs from the assignments
+        //         $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
+        //         // die(print_r($saccoIds));
 
-                $grid->model()->whereIn('sacco_id', $saccoIds);
-                $grid->disableCreateButton();
-                $grid->actions(function (Grid\Displayers\Actions $actions) {
-                    $actions->disableDelete();
-                });
-                $grid->disableFilter();
-            }
-        }
+        //         $grid->model()->whereIn('sacco_id', $saccoIds);
+        //         $grid->disableCreateButton();
+        //         $grid->actions(function (Grid\Displayers\Actions $actions) {
+        //             $actions->disableDelete();
+        //         });
+        //         $grid->disableFilter();
+        //     }
+        // }
         // Filter by user_type
         $grid->model()->where(function ($query) {
             $query->whereNull('user_type');

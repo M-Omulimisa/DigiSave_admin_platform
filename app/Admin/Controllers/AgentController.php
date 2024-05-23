@@ -30,27 +30,27 @@ class AgentController extends AdminController
 
         $admin = Admin::user();
         $adminId = $admin->id;
-        if (!$admin->isRole('admin')) {
-    
-            $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
-            if ($orgAllocation) {
-                $orgId = $orgAllocation->vsla_organisation_id;
-                // die(print_r($orgId));
-                $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
-                $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
+        // if (!$admin->isRole('admin')) {
 
-                // Extracting Sacco IDs from the assignments
-                $OrgAgents = AgentAllocation::whereIn('sacco_id', $saccoIds)->pluck('agent_id')->toArray();
-                // die(print_r($saccoIds));
+        //     $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+        //     if ($orgAllocation) {
+        //         $orgId = $orgAllocation->vsla_organisation_id;
+        //         // die(print_r($orgId));
+        //         $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
+        //         $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
 
-                $grid->model()->where('id', $OrgAgents);
-                // $grid->disableCreateButton();
-                // $grid->actions(function (Grid\Displayers\Actions $actions) {
-                //     $actions->disableDelete();
-                // });            
-            }
-        }
-    
+        //         // Extracting Sacco IDs from the assignments
+        //         $OrgAgents = AgentAllocation::whereIn('sacco_id', $saccoIds)->pluck('agent_id')->toArray();
+        //         // die(print_r($saccoIds));
+
+        //         $grid->model()->where('id', $OrgAgents);
+        //         // $grid->disableCreateButton();
+        //         // $grid->actions(function (Grid\Displayers\Actions $actions) {
+        //         //     $actions->disableDelete();
+        //         // });
+        //     }
+        // }
+
         $grid->id('ID')->sortable();
         $grid->addColumn('full_name', 'Full Name')->display(function () {
             return $this->first_name . ' ' . $this->last_name;
@@ -58,7 +58,7 @@ class AgentController extends AdminController
         $grid->phone_number('Phone Number')->sortable();
         $grid->dob('Date of Birth')->sortable();
         $grid->sex('Gender')->sortable();
-    
+
         // $grid->district('District')->display(function ($district) {
         //     return $district['name'];
         // })->sortable();
@@ -68,14 +68,14 @@ class AgentController extends AdminController
         // $grid->village('Village')->display(function ($village) {
         //     return $village['village_name'];
         // })->sortable();
-    
+
         // Filter users by user type ID based on AdminRole name 'agent'
         $agentRoleId = AdminRole::where('name', 'agent')->value('id');
         $grid->model()->where('user_type', '=', $agentRoleId);
-    
+
         return $grid;
     }
-    
+
 
     protected function form()
     {
@@ -102,7 +102,7 @@ class AgentController extends AdminController
 
         // Fetch options from models
         $districtOptions = District::pluck('name', 'id');
-        // $subcountyOptions = Subcounty::pluck('sub_county', 'id'); 
+        // $subcountyOptions = Subcounty::pluck('sub_county', 'id');
         $parishOptions = Parish::pluck('parish_name', 'parish_id');
         $villageOptions = Village::pluck('village_name', 'village_id');
 
@@ -111,8 +111,8 @@ class AgentController extends AdminController
         // $form->select('subcounty_id', 'Subcounty')->options($subcountyOptions)->rules('required');
         $form->select('parish_id', 'Parish')->options($parishOptions);
         $form->select('village_id', 'Village')->options($villageOptions);
-        
-        
+
+
         // Password fields
         $form->password('password', trans('admin.password'))->rules('confirmed|required');
         $form->password('password_confirmation', trans('admin.password_confirmation'))->rules('required')
