@@ -85,10 +85,16 @@ class HomeController extends Controller
             $organization = VslaOrganisation::find($orgAllocation->vsla_organisation_id);
             $orgIds = $orgAllocation->vsla_organisation_id;
             $orgName = $organization->name;
-            $logoUrl = env('APP_URL') . 'storage/' . $organization->logo;
-            $organizationContainer = '<div style="text-align: center; padding-bottom: 25px;"><img src="https://iirr.org/wp-content/uploads/2021/09/IIRR-PING-logo-1-2.png" alt="' . $organization->name . '" class="img-fluid rounded-circle" style="max-width: 200px;"></div>';
-
+            // $logoUrl = env('APP_URL') . 'storage/' . $organization->logo;
+            $logoUrl = '';
             if ($organization->name === 'International Institute of Rural Reconstruction (IIRR)') {
+                $logoUrl = 'https://iirr.org/wp-content/uploads/2021/09/IIRR-PING-logo-1-2.png';
+            } elseif ($organization->name === 'Ripple Effect Uganda') {
+                $logoUrl = 'https://referraldirectories.redcross.or.ke/wp-content/uploads/2023/01/ripple-effect-strapline.png';
+            }
+            $organizationContainer = '<div style="text-align: center; padding-bottom: 25px;"><img src="' . $logoUrl . '" alt="' . $organization->name . '" class="img-fluid rounded-circle" style="max-width: 200px;"></div>';
+
+            if ($organization->name === 'International Institute of Rural Reconstruction (IIRR)' || $organization->name === 'Ripple Effect Uganda' || $organization->name === 'Test Org') {
                 // Use the default admin statistics
                 $totalSaccos = Sacco::count();
                 $organisationCount = VslaOrganisation::count();
@@ -421,14 +427,14 @@ class HomeController extends Controller
                     'loanSumForMen' => $loanSumForMen,
                     'loanSumForYouths' => $loanSumForYouths,
                 ]) .
-                view('widgets.total_loan_amount', [
-                    'totalLoanAmount' => $totalLoanAmount,
-                    'totalLoanBalance' => $totalLoanBalance,
-                ]) .
-                view('widgets.gender_and_age_distribution', [
-                    'genderDistribution' => $genderDistribution,
-                    'ageDistribution' => $ageDistribution,
-                ]) .
+                // view('widgets.total_loan_amount', [
+                //     'totalLoanAmount' => $totalLoanAmount,
+                //     'totalLoanBalance' => $totalLoanBalance,
+                // ]) .
+                // view('widgets.gender_and_age_distribution', [
+                //     'genderDistribution' => $genderDistribution,
+                //     'ageDistribution' => $ageDistribution,
+                // ]) .
                 view('widgets.users_with_balances', [
                     'userBalances' => $userBalances,
                 ]) .

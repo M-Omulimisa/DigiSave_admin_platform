@@ -17,7 +17,7 @@
             data: {
                 labels: @json($userBalances->pluck('name')),
                 datasets: [{
-                    label: 'Balance',
+                    label: 'Total Savings',
                     data: @json($userBalances->pluck('balance')),
                     backgroundColor: [
                         'rgba(255, 99, 132, 0.2)',
