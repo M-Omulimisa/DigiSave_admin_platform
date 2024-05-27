@@ -4,56 +4,54 @@
         <h3 class="box-title">Accounts created over time</h3>
     </div>
     <div class="box-body">
-        <canvas id="userRegistrationsChart" style="height: 300px;"></canvas>
+        <div id="userRegistrationsChart" style="height: 300px;"></div>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Include Highcharts and Accessibility Module -->
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<script src="https://code.highcharts.com/modules/accessibility.js"></script>
+
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        var ctx = document.getElementById('userRegistrationsChart').getContext('2d');
-
-        // Create gradient
-        var gradient = ctx.createLinearGradient(0, 0, 0, 400);
-        gradient.addColorStop(0, 'rgba(255, 99, 132, 0.2)');
-        gradient.addColorStop(0.5, 'rgba(54, 162, 235, 0.2)');
-        gradient.addColorStop(1, 'rgba(75, 192, 192, 0.2)');
-
-        var userRegistrationsChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: @json($registrationDates),
-                datasets: [{
-                    label: 'Accounts',
-                    data: @json($registrationCounts),
-                    backgroundColor: gradient,
-                    borderColor: 'rgba(75, 192, 192, 1)',
-                    pointBackgroundColor: 'rgba(255, 99, 132, 1)',
-                    pointBorderColor: '#fff',
-                    pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 2,
-                    fill: true
-                }]
+        Highcharts.chart('userRegistrationsChart', {
+            chart: {
+                type: 'line',
+                height: 300
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Date'
-                        }
-                    },
-                    y: {
-                        title: {
-                            display: true,
-                            text: 'Users registered'
-                        },
-                        beginAtZero: true
-                    }
+            title: {
+                text: 'Accounts created over time'
+            },
+            xAxis: {
+                categories: @json($registrationDates),
+                title: {
+                    text: 'Date'
                 }
+            },
+            yAxis: {
+                title: {
+                    text: 'Users registered'
+                },
+                min: 0
+            },
+            series: [{
+                name: 'Accounts',
+                data: @json($registrationCounts),
+                color: 'rgba(75, 192, 192, 1)'
+            }],
+            tooltip: {
+                valueSuffix: ' users'
+            },
+            plotOptions: {
+                line: {
+                    dataLabels: {
+                        enabled: true
+                    },
+                    enableMouseTracking: true
+                }
+            },
+            accessibility: {
+                enabled: false
             }
         });
     });

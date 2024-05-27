@@ -22,32 +22,89 @@ class OrganizationAllocationController extends AdminController
 
         $admin = Admin::user();
         $adminId = $admin->id;
-        if (!$admin->isRole('admin')) {
 
+        // Default sort order
+        $sortOrder = request()->get('_sort', 'desc');
+
+        if (!is_string($sortOrder)) {
+            $sortOrder = 'desc';
+        }
+
+        if (!$admin->isRole('admin')) {
             $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
             if ($orgAllocation) {
                 $orgId = $orgAllocation->vsla_organisation_id;
-                // die(print_r($orgId));
+
                 $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
 
-                // Extracting Sacco IDs from the assignments
                 $OrgAdmins = OrgAllocation::where('vsla_organisation_id', $orgId)->pluck('user_id')->toArray();
-                // die(print_r($saccoIds));
 
                 $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
-                $grid->model()->where('vsla_organisation_id', $orgId);
+                $grid->model()->where('vsla_organisation_id', $orgId)->orderBy('created_at', $sortOrder);
                 $grid->disableCreateButton();
                 $grid->actions(function (Grid\Displayers\Actions $actions) {
                     $actions->disableDelete();
-                });            }
+                });
+            }
+        } else {
+            // For admins, display all records ordered by created_at
+            $grid->model()->orderBy('created_at', $sortOrder);
         }
 
         $grid->column('id', 'ID')->sortable();
         $grid->column('organization.name', 'Organization')->sortable();
         $grid->column('sacco.name', 'Vsla Group')->sortable();
+        $grid->column('chairperson_name', __('Chairperson Name'))
+            ->display(function () {
+                $chairperson = \App\Models\User::where('sacco_id', $this->sacco_id)
+                    ->whereHas('position', function ($query) {
+                        $query->where('name', 'Chairperson');
+                    })
+                    ->first();
 
-        // $grid->created_at('Created At')->sortable();
-        // $grid->updated_at('Updated At')->sortable();
+                return $chairperson ? $chairperson->name : '';
+            });
+        $grid->column('phone_number', __('Phone Number'))
+            ->display(function () {
+                $chairperson = \App\Models\User::where('sacco_id', $this->sacco_id)
+                    ->whereHas('position', function ($query) {
+                        $query->where('name', 'Chairperson');
+                    })
+                    ->first();
+
+                return $chairperson ? $chairperson->phone_number : '';
+            });
+        $grid->column('created_at', __('Established'))
+            ->display(function ($date) {
+                return date('d M Y', strtotime($date));
+            })->sortable();
+
+        // Adding search filters
+        $grid->filter(function ($filter) {
+            // Remove the default ID filter
+            $filter->disableIdFilter();
+
+            // Add filter for organization name
+            $filter->like('organization.name', 'Organization');
+
+            // Add filter for VSLA group name
+            $filter->like('sacco.name', 'Vsla Group');
+        });
+
+        // Adding custom dropdown for sorting
+        $grid->tools(function ($tools) {
+            $tools->append('
+                <div class="btn-group pull-right" style="margin-right: 10px">
+                    <button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown">
+                        Sort by Established <span class="caret"></span>
+                    </button>
+                    <ul class="dropdown-menu" role="menu">
+                        <li><a href="'.url()->current().'?_sort=asc">Ascending</a></li>
+                        <li><a href="'.url()->current().'?_sort=desc">Descending</a></li>
+                    </ul>
+                </div>
+            ');
+        });
 
         return $grid;
     }
@@ -67,28 +124,27 @@ class OrganizationAllocationController extends AdminController
     }
 
     protected function form()
-{
-    $form = new Form(new VslaOrganisationSacco());
+    {
+        $form = new Form(new VslaOrganisationSacco());
 
-    $u = Admin::user();
+        $u = Admin::user();
 
-    if (!$u->isRole('admin')) {
-        if ($form->isCreating()) {
-            admin_error("You are not allowed to create new Agent");
-            return back();
+        if (!$u->isRole('admin')) {
+            if ($form->isCreating()) {
+                admin_error("You are not allowed to create new Agent");
+                return back();
+            }
         }
+
+        $form->display('id', 'ID');
+
+        $form->select('vsla_organisation_id', 'Organization')->options(VslaOrganisation::pluck('name', 'id'))->rules('required');
+
+        $form->select('sacco_id', 'Vsla Group')->options(Sacco::pluck('name', 'id'))->rules('required');
+
+        $form->display('created_at', 'Created At');
+        $form->display('updated_at', 'Updated At');
+
+        return $form;
     }
-
-    $form->display('id', 'ID');
-
-    $form->select('vsla_organisation_id', 'Organization')->options(VslaOrganisation::pluck('name', 'id'))->rules('required');
-
-    $form->select('sacco_id', 'Vsla Group')->options(Sacco::pluck('name', 'id'))->rules('required');
-
-    $form->display('created_at', 'Created At');
-    $form->display('updated_at', 'Updated At');
-
-    return $form;
-}
-
 }

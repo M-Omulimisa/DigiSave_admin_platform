@@ -42,6 +42,7 @@ class HomeController extends Controller
         $users = User::all();
         $admin = Admin::user();
         $adminId = $admin->id;
+        $userName = $admin->first_name; // Get the logged-in user's name
 
         $totalAccounts = User::where('user_type', 'Admin')->count();
         $totalOrgAdmins = User::where('user_type', '5')->count();
@@ -62,15 +63,16 @@ class HomeController extends Controller
             return $user->user_type === null || !in_array($user->user_type, ['Admin', '5']);
         });
 
-        // Aggregate users by registration date
+        // Aggregate users by registration date (Month-Year)
         $userRegistrations = $users->groupBy(function ($date) {
-            return Carbon::parse($date->created_at)->format('Y-m-d'); // Group by day
+            return Carbon::parse($date->created_at)->format('Y-m'); // Group by Month-Year
         });
 
         $registrationDates = $userRegistrations->keys()->toArray();
         $registrationCounts = $userRegistrations->map(function ($item) {
             return count($item);
         })->values()->toArray();
+
 
         if (!$admin->isRole('admin')) {
             $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
@@ -341,58 +343,46 @@ class HomeController extends Controller
         });
         $youthMembersCount = $youthUsers->count();
         $youthTotalBalance = number_format($youthUsers->sum('balance'), 2);
+// Fetch top saving groups where user type is 'Admin'
+$topSavingGroups = User::where('user_type', 'Admin')->get()->sortByDesc('balance')->take(10);
 
-        // Collect user locations
-        $userLocations = $users->map(function ($user) {
-            return [
-                'name' => $user->name,
-                'lat' => $user->location_lat,
-                'lon' => $user->location_long,
-            ];
-        })->filter(function ($location) {
-            return !is_null($location['lat']) && !is_null($location['lon']);
-        });
+        // Calculate percentages for progress bars
+        $totalLoans = $loansDisbursedToWomen + $loansDisbursedToMen + $loansDisbursedToYouths;
+        $percentageLoansWomen = $totalLoans > 0 ? ($loansDisbursedToWomen / $totalLoans) * 100 : 0;
+        $percentageLoansMen = $totalLoans > 0 ? ($loansDisbursedToMen / $totalLoans) * 100 : 0;
+        $percentageLoansYouths = $totalLoans > 0 ? ($loansDisbursedToYouths / $totalLoans) * 100 : 0;
 
-        // Gender distribution
-        $genderDistribution = User::select('sex', DB::raw('count(*) as total'))
-            ->groupBy('sex')
-            ->pluck('total', 'sex');
+        $totalLoanSum = $loanSumForWomen + $loanSumForMen + $loanSumForYouths;
+        $percentageLoanSumWomen = $totalLoanSum > 0 ? ($loanSumForWomen / $totalLoanSum) * 100 : 0;
+        $percentageLoanSumMen = $totalLoanSum > 0 ? ($loanSumForMen / $totalLoanSum) * 100 : 0;
+        $percentageLoanSumYouths = $totalLoanSum > 0 ? ($loanSumForYouths / $totalLoanSum) * 100 : 0;
 
-        // Age distribution
-        $ageDistribution = User::select(DB::raw('TIMESTAMPDIFF(YEAR, dob, CURDATE()) AS age'), DB::raw('count(*) as total'))
-            ->groupBy('age')
-            ->pluck('total', 'age');
-
-        // Get users with their balances
-        $usersWithBalances = $users->map(function ($user) {
-            return [
-                'name' => $user->name,
-                'balance' => $user->balance,
-            ];
-        })->sortByDesc('balance');
-
-        // Collect user balances and user_type
-        $usersWithBalances = $users->map(function ($user) {
-            return [
-                'name' => $user->name,
-                'balance' => $user->balance,
-                'user_type' => $user->user_type, // Include user_type in the mapped data
-            ];
-        })->sortByDesc('balance');
-
-        // Filter users with user_type 'Admin' and get top 10 by balance
-        $adminUsersWithBalances = $usersWithBalances->filter(function ($user) {
-            return $user['user_type'] === 'Admin'; // Access user_type as an array element
-        })->take(10); // No need to sort again as it's already sorted
-
-        // Prepare data for the chart
-        $userBalances = $adminUsersWithBalances->map(function ($user) {
-            return ['name' => $user['name'], 'balance' => $user['balance']];
-        });
+        $quotes = [
+            "Empowerment through savings and loans.",
+            "Collaboration is key to success.",
+            "Building stronger communities together.",
+            "Savings groups transform lives.",
+            "In unity, there is strength."
+        ];
 
         return $content
-            ->header('<div style="text-align: center; color: #039103; font-size: 30px; font-weight: bold; padding-top: 20px;">' . $orgName . '</div>')
-            ->body($organizationContainer . '<div style="background-color: #E9F9E9; padding: 10px; padding-top: 5px; border-radius: 5px;">' .
+            ->header('<div style="text-align: center; color: #AA336A; font-size: 30px; font-weight: bold; padding-top: 20px;">' . $orgName . '</div>')
+            ->body($organizationContainer .
+                // Welcome banner with sliding quotes
+                '<div style="background-color: #F8E5E9; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <h2 style="margin: 0; font-size: 24px; font-weight: bold; color: #AA336A;">Welcome back, ' . $userName . '!</h2>
+                            <div id="quote-slider" style="margin: 5px 0 0; font-size: 16px; color: #666; height: 20px;">
+                                <p>' . $quotes[0] . '</p>
+                            </div>
+                        </div>
+                        <div>
+                            <img src="https://www.pngmart.com/files/21/Admin-Profile-PNG-Clipart.png" alt="Welcome Image" style="height: 100px;">
+                        </div>
+                    </div>
+                </div>' .
+                '<div style="background-color: #E9F9E9; padding: 10px; padding-top: 5px; border-radius: 5px;">' .
                 view('widgets.statistics', [
                     'totalSaccos' => $totalSaccos,
                     'villageAgents' => $villageAgents,
@@ -402,10 +392,6 @@ class HomeController extends Controller
                     'totalOrgAdmins' => $totalOrgAdmins,
                     'totalPwdMembers' => $totalPwdMembers,
                     'youthMembersPercentage' => number_format($youthMembersPercentage, 2),
-                ]) .
-                view('widgets.user_registrations', [
-                    'registrationDates' => $registrationDates,
-                    'registrationCounts' => $registrationCounts,
                 ]) .
                 view('widgets.card_set', [
                     'femaleMembersCount' => $femaleMembersCount,
@@ -417,33 +403,67 @@ class HomeController extends Controller
                     'pwdMembersCount' => $pwdMembersCount,
                     'pwdTotalBalance' => $pwdTotalBalance,
                 ]) .
-                view('widgets.loan_count', [
-                    'loansDisbursedToWomen' => $loansDisbursedToWomen,
-                    'loansDisbursedToMen' => $loansDisbursedToMen,
-                    'loansDisbursedToYouths' => $loansDisbursedToYouths,
-                ]) .
-                view('widgets.loan_amount', [
-                    'loanSumForWomen' => $loanSumForWomen,
-                    'loanSumForMen' => $loanSumForMen,
-                    'loanSumForYouths' => $loanSumForYouths,
-                ]) .
-                // view('widgets.total_loan_amount', [
-                //     'totalLoanAmount' => $totalLoanAmount,
-                //     'totalLoanBalance' => $totalLoanBalance,
-                // ]) .
-                // view('widgets.gender_and_age_distribution', [
-                //     'genderDistribution' => $genderDistribution,
-                //     'ageDistribution' => $ageDistribution,
-                // ]) .
-                view('widgets.users_with_balances', [
-                    'userBalances' => $userBalances,
-                ]) .
+
+                '<div class="col-md-12" style="padding-top: 20px; padding-bottom: 20px;">
+            ' . view('widgets.top_saving_groups', [
+                    'topSavingGroups' => $topSavingGroups,
+                ]) . '
+        </div>' .
+                '<div style="background-color: #E9F9E9; padding: 10px; padding-top: 5px; border-radius: 5px;">' .
+                view('widgets.category', compact(
+                    'loansDisbursedToWomen',
+                    'loansDisbursedToMen',
+                    'loansDisbursedToYouths',
+                    'loanSumForWomen',
+                    'loanSumForMen',
+                    'loanSumForYouths',
+                    'percentageLoansWomen',
+                    'percentageLoansMen',
+                    'percentageLoansYouths',
+                    'percentageLoanSumWomen',
+                    'percentageLoanSumMen',
+                    'percentageLoanSumYouths'
+                )) .
+                '</div>' .
                 view('widgets.chart_container', [
                     'Female' => $femaleTotalBalance,
                     'Male' => $maleTotalBalance,
                     'monthYearList' => $monthYearList,
                     'totalSavingsList' => $totalSavingsList,
                 ]) .
+                '<div class="row" style="padding-top: 35px;">
+                    <div class="col-md-6">
+                        ' . view('widgets.bar_chart', [
+                    'registrationDates' => $registrationDates,
+                    'registrationCounts' => $registrationCounts,
+                ]) . '
+                    </div>
+
+                </div>' .
                 '</div>');
     }
 }
+?>
+
+<script>
+    $(document).ready(function() {
+        const quotes = [
+            "Empowerment through savings and loans.",
+            "Collaboration is key to success.",
+            "Building stronger communities together.",
+            "Savings groups transform lives.",
+            "In unity, there is strength."
+        ];
+
+        let quoteIndex = 0;
+
+        function showNextQuote() {
+            quoteIndex = (quoteIndex + 1) % quotes.length;
+            $('#quote-slider p').fadeOut(500, function() {
+                $(this).text(quotes[quoteIndex]).fadeIn(500);
+            });
+        }
+
+        setInterval(showNextQuote, 3000); // Change quote every 3 seconds
+    });
+</script>

@@ -34,25 +34,34 @@ class OrganisationAdminController extends AdminController
 
         $admin = Admin::user();
         $adminId = $admin->id;
-        if (!$admin->isRole('admin')) {
 
+        // Default sort order
+        $sortOrder = request()->get('_sort', 'desc');
+
+        if (!is_string($sortOrder)) {
+            $sortOrder = 'desc';
+        }
+
+        if (!$admin->isRole('admin')) {
+            // Get the organisation allocation for the logged-in admin
             $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+
             if ($orgAllocation) {
                 $orgId = $orgAllocation->vsla_organisation_id;
-                // die(print_r($orgId));
-                $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
 
-                // Extracting Sacco IDs from the assignments
+                // Get all users allocated to the same organisation
                 $OrgAdmins = OrgAllocation::where('vsla_organisation_id', $orgId)->pluck('user_id')->toArray();
-                // die(print_r($saccoIds));
 
-                $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
-                $grid->model()->where('id', $OrgAdmins);
+                // Filter users based on the organisation allocation
+                $grid->model()->whereIn('id', $OrgAdmins);
             }
         }
-        $orgRoleId = AdminRole::where('name', 'org')->value('id');
-        $grid->model()->where('user_type', '=', $orgRoleId);
 
+        // Get the role ID for 'org' users
+        $orgRoleId = AdminRole::where('name', 'org')->value('id');
+        $grid->model()->where('user_type', '=', $orgRoleId)->orderBy('created_at', $sortOrder);
+
+        // Define the columns for the grid
         $grid->id('ID')->sortable();
         $grid->addColumn('Admin Name', 'Full Name')->display(function () {
             return $this->first_name . ' ' . $this->last_name;
@@ -63,11 +72,36 @@ class OrganisationAdminController extends AdminController
         });
         $grid->phone_number('Phone Number')->sortable();
 
+        // Adding search filters
+        $grid->filter(function ($filter) {
+            // Remove the default ID filter
+            $filter->disableIdFilter();
+
+            // Add filter for admin name
+            $filter->like('first_name', 'First Name');
+            $filter->like('last_name', 'Last Name');
+
+            // Add filter for email
+            $filter->like('email', 'Email');
+        });
+
+        // Adding custom dropdown for sorting
+        $grid->tools(function ($tools) {
+            $tools->append('
+                <div class="btn-group pull-right" style="margin-right: 10px">
+                    <button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown">
+                        Sort by Established <span class="caret"></span>
+                    </button>
+                    <ul class="dropdown-menu" role="menu">
+                        <li><a href="'.url()->current().'?_sort=asc">Ascending</a></li>
+                        <li><a href="'.url()->current().'?_sort=desc">Descending</a></li>
+                    </ul>
+                </div>
+            ');
+        });
+
         return $grid;
     }
-
-
-
 
     protected function form()
     {
@@ -143,5 +177,4 @@ class OrganisationAdminController extends AdminController
 
         return $form;
     }
-
 }
