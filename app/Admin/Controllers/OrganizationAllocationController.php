@@ -140,13 +140,31 @@ class OrganizationAllocationController extends AdminController
 
         $form->display('id', 'ID');
 
-        $form->select('vsla_organisation_id', 'Organization')->options(VslaOrganisation::pluck('name', 'id'))->rules('required');
+        $form->select('vsla_organisation_id', 'Organization')
+            ->options(VslaOrganisation::pluck('name', 'id'))
+            ->rules('required');
 
-        $form->select('sacco_id', 'Vsla Group')->options(Sacco::pluck('name', 'id'))->rules('required');
+        $form->multipleSelect('sacco_id', 'Vsla Groups')
+            ->options(Sacco::pluck('name', 'id'))
+            ->rules('required');
 
         $form->display('created_at', 'Created At');
         $form->display('updated_at', 'Updated At');
 
+        $form->saving(function (Form $form) {
+            if (is_array($form->sacco_id)) {
+                foreach ($form->sacco_id as $saccoId) {
+                    VslaOrganisationSacco::create([
+                        'vsla_organisation_id' => $form->vsla_organisation_id,
+                        'sacco_id' => $saccoId,
+                    ]);
+                }
+                // Prevent saving of the form itself
+                return false;
+            }
+        });
+
         return $form;
     }
 }
+?>
