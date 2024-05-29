@@ -73,7 +73,6 @@ class HomeController extends Controller
             return count($item);
         })->values()->toArray();
 
-
         if (!$admin->isRole('admin')) {
             $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
             if (!$orgAllocation) {
@@ -343,8 +342,8 @@ class HomeController extends Controller
         });
         $youthMembersCount = $youthUsers->count();
         $youthTotalBalance = number_format($youthUsers->sum('balance'), 2);
-// Fetch top saving groups where user type is 'Admin'
-$topSavingGroups = User::where('user_type', 'Admin')->get()->sortByDesc('balance')->take(10);
+        // Fetch top saving groups where user type is 'Admin'
+        $topSavingGroups = User::where('user_type', 'Admin')->get()->sortByDesc('balance')->take(6);
 
         // Calculate percentages for progress bars
         $totalLoans = $loansDisbursedToWomen + $loansDisbursedToMen + $loansDisbursedToYouths;
@@ -366,13 +365,13 @@ $topSavingGroups = User::where('user_type', 'Admin')->get()->sortByDesc('balance
         ];
 
         return $content
-            ->header('<div style="text-align: center; color: #AA336A; font-size: 30px; font-weight: bold; padding-top: 20px;">' . $orgName . '</div>')
+            ->header('<div style="text-align: center; color: #066703; font-size: 30px; font-weight: bold; padding-top: 20px;">' . $orgName . '</div>')
             ->body($organizationContainer .
                 // Welcome banner with sliding quotes
                 '<div style="background-color: #F8E5E9; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
                     <div style="display: flex; align-items: center; justify-content: space-between;">
                         <div>
-                            <h2 style="margin: 0; font-size: 24px; font-weight: bold; color: #AA336A;">Welcome back, ' . $userName . '!</h2>
+                            <h2 style="margin: 0; font-size: 24px; font-weight: bold; color: #298803;">Welcome back, ' . $userName . '!</h2>
                             <div id="quote-slider" style="margin: 5px 0 0; font-size: 16px; color: #666; height: 20px;">
                                 <p>' . $quotes[0] . '</p>
                             </div>
@@ -403,12 +402,6 @@ $topSavingGroups = User::where('user_type', 'Admin')->get()->sortByDesc('balance
                     'pwdMembersCount' => $pwdMembersCount,
                     'pwdTotalBalance' => $pwdTotalBalance,
                 ]) .
-
-                '<div class="col-md-12" style="padding-top: 20px; padding-bottom: 20px;">
-            ' . view('widgets.top_saving_groups', [
-                    'topSavingGroups' => $topSavingGroups,
-                ]) . '
-        </div>' .
                 '<div style="background-color: #E9F9E9; padding: 10px; padding-top: 5px; border-radius: 5px;">' .
                 view('widgets.category', compact(
                     'loansDisbursedToWomen',
@@ -423,28 +416,31 @@ $topSavingGroups = User::where('user_type', 'Admin')->get()->sortByDesc('balance
                     'percentageLoanSumWomen',
                     'percentageLoanSumMen',
                     'percentageLoanSumYouths'
-                )) .
-                '</div>' .
-                view('widgets.chart_container', [
-                    'Female' => $femaleTotalBalance,
-                    'Male' => $maleTotalBalance,
-                    'monthYearList' => $monthYearList,
-                    'totalSavingsList' => $totalSavingsList,
-                ]) .
-                '<div class="row" style="padding-top: 35px;">
-                    <div class="col-md-6">
-                        ' . view('widgets.bar_chart', [
-                    'registrationDates' => $registrationDates,
-                    'registrationCounts' => $registrationCounts,
-                ]) . '
-                    </div>
-
-                </div>' .
-                '</div>');
+                )).
+            '</div>' .
+            view('widgets.chart_container', [
+                'Female' => $femaleTotalBalance,
+                'Male' => $maleTotalBalance,
+                'monthYearList' => $monthYearList,
+                'totalSavingsList' => $totalSavingsList,
+            ]).
+            '<div class="row" style="padding-top: 35px;">
+                <div class="col-md-6">
+                    ' . view('widgets.top_saving_groups', [
+                        'topSavingGroups' => $topSavingGroups,
+                    ]) . '
+                </div>
+                <div class="col-md-6">
+                    ' . view('widgets.bar_chart', [
+                        'registrationDates' => $registrationDates,
+                        'registrationCounts' => $registrationCounts,
+                    ]) . '
+                </div>
+            </div>'
+        );
     }
 }
 ?>
-
 <script>
     $(document).ready(function() {
         const quotes = [

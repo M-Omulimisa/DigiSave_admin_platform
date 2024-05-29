@@ -33,53 +33,72 @@ class MembersController extends AdminController
 
         $admin = Admin::user();
         $adminId = $admin->id;
-        // if (!$admin->isRole('admin')) {
 
-        //     $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
-        //     if ($orgAllocation) {
-        //         $orgId = $orgAllocation->vsla_organisation_id;
-        //         // die(print_r($orgId));
-        //         $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
+        // Default sort order
+        $sortOrder = request()->get('_sort', 'desc');
+        if (!in_array($sortOrder, ['asc', 'desc'])) {
+            $sortOrder = 'desc';
+        }
 
-        //         // Extracting Sacco IDs from the assignments
-        //         $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
-        //         // die(print_r($saccoIds));
-
-        //         $grid->model()->whereIn('sacco_id', $saccoIds);
-        //         $grid->disableCreateButton();
-        //         $grid->actions(function (Grid\Displayers\Actions $actions) {
-        //             $actions->disableDelete();
-        //         });
-        //         $grid->disableFilter();
-        //     }
-        // }
-        // Filter by user_type
-        $grid->model()->where(function ($query) {
-            $query->whereNull('user_type');
-        });
+        // Restrict access for non-admin users
+        if (!$admin->isRole('admin')) {
+            $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+            if ($orgAllocation) {
+                $orgId = $orgAllocation->vsla_organisation_id;
+                $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
+                $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
+                $grid->model()->whereIn('sacco_id', $saccoIds)->orderBy('created_at', $sortOrder);
+                $grid->disableCreateButton();
+                $grid->actions(function (Grid\Displayers\Actions $actions) {
+                    $actions->disableDelete();
+                });
+            }
+        } else {
+            $grid->model()->whereNull('user_type')->orderBy('created_at', $sortOrder);
+        }
 
         $grid->disableBatchActions();
         $grid->quickSearch('first_name', 'last_name', 'email', 'phone_number')->placeholder('Search by name, email or phone number');
 
-        $grid->column('first_name', __('First name'))->sortable();
-        $grid->column('last_name', __('Last name'))->sortable();
-        // $grid->column('email', __('Email'))->sortable();
+        $grid->column('first_name', __('First Name'))->sortable()->display(function ($firstName) {
+            return ucwords(strtolower($firstName));
+        });
+        $grid->column('last_name', __('Last Name'))->sortable()->display(function ($lastName) {
+            return ucwords(strtolower($lastName));
+        });
         $grid->column('sex', __('Gender'))->sortable();
         $grid->column('phone_number', __('Phone Number'));
         $grid->column('sacco.name', __('Group Name'))->sortable();
-        // $grid->column('sacco_join_status', __('Status'))
-        //     ->label([
-        //         'Pending' => 'warning',
-        //         'Approved' => 'success',
-        //     ])
-        //     ->sortable();
-        // $grid->column('address', __('Address'));
-        $grid->column('created_at', __('Date Joined'))
-            ->display(function ($date) {
-                return date('d M Y', strtotime($date));
-            })->sortable();
+        $grid->column('created_at', __('Date Joined'))->sortable()->display(function ($date) {
+            return date('d M Y', strtotime($date));
+        });
         $grid->column('location_lat', __('Latitude'))->sortable();
         $grid->column('location_long', __('Longitude'))->sortable();
+
+        // Adding search filters
+        $grid->filter(function ($filter) {
+            $filter->disableIdFilter();
+
+            $filter->like('first_name', 'First Name');
+            $filter->like('last_name', 'Last Name');
+            $filter->like('email', 'Email');
+            $filter->like('phone_number', 'Phone Number');
+        });
+
+        // Adding custom dropdown for sorting
+        $grid->tools(function ($tools) {
+            $tools->append('
+                <div class="btn-group pull-right" style="margin-right: 10px; margin-left: 10px;">
+                    <button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown">
+                        Sort by Created Date <span class="caret"></span>
+                    </button>
+                    <ul class="dropdown-menu" role="menu">
+                        <li><a href="'.url()->current().'?_sort=asc">Ascending</a></li>
+                        <li><a href="'.url()->current().'?_sort=desc">Descending</a></li>
+                    </ul>
+                </div>
+            ');
+        });
 
         return $grid;
     }
@@ -95,50 +114,19 @@ class MembersController extends AdminController
         $show = new Show(User::findOrFail($id));
 
         $show->field('id', __('Id'));
-        $show->field('username', __('Username'));
-        $show->field('password', __('Password'));
-        $show->field('first_name', __('First name'));
-        $show->field('last_name', __('Last name'));
-        $show->field('reg_date', __('Reg date'));
-        $show->field('last_seen', __('Last seen'));
-        $show->field('email', __('Email'));
-        $show->field('approved', __('Approved'));
-        $show->field('profile_photo', __('Profile photo'));
-        $show->field('user_type', __('User type'));
-        $show->field('sex', __('Sex'));
-        $show->field('reg_number', __('Reg number'));
-        $show->field('country', __('Country'));
-        $show->field('occupation', __('Occupation'));
-        $show->field('profile_photo_large', __('Profile photo large'));
-        $show->field('phone_number', __('Phone number'));
-        $show->field('location_lat', __('Location lat'));
-        $show->field('location_long', __('Location long'));
-        $show->field('facebook', __('Facebook'));
-        $show->field('twitter', __('Twitter'));
-        $show->field('whatsapp', __('Whatsapp'));
-        $show->field('linkedin', __('Linkedin'));
-        $show->field('website', __('Website'));
-        $show->field('other_link', __('Other link'));
-        $show->field('cv', __('Cv'));
-        $show->field('language', __('Language'));
-        $show->field('about', __('About'));
-        $show->field('address', __('Address'));
-        $show->field('created_at', __('Created at'));
-        $show->field('updated_at', __('Updated at'));
-        $show->field('remember_token', __('Remember token'));
-        $show->field('avatar', __('Avatar'));
-        $show->field('name', __('Name'));
-        $show->field('campus_id', __('Campus id'));
-        $show->field('complete_profile', __('Complete profile'));
-        $show->field('title', __('Title'));
-        $show->field('dob', __('Dob'));
-        $show->field('intro', __('Intro'));
-        $show->field('sacco_id', __('Sacco id'));
-        $show->field('sacco_join_status', __('Sacco join status'));
-        $show->field('id_front', __('Id front'));
-        $show->field('id_back', __('Id back'));
-        $show->field('status', __('Status'));
-        $show->field('balance', __('Balance'));
+        $show->field('first_name', __('First Name'))->as(function ($firstName) {
+            return ucwords(strtolower($firstName));
+        });
+        $show->field('last_name', __('Last Name'))->as(function ($lastName) {
+            return ucwords(strtolower($lastName));
+        });
+        $show->field('sex', __('Gender'));
+        $show->field('phone_number', __('Phone Number'));
+        $show->field('created_at', __('Date Joined'))->as(function ($date) {
+            return date('d M Y', strtotime($date));
+        });
+        $show->field('location_lat', __('Latitude'));
+        $show->field('location_long', __('Longitude'));
 
         return $show;
     }
@@ -153,28 +141,12 @@ class MembersController extends AdminController
         $form = new Form(new User());
         $u = Admin::user();
 
-        if ((!$u->isRole('admin')) && (!$u->isRole('sacco'))) {
-            if ($form->isCreating()) {
-                admin_error("You are not allowed to create new Sacco");
-                return back();
-            }
-        }
-
-        if (!$u->isRole('admin')) {
-            $form->hidden('sacco_id', __('Sacco'))->default($u->sacco_id)->readonly();
-        } else {
-            $form->select('sacco_id', __('Sacco'))->options(\App\Models\Sacco::pluck('name', 'id'))->rules('required');
-        }
-
-        $form->text('first_name', __('First name'))
+        $form->text('first_name', __('First Name'))
+            ->rules('required')->help('Ensure the first letter of each word is capitalized.');
+        $form->text('last_name', __('Last Name'))
+            ->rules('required')->help('Ensure the first letter of each word is capitalized.');
+        $form->text('phone_number', __('Phone Number'))
             ->rules('required');
-        $form->text('last_name', __('Last name'))
-            ->rules('required');
-        $form->text('phone_number', __('Phone number'))
-            ->rules('required');
-
-
-
         $form->radio('sex', __('Gender'))
             ->options([
                 'Male' => 'Male',
@@ -182,50 +154,10 @@ class MembersController extends AdminController
             ])
             ->rules('required');
 
-        $form->text('address', __('Address'));
-
-
-        $form->image('avatar', __('Passport Size Photo'));
-
-
-        $form->image('profile_photo_large', __('National ID Front'));
-        $form->image('profile_photo', __('National ID Back'));
-
-
-        $form->datetime('dob', __('Date of Birth'))->default(date('Y-m-d H:i:s' . strtotime('-18 years')));
-
-
-
-        $form->image('id_front', __('Id front'));
-        $form->image('id_back', __('Id back'));
-        $form->hidden('user_type', __('Id back'))->default('Member');
-
-
-
-        $form->divider('MEMBERSHIP STATUS');
-
-
-        $form->radioCard('status', __('User Status'))
-            ->options([
-                'Pending' => 'Pending',
-                'Approved' => 'Approved',
-            ]);
-
-
-        $form->radioCard('sacco_join_status', __('Membership Status'))
-            ->options([
-                'Pending' => 'Pending',
-                'Approved' => 'Approved',
-            ]);
-
-        $form->password('password', trans('admin.password'))->rules('confirmed|required');
-        $form->password('password_confirmation', trans('admin.password_confirmation'))->rules('required')
-            ->default(function ($form) {
-                return $form->model()->password;
-            });
-        $form->ignore(['password_confirmation']);
-        $form->ignore(['change_password']);
+        $form->text('location_lat', __('Latitude'));
+        $form->text('location_long', __('Longitude'));
 
         return $form;
     }
 }
+?>

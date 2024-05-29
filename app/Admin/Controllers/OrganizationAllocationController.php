@@ -53,7 +53,9 @@ class OrganizationAllocationController extends AdminController
 
         $grid->column('id', 'ID')->sortable();
         $grid->column('organization.name', 'Organization')->sortable();
-        $grid->column('sacco.name', 'Vsla Group')->sortable();
+        $grid->column('sacco.name', 'Vsla Group')->sortable()->display(function ($name) {
+            return ucwords(strtolower($name));
+        });
         $grid->column('chairperson_name', __('Chairperson Name'))
             ->display(function () {
                 $chairperson = \App\Models\User::where('sacco_id', $this->sacco_id)
@@ -62,7 +64,7 @@ class OrganizationAllocationController extends AdminController
                     })
                     ->first();
 
-                return $chairperson ? $chairperson->name : '';
+                return $chairperson ? ucwords(strtolower($chairperson->name)) : '';
             });
         $grid->column('phone_number', __('Phone Number'))
             ->display(function () {
@@ -74,7 +76,7 @@ class OrganizationAllocationController extends AdminController
 
                 return $chairperson ? $chairperson->phone_number : '';
             });
-        $grid->column('created_at', __('Established'))
+        $grid->column('created_at', __('Updated At'))
             ->display(function ($date) {
                 return date('d M Y', strtotime($date));
             })->sortable();
