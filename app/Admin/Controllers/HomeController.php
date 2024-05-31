@@ -93,7 +93,8 @@ class HomeController extends Controller
             $totalSaccos = Sacco::whereIn('id', $saccoIds)->count();
             $organisationCount = VslaOrganisation::where('id', $orgIds)->count();
             $totalMembers = $filteredUsers->whereIn('sacco_id', $saccoIds)->count();
-            $totalAccounts = $filteredUsers->where('user_type', 'Admin')->whereIn('sacco_id', $saccoIds)->count();
+            $totalAccounts = User::where('user_type', 'Admin')->whereIn('sacco_id', $saccoIds)->count();
+            // dd($totalAccounts);
             $totalPwdMembers = $filteredUsers->whereIn('sacco_id', $saccoIds)->where('pwd', 'yes')->count();
             $villageAgents = User::whereIn('sacco_id', $saccoIds)->where('user_type', '4')->count();
             $youthMembersPercentage = ($totalMembers > 0) ? $filteredUsers->whereIn('sacco_id', $saccoIds)->filter(function ($user) {
@@ -325,7 +326,7 @@ class HomeController extends Controller
                     'totalMembers' => $totalMembers,
                     'totalAccounts' => $totalAccounts,
                     'totalOrgAdmins' => $totalOrgAdmins,
-                    'totalPwdMembers' => $totalPwdMembers,
+                    'totalPwdMembers' => $pwdMembersCount,
                     'youthMembersPercentage' => number_format($youthMembersPercentage, 2),
                 ]) .
                 view('widgets.card_set', [
