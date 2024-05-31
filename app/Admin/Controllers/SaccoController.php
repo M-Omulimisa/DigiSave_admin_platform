@@ -75,7 +75,7 @@ class SaccoController extends AdminController
             return ucwords(strtolower($address));
         });
 
-        $grid->column('created_at', __('Established'))
+        $grid->column('created_at', __('Create At'))
             ->display(function ($date) {
                 return date('d M Y', strtotime($date));
             })->sortable();

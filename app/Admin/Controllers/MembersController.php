@@ -3,10 +3,8 @@
 namespace App\Admin\Controllers;
 
 use App\Models\OrgAllocation;
-use App\Models\Organization;
-use App\Models\OrganizationAssignment;
-use App\Models\User;
 use App\Models\VslaOrganisationSacco;
+use App\Models\User;
 use Encore\Admin\Controllers\AdminController;
 use Encore\Admin\Facades\Admin;
 use Encore\Admin\Form;
@@ -47,14 +45,25 @@ class MembersController extends AdminController
                 $orgId = $orgAllocation->vsla_organisation_id;
                 $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
                 $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
-                $grid->model()->whereIn('sacco_id', $saccoIds)->orderBy('created_at', $sortOrder);
+                $grid->model()
+                    ->whereIn('sacco_id', $saccoIds)
+                    ->where(function ($query) {
+                        $query->whereNull('user_type')
+                              ->orWhere('user_type', '!=', 'Admin');
+                    })
+                    ->orderBy('created_at', $sortOrder);
                 $grid->disableCreateButton();
                 $grid->actions(function (Grid\Displayers\Actions $actions) {
                     $actions->disableDelete();
                 });
             }
         } else {
-            $grid->model()->whereNull('user_type')->orderBy('created_at', $sortOrder);
+            $grid->model()
+                ->where(function ($query) {
+                    $query->whereNull('user_type')
+                          ->orWhere('user_type', '!=', 'Admin');
+                })
+                ->orderBy('created_at', $sortOrder);
         }
 
         $grid->disableBatchActions();

@@ -144,7 +144,7 @@ class OrganizationAllocationController extends AdminController
             ->options(VslaOrganisation::pluck('name', 'id'))
             ->rules('required');
 
-        $form->multipleSelect('sacco_id', 'Vsla Groups')
+        $form->multipleSelect('sacco_ids', 'Vsla Groups')
             ->options(Sacco::pluck('name', 'id'))
             ->rules('required');
 
@@ -152,15 +152,24 @@ class OrganizationAllocationController extends AdminController
         $form->display('updated_at', 'Updated At');
 
         $form->saving(function (Form $form) {
-            if (is_array($form->sacco_id)) {
-                foreach ($form->sacco_id as $saccoId) {
+            // Prevent default saving of sacco_ids
+            $form->ignore('sacco_ids');
+        });
+
+        $form->saved(function (Form $form) {
+            $vslaOrganisationId = $form->model()->id;
+
+            // Delete existing records
+            VslaOrganisationSacco::where('vsla_organisation_id', $vslaOrganisationId)->delete();
+
+            // Insert new records
+            if (is_array($form->sacco_ids)) {
+                foreach ($form->sacco_ids as $saccoId) {
                     VslaOrganisationSacco::create([
-                        'vsla_organisation_id' => $form->vsla_organisation_id,
+                        'vsla_organisation_id' => $vslaOrganisationId,
                         'sacco_id' => $saccoId,
                     ]);
                 }
-                // Prevent saving of the form itself
-                return false;
             }
         });
 
