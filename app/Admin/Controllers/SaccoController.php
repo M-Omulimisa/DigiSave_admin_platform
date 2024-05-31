@@ -75,7 +75,7 @@ class SaccoController extends AdminController
             return ucwords(strtolower($address));
         });
 
-        $grid->column('created_at', __('Create At'))
+        $grid->column('created_at', __('Created At'))
             ->display(function ($date) {
                 return date('d M Y', strtotime($date));
             })->sortable();
@@ -123,29 +123,33 @@ class SaccoController extends AdminController
     {
         $show = new Show(Sacco::findOrFail($id));
 
-        $show->field('id', __('Id'));
-        $show->field('created_at', __('Created At'));
-        $show->field('updated_at', __('Updated At'));
         $show->field('name', __('Name'))->as(function ($name) {
             return ucwords(strtolower($name));
         });
+
         $show->field('phone_number', __('Phone Number'));
-        $show->field('email_address', __('Email Address'));
+
+        $show->field('share_price', __('Share (UGX)'))->as(function ($price) {
+            return number_format($price);
+        });
+
         $show->field('physical_address', __('Physical Address'))->as(function ($address) {
             return ucwords(strtolower($address));
         });
-        $show->field('created_at', __('Establishment Date'));
-        $show->field('registration_number', __('Registration Number'));
-        $show->field('chairperson_name', __('Chairperson Name'))->as(function ($name) {
-            return ucwords(strtolower($name));
+
+        $show->field('created_at', __('Created At'))->as(function ($date) {
+            return date('d M Y', strtotime($date));
         });
-        $show->field('chairperson_phone_number', __('Chairperson Phone Number'));
-        $show->field('chairperson_email_address', __('Chairperson Email Address'));
-        $show->field('about', __('About'));
-        $show->field('terms', __('Terms'));
-        $show->field('mission', __('Mission'));
-        $show->field('vision', __('Vision'));
-        $show->field('logo', __('Logo'));
+
+        $show->field('chairperson_name', __('Chairperson Name'))->as(function () {
+            $chairperson = \App\Models\User::where('sacco_id', $this->id)
+                ->whereHas('position', function ($query) {
+                    $query->where('name', 'Chairperson');
+                })
+                ->first();
+
+            return $chairperson ? ucwords(strtolower($chairperson->name)) : '';
+        });
 
         return $show;
     }
