@@ -320,7 +320,7 @@ class HomeController extends Controller
                 </div>' .
                 '<div style="background-color: #E9F9E9; padding: 10px; padding-top: 5px; border-radius: 5px;">' .
                 view('widgets.statistics', [
-                    'totalSaccos' => $totalSaccos,
+                    'totalSaccos' => $totalAccounts,
                     'villageAgents' => $villageAgents,
                     'organisationCount' => $organisationCount,
                     'totalMembers' => $totalMembers,

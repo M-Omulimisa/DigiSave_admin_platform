@@ -54,6 +54,7 @@ class OrganisationAdminController extends AdminController
 
                 // Filter users based on the organisation allocation
                 $grid->model()->whereIn('id', $OrgAdmins);
+                $grid->disableCreateButton();
             }
         }
 

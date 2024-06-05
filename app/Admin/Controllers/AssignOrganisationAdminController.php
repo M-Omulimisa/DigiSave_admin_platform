@@ -48,6 +48,7 @@ class AssignOrganisationAdminController extends AdminController
 
                 $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
                 $grid->model()->where('vsla_organisation_id', $orgId)->orderBy('created_at', $sortOrder);
+                $grid->disableCreateButton();
             }
         } else {
             // For admins, display all records ordered by created_at

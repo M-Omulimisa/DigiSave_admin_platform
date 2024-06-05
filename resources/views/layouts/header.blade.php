@@ -30,7 +30,7 @@ if (!isset($header_style)) {
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
 
                 <li class="nav-item">
-                    <a href="{{ url('') }}" class="nav-link">Home</a>
+                    <a href="{{ url('') }}" class="nav-link">DigiSave</a>
                 </li>
 
 

@@ -28,7 +28,7 @@
                     height: 400,
                 },
                 title: {
-                    text: 'Overall Percentage Savings Made by Each Gender'
+                    text: 'Distribution of Savings by Gender'
                 },
                 tooltip: {
                     pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
