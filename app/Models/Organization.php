@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Organization extends Model
 {
     use HasFactory;
-    
+
     protected $fillable = ['name', 'phone_number', 'address', 'unique_code'];
 
     // Generate a unique four-digit code for a new organization
@@ -23,6 +23,11 @@ class Organization extends Model
 
             $organization->unique_code = $code;
         });
-    }    
+    }
 
+    // Method to return an organization given the unique_code
+    public static function findByUniqueCode($uniqueCode)
+    {
+        return self::where('unique_code', $uniqueCode)->first();
+    }
 }

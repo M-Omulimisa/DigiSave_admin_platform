@@ -38,6 +38,8 @@ use App\Models\Subcounty;
 use App\Models\User;
 use App\Models\Utils;
 use App\Models\Village;
+use App\Models\VslaOrganisation;
+use App\Models\VslaOrganisationSacco;
 use App\Traits\ApiResponser;
 use Carbon\Carbon;
 use Dflydev\DotAccessData\Util;
@@ -770,20 +772,74 @@ class ApiResurceController extends Controller
         );
     }
 
-    public function get_orgs(Request $r)
-    {
-        $u = auth('api')->user();
-        if ($u == null) {
-            return $this->error('User not found.');
-        }
-        return $this->success(
-            Organization::all(),
-            $message = "Success",
-            200
-        );
+    public function get_all_organizations()
+{
+    $u = auth('api')->user();
+    if ($u == null) {
+        return $this->error('User not found.');
     }
 
-    public function get_default_positions(Request $request = null)
+    // Fetch all organizations
+    $organizations = Organization::all()->get();
+
+    // Return success response with all organizations
+    return $this->success(
+        $organizations,
+        $message = "Success",
+        200
+    );
+}
+
+// public function assignSaccoToOrganization(Request $request)
+// {
+//     $user = auth('api')->user();
+
+//     if (!$user) {
+//         return $this->error('User not found.');
+//     }
+
+//     $organizationId = $request->input('organization_id');
+//     if (!$organizationId) {
+//         return $this->error('Organization ID not provided.');
+//     }
+
+//     $organization = VslaOrganisation::find($organizationId);
+//     if (!$organization) {
+//         return $this->error('Organization not found.');
+//     }
+//     $vslaOrganizationSacco = new VslaOrganisationSacco();
+//     $vslaOrganizationSacco->vsla_organisation_id = $organization->id;
+//     $vslaOrganizationSacco->sacco_id = $user->sacco_id;
+
+//     try {
+//         $vslaOrganizationSacco->save();
+//         return $this->success($vslaOrganizationSacco, 'Successfully assigned group to the organization.');
+//     } catch (\Exception $e) {
+//         return $this->error('Failed to assign SACCO to organization: ' . $e->getMessage());
+//     }
+// }
+
+public function get_orgs(Request $request)
+{
+    $user = auth('api')->user();
+    if ($user == null) {
+        return response()->json(['error' => 'User not found.'], 404);
+    }
+
+    $uniqueCode = $request->input('unique_code');
+    if (!$uniqueCode) {
+        return response()->json(['error' => 'Unique code not provided.'], 400);
+    }
+
+    $organization = VslaOrganisation::where('unique_code', $uniqueCode)->first();
+    if (!$organization) {
+        return response()->json(['message' => 'Organization not found.'], 404);
+    }
+
+    return response()->json(['success' => true, 'organization' => $organization], 200);
+}
+
+public function get_default_positions(Request $request = null)
 {
     // Initialize variables to store user ID and user
     $userId = null;

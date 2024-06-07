@@ -29,7 +29,7 @@ Route::post('get-parishes', [ApiResurceController::class, 'getParishesBySubcount
 Route::post('get-villages', [ApiResurceController::class, 'getVillagesByParishes']);
 Route::get("loans", [ApiResurceController::class, "fetchUserLoans"]);
 Route::get("cycles", [ApiResurceController::class, "cycles"]);
-Route::get("organisation", [ApiResurceController::class, "get_orgs"]);
+Route::post('organisation', [ApiResurceController::class, 'get_orgs']);
 Route::get('def-positions', [ApiResurceController::class, 'get_positions']);
 Route::get('positions', [ApiResurceController::class, 'get_positions']);
 Route::get("share-records", [ApiResurceController::class, "share_records"]);
@@ -87,6 +87,7 @@ Route::POST("users/login", [ApiAuthController::class, "login"]);
 Route::POST("login", [ApiAuthController::class, "login"]);
 Route::POST("admin/auth", [ApiAuthController::class, "verify_user"]);
 Route::POST("shareout", [ApiAuthController::class, "new_shareout"]);
+Route::post('assign-sacco', [ApiAuthController::class, 'assignSaccoToOrganization']);
 Route::POST("users/register", [ApiAuthController::class, "register"]);
 Route::post('positions', [ApiAuthController::class, 'new_position']);
 Route::post('groups/register', [ApiAuthController::class, 'registerGroup']);

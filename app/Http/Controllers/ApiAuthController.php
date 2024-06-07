@@ -19,6 +19,7 @@ use App\Models\PermissionInsert;
 use App\Models\MemberPosition;
 use App\Models\Shareout;
 use App\Models\Utils;
+use App\Models\VslaOrganisation;
 use App\Models\VslaOrganisationSacco;
 use App\Traits\ApiResponser;
 use Carbon\Carbon;
@@ -65,6 +66,34 @@ class ApiAuthController extends Controller
         return $this->success($query, $message = "Profile details", 200);
     }
 
+    public function assignSaccoToOrganization(Request $request)
+{
+    $user = auth('api')->user();
+
+    if (!$user) {
+        return $this->error('User not found.');
+    }
+
+    $organizationId = $request->input('organization_id');
+    if (!$organizationId) {
+        return $this->error('Organization ID not provided.');
+    }
+
+    $organization = VslaOrganisation::find($organizationId);
+    if (!$organization) {
+        return $this->error('Organization not found.');
+    }
+    $vslaOrganizationSacco = new VslaOrganisationSacco();
+    $vslaOrganizationSacco->vsla_organisation_id = $organization->id;
+    $vslaOrganizationSacco->sacco_id = $user->sacco_id;
+
+    try {
+        $vslaOrganizationSacco->save();
+        return $this->success($vslaOrganizationSacco, 'Successfully assigned group to the organization.');
+    } catch (\Exception $e) {
+        return $this->error('Failed to assign SACCO to organization: ' . $e->getMessage());
+    }
+}
 
     //     public function login(Request $r)
     // {
