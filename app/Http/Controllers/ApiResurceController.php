@@ -870,7 +870,7 @@ public function get_positions(Request $request = null)
             $positions = MemberPosition::where('sacco_id', $sacco->id)->get();
 
             // Check and create the necessary positions if they don't exist
-            $requiredPositions = ['Chairperson', 'Secretary', 'Treasurer', 'Test'];
+            $requiredPositions = ['Chairperson', 'Secretary', 'Treasurer'];
             foreach ($requiredPositions as $positionName) {
                 if (!$positions->contains('name', $positionName)) {
                     MemberPosition::create([
