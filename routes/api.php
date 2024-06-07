@@ -30,6 +30,7 @@ Route::post('get-villages', [ApiResurceController::class, 'getVillagesByParishes
 Route::get("loans", [ApiResurceController::class, "fetchUserLoans"]);
 Route::get("cycles", [ApiResurceController::class, "cycles"]);
 Route::get("organisation", [ApiResurceController::class, "get_orgs"]);
+Route::get('def-positions', [ApiResurceController::class, 'get_positions']);
 Route::get('positions', [ApiResurceController::class, 'get_positions']);
 Route::get("share-records", [ApiResurceController::class, "share_records"]);
 Route::post("share-records", [ApiResurceController::class, "share_record_create"]);

@@ -7,6 +7,10 @@ function getRandomColor($id) {
 function formatBalance($balance) {
     return 'UGX ' . number_format($balance, 2);
 }
+
+function sentenceCase($string) {
+    return ucwords(strtolower($string));
+}
 @endphp
 
 <div class="card" style="padding: 5px; background-color: white; border: 1px solid #ddd; border-radius: 5px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);">
@@ -22,7 +26,7 @@ function formatBalance($balance) {
                     </div>
                     <div>
                         <div style="font-weight: bold; font-size: 12px; color: #333;">
-                            {{ $group->first_name }} {{ $group->last_name }}
+                            {{ sentenceCase($group->first_name) }} {{ sentenceCase($group->last_name) }}
                         </div>
                     </div>
                 </div>
