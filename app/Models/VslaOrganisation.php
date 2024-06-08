@@ -42,4 +42,9 @@ class VslaOrganisation extends Model
             $organisation->unique_code = self::generateUniqueCode();
         });
     }
+
+    public function vslaOrganisationSaccos()
+    {
+        return $this->hasMany(VslaOrganisationSacco::class, 'vsla_organisation_id');
+    }
 }

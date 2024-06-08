@@ -54,6 +54,23 @@ class ApiAuthController extends Controller
         $this->middleware('auth:api', ['except' => ['login', 'resetPassword', 'register', 'agent_login', 'registerGroup', 'update_admin', 'new_position', 'updateUser', 'registerRole']]);
     }
 
+    public function getOrganisationsForUser()
+    {
+        $user = auth('api')->user();
+
+        if (!$user) {
+            return $this->error('User not found.');
+        }
+
+        $sacco_id = $user->sacco_id;
+        $organisations = VslaOrganisationSacco::getOrganisationsForSacco($sacco_id);
+
+        if ($organisations->isEmpty()) {
+            return $this->error('No organisations found for this SACCO.');
+        }
+
+        return $this->success($organisations, 'Organisations retrieved successfully.');
+    }
 
     /**
      * Get a JWT via given credentials.
@@ -67,33 +84,33 @@ class ApiAuthController extends Controller
     }
 
     public function assignSaccoToOrganization(Request $request)
-{
-    $user = auth('api')->user();
+    {
+        $user = auth('api')->user();
 
-    if (!$user) {
-        return $this->error('User not found.');
-    }
+        if (!$user) {
+            return $this->error('User not found.');
+        }
 
-    $organizationId = $request->input('organization_id');
-    if (!$organizationId) {
-        return $this->error('Organization ID not provided.');
-    }
+        $organizationId = $request->input('organization_id');
+        if (!$organizationId) {
+            return $this->error('Organization ID not provided.');
+        }
 
-    $organization = VslaOrganisation::find($organizationId);
-    if (!$organization) {
-        return $this->error('Organization not found.');
-    }
-    $vslaOrganizationSacco = new VslaOrganisationSacco();
-    $vslaOrganizationSacco->vsla_organisation_id = $organization->id;
-    $vslaOrganizationSacco->sacco_id = $user->sacco_id;
+        $organization = VslaOrganisation::find($organizationId);
+        if (!$organization) {
+            return $this->error('Organization not found.');
+        }
+        $vslaOrganizationSacco = new VslaOrganisationSacco();
+        $vslaOrganizationSacco->vsla_organisation_id = $organization->id;
+        $vslaOrganizationSacco->sacco_id = $user->sacco_id;
 
-    try {
-        $vslaOrganizationSacco->save();
-        return $this->success($vslaOrganizationSacco, 'Successfully assigned group to the organization.');
-    } catch (\Exception $e) {
-        return $this->error('Failed to assign SACCO to organization: ' . $e->getMessage());
+        try {
+            $vslaOrganizationSacco->save();
+            return $this->success($vslaOrganizationSacco, 'Successfully assigned group to the organization.');
+        } catch (\Exception $e) {
+            return $this->error('Failed to assign SACCO to organization: ' . $e->getMessage());
+        }
     }
-}
 
     //     public function login(Request $r)
     // {

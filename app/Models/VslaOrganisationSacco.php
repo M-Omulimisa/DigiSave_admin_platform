@@ -57,4 +57,13 @@ class VslaOrganisationSacco extends Model
         return ['record_id' => $newRecord->id, 'record_data' => $newRecord];
     }
 
+    public static function getOrganisationsForSacco($sacco_id)
+    {
+        return self::where('sacco_id', $sacco_id)
+            ->with('vslaOrganisation')
+            ->get()
+            ->map(function ($sacco) {
+                return $sacco->vslaOrganisation;
+            });
+    }
 }

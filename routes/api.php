@@ -87,6 +87,7 @@ Route::POST("users/login", [ApiAuthController::class, "login"]);
 Route::POST("login", [ApiAuthController::class, "login"]);
 Route::POST("admin/auth", [ApiAuthController::class, "verify_user"]);
 Route::POST("shareout", [ApiAuthController::class, "new_shareout"]);
+Route::get('org', [ApiAuthController::class, 'getOrganisationsForUser']);
 Route::post('assign-sacco', [ApiAuthController::class, 'assignSaccoToOrganization']);
 Route::POST("users/register", [ApiAuthController::class, "register"]);
 Route::post('positions', [ApiAuthController::class, 'new_position']);
