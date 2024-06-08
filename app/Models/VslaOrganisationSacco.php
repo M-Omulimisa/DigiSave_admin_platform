@@ -59,11 +59,20 @@ class VslaOrganisationSacco extends Model
 
     public static function getOrganisationsForSacco($sacco_id)
     {
-        return self::where('sacco_id', $sacco_id)
-            ->with('vslaOrganisation')
-            ->get()
-            ->map(function ($sacco) {
-                return $sacco->vslaOrganisation;
-            });
+        return VslaOrganisation::whereHas('vslaOrganisationSacco', function($query) use ($sacco_id) {
+            $query->where('sacco_id', $sacco_id);
+        })
+        ->where('name', '!=', 'International Institute of Rural Reconstruction (IIRR)')
+        ->get();
     }
+
+    // public static function getOrganisationsForSacco($sacco_id)
+    // {
+    //     return self::where('sacco_id', $sacco_id)
+    //         ->with('vslaOrganisation')
+    //         ->get()
+    //         ->map(function ($sacco) {
+    //             return $sacco->vslaOrganisation;
+    //         });
+    // }
 }
