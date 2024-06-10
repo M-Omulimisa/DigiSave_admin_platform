@@ -79,6 +79,11 @@ class Sacco extends Model
         });
     }
 
+    public function users()
+    {
+        return $this->hasMany(User::class);
+    }
+
     //balance
     public function getBalanceAttribute()
     {

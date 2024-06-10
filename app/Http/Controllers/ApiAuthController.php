@@ -63,13 +63,19 @@ class ApiAuthController extends Controller
         }
 
         $sacco_id = $user->sacco_id;
-        $organisations = VslaOrganisationSacco::getOrganisationsForSacco($sacco_id);
+
+        // Retrieve the organisations for the user's sacco_id
+        $organisations = VslaOrganisationSacco::where('sacco_id', $sacco_id)
+            ->pluck('vsla_organisation_id');
 
         if ($organisations->isEmpty()) {
             return $this->error('No organisations found for this SACCO.');
         }
 
-        return $this->success($organisations, 'Organisations retrieved successfully.');
+        // Retrieve the organisation details
+        $organisationDetails = VslaOrganisation::whereIn('id', $organisations)->get();
+
+        return $this->success($organisationDetails, 'Organisations retrieved successfully.');
     }
 
     /**
