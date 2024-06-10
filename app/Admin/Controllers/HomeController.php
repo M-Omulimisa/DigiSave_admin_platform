@@ -46,11 +46,11 @@ class HomeController extends Controller
         $userName = $admin->first_name; // Get the logged-in user's name
 
         // $totalAccounts = Sacco::all()->count();
-        $saccos = Sacco::all()->count();
+        // $totalSaccos = Sacco::all()->count();
         $totalAccounts = Sacco::whereHas('users', function ($query) {
             $query->whereHas('position', function ($query) {
                 $query->where('name', 'Chairperson');
-            });
+            })->whereNotNull('phone_number')->where('phone_number', '!=', '');
         })->count();
 
 
