@@ -45,7 +45,16 @@ class HomeController extends Controller
         $adminId = $admin->id;
         $userName = $admin->first_name; // Get the logged-in user's name
 
-        $totalAccounts = User::where('user_type', 'Admin')->count();
+        // $totalAccounts = Sacco::all()->count();
+        $saccos = Sacco::all()->count();
+        $totalAccounts = Sacco::whereHas('users', function ($query) {
+            $query->whereHas('position', function ($query) {
+                $query->where('name', 'Chairperson');
+            });
+        })->count();
+
+
+        // $totalAccounts = User::where('user_type', 'Admin')->count();
         $totalOrgAdmins = User::where('user_type', '5')->count();
 
         $filteredUsers = $users->reject(function ($user) use ($adminId) {
@@ -177,7 +186,6 @@ class HomeController extends Controller
 
             // Filter top saving groups based on organization
             $topSavingGroups = User::where('user_type', 'Admin')->whereIn('sacco_id', $saccoIds)->get()->sortByDesc('balance')->take(6);
-
         } else {
             $organizationContainer = '';
             $orgName = 'DigiSave VSLA Platform';
@@ -303,9 +311,10 @@ class HomeController extends Controller
 
         return $content
             ->header('<div style="text-align: center; color: #066703; font-size: 30px; font-weight: bold; padding-top: 20px;">' . $orgName . '</div>')
-            ->body($organizationContainer .
-                // Welcome banner with sliding quotes
-                '<div style="background-color: #F8E5E9; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+            ->body(
+                $organizationContainer .
+                    // Welcome banner with sliding quotes
+                    '<div style="background-color: #F8E5E9; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
                     <div style="display: flex; align-items: center; justify-content: space-between;">
                         <div>
                             <h2 style="margin: 0; font-size: 24px; font-weight: bold; color: #298803;">Welcome back, ' . $userName . '!</h2>
@@ -318,50 +327,50 @@ class HomeController extends Controller
                         </div>
                     </div>
                 </div>' .
-                '<div style="background-color: #E9F9E9; padding: 10px; padding-top: 5px; border-radius: 5px;">' .
-                view('widgets.statistics', [
-                    'totalSaccos' => $totalAccounts,
-                    'villageAgents' => $villageAgents,
-                    'organisationCount' => $organisationCount,
-                    'totalMembers' => $totalMembers,
-                    'totalAccounts' => $totalAccounts,
-                    'totalOrgAdmins' => $totalOrgAdmins,
-                    'totalPwdMembers' => $pwdMembersCount,
-                    'youthMembersPercentage' => number_format($youthMembersPercentage, 2),
-                ]) .
-                view('widgets.card_set', [
-                    'femaleMembersCount' => $femaleMembersCount,
-                    'femaleTotalBalance' => $femaleTotalBalance,
-                    'maleMembersCount' => $maleMembersCount,
-                    'maleTotalBalance' => $maleTotalBalance,
-                    'youthMembersCount' => $youthMembersCount,
-                    'youthTotalBalance' => $youthTotalBalance,
-                    'pwdMembersCount' => $pwdMembersCount,
-                    'pwdTotalBalance' => $pwdTotalBalance,
-                ]) .
-                '<div style="background-color: #E9F9E9; padding: 10px; padding-top: 5px; border-radius: 5px;">' .
-                view('widgets.category', compact(
-                    'loansDisbursedToWomen',
-                    'loansDisbursedToMen',
-                    'loansDisbursedToYouths',
-                    'loanSumForWomen',
-                    'loanSumForMen',
-                    'loanSumForYouths',
-                    'percentageLoansWomen',
-                    'percentageLoansMen',
-                    'percentageLoansYouths',
-                    'percentageLoanSumWomen',
-                    'percentageLoanSumMen',
-                    'percentageLoanSumYouths'
-                )).
-            '</div>' .
-            view('widgets.chart_container', [
-                'Female' => $femaleTotalBalance,
-                'Male' => $maleTotalBalance,
-                'monthYearList' => $monthYearList,
-                'totalSavingsList' => $totalSavingsList,
-            ]).
-            '<div class="row" style="padding-top: 35px;">
+                    '<div style="background-color: #E9F9E9; padding: 10px; padding-top: 5px; border-radius: 5px;">' .
+                    view('widgets.statistics', [
+                        'totalSaccos' => $totalAccounts,
+                        'villageAgents' => $villageAgents,
+                        'organisationCount' => $organisationCount,
+                        'totalMembers' => $totalMembers,
+                        'totalAccounts' => $totalAccounts,
+                        'totalOrgAdmins' => $totalOrgAdmins,
+                        'totalPwdMembers' => $pwdMembersCount,
+                        'youthMembersPercentage' => number_format($youthMembersPercentage, 2),
+                    ]) .
+                    view('widgets.card_set', [
+                        'femaleMembersCount' => $femaleMembersCount,
+                        'femaleTotalBalance' => $femaleTotalBalance,
+                        'maleMembersCount' => $maleMembersCount,
+                        'maleTotalBalance' => $maleTotalBalance,
+                        'youthMembersCount' => $youthMembersCount,
+                        'youthTotalBalance' => $youthTotalBalance,
+                        'pwdMembersCount' => $pwdMembersCount,
+                        'pwdTotalBalance' => $pwdTotalBalance,
+                    ]) .
+                    '<div style="background-color: #E9F9E9; padding: 10px; padding-top: 5px; border-radius: 5px;">' .
+                    view('widgets.category', compact(
+                        'loansDisbursedToWomen',
+                        'loansDisbursedToMen',
+                        'loansDisbursedToYouths',
+                        'loanSumForWomen',
+                        'loanSumForMen',
+                        'loanSumForYouths',
+                        'percentageLoansWomen',
+                        'percentageLoansMen',
+                        'percentageLoansYouths',
+                        'percentageLoanSumWomen',
+                        'percentageLoanSumMen',
+                        'percentageLoanSumYouths'
+                    )) .
+                    '</div>' .
+                    view('widgets.chart_container', [
+                        'Female' => $femaleTotalBalance,
+                        'Male' => $maleTotalBalance,
+                        'monthYearList' => $monthYearList,
+                        'totalSavingsList' => $totalSavingsList,
+                    ]) .
+                    '<div class="row" style="padding-top: 35px;">
                 <div class="col-md-6">
                     ' . view('widgets.top_saving_groups', [
                         'topSavingGroups' => $topSavingGroups,
@@ -374,7 +383,7 @@ class HomeController extends Controller
                     ]) . '
                 </div>
             </div>'
-        );
+            );
     }
 }
 ?>
