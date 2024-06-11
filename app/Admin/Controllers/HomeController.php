@@ -40,18 +40,34 @@ class HomeController extends Controller
 {
     public function index(Content $content)
     {
+        foreach(Sacco::where(["processed"=>"no"])->get() as $key => $sacco) {
+            $chairperson = User::where('sacco_id', $sacco->id)
+                    ->whereHas('position', function ($query) {
+                        $query->where('name', 'Chairperson');
+                    })
+                    ->first();
+
+                if ($chairperson == null) {
+                    $sacco->status="inactive";
+                }
+                else {
+                    $sacco->status="active";
+                }
+                $sacco->processed = "yes";
+                $sacco->save();
+        }
         $users = User::all();
         $admin = Admin::user();
         $adminId = $admin->id;
         $userName = $admin->first_name; // Get the logged-in user's name
 
-        // $totalAccounts = Sacco::all()->count();
+        $totalAccounts = Sacco::where("status","active")->count();
         // $totalSaccos = Sacco::all()->count();
-        $totalAccounts = Sacco::whereHas('users', function ($query) {
-            $query->whereHas('position', function ($query) {
-                $query->where('name', 'Chairperson');
-            })->whereNotNull('phone_number')->where('phone_number', '!=', '');
-        })->count();
+        // $totalAccounts = Sacco::whereHas('users', function ($query) {
+        //     $query->whereHas('position', function ($query) {
+        //         $query->where('name', 'Chairperson');
+        //     })->whereNotNull('phone_number')->where('phone_number', '!=', '');
+        // })->count();
 
 
         // $totalAccounts = User::where('user_type', 'Admin')->count();

@@ -35,10 +35,7 @@ class SaccoController extends AdminController
                 $orgId = $orgAllocation->vsla_organisation_id;
                 $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
                 $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
-                $grid->model()->whereIn('id', $saccoIds)
-                              ->whereHas('users.position', function ($query) {
-                                  $query->where('name', 'Chairperson');
-                              })
+                $grid->model()->where("status","active")
                               ->orderBy('created_at', $sortOrder);
                 $grid->disableCreateButton();
                 $grid->actions(function (Grid\Displayers\Actions $actions) {
@@ -65,12 +62,18 @@ class SaccoController extends AdminController
             ->sortable()
             ->display(function () {
                 $chairperson = \App\Models\User::where('sacco_id', $this->id)
-                    ->whereHas('position', function ($query) {
-                        $query->where('name', 'Chairperson');
-                    })
+                    // ->whereHas('position', function ($query) {
+                    //     $query->where('name', 'Chairperson');
+                    // })
                     ->first();
 
-                return $chairperson ? $chairperson->phone_number : '';
+
+                // if ($chairperson == null) {
+                //     $this->delete();
+                //     return 'N/A';
+                // }
+
+                return $chairperson ? $chairperson->phone_number : 'N/A';
             });
 
         $grid->column('share_price', __('Share (UGX)'))
