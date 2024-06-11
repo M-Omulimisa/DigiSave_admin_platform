@@ -62,9 +62,9 @@ class SaccoController extends AdminController
             ->sortable()
             ->display(function () {
                 $chairperson = \App\Models\User::where('sacco_id', $this->id)
-                    // ->whereHas('position', function ($query) {
-                    //     $query->where('name', 'Chairperson');
-                    // })
+                    ->whereHas('position', function ($query) {
+                        $query->where('name', 'Chairperson');
+                    })
                     ->first();
 
 
