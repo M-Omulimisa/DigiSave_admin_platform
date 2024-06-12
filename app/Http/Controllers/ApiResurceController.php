@@ -918,7 +918,7 @@ public function get_positions(Request $request = null)
     // Check if a user is found
     if ($user) {
         // Find the associated Sacco
-        $sacco = Sacco::where('administrator_id', $user->id)->first();
+        $sacco = Sacco::where('id', $user->sacco_id)->first();
 
         // Check if a Sacco is found
         if ($sacco) {
