@@ -949,7 +949,7 @@ public function get_positions(Request $request = null)
             );
         } else {
             // Return error response if Sacco not found
-            return response()->json(['message' => 'Associated group not found'], 404);
+            return response()->json(['message' => 'User group not found'], 404);
         }
     } else {
         // Return error response if user not found
