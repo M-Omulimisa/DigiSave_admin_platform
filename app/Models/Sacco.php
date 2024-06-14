@@ -15,7 +15,10 @@ class Sacco extends Model
     {
         parent::boot();
         self::deleting(function ($m) {
-            // throw new \Exception("Cannot delete Sacco");
+            //delete cycles that belong to this group
+            Cycle::where([
+                'sacco_id' => $m->id
+            ])->delete();
         });
         self::created(function ($m) {
             $u = User::find($m->administrator_id);

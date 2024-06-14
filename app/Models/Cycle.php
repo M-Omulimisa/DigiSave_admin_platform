@@ -8,12 +8,12 @@ use Illuminate\Database\Eloquent\Model;
 class Cycle extends Model
 {
     use HasFactory;
-    //boot 
+    //boot
     public static function boot()
     {
         parent::boot();
         self::deleting(function ($m) {
-            throw new \Exception("Cannot delete Cycle");
+            //throw new \Exception("Cannot delete Cycle");
         });
         self::creating(function ($m) {
             //only if created by status is active for a sacco
