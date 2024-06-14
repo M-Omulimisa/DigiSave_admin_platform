@@ -13,7 +13,9 @@ class Cycle extends Model
     {
         parent::boot();
         self::deleting(function ($m) {
-            $m->delete();
+            Transaction::where([
+                'cycle_id' => $m->id
+            ])->delete();
             //throw new \Exception("Cannot delete Cycle");
         });
         self::creating(function ($m) {

@@ -19,6 +19,7 @@ class Sacco extends Model
             Cycle::where([
                 'sacco_id' => $m->id
             ])->delete();
+            // die("Cycle is being delete");
             Transaction::where([
                 'sacco_id' => $m->id
             ])->delete();
