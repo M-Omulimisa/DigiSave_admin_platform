@@ -155,33 +155,17 @@ class SaccoController extends AdminController
     }
 
     protected function form()
-    {
-        $form = new Form(new Sacco());
+{
+    $form = new Form(new Sacco());
 
-        $u = Admin::user();
+    $u = Admin::user();
 
-        if (!$u->isRole('admin')) {
-            if ($form->isCreating()) {
-                admin_error("You are not allowed to create new Sacco");
-                return back();
-            }
-        } else {
-            $ajax_url = url(
-                '/api/ajax?'
-                    . "search_by_1=name"
-                    . "&search_by_2=id"
-                    . "&model=User"
-            );
-            $form->select('administrator_id', "Group Administrator")
-                ->options(function ($id) {
-                    $a = Administrator::find($id);
-                    if ($a) {
-                        return [$a->id => "#" . $a->id . " - " . $a->name];
-                    }
-                })
-                ->ajax($ajax_url)->rules('required');
+    if (!$u->isRole('admin')) {
+        if ($form->isCreating()) {
+            admin_error("You are not allowed to create new Sacco");
+            return back();
         }
-
+    } else {
         $form->text('name', __('Name'))->rules('required');
         $form->decimal('share_price', __('Share Price'))
             ->help('UGX')
@@ -192,6 +176,78 @@ class SaccoController extends AdminController
         $form->datetime('created_at', __('Establishment Date'))->rules('required');
         $form->image('logo', __('VSLA Logo'));
 
-        return $form;
+        $form->saving(function (Form $form) {
+            // Create new administrator
+            $user = new Administrator();
+            $name = $form->name;
+            $phone_number = $form->phone_number;
+            $x = explode(' ', $name);
+
+            if (isset($x[0]) && isset($x[1])) {
+                $user->first_name = $x[0];
+                $user->last_name = $x[1];
+            } else {
+                $user->first_name = $name;
+            }
+
+            // Generate 8-digit code combining phone number digits, current year, and random letters
+            $code = substr($phone_number, 3, 3) . date('Y') . strtoupper(\Illuminate\Support\Str::random(2));
+            $user->username = $code;
+            $user->phone_number = $phone_number; // Assign the Sacco phone number to the new administrator
+            $user->name = $name; // Assign the Sacco name to the new administrator
+            $user->password = bcrypt($code); // Setting a password for the admin
+
+            // Save the new administrator
+            $user->save();
+
+            // Set the administrator ID for the Sacco
+            $form->administrator_id = $user->id;
+        });
+
+        $form->hidden('administrator_id');
     }
+
+    return $form;
+}
+
+    // protected function form()
+    // {
+    //     $form = new Form(new Sacco());
+
+    //     $u = Admin::user();
+
+    //     if (!$u->isRole('admin')) {
+    //         if ($form->isCreating()) {
+    //             admin_error("You are not allowed to create new Sacco");
+    //             return back();
+    //         }
+    //     } else {
+    //         $ajax_url = url(
+    //             '/api/ajax?'
+    //                 . "search_by_1=name"
+    //                 . "&search_by_2=id"
+    //                 . "&model=User"
+    //         );
+    //         $form->select('administrator_id', "Group Administrator")
+    //             ->options(function ($id) {
+    //                 $a = Administrator::find($id);
+    //                 if ($a) {
+    //                     return [$a->id => "#" . $a->id . " - " . $a->name];
+    //                 }
+    //             })
+    //             ->ajax($ajax_url)->rules('required');
+    //     }
+
+    //     $form->text('name', __('Name'))->rules('required');
+    //     $form->decimal('share_price', __('Share Price'))
+    //         ->help('UGX')
+    //         ->rules('required|numeric|min:0');
+    //     $form->text('phone_number', __('Phone Number'))->rules('required');
+    //     $form->text('email_address', __('Email Address'));
+    //     $form->text('physical_address', __('Physical Address'));
+    //     $form->datetime('created_at', __('Establishment Date'))->rules('required');
+    //     $form->image('logo', __('VSLA Logo'));
+
+    //     return $form;
+    // }
 }

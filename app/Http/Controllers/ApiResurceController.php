@@ -899,7 +899,7 @@ class ApiResurceController extends Controller
         }
         $sacco = Sacco::find($u->sacco_id);
         if ($sacco == null) {
-            return $this->error('Group not found.', $u);
+            return $this->error('Group not found.',);
         }
         // Get positions associated with the Sacco
         $positions = MemberPosition::where('sacco_id', $sacco->id)->get();
