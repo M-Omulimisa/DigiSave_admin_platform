@@ -19,6 +19,9 @@ class Sacco extends Model
             Cycle::where([
                 'sacco_id' => $m->id
             ])->delete();
+            Transaction::where([
+                'sacco_id' => $m->id
+            ])->delete();
         });
         self::created(function ($m) {
             $u = User::find($m->administrator_id);
