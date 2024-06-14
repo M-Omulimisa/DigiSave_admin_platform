@@ -15,24 +15,28 @@ class Transaction extends Model
     protected static function boot()
     {
         parent::boot();
+        self::deleting(function ($m) {
+            $m->delete();
+            //throw new \Exception("Cannot delete Cycle");
+        });
 
         static::creating(function ($model) {
             include_once(app_path() . '/Models/Utils.php');
-        
+
             if (!in_array($model->type, TRANSACTION_TYPES)) {
                 throw new Exception("Invalid transaction type.");
             }
-        
+
             $user = Administrator::find($model->user_id);
             if ($user == null) {
                 throw new Exception("User not found");
             }
-        
+
             // Get active cycle
             $cycle = Cycle::where('sacco_id', $user->sacco_id)
                 ->where('status', 'Active')
                 ->first();
-        
+
             // Check if an active cycle is found
             if ($cycle == null) {
                 // You can handle the case where no active cycle is found
@@ -43,10 +47,10 @@ class Transaction extends Model
                 $model->cycle_id = $cycle->id;
                 $model->sacco_id = $user->sacco_id;
             }
-        
+
             return $model;
         });
-        
+
 
         //updating
         static::updating(function ($model) {
