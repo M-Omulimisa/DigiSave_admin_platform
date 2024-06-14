@@ -16,7 +16,7 @@ class Transaction extends Model
     {
         parent::boot();
         self::deleting(function ($m) {
-            $m->delete();
+
             //throw new \Exception("Cannot delete Cycle");
         });
 
