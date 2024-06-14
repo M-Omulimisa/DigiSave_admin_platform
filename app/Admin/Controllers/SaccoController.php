@@ -5,12 +5,14 @@ namespace App\Admin\Controllers;
 use App\Models\OrgAllocation;
 use App\Models\Sacco;
 use App\Models\VslaOrganisationSacco;
+use App\Models\MemberPosition;
 use Encore\Admin\Auth\Database\Administrator;
 use Encore\Admin\Controllers\AdminController;
 use Encore\Admin\Facades\Admin;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Encore\Admin\Show;
+use Illuminate\Support\Str;
 
 class SaccoController extends AdminController
 {
@@ -155,99 +157,111 @@ class SaccoController extends AdminController
     }
 
     protected function form()
-{
-    $form = new Form(new Sacco());
+    {
+        $form = new Form(new Sacco());
 
-    $u = Admin::user();
+        $u = Admin::user();
 
-    if (!$u->isRole('admin')) {
-        if ($form->isCreating()) {
-            admin_error("You are not allowed to create new Sacco");
-            return back();
-        }
-    } else {
-        $form->text('name', __('Name'))->rules('required');
-        $form->decimal('share_price', __('Share Price'))
-            ->help('UGX')
-            ->rules('required|numeric|min:0');
-        $form->text('phone_number', __('Phone Number'))->rules('required');
-        $form->text('email_address', __('Email Address'));
-        $form->text('physical_address', __('Physical Address'));
-        $form->datetime('created_at', __('Establishment Date'))->rules('required');
-        $form->image('logo', __('VSLA Logo'));
-
-        $form->saving(function (Form $form) {
-            // Create new administrator
-            $user = new Administrator();
-            $name = $form->name;
-            $phone_number = $form->phone_number;
-            $x = explode(' ', $name);
-
-            if (isset($x[0]) && isset($x[1])) {
-                $user->first_name = $x[0];
-                $user->last_name = $x[1];
-            } else {
-                $user->first_name = $name;
+        if (!$u->isRole('admin')) {
+            if ($form->isCreating()) {
+                admin_error("You are not allowed to create new Sacco");
+                return back();
             }
+        } else {
+            $form->tab('Sacco Details', function ($form) {
+                $form->text('name', __('Name'))->rules('required');
+                $form->decimal('share_price', __('Share Price'))
+                    ->help('UGX')
+                    ->rules('required|numeric|min:0');
+                // Hide phone number field, generate it in the background
+                $form->hidden('phone_number');
+                $form->text('email_address', __('Email Address'));
+                $form->text('physical_address', __('Physical Address'));
+                $form->datetime('created_at', __('Establishment Date'))->rules('required');
+                $form->image('logo', __('VSLA Logo'));
+            })->tab('Group Leader Details', function ($form) {
+                $form->text('leader_first_name', 'First Name')->rules('required');
+                $form->text('leader_last_name', 'Last Name')->rules('required');
+                $form->text('leader_national_id', 'National ID Number');
+                $form->text('leader_phone_number', 'Phone Number')->rules('required');
+                $form->select('leader_gender', 'Gender')->options(['Male' => 'Male', 'Female' => 'Female'])->rules('required');
+                $form->date('leader_dob', 'Date of Birth')->rules('required');
+                $form->select('leader_pwd', 'Is the member a PWD?')->options(['Yes' => 'Yes', 'No'])->rules('required');
 
-            // Generate 8-digit code combining phone number digits, current year, and random letters
-            $code = substr($phone_number, 3, 3) . date('Y') . strtoupper(\Illuminate\Support\Str::random(2));
-            $user->username = $code;
-            $user->phone_number = $phone_number; // Assign the Sacco phone number to the new administrator
-            $user->name = $name; // Assign the Sacco name to the new administrator
-            $user->password = bcrypt($code); // Setting a password for the admin
+                $form->select('leader_position_id', 'Leader Position')->options(function () {
+                    return MemberPosition::pluck('name', 'id');
+                })->rules('required');
+            });
 
-            // Save the new administrator
-            $user->save();
+            $form->editing(function (Form $form) {
+                // Generate phone number in the background
+                $initialPhoneNumber = '0701399995'; // Dummy initial phone number to generate from
+                $generatedPhoneNumber = substr($initialPhoneNumber, 3, 3) . date('Y') . strtoupper(Str::random(2));
+                $form->model()->phone_number = $generatedPhoneNumber;
+            });
 
-            // Set the administrator ID for the Sacco
-            $form->administrator_id = $user->id;
-        });
+            $form->saving(function (Form $form) {
+                // Ensure the generated phone number is saved
+                if (!$form->phone_number) {
+                    $initialPhoneNumber = '0701399995'; // Dummy initial phone number to generate from
+                    $form->phone_number = substr($initialPhoneNumber, 3, 3) . date('Y') . strtoupper(Str::random(2));
+                }
 
-        $form->hidden('administrator_id');
+                // Create new administrator
+                $user = new Administrator();
+                $name = $form->name;  // Using Sacco name for admin name
+                $phone_number = $form->phone_number;
+                $x = explode(' ', $name);
+
+                if (isset($x[0]) && isset($x[1])) {
+                    $user->first_name = $x[0];
+                    $user->last_name = $x[1];
+                } else {
+                    $user->first_name = $name;
+                }
+
+                // Generate 8-digit code combining phone number digits, current year, and random letters
+                $code = substr($phone_number, 3, 3) . date('Y') . strtoupper(Str::random(2));
+                $user->username = $code;
+                $user->phone_number = $phone_number;
+                $user->name = $name;
+                $user->password = bcrypt($code);
+
+                $user->save();
+
+                $form->administrator_id = $user->id;
+            });
+
+            $form->saved(function (Form $form) {
+                // Create Group Leader
+                \App\Models\User::create([
+                    'first_name' => $form->model()->leader_first_name,
+                    'last_name' => $form->model()->leader_last_name,
+                    'national_id' => $form->model()->leader_national_id,
+                    'phone_number' => $form->model()->leader_phone_number,
+                    'gender' => $form->model()->leader_gender,
+                    'dob' => $form->model()->leader_dob,
+                    'pwd' => $form->model()->leader_pwd,
+                    'position_id' => $form->model()->leader_position_id,
+                    'sacco_id' => $form->model()->id,
+                ]);
+
+                // Create default positions
+                $positions = ['Chairperson', 'Secretary', 'Treasurer'];
+                foreach ($positions as $positionName) {
+                    MemberPosition::create([
+                        'name' => $positionName,
+                        'sacco_id' => $form->model()->id,
+                    ]);
+                }
+            });
+
+            // Remove the leader details from the Sacco model
+            $form->ignore(['leader_first_name', 'leader_last_name', 'leader_national_id', 'leader_phone_number', 'leader_gender', 'leader_dob', 'leader_pwd', 'leader_position_id']);
+
+            $form->hidden('administrator_id');
+        }
+
+        return $form;
     }
-
-    return $form;
-}
-
-    // protected function form()
-    // {
-    //     $form = new Form(new Sacco());
-
-    //     $u = Admin::user();
-
-    //     if (!$u->isRole('admin')) {
-    //         if ($form->isCreating()) {
-    //             admin_error("You are not allowed to create new Sacco");
-    //             return back();
-    //         }
-    //     } else {
-    //         $ajax_url = url(
-    //             '/api/ajax?'
-    //                 . "search_by_1=name"
-    //                 . "&search_by_2=id"
-    //                 . "&model=User"
-    //         );
-    //         $form->select('administrator_id', "Group Administrator")
-    //             ->options(function ($id) {
-    //                 $a = Administrator::find($id);
-    //                 if ($a) {
-    //                     return [$a->id => "#" . $a->id . " - " . $a->name];
-    //                 }
-    //             })
-    //             ->ajax($ajax_url)->rules('required');
-    //     }
-
-    //     $form->text('name', __('Name'))->rules('required');
-    //     $form->decimal('share_price', __('Share Price'))
-    //         ->help('UGX')
-    //         ->rules('required|numeric|min:0');
-    //     $form->text('phone_number', __('Phone Number'))->rules('required');
-    //     $form->text('email_address', __('Email Address'));
-    //     $form->text('physical_address', __('Physical Address'));
-    //     $form->datetime('created_at', __('Establishment Date'))->rules('required');
-    //     $form->image('logo', __('VSLA Logo'));
-
-    //     return $form;
-    // }
 }

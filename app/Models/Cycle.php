@@ -19,7 +19,6 @@ class Cycle extends Model
             //throw new \Exception("Cannot delete Cycle");
         });
         self::creating(function ($m) {
-            //only if created by status is active for a sacco
             if ($m->status == 'Active') {
                 $old = Cycle::where('sacco_id', $m->sacco_id)->where('status', 'Active')->first();
                 if ($old != null) {

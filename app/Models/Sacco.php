@@ -14,46 +14,40 @@ class Sacco extends Model
     public static function boot()
     {
         parent::boot();
+
         self::deleting(function ($m) {
-            //delete cycles that belong to this group
-            Cycle::where([
-                'sacco_id' => $m->id
-            ])->delete();
-            // die("Cycle is being delete");
-            Transaction::where([
-                'sacco_id' => $m->id
-            ])->delete();
+            Cycle::where('sacco_id', $m->id)->delete();
+            Transaction::where('sacco_id', $m->id)->delete();
         });
+
         self::created(function ($m) {
             $u = User::find($m->administrator_id);
             if ($u == null) {
                 throw new \Exception("Sacco Administrator not found");
             }
 
-            // Set the user's sacco_id to the newly created SACCO's ID
             $u->sacco_id = $m->id;
             $u->user_type = 'Admin';
             $u->status = 'Active';
             $u->sacco_join_status = 'Approved';
-
-            // Save the user changes
             $u->save();
 
-            // Establish a relationship with organization having ID 2
-            $organization = VslaOrganisation::find(1);
-            if ($organization) {
-                $m->vslaOrganisation()->associate($organization);
-                // You can also use $m->vsla_organisation_id = $organization->id; if needed
+            // Create a record in the pivot table
+            VslaOrganisationSacco::create([
+                'vsla_organisation_id' => 1, // Assuming the organization ID is 1
+                'sacco_id' => $m->id
+            ]);
 
-                // Save the changes
-                $m->save();
-            } else {
-                throw new \Exception("Organization with ID 2 not found");
+            // Automatically create positions
+            $positions = ['Chairperson', 'Secretary', 'Treasurer'];
+            foreach ($positions as $position) {
+                MemberPosition::create([
+                    'name' => $position,
+                    'sacco_id' => $m->id
+                ]);
             }
         });
 
-
-        //updated
         self::updated(function ($m) {
             $u = User::find($m->administrator_id);
             if ($u == null) {
@@ -65,30 +59,95 @@ class Sacco extends Model
             $u->sacco_join_status = 'Approved';
             $u->save();
         });
-
-        self::creating(function ($m) {
-
-            return $m;
-        });
-
-
-
-        self::updating(function ($m) {
-
-            $u = User::find($m->administrator_id);
-            if ($u == null) {
-                throw new \Exception("Sacco Administrator not found");
-            }
-            $u->sacco_id = $m->id;
-            $u->save();
-
-            return $m;
-        });
     }
+
+    // public static function boot()
+    // {
+    //     parent::boot();
+    //     self::deleting(function ($m) {
+    //         //delete cycles that belong to this group
+    //         Cycle::where([
+    //             'sacco_id' => $m->id
+    //         ])->delete();
+    //         Transaction::where([
+    //             'sacco_id' => $m->id
+    //         ])->delete();
+    //     });
+    //     self::created(function ($m) {
+    //         $u = User::find($m->administrator_id);
+    //         if ($u == null) {
+    //             throw new \Exception("Sacco Administrator not found");
+    //         }
+
+    //         // Set the user's sacco_id to the newly created SACCO's ID
+    //         $u->sacco_id = $m->id;
+    //         $u->user_type = 'Admin';
+    //         $u->status = 'Active';
+    //         $u->sacco_join_status = 'Approved';
+
+    //         // Save the user changes
+    //         $u->save();
+
+    //         // Establish a relationship with organization having ID 2
+    //         $organization = VslaOrganisation::find(1);
+    //         if ($organization) {
+    //             $m->vslaOrganisation()->associate($organization);
+    //             // You can also use $m->vsla_organisation_id = $organization->id; if needed
+
+    //             // Save the changes
+    //             $m->save();
+    //         } else {
+    //             throw new \Exception("Organization with ID 2 not found");
+    //         }
+    //     });
+
+
+    //     //updated
+    //     self::updated(function ($m) {
+    //         $u = User::find($m->administrator_id);
+    //         if ($u == null) {
+    //             throw new \Exception("Sacco Administrator not found");
+    //         }
+    //         $u->sacco_id = $m->id;
+    //         $u->user_type = 'Admin';
+    //         $u->status = 'Active';
+    //         $u->sacco_join_status = 'Approved';
+    //         $u->save();
+    //     });
+
+    //     self::creating(function ($m) {
+
+    //         return $m;
+    //     });
+
+
+
+    //     self::updating(function ($m) {
+
+    //         $u = User::find($m->administrator_id);
+    //         if ($u == null) {
+    //             throw new \Exception("Sacco Administrator not found");
+    //         }
+    //         $u->sacco_id = $m->id;
+    //         $u->save();
+
+    //         return $m;
+    //     });
+    // }
 
     public function users()
     {
         return $this->hasMany(User::class);
+    }
+
+    public function vslaOrganisationSaccos()
+    {
+        return $this->hasMany(VslaOrganisationSacco::class, 'sacco_id');
+    }
+
+    public function vslaOrganisations()
+    {
+        return $this->belongsToMany(VslaOrganisation::class, 'vsla_organisation_saccos', 'sacco_id', 'vsla_organisation_id');
     }
 
     //balance
@@ -109,6 +168,17 @@ class Sacco extends Model
     {
         return Cycle::where('sacco_id', $this->id)->where('status', 'Active')->first();
     }
+
+    protected $fillable = [
+        'name',
+        'phone_number',
+        'email_address',
+        'physical_address',
+        'share_price',
+        'created_at',
+        'administrator_id',
+        'logo',
+    ];
 
     //appends
     protected $appends = [
