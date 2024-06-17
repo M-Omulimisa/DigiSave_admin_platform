@@ -40,21 +40,20 @@ class HomeController extends Controller
 {
     public function index(Content $content)
     {
-        foreach(Sacco::where(["processed"=>"no"])->get() as $key => $sacco) {
+        foreach (Sacco::where(["processed" => "no"])->get() as $key => $sacco) {
             $chairperson = User::where('sacco_id', $sacco->id)
-                    ->whereHas('position', function ($query) {
-                        $query->where('name', 'Chairperson');
-                    })
-                    ->first();
+                ->whereHas('position', function ($query) {
+                    $query->where('name', 'Chairperson');
+                })
+                ->first();
 
-                if ($chairperson == null) {
-                    $sacco->status="inactive";
-                }
-                else {
-                    $sacco->status="active";
-                }
-                $sacco->processed = "yes";
-                $sacco->save();
+            if ($chairperson == null) {
+                $sacco->status = "inactive";
+            } else {
+                $sacco->status = "active";
+            }
+            $sacco->processed = "yes";
+            $sacco->save();
         }
         $users = User::all();
         $admin = Admin::user();
@@ -65,8 +64,10 @@ class HomeController extends Controller
             $query->whereHas('position', function ($query) {
                 $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
             })->whereNotNull('phone_number')
-              ->whereNotNull('name');
+                ->whereNotNull('name');
         })->count();
+
+        // dd($totalAccounts);
 
         $totalOrgAdmins = User::where('user_type', '5')->count();
 
@@ -115,7 +116,15 @@ class HomeController extends Controller
             $totalSaccos = Sacco::whereIn('id', $saccoIds)->count();
             $organisationCount = VslaOrganisation::where('id', $orgIds)->count();
             $totalMembers = $filteredUsers->whereIn('sacco_id', $saccoIds)->count();
-            $totalAccounts = User::where('user_type', 'Admin')->whereIn('sacco_id', $saccoIds)->count();
+            // $totalAccounts = User::where('user_type', 'Admin')->whereIn('sacco_id', $saccoIds)->count();
+
+            // Get Sacco IDs with users having any of the three positions
+            $saccoIdsWithPositions = User::whereHas('position', function ($query) {
+                $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+            })->pluck('sacco_id')->unique()->toArray();
+
+            // Count admin users whose Saccos are in the list of Sacco IDs with the required positions
+            $totalAccounts = User::where('user_type', 'Admin')->whereIn('sacco_id', $saccoIdsWithPositions)->count();
             // dd($totalAccounts);
             $totalPwdMembers = $filteredUsers->whereIn('sacco_id', $saccoIds)->where('pwd', 'yes')->count();
             $villageAgents = User::whereIn('sacco_id', $saccoIds)->where('user_type', '4')->count();
