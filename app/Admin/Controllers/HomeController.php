@@ -59,18 +59,9 @@ class HomeController extends Controller
         $users = User::all();
         $admin = Admin::user();
         $adminId = $admin->id;
-        $userName = $admin->first_name; // Get the logged-in user's name
-
-        // $totalAccounts = Sacco::where("status","active")->count();
+        $userName = $admin->first_name;
         $totalAccounts = Sacco::all()->count();
-        // $totalAccounts = Sacco::whereHas('users', function ($query) {
-        //     $query->whereHas('position', function ($query) {
-        //         $query->where('name', 'Chairperson');
-        //     })->whereNotNull('phone_number')->where('phone_number', '!=', '');
-        // })->count();
 
-
-        // $totalAccounts = User::where('user_type', 'Admin')->count();
         $totalOrgAdmins = User::where('user_type', '5')->count();
 
         $filteredUsers = $users->reject(function ($user) use ($adminId) {
