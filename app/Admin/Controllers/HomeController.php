@@ -60,7 +60,13 @@ class HomeController extends Controller
         $admin = Admin::user();
         $adminId = $admin->id;
         $userName = $admin->first_name;
-        $totalAccounts = Sacco::all()->count();
+        // $totalAccounts = Sacco::all()->count();// Count only the groups that have a Chairperson, Secretary, or Treasurer
+        $totalAccounts = Sacco::whereHas('users', function ($query) {
+            $query->whereHas('position', function ($query) {
+                $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+            })->whereNotNull('phone_number')
+              ->whereNotNull('name');
+        })->count();
 
         $totalOrgAdmins = User::where('user_type', '5')->count();
 
