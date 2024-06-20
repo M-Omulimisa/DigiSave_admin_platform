@@ -6,6 +6,7 @@ use Encore\Admin\Auth\Database\Administrator;
 use Exception;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class Transaction extends Model
 {
@@ -16,8 +17,15 @@ class Transaction extends Model
     {
         parent::boot();
         self::deleting(function ($m) {
-
-            //throw new \Exception("Cannot delete Cycle");
+            // Execute SQL to delete the transaction
+            try {
+                DB::transaction(function () use ($m) {
+                    // Delete the transaction from the database
+                    DB::table('transactions')->where('id', $m->id)->delete();
+                });
+            } catch (Exception $e) {
+                throw new Exception("Failed to delete transaction: " . $e->getMessage());
+            }
         });
 
         static::creating(function ($model) {
