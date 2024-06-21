@@ -362,6 +362,7 @@ class HomeController extends Controller
         $percentageLoansWomen = $totalLoans > 0 ? ($loansDisbursedToWomen / $totalLoans) * 100 : 0;
         $percentageLoansMen = $totalLoans > 0 ? ($loansDisbursedToMen / $totalLoans) * 100 : 0;
         $percentageLoansYouths = $totalLoans > 0 ? ($loansDisbursedToYouths / $totalLoans) * 100 : 0;
+        $percentageLoansPwd = $totalLoans > 0 ? ($pwdTotalLoanCount / $totalLoans) * 100 : 0;
 
         $totalLoanSum = $loanSumForWomen + $loanSumForMen + $loanSumForYouths;
         $percentageLoanSumWomen = $totalLoanSum > 0 ? ($loanSumForWomen / $totalLoanSum) * 100 : 0;
@@ -426,6 +427,7 @@ class HomeController extends Controller
                         'percentageLoansWomen' => $percentageLoansWomen,
                         'percentageLoansMen' => $percentageLoansMen,
                         'percentageLoansYouths' => $percentageLoansYouths,
+                        'percentageLoansPwd' => $percentageLoansPwd,
                         'percentageLoanSumWomen' => $percentageLoanSumWomen,
                         'percentageLoanSumMen' => $percentageLoanSumMen,
                         'percentageLoanSumYouths' => $percentageLoanSumYouths,

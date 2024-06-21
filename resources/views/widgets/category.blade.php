@@ -112,7 +112,7 @@
                         <p>Number of Loans Disbursed to PWDs</p>
                         <h4>{{ $pwdTotalLoanCount }}</h4>
                         <div class="progress">
-                            <div class="progress-bar youths" role="progressbar" style="width: {{ $percentageLoansYouths }}%;" aria-valuenow="{{ $percentageLoansYouths }}" aria-valuemin="0" aria-valuemax="100">{{ number_format($percentageLoansYouths, 2) }}%</div>
+                            <div class="progress-bar youths" role="progressbar" style="width: {{ $percentageLoansPwd }}%;" aria-valuenow="{{ $percentageLoansPwd }}" aria-valuemin="0" aria-valuemax="100">{{ number_format($percentageLoansPwd, 2) }}%</div>
                         </div>
                     </div>
                 </div>
@@ -122,19 +122,19 @@
                 <div class="row">
                     <div class="col-md-4 column-divider">
                         <p>Loan Amount Disbursed to Women</p>
-                        <h4>{{ number_format($loanSumForWomen, 2) }} UGX</h4>
+                        <h4>{{ number_format(abs($loanSumForWomen), 2) }} UGX</h4>
                     </div>
                     <div class="col-md-4 column-divider">
                         <p>Loan Amount Disbursed to Men</p>
-                        <h4>{{ number_format($loanSumForMen, 2) }} UGX</h4>
+                        <h4>{{ number_format(abs($loanSumForMen), 2) }} UGX</h4>
                     </div>
                     <div class="col-md-4">
                         <p>Loan Amount Disbursed to Youth</p>
-                        <h4>{{ number_format($loanSumForYouths, 2) }} UGX</h4>
+                        <h4>{{ number_format(abs($loanSumForYouths), 2) }} UGX</h4>
                     </div>
                     <div class="col-md-4">
                         <p>Loan Amount Disbursed to PWDs</p>
-                        <h4>{{ number_format($pwdTotalLoanBalance, 2) }} UGX</h4>
+                        <h4>{{ number_format(abs($pwdTotalLoanBalance), 2) }} UGX</h4>
                     </div>
                 </div>
             </div>
