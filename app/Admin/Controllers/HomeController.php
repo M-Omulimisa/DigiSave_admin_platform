@@ -152,9 +152,15 @@ class HomeController extends Controller
                 ->where('users.sex', 'Male')
                 ->count();
 
-            $youthIds = User::whereIn('sacco_id', $saccoIds)->where(function ($query) {
-                return $query->where('dob', '>', now()->subYears(35));
-            })->pluck('id');
+            // Get the IDs of youth users
+$youthIds = User::whereIn('sacco_id', $saccoIds)
+->whereDate('dob', '>', now()->subYears(35))
+->pluck('id');
+
+// Count the number of youths
+$youthCount = $youthIds->count();
+
+// dd($youthCount);
 
             // Get the IDs of youth users
             $youthIds = User::whereIn('sacco_id', $saccoIds)
@@ -179,7 +185,7 @@ class HomeController extends Controller
 
             // Sum the loan amounts disbursed to youths
             $loanSumForYouths = Transaction::whereIn('sacco_id', $saccoIds)
-                ->whereIn('user_id', $youthIds)
+                ->whereIn('source_user_id', $youthIds)
                 ->where('type', 'LOAN')
                 ->sum('amount');
 
@@ -252,8 +258,13 @@ class HomeController extends Controller
                 ->count();
 
             // Get the IDs of youth users
-            $youthIds = User::whereDate('dob', '>', now()->subYears(35))
-                ->pluck('id');
+$youthIds = User::whereDate('dob', '>', now()->subYears(35))
+->pluck('id');
+
+// Count the number of youths
+$youthCount = $youthIds->count();
+
+// dd($youthCount);
 
 
             $loansDisbursedToYouths = Transaction::whereIn('user_id', $youthIds)
@@ -271,12 +282,12 @@ class HomeController extends Controller
                 ->sum('transactions.amount');
 
             // Count loans disbursed to youths
-            $loansDisbursedToYouths = Transaction::whereIn('user_id', $youthIds)
+            $loansDisbursedToYouths = Transaction::whereIn('source_user_id', $youthIds)
                 ->where('type', 'LOAN')
                 ->count();
 
             // Sum the loan amounts disbursed to youths
-            $loanSumForYouths = Transaction::whereIn('user_id', $youthIds)
+            $loanSumForYouths = Transaction::whereIn('source_user_id', $youthIds)
                 ->where('type', 'LOAN')
                 ->sum('amount');
             $totalLoanAmount = Transaction::whereIn('user_id', $filteredUsers->pluck('id'))
