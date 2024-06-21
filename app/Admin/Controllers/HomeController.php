@@ -153,14 +153,14 @@ class HomeController extends Controller
                 ->count();
 
             // Get the IDs of youth users
-$youthIds = User::whereIn('sacco_id', $saccoIds)
-->whereDate('dob', '>', now()->subYears(35))
-->pluck('id');
+            $youthIds = User::whereIn('sacco_id', $saccoIds)
+                ->whereDate('dob', '>', now()->subYears(35))
+                ->pluck('id');
 
-// Count the number of youths
-$youthCount = $youthIds->count();
+            // Count the number of youths
+            $youthCount = $youthIds->count();
 
-// dd($youthCount);
+            // dd($youthCount);
 
             // Get the IDs of youth users
             $youthIds = User::whereIn('sacco_id', $saccoIds)
@@ -188,6 +188,14 @@ $youthCount = $youthIds->count();
                 ->whereIn('source_user_id', $youthIds)
                 ->where('type', 'LOAN')
                 ->sum('amount');
+
+            $pwdTotalLoanCount = Transaction::whereIn('sacco_id', $saccoIds)->where('type', 'LOAN')
+                ->whereIn('source_user_id', $pwdUserIds)
+                ->count();
+
+            $pwdTotalLoanBalance = Transaction::whereIn('sacco_id', $saccoIds)->where('type', 'LOAN')
+                ->whereIn('source_user_id', $pwdUserIds)
+                ->sum('balance');
 
             $totalLoanAmount = Transaction::whereIn('sacco_id', $saccoIds)->whereIn('user_id', $filteredUsers->pluck('id'))
                 ->where('type', 'LOAN')
@@ -258,13 +266,13 @@ $youthCount = $youthIds->count();
                 ->count();
 
             // Get the IDs of youth users
-$youthIds = User::whereDate('dob', '>', now()->subYears(35))
-->pluck('id');
+            $youthIds = User::whereDate('dob', '>', now()->subYears(35))
+                ->pluck('id');
 
-// Count the number of youths
-$youthCount = $youthIds->count();
+            // Count the number of youths
+            $youthCount = $youthIds->count();
 
-// dd($youthCount);
+            // dd($youthCount);
 
 
             $loansDisbursedToYouths = Transaction::whereIn('user_id', $youthIds)
@@ -296,6 +304,14 @@ $youthCount = $youthIds->count();
 
             $totalLoanBalance = Transaction::whereIn('user_id', $filteredUsers->pluck('id'))
                 ->where('type', 'LOAN')
+                ->sum('balance');
+
+            $pwdTotalLoanCount = Transaction::where('type', 'LOAN')
+                ->whereIn('source_user_id', $pwdUserIds)
+                ->count();
+
+            $pwdTotalLoanBalance = Transaction::where('type', 'LOAN')
+                ->whereIn('source_user_id', $pwdUserIds)
                 ->sum('balance');
 
             $transactions = Transaction::all();
@@ -406,12 +422,14 @@ $youthCount = $youthIds->count();
                         'loanSumForWomen' => $loanSumForWomen,
                         'loanSumForMen' => $loanSumForMen,
                         'loanSumForYouths' => $loanSumForYouths,
+                        'pwdTotalLoanCount' => $pwdTotalLoanCount,
                         'percentageLoansWomen' => $percentageLoansWomen,
                         'percentageLoansMen' => $percentageLoansMen,
                         'percentageLoansYouths' => $percentageLoansYouths,
                         'percentageLoanSumWomen' => $percentageLoanSumWomen,
                         'percentageLoanSumMen' => $percentageLoanSumMen,
-                        'percentageLoanSumYouths' => $percentageLoanSumYouths
+                        'percentageLoanSumYouths' => $percentageLoanSumYouths,
+                        'pwdTotalLoanBalance' => $pwdTotalLoanBalance
                     ]) .
                     '</div>' .
                     view('widgets.chart_container', [

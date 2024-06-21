@@ -108,6 +108,13 @@
                             <div class="progress-bar youths" role="progressbar" style="width: {{ $percentageLoansYouths }}%;" aria-valuenow="{{ $percentageLoansYouths }}" aria-valuemin="0" aria-valuemax="100">{{ number_format($percentageLoansYouths, 2) }}%</div>
                         </div>
                     </div>
+                    <div class="col-md-4">
+                        <p>Number of Loans Disbursed to PWDs</p>
+                        <h4>{{ $loansDisbursedToYouths }}</h4>
+                        <div class="progress">
+                            <div class="progress-bar youths" role="progressbar" style="width: {{ $percentageLoansYouths }}%;" aria-valuenow="{{ $percentageLoansYouths }}" aria-valuemin="0" aria-valuemax="100">{{ number_format($percentageLoansYouths, 2) }}%</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -124,6 +131,10 @@
                     <div class="col-md-4">
                         <p>Loan Amount Disbursed to Youth</p>
                         <h4>{{ number_format($loanSumForYouths, 2) }} UGX</h4>
+                    </div>
+                    <div class="col-md-4">
+                        <p>Loan Amount Disbursed to PWDs</p>
+                        <h4>{{ number_format($pwdTotalLoanBalance, 2) }} UGX</h4>
                     </div>
                 </div>
             </div>
