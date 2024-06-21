@@ -45,11 +45,11 @@ class TransactionAllController extends AdminController
         $grid->column('id', __('ID'))
             ->sortable();
 
-        $grid->column('created_at', __('DATE'))
-            ->sortable()
-            ->display(function ($x) {
-                return Utils::my_date_time($x);
-            });
+        // $grid->column('created_at', __('DATE'))
+        //     ->sortable()
+        //     ->display(function ($x) {
+        //         return Utils::my_date_time($x);
+        //     });
 
 
 
@@ -88,10 +88,8 @@ class TransactionAllController extends AdminController
             });
 
         $grid->column('details', __('Details'))->hide();
-        $grid->column('created_at', __('Created'))->display(function ($date) {
-            //retrn data and time
-            return date('d M, Y - h:i:s', strtotime($date));
-        })->sortable();
+        $grid->column('created_at', __('Created')
+        )->sortable();
         $grid->disableActions();
         $grid->disableBatchActions();
         return $grid;
