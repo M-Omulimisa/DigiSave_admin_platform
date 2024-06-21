@@ -79,7 +79,7 @@ class MembersController extends AdminController
         $grid->column('phone_number', __('Phone Number'))->display(function ($phoneNumber) {
             // Check if the phone number is valid (Ugandan phone number format example)
             $isValidPhoneNumber = preg_match('/^(\+256|0)?[3-9][0-9]{8}$/', $phoneNumber);
-            return $isValidPhoneNumber ? $phoneNumber : 'No phone number';
+            return $isValidPhoneNumber ? $phoneNumber : '';
         });
         $grid->column('sacco.name', __('Group Name'))->sortable();
         $grid->column('created_at', __('Date Joined'))->sortable()->display(function ($date) {

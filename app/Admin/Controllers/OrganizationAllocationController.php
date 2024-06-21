@@ -144,7 +144,7 @@ class OrganizationAllocationController extends AdminController
             ->options(VslaOrganisation::pluck('name', 'id'))
             ->rules('required');
 
-        $form->multipleSelect('sacco_ids', 'Vsla Groups')
+        $form->select('sacco_id', 'Vsla Group')
             ->options(Sacco::pluck('name', 'id'))
             ->rules('required');
 
@@ -152,25 +152,28 @@ class OrganizationAllocationController extends AdminController
         $form->display('updated_at', 'Updated At');
 
         $form->saving(function (Form $form) {
-            // Prevent default saving of sacco_ids
-            $form->ignore('sacco_ids');
+            $vslaOrganisationId = $form->vsla_organisation_id;
+            $saccoId = $form->sacco_id;
+
+            $existingRecord = VslaOrganisationSacco::where([
+                'vsla_organisation_id' => $vslaOrganisationId,
+                'sacco_id' => $saccoId,
+            ])->first();
+
+            if ($existingRecord) {
+                admin_error('Error', 'The selected VSLA is already assigned to this organization.');
+                return back()->withInput();
+            }
         });
 
         $form->saved(function (Form $form) {
-            $vslaOrganisationId = $form->model()->id;
+            $vslaOrganisationId = $form->vsla_organisation_id;
+            $saccoId = $form->sacco_id;
 
-            // Delete existing records
-            VslaOrganisationSacco::where('vsla_organisation_id', $vslaOrganisationId)->delete();
-
-            // Insert new records
-            if (is_array($form->sacco_ids)) {
-                foreach ($form->sacco_ids as $saccoId) {
-                    VslaOrganisationSacco::create([
-                        'vsla_organisation_id' => $vslaOrganisationId,
-                        'sacco_id' => $saccoId,
-                    ]);
-                }
-            }
+            VslaOrganisationSacco::create([
+                'vsla_organisation_id' => $vslaOrganisationId,
+                'sacco_id' => $saccoId,
+            ]);
         });
 
         return $form;
