@@ -183,6 +183,13 @@ class HomeController extends Controller
                 ->where('users.sex', 'Male')
                 ->sum('transactions.amount');
 
+
+
+            // Count loans disbursed to youths
+            $loansDisbursedToYouths = Transaction::whereIn('sacco_id', $saccoIds)->whereIn('source_user_id', $youthIds)
+                ->where('type', 'LOAN')
+                ->count();
+
             // Sum the loan amounts disbursed to youths
             $loanSumForYouths = Transaction::whereIn('sacco_id', $saccoIds)
                 ->whereIn('source_user_id', $youthIds)
