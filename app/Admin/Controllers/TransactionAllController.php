@@ -53,6 +53,8 @@ class TransactionAllController extends AdminController
             $filter->between('created_at', 'Created')->date();
         });
 
+        $grid->disableCreateButton();
+
         // Order by latest created date
         $grid->model()->orderBy('created_at', 'desc');
 
