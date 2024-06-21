@@ -15,9 +15,10 @@ class Sacco extends Model
     {
         parent::boot();
 
-        self::deleting(function ($m) {
-            Cycle::where('sacco_id', $m->id)->delete();
-            Transaction::where('sacco_id', $m->id)->delete();
+        self::deleting(function ($model) {
+            $model->status = 'deleted';
+            $model->save();
+            return false; // Prevent actual deletion
         });
 
         self::created(function ($m) {

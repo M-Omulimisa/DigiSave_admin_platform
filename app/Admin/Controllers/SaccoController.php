@@ -31,6 +31,9 @@ class SaccoController extends AdminController
             $sortOrder = 'desc';
         }
 
+        // Add a condition to exclude Saccos with status "completed"
+        $grid->model()->where('status', '!=', 'deleted');
+
         if (!$admin->isRole('admin')) {
             $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
             if ($orgAllocation) {
