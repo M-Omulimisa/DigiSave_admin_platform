@@ -31,16 +31,13 @@ class MeetingController extends AdminController
         }
 
         // $grid->model()->where('sacco_id', $u->sacco_id);
-        $grid->column('id', __('Id'));
-        $grid->column('created_at', __('Created'))->sortable();
-        $grid->column('name', __('Name'))->editable()->sortable();
+        // $grid->column('id', __('Id'));
+        $grid->column('sacco_id', __('Group Name'));
+        $grid->column('name', __('Meeting'))->editable()->sortable();
         $grid->column('date', __('Date'));
-        $grid->column('location', __('Location'));
-        $grid->column('sacco_id', __('Sacco id'));
         $grid->column('administrator_id', __('Administrator id'));
         $grid->column('members', __('Attendence'));
         $grid->column('minutes', __('Minutes'));
-        $grid->column('cycle_id', __('Cycle ID'));
 
         return $grid;
     }
