@@ -44,15 +44,16 @@ class MeetingController extends AdminController
         $grid->column('minutes', __('Minutes'))->display(function ($minutes) {
             $minutesData = json_decode($minutes, true);
             if (json_last_error() === JSON_ERROR_NONE) {
-                $formattedMinutes = '<ul>';
+                $formattedMinutes = '<div class="row">';
                 foreach ($minutesData as $section => $items) {
-                    $formattedMinutes .= '<li><strong>' . ucfirst(str_replace('_', ' ', $section)) . ':</strong><ul>';
+                    $formattedMinutes .= '<div class="col-md-6"><div class="card"><div class="card-body">';
+                    $formattedMinutes .= '<h5 class="card-title">' . ucfirst(str_replace('_', ' ', $section)) . ':</h5><ul class="list-group list-group-flush">';
                     foreach ($items as $item) {
-                        $formattedMinutes .= '<li>' . $item['title'] . ': ' . $item['value'] . '</li>';
+                        $formattedMinutes .= '<li class="list-group-item">' . $item['title'] . ': ' . $item['value'] . '</li>';
                     }
-                    $formattedMinutes .= '</ul></li>';
+                    $formattedMinutes .= '</ul></div></div></div>';
                 }
-                $formattedMinutes .= '</ul>';
+                $formattedMinutes .= '</div>';
                 return $formattedMinutes;
             }
             return $minutes; // return as is if JSON decoding fails
@@ -77,15 +78,16 @@ class MeetingController extends AdminController
         $show->field('minutes', __('Minutes'))->as(function ($minutes) {
             $minutesData = json_decode($minutes, true);
             if (json_last_error() === JSON_ERROR_NONE) {
-                $formattedMinutes = '<ul>';
+                $formattedMinutes = '<div class="row">';
                 foreach ($minutesData as $section => $items) {
-                    $formattedMinutes .= '<li><strong>' . ucfirst(str_replace('_', ' ', $section)) . ':</strong><ul>';
+                    $formattedMinutes .= '<div class="col-md-6"><div class="card"><div class="card-body">';
+                    $formattedMinutes .= '<h5 class="card-title">' . ucfirst(str_replace('_', ' ', $section)) . ':</h5><ul class="list-group list-group-flush">';
                     foreach ($items as $item) {
-                        $formattedMinutes .= '<li>' . $item['title'] . ': ' . $item['value'] . '</li>';
+                        $formattedMinutes .= '<li class="list-group-item">' . $item['title'] . ': ' . $item['value'] . '</li>';
                     }
-                    $formattedMinutes .= '</ul></li>';
+                    $formattedMinutes .= '</ul></div></div></div>';
                 }
-                $formattedMinutes .= '</ul>';
+                $formattedMinutes .= '</div>';
                 return $formattedMinutes;
             }
             return $minutes; // return as is if JSON decoding fails
