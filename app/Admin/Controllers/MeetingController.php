@@ -3,6 +3,7 @@
 namespace App\Admin\Controllers;
 
 use App\Models\Meeting;
+use App\Models\User;
 use Encore\Admin\Controllers\AdminController;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
@@ -38,7 +39,14 @@ class MeetingController extends AdminController
 
                 return $user ? ucwords(strtolower($user->name)) : '';
             });
-        $grid->column('members', __('Attendance'));
+            $grid->column('members', __('Attendance'))->display(function ($members) {
+                $memberIds = json_decode($members, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $memberNames = User::whereIn('id', $memberIds)->pluck('name')->toArray();
+                    return implode(', ', $memberNames);
+                }
+                return $members;
+            });
 
         // Update the 'minutes' column
         $grid->column('minutes', __('Minutes'))->display(function ($minutes) {
