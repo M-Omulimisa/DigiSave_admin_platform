@@ -22,16 +22,24 @@ class MeetingController extends AdminController
 
         $u = Auth::user();
 
+        $grid->filter(function ($filter) {
+            $filter->disableIdFilter();
+
+            // Filter by group name
+            $filter->equal('sacco_id', 'Group Name')->select(Sacco::all()->pluck('name', 'id'));
+
+            // Filter by cycle name
+            $filter->where(function ($query) {
+                $cycleName = $this->input;
+                $cycleIds = Cycle::where('name', 'like', "%$cycleName%")->pluck('id');
+                $query->whereIn('cycle_id', $cycleIds);
+            }, 'Cycle Name');
+        });
+
         if (!$u->isRole('admin')) {
             // Apply filters based on user roles if necessary
             $grid->model()->where('sacco_id', $u->sacco_id)->where('administrator_id', $u->id);
         }
-
-        // Add filters for group name and sacco name
-        $grid->filter(function ($filter) {
-            $filter->like('sacco.name', 'Group Name');
-            $filter->like('sacco.name', 'Sacco Name');
-        });
 
         $grid->column('sacco.name', __('Group Name'));
         // Display the cycle name directly using its id
@@ -180,3 +188,4 @@ class MeetingController extends AdminController
         return $form;
     }
 }
+
