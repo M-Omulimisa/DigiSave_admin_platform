@@ -3,7 +3,6 @@
 namespace App\Admin\Controllers;
 
 use App\Models\Meeting;
-use App\Models\User;
 use Encore\Admin\Controllers\AdminController;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
@@ -31,7 +30,7 @@ class MeetingController extends AdminController
         $grid->column('chairperson_name', __('Chairperson Name'))
             ->sortable()
             ->display(function () {
-                $user = User::where('sacco_id', $this->sacco_id)
+                $user = \App\Models\User::where('sacco_id', $this->sacco_id)
                     ->whereHas('position', function ($query) {
                         $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
                     })
@@ -39,20 +38,24 @@ class MeetingController extends AdminController
 
                 return $user ? ucwords(strtolower($user->name)) : '';
             });
+        $grid->column('members', __('Attendance'));
 
-        $grid->column('members', __('Attendance'))->display(function ($attendance) {
-            $attendanceIds = explode(',', str_replace(['[', ']', ' '], '', $attendance));
-            if (is_array($attendanceIds) && !empty($attendanceIds[0])) {
-                $members = User::whereIn('id', $attendanceIds)->pluck('name')->toArray();
-                return '<ul>' . implode('', array_map(function ($name) {
-                    return '<li>' . ucwords(strtolower($name)) . '</li>';
-                }, $members)) . '</ul>';
-            }
-            return '';
-        });
-
+        // Update the 'minutes' column
         $grid->column('minutes', __('Minutes'))->display(function ($minutes) {
-            return nl2br(e($minutes));
+            $minutesData = json_decode($minutes, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $formattedMinutes = '<ul>';
+                foreach ($minutesData as $section => $items) {
+                    $formattedMinutes .= '<li><strong>' . ucfirst(str_replace('_', ' ', $section)) . ':</strong><ul>';
+                    foreach ($items as $item) {
+                        $formattedMinutes .= '<li>' . $item['title'] . ': ' . $item['value'] . '</li>';
+                    }
+                    $formattedMinutes .= '</ul></li>';
+                }
+                $formattedMinutes .= '</ul>';
+                return $formattedMinutes;
+            }
+            return $minutes; // return as is if JSON decoding fails
         });
 
         return $grid;
@@ -70,19 +73,24 @@ class MeetingController extends AdminController
         $show->field('location', __('Location'));
         $show->field('sacco.name', __('Group Name'));
         $show->field('administrator.name', __('Administrator Name'));
-        $show->field('members', __('Members'))->as(function ($attendance) {
-            $attendanceIds = explode(',', str_replace(['[', ']', ' '], '', $attendance));
-            if (is_array($attendanceIds) && !empty($attendanceIds[0])) {
-                $members = User::whereIn('id', $attendanceIds)->pluck('name')->toArray();
-                return '<ul>' . implode('', array_map(function ($name) {
-                    return '<li>' . ucwords(strtolower($name)) . '</li>';
-                }, $members)) . '</ul>';
-            }
-            return '';
-        });
+        $show->field('members', __('Members'));
         $show->field('minutes', __('Minutes'))->as(function ($minutes) {
-            return nl2br(e($minutes));
+            $minutesData = json_decode($minutes, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $formattedMinutes = '<ul>';
+                foreach ($minutesData as $section => $items) {
+                    $formattedMinutes .= '<li><strong>' . ucfirst(str_replace('_', ' ', $section)) . ':</strong><ul>';
+                    foreach ($items as $item) {
+                        $formattedMinutes .= '<li>' . $item['title'] . ': ' . $item['value'] . '</li>';
+                    }
+                    $formattedMinutes .= '</ul></li>';
+                }
+                $formattedMinutes .= '</ul>';
+                return $formattedMinutes;
+            }
+            return $minutes; // return as is if JSON decoding fails
         });
+
         $show->field('attendance', __('Attendance'));
         $show->field('cycle_id', __('Cycle ID'));
 
@@ -112,7 +120,7 @@ class MeetingController extends AdminController
         $form->text('location', __('Location'))->rules('required');
 
         if ($u->isRole('admin')) {
-            $users = User::where('sacco_id', $sacco_id)->get();
+            $users = \App\Models\User::where('sacco_id', $sacco_id)->get();
             $form->multipleSelect('members', __('Members'))
                 ->options($users->pluck('name', 'id'))
                 ->rules('required');
