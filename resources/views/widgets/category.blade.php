@@ -110,7 +110,7 @@
                     </div>
                     <div class="col-md-4">
                         <p>Number of Loans Disbursed to PWDs</p>
-                        <h4>{{ $loansDisbursedToYouths }}</h4>
+                        <h4>{{ $pwdTotalLoanCount }}</h4>
                         <div class="progress">
                             <div class="progress-bar youths" role="progressbar" style="width: {{ $percentageLoansYouths }}%;" aria-valuenow="{{ $percentageLoansYouths }}" aria-valuemin="0" aria-valuemax="100">{{ number_format($percentageLoansYouths, 2) }}%</div>
                         </div>
