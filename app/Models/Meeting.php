@@ -9,6 +9,16 @@ class Meeting extends Model
 {
     use HasFactory;
 
+    public function sacco()
+    {
+        return $this->belongsTo(Sacco::class);
+    }
+
+    public function administrator()
+    {
+        return $this->belongsTo(User::class, 'administrator_id');
+    }
+
     // setter for multiple members
     public function setMembersAttribute($value)
     {

@@ -3,6 +3,7 @@
 namespace App\Admin\Controllers;
 
 use App\Models\Meeting;
+use App\Models\User;
 use Encore\Admin\Controllers\AdminController;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
@@ -20,33 +21,42 @@ class MeetingController extends AdminController
         $u = Auth::user();
 
         if (!$u->isRole('admin')) {
-            // $grid->disableCreateButton();
-            // $grid->actions(function (Grid\Displayers\Actions $actions) {
-            //     $actions->disableDelete();
-            // });
-            // $grid->disableFilter();
-
-            // Ensure the user is the Sacco admin and the administrator_id matches
-            // $grid->model()->where('sacco_id', $u->sacco_id)->where('administrator_id', $u->id);
+            // Apply filters based on user roles if necessary
+            $grid->model()->where('sacco_id', $u->sacco_id)->where('administrator_id', $u->id);
         }
 
-        // $grid->model()->where('sacco_id', $u->sacco_id);
-        // $grid->column('id', __('Id'));
-        $grid->column('sacco_id', __('Group Name'));
+        $grid->column('sacco.name', __('Group Name'));
         $grid->column('name', __('Meeting'))->editable()->sortable();
         $grid->column('date', __('Date'));
-        $grid->column('administrator_id', __('Administrator id'));
-        $grid->column('members', __('Attendence'));
-        $grid->column('minutes', __('Minutes'));
+        $grid->column('chairperson_name', __('Chairperson Name'))
+            ->sortable()
+            ->display(function () {
+                $user = User::where('sacco_id', $this->sacco_id)
+                    ->whereHas('position', function ($query) {
+                        $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+                    })
+                    ->first();
+
+                return $user ? ucwords(strtolower($user->name)) : '';
+            });
+
+        $grid->column('members', __('Attendance'))->display(function ($attendance) {
+            $attendanceIds = explode(',', str_replace(['[', ']', ' '], '', $attendance));
+            if (is_array($attendanceIds) && !empty($attendanceIds[0])) {
+                $members = User::whereIn('id', $attendanceIds)->pluck('name')->toArray();
+                return '<ul>' . implode('', array_map(function ($name) {
+                    return '<li>' . ucwords(strtolower($name)) . '</li>';
+                }, $members)) . '</ul>';
+            }
+            return '';
+        });
+
+        $grid->column('minutes', __('Minutes'))->display(function ($minutes) {
+            return nl2br(e($minutes));
+        });
 
         return $grid;
     }
-
-    // Other methods: detail() and form() remain unchanged
-
-
-// Other methods: detail() and form() remain unchanged
-
 
     protected function detail($id)
     {
@@ -58,10 +68,21 @@ class MeetingController extends AdminController
         $show->field('name', __('Name'));
         $show->field('date', __('Date'));
         $show->field('location', __('Location'));
-        $show->field('sacco_id', __('Sacco id'));
-        $show->field('administrator_id', __('Administrator id'));
-        $show->field('members', __('Members'));
-        $show->field('minutes', __('Minutes'));
+        $show->field('sacco.name', __('Group Name'));
+        $show->field('administrator.name', __('Administrator Name'));
+        $show->field('members', __('Members'))->as(function ($attendance) {
+            $attendanceIds = explode(',', str_replace(['[', ']', ' '], '', $attendance));
+            if (is_array($attendanceIds) && !empty($attendanceIds[0])) {
+                $members = User::whereIn('id', $attendanceIds)->pluck('name')->toArray();
+                return '<ul>' . implode('', array_map(function ($name) {
+                    return '<li>' . ucwords(strtolower($name)) . '</li>';
+                }, $members)) . '</ul>';
+            }
+            return '';
+        });
+        $show->field('minutes', __('Minutes'))->as(function ($minutes) {
+            return nl2br(e($minutes));
+        });
         $show->field('attendance', __('Attendance'));
         $show->field('cycle_id', __('Cycle ID'));
 
@@ -90,14 +111,13 @@ class MeetingController extends AdminController
         $form->date('date', __('Date'))->default(date('Y-m-d'))->rules('required');
         $form->text('location', __('Location'))->rules('required');
 
-        // Only allow selecting members if the user is the administrator
         if ($u->isRole('admin')) {
-            $users = \App\Models\User::where('sacco_id', $sacco_id)->get();
+            $users = User::where('sacco_id', $sacco_id)->get();
             $form->multipleSelect('members', __('Members'))
                 ->options($users->pluck('name', 'id'))
                 ->rules('required');
         } else {
-            $form->hidden('members')->default($u->id); // Automatically assign the admin as the member
+            $form->hidden('members')->default($u->id);
         }
 
         $form->quill('minutes', __('Minutes'));
@@ -105,5 +125,4 @@ class MeetingController extends AdminController
 
         return $form;
     }
-
 }
