@@ -31,7 +31,7 @@ class MeetingController extends AdminController
         $grid->column('chairperson_name', __('Chairperson Name'))
             ->sortable()
             ->display(function () {
-                $user = \App\Models\User::where('sacco_id', $this->sacco_id)
+                $user = User::where('sacco_id', $this->sacco_id)
                     ->whereHas('position', function ($query) {
                         $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
                     })
@@ -39,12 +39,20 @@ class MeetingController extends AdminController
 
                 return $user ? ucwords(strtolower($user->name)) : '';
             });
-        // Display member names for attendance
+
+        // Display member names for attendance in a beautiful way
         $grid->column('members', __('Attendance'))->display(function ($members) {
             $memberIds = json_decode($members, true);
             if (json_last_error() === JSON_ERROR_NONE && is_array($memberIds) && !empty($memberIds)) {
                 $memberNames = User::whereIn('id', $memberIds)->get()->pluck('name')->toArray();
-                return implode(', ', $memberNames);
+                $formattedMembers = '<div class="card-deck">';
+                foreach ($memberNames as $name) {
+                    $formattedMembers .= '<div class="card text-white bg-info mb-3" style="max-width: 18rem;">';
+                    $formattedMembers .= '<div class="card-body"><h5 class="card-title">' . $name . '</h5></div>';
+                    $formattedMembers .= '</div>';
+                }
+                $formattedMembers .= '</div>';
+                return $formattedMembers;
             }
             return 'No attendance recorded';
         });
@@ -83,7 +91,21 @@ class MeetingController extends AdminController
         $show->field('location', __('Location'));
         $show->field('sacco.name', __('Group Name'));
         $show->field('administrator.name', __('Administrator Name'));
-        $show->field('members', __('Members'));
+        $show->field('members', __('Attendance'))->as(function ($members) {
+            $memberIds = json_decode($members, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($memberIds) && !empty($memberIds)) {
+                $memberNames = User::whereIn('id', $memberIds)->get()->pluck('name')->toArray();
+                $formattedMembers = '<div class="card-deck">';
+                foreach ($memberNames as $name) {
+                    $formattedMembers .= '<div class="card text-white bg-info mb-3" style="max-width: 18rem;">';
+                    $formattedMembers .= '<div class="card-body"><h5 class="card-title">' . $name . '</h5></div>';
+                    $formattedMembers .= '</div>';
+                }
+                $formattedMembers .= '</div>';
+                return $formattedMembers;
+            }
+            return 'No attendance recorded';
+        });
         $show->field('minutes', __('Minutes'))->as(function ($minutes) {
             $minutesData = json_decode($minutes, true);
             if (json_last_error() === JSON_ERROR_NONE) {
@@ -131,7 +153,7 @@ class MeetingController extends AdminController
         $form->text('location', __('Location'))->rules('required');
 
         if ($u->isRole('admin')) {
-            $users = \App\Models\User::where('sacco_id', $sacco_id)->get();
+            $users = User::where('sacco_id', $sacco_id)->get();
             $form->multipleSelect('members', __('Members'))
                 ->options($users->pluck('name', 'id'))
                 ->rules('required');
@@ -145,3 +167,4 @@ class MeetingController extends AdminController
         return $form;
     }
 }
+
