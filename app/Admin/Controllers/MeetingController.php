@@ -39,14 +39,15 @@ class MeetingController extends AdminController
 
                 return $user ? ucwords(strtolower($user->name)) : '';
             });
-            $grid->column('members', __('Attendance'))->display(function ($members) {
-                $memberIds = json_decode($members, true);
-                if (json_last_error() === JSON_ERROR_NONE) {
-                    $memberNames = User::whereIn('id', $memberIds)->pluck('name')->toArray();
-                    return implode(', ', $memberNames);
-                }
-                return $members;
-            });
+        // Display member names for attendance
+        $grid->column('members', __('Attendance'))->display(function ($members) {
+            $memberIds = json_decode($members, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($memberIds) && !empty($memberIds)) {
+                $memberNames = User::whereIn('id', $memberIds)->get()->pluck('name')->toArray();
+                return implode(', ', $memberNames);
+            }
+            return 'No attendance recorded';
+        });
 
         // Update the 'minutes' column
         $grid->column('minutes', __('Minutes'))->display(function ($minutes) {
