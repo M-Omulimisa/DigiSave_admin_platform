@@ -59,6 +59,10 @@
         background-color: #4bc0c0;
     }
 
+.progress-bar.pwds {
+    background-color: #716802;
+}
+
     .loan-category .row {
         display: flex;
         align-items: center;
@@ -112,7 +116,7 @@
                         <p>Number of Loans Disbursed to PWDs</p>
                         <h4>{{ $pwdTotalLoanCount }}</h4>
                         <div class="progress">
-                            <div class="progress-bar youths" role="progressbar" style="width: {{ $percentageLoansPwd }}%;" aria-valuenow="{{ $percentageLoansPwd }}" aria-valuemin="0" aria-valuemax="100">{{ number_format($percentageLoansPwd, 2) }}%</div>
+                            <div class="progress-bar pwds" role="progressbar" style="width: {{ $percentageLoansPwd }}%;" aria-valuenow="{{ $percentageLoansPwd }}" aria-valuemin="0" aria-valuemax="100">{{ number_format($percentageLoansPwd, 2) }}%</div>
                         </div>
                     </div>
                 </div>
