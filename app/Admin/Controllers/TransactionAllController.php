@@ -34,14 +34,14 @@ class TransactionAllController extends AdminController
 
             // Filter by sacco
             $saccos = \App\Models\Sacco::all();
-            $filter->equal('sacco_id', 'Group')->select($saccos->pluck('name', 'id'))
-                ->load('source_user_id', '/api/users?sacco_id={value}'); // Dynamically load users based on sacco_id
+            $filter->equal('sacco_id', 'Group')->select($saccos->pluck('name', 'id'));
 
-            // Sacco members for select
-            $sacco_members = \App\Models\User::where('sacco_id', \Encore\Admin\Facades\Admin::user()->sacco_id)
-                ->whereNotIn('user_type', ['admin', 'org', '5'])
-                ->get();
-            $filter->equal('source_user_id', 'Member Account')->select($sacco_members->pluck('name', 'id'));
+            // // Sacco members for select
+            // $sacco_members = \App\Models\User::where('sacco_id', \Encore\Admin\Facades\Admin::user()->sacco_id)
+            //     ->whereNotIn('user_type', ['admin', 'org', '5'])
+            //     ->get();
+
+            // $filter->equal('source_user_id', 'Member Account')->select($sacco_members->pluck('name', 'id'));
 
             // Amount in range
             $filter->between('amount', 'Amount (UGX)');
