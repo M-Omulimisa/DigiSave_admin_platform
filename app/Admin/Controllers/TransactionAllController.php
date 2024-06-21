@@ -27,33 +27,54 @@ class TransactionAllController extends AdminController
     protected function grid()
     {
         $grid = new Grid(new Transaction());
-        //create a filter
+
+        // Create a filter
         $grid->filter(function ($filter) {
             $filter->disableIdFilter();
-            //sacco members for select
-            $sacco_members = \App\Models\User::where('sacco_id', \Encore\Admin\Facades\Admin::user()->sacco_id)->get();
-            //sacco members for select
-            $filter->equal('user_id', 'Account')->select($sacco_members->pluck('name', 'id'));
 
-            //amount in range
+            // Filter by sacco
+            $saccos = \App\Models\Sacco::all();
+            $filter->equal('sacco_id', 'Group')->select($saccos->pluck('name', 'id'))
+                ->load('source_user_id', '/api/users?sacco_id={value}'); // Dynamically load users based on sacco_id
+
+            // Sacco members for select
+            $sacco_members = \App\Models\User::where('sacco_id', \Encore\Admin\Facades\Admin::user()->sacco_id)
+                ->whereNotIn('user_type', ['admin', 'org', '5'])
+                ->get();
+            $filter->equal('source_user_id', 'Member Account')->select($sacco_members->pluck('name', 'id'));
+
+            // Amount in range
             $filter->between('amount', 'Amount (UGX)');
-            //type in select
+
+            // Type in select
             $filter->equal('type', 'Transaction')->select(TRANSACTION_TYPES);
-            //date range
+
+            // Date range
             $filter->between('created_at', 'Created')->date();
         });
-        $grid->column('id', __('ID'))
-            ->sortable();
 
-        // $grid->column('created_at', __('DATE'))
-        //     ->sortable()
-        //     ->display(function ($x) {
-        //         return Utils::my_date_time($x);
-        //     });
+        // Order by latest created date
+        $grid->model()->orderBy('created_at', 'desc');
 
+        // Filter transactions by users excluding specific user types
+        // $grid->model()->whereIn('user_id', function ($query) {
+        //     $query->select('id')
+        //         ->from('users')
+        //         ->whereNotIn('user_type', ['admin', 'org', '5']);
+        // });
 
+        $grid->column('id', __('ID'))->sortable();
 
-        $grid->column('user_id', __('Account'))
+        $grid->column('sacco_id', __('Group'))
+            ->display(function ($sacco_id) {
+                $sacco = \App\Models\Sacco::find($sacco_id);
+                if ($sacco == null) {
+                    return "Unknown";
+                }
+                return $sacco->name;
+            })->sortable();
+
+        $grid->column('source_user_id', __('Member'))
             ->display(function ($user_id) {
                 $user = \App\Models\User::find($user_id);
                 if ($user == null) {
@@ -61,15 +82,7 @@ class TransactionAllController extends AdminController
                 }
                 return $user->name;
             })->sortable();
-        $grid->column('source_user_id', __('Source'))
-            ->display(function ($user_id) {
-                $user = \App\Models\User::find($user_id);
-                if ($user == null) {
-                    return "Unknown";
-                }
-                return $user->name;
-            })->sortable()
-            ->hide();
+
         $grid->column('type', __('Transaction Type'))
             ->dot([
                 'Share Purchase' => 'success',
@@ -78,7 +91,7 @@ class TransactionAllController extends AdminController
                 'Send' => 'danger',
             ])
             ->sortable();
-        $grid->column('description', __('Description'));
+
         $grid->column('amount', __('Amount (UGX)'))
             ->display(function ($price) {
                 return number_format($price);
@@ -87,11 +100,15 @@ class TransactionAllController extends AdminController
                 return "<strong>Total: " . number_format($amount) . "</strong>";
             });
 
+        $grid->column('description', __('Description'));
+
         $grid->column('details', __('Details'))->hide();
-        $grid->column('created_at', __('Created')
-        )->sortable();
+
+        $grid->column('created_at', __('Created'))->sortable();
+
         $grid->disableActions();
         $grid->disableBatchActions();
+
         return $grid;
     }
 
