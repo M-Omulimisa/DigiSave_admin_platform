@@ -2,6 +2,7 @@
 
 namespace App\Admin\Controllers;
 
+use App\Models\Cycle;
 use App\Models\Meeting;
 use App\Models\User;
 use Encore\Admin\Controllers\AdminController;
@@ -26,6 +27,11 @@ class MeetingController extends AdminController
         }
 
         $grid->column('sacco.name', __('Group Name'));
+        // Display the cycle name directly using its id
+        $grid->column('cycle_id', __('Cycle Name'))->display(function ($cycleId) {
+            $cycle = Cycle::find($cycleId);
+            return $cycle ? $cycle->name : 'Unknown';
+        });
         $grid->column('name', __('Meeting'))->editable()->sortable();
         $grid->column('date', __('Date'));
         $grid->column('chairperson_name', __('Chairperson Name'))

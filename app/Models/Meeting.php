@@ -9,6 +9,15 @@ class Meeting extends Model
 {
     use HasFactory;
 
+    protected $fillable = [
+        'name', 'date', 'location', 'sacco_id', 'administrator_id', 'members', 'minutes', 'attendance', 'cycle_id'
+    ];
+
+    public function cycle()
+    {
+        return $this->belongsTo(Cycle::class);
+    }
+
     public function sacco()
     {
         return $this->belongsTo(Sacco::class);
