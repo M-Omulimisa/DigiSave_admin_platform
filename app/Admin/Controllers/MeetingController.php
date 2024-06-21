@@ -4,6 +4,7 @@ namespace App\Admin\Controllers;
 
 use App\Models\Cycle;
 use App\Models\Meeting;
+use App\Models\Sacco;
 use App\Models\User;
 use Encore\Admin\Controllers\AdminController;
 use Encore\Admin\Form;
@@ -26,9 +27,15 @@ class MeetingController extends AdminController
             $grid->model()->where('sacco_id', $u->sacco_id)->where('administrator_id', $u->id);
         }
 
+        // Add filters for group name and sacco name
+        $grid->filter(function ($filter) {
+            $filter->like('sacco.name', 'Group Name');
+            $filter->like('sacco.name', 'Sacco Name');
+        });
+
         $grid->column('sacco.name', __('Group Name'));
         // Display the cycle name directly using its id
-        $grid->column('cycle_id', __('Cycle Name'))->display(function ($cycleId) {
+        $grid->column('cycle_id', __('Cycle'))->display(function ($cycleId) {
             $cycle = Cycle::find($cycleId);
             return $cycle ? $cycle->name : 'Unknown';
         });
@@ -173,4 +180,3 @@ class MeetingController extends AdminController
         return $form;
     }
 }
-
