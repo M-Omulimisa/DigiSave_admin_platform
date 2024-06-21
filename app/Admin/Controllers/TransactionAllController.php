@@ -65,7 +65,7 @@ class TransactionAllController extends AdminController
         //         ->whereNotIn('user_type', ['admin', 'org', '5']);
         // });
 
-        $grid->column('id', __('ID'))->sortable();
+        // $grid->column('id', __('ID'))->sortable();
 
         $grid->column('sacco_id', __('Group'))
             ->display(function ($sacco_id) {
