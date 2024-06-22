@@ -45,13 +45,7 @@ class ApiAuthController extends Controller
      */
     public function __construct()
     {
-
-        /* $token = auth('api')->attempt([
-            'username' => 'admin',
-            'password' => 'admin',
-        ]);
-        die($token); */
-        $this->middleware('auth:api', ['except' => ['login', 'resetPassword', 'register', 'agent_login', 'registerGroup', 'update_admin', 'new_position', 'updateUser', 'registerRole']]);
+        //$this->middleware('auth:api', ['except' => ['login', 'resetPassword', 'register', 'agent_login', 'registerGroup', 'update_admin', 'new_position', 'updateUser', 'registerRole']]);
     }
 
     public function getOrganisationsForUser()
@@ -1581,6 +1575,179 @@ class ApiAuthController extends Controller
         $new_user->setAttribute('access_code', $code);
         return $this->success($new_user, 'Account created successfully.');
         // return $this->success($new_user, 'Account created successfully.');
+    }
+
+
+    public function register_v2(Request $r)
+    {
+        if ($r->phone_number == null) {
+            return $this->error('Phone number is required.');
+        }
+
+        //validate first name
+        if ($r->first_name == null) {
+            return $this->error('First name is required.');
+        }
+
+        //validate last name
+        if ($r->last_name == null) {
+            return $this->error('Last name is required.');
+        }
+
+        $phone_number = Utils::prepare_phone_number(trim($r->phone_number));
+
+        if (!Utils::phone_number_is_valid($phone_number)) {
+            return $this->error('Register error phone number. ' . $phone_number);
+        }
+
+        $exist = Administrator::where('phone_number', $phone_number)->first();
+        if ($exist != null) {
+            return $this->error('User with the same phone number already exists.');
+        }
+
+        $user = new Administrator();
+
+
+
+        $lat = $r->latitude;
+        $lon = $r->longitude;
+
+        // Generate 8-digit code combining phone number digits, current year, and random letters
+        $code = substr($phone_number, 3, 3) . date('Y') . strtoupper(Str::random(2));
+        $user->username = $code;
+
+        $user->last_name = $r->last_name;
+        $user->first_name = $r->first_name;
+
+        $user->phone_number = $r->phone_number;
+        $user->sex = $r->sex;
+        $user->name = $r->first_name . ' ' . $r->last_name;
+        $user->reg_number = $code;
+        $user->country = "Uganda";
+        $user->username = $code;
+        $user->profile_photo_large = '';
+        $user->location_lat = $lat;
+        $user->location_long = $lon;
+        $user->facebook = '';
+        $user->twitter = '';
+        $user->linkedin = '';
+        $user->website = '';
+        $user->other_link = '';
+        $user->cv = '';
+        $user->language = '';
+        $user->about = '';
+        $user->address = '';
+        $user->name = $r->first_name . ' ' . $r->last_name;
+        $user->address = $r->address;
+        $name = $r->first_name . ' ' . $r->last_name;
+
+        // Generate a random 5-digit password
+        // $password = str_pad(mt_rand(1, 99999), 5, '0', STR_PAD_LEFT);
+        $user->password = Hash::make($code);
+
+        if (!$user->save()) {
+            return $this->error('Failed to create account. Please try again.');
+        }
+
+        // Send SMS with the generated password
+        $message = "Group $name been created successfully. Use $code to access your group";
+
+        $resp = null;
+        try {
+            $resp = Utils::send_sms($phone_number, $message);
+        } catch (Exception $e) {
+            return $this->error('Failed to send OTP because ' . $e->getMessage());
+        }
+
+        // if ($resp != 'success') {
+        //     return $this->error('Failed to send OTP because ' . $resp);
+        // }
+
+        $new_user = Administrator::find($user->id);
+        if ($new_user == null) {
+            return $this->error('Account created successfully but failed to log you in.');
+        }
+
+        // Config::set('jwt.ttl', 60 * 24 * 30 * 365);
+
+        // $token = auth('api')->attempt([
+        //     'username' => $code,
+        //     'password' => $code,
+        // ]);
+
+
+        // $new_user->token = $token;
+        // $new_user->remember_token = $token;
+        $new_user->setAttribute('access_code', $code);
+        return $this->success($new_user, 'Account created successfully.');
+        // return $this->success($new_user, 'Account created successfully.');
+    }
+
+
+
+    public function group_register_v2(Request $r)
+    {
+        if ($r->phone_number == null) {
+            return $this->error('Phone number is required.');
+        }
+        if ($r->administrator_id == null) {
+            return $this->error('System owner is required.');
+        }
+
+        $owner = Administrator::find($r->administrator_id);
+        if ($owner == null) {
+            return $this->error('System owner not found.');
+        }
+
+        $phone_number = Utils::prepare_phone_number(trim($r->phone_number));
+
+        if (!Utils::phone_number_is_valid($phone_number)) {
+            return $this->error('Register error phone number. ' . $phone_number);
+        }
+
+        //existing sacco with same phone number
+        $exist = Sacco::where('phone_number', $phone_number)->first();
+        if ($exist != null) {
+            return $this->error('Group with the same phone number already exists.');
+        } 
+        $exist = Sacco::where('email_address', $r->phone_number)->first();
+        if ($exist != null) {
+            return $this->error('Group with the same email address already exists.');
+        } 
+
+        //existing sacco with same admin
+        $exist = Sacco::where('administrator_id', $r->administrator_id)->first();
+        if ($exist != null) {
+            return $this->error('Group with the same admin already exists.');
+        }
+
+        $group = new Sacco();
+        $group->phone_number = $phone_number;
+        $group->administrator_id = $owner->id;
+        $group->name = $r->name;
+        $group->email_address = $r->email_address;
+        $group->physical_address = $r->physical_address;
+        $group->establishment_date = $r->establishment_date;
+        $group->registration_number = $r->registration_number;
+        $group->chairperson_name = $owner->name;
+        $group->chairperson_phone_number = $owner->phone_number;
+        $group->chairperson_email_address = $owner->email;
+        $group->share_price = $r->share_price;
+        $group->about = $r->about;
+        $group->terms = $r->terms;
+        $group->register_fee = $r->register_fee;
+        $group->uses_shares = $r->uses_shares;
+        $group->status = 'Active';
+        $group->processed = 'Yes';
+        try {
+            $group->save();
+            $group = Sacco::find($group->id); 
+            $owner->sacco_id = $group->id;
+            $owner->save(); 
+            return $this->success($group, 'Group created successfully.');
+        } catch (\Throwable $th) {
+            return $this->error('Failed to create group: ' . $th->getMessage());
+        }
     }
 
 
