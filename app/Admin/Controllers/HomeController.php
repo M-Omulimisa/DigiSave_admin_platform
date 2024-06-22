@@ -409,7 +409,7 @@ class HomeController extends Controller
                         'totalMembers' => $totalMembers,
                         'totalAccounts' => $totalAccounts,
                         'totalOrgAdmins' => $totalOrgAdmins,
-                        'totalPwdMembers' => $totalPwdMembers,
+                        'totalPwdMembers' => $pwdMembersCount,
                         'youthMembersPercentage' => number_format($youthMembersPercentage, 2),
                     ]) .
                     view('widgets.card_set', [
