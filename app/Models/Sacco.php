@@ -291,10 +291,10 @@ class Sacco extends Model
     {
         $saccoId = $this->id;
         return Transaction::where([
-        'sacco_id'=>$saccoId,
-        'type' => 'FINE',
-    ])
-        ->sum('amount');
+            'sacco_id' => $saccoId,
+            'type' => 'FINE',
+        ])
+            ->sum('amount');
     }
 
     // public function getFINEAttribute()
@@ -362,59 +362,44 @@ class Sacco extends Model
             ->sum('amount');
     }
 
-    // public function getSHAREAttribute()
-    // {
-    //     $admin = Sacco::find($this->administrator_id);
-    //     $active_cycle = Sacco::find($this->cycle_id);
-    //     if ($admin == null) {
-    //         return 0;
-    //     }
-    //     if ($this->active_cycle == null) {
-    //         return 0;
-    //     }
-    //     return Transaction::where([
-    //         'user_id' => $admin->id,
-    //         'cycle_id' => $this->$active_cycle->id
-    //     ])
-    //         ->sum('amount');
-    // }
+
 
     public function getSHAREAttribute()
-{
-    $saccoId = $this->id;
-    $totalTransactionAmount = $this-> balance;
-    $sharePrice = $this-> share_price;
+    {
+        $saccoId = $this->id;
+        $totalTransactionAmount = $this->balance;
+        $sharePrice = $this->share_price;
 
-    if ($sharePrice != 0) {
-        $shares = $totalTransactionAmount / $sharePrice;
-        return $shares;
-    } else {
-        return 0;
-    }
-}
-
-public function getSHARECOUNTAttribute()
-{
-    $activeCycle = $this->active_cycle;
-    $saccoId = $this->id;
-
-    if ($activeCycle == null) {
-        return 0;
+        if ($sharePrice != 0) {
+            $shares = $totalTransactionAmount / $sharePrice;
+            return $shares;
+        } else {
+            return 0;
+        }
     }
 
-    $savings = Transaction::where('sacco_id', $saccoId)
-                          ->whereIn('type', ['SHARE', 'SAVING'])
-                          ->sum('amount');
+    public function getSHARECOUNTAttribute()
+    {
+        $activeCycle = $this->active_cycle;
+        $saccoId = $this->id;
 
-    $sharePrice = $this->share_price;
+        if ($activeCycle == null) {
+            return 0;
+        }
 
-    if ($sharePrice != 0) {
-        $shares = $savings / $sharePrice;
-        return $shares;
-    } else {
-        return 0;
+        $savings = Transaction::where('sacco_id', $saccoId)
+            ->whereIn('type', ['SHARE', 'SAVING'])
+            ->sum('amount');
+
+        $sharePrice = $this->share_price;
+
+        if ($sharePrice != 0) {
+            $shares = $savings / $sharePrice;
+            return $shares;
+        } else {
+            return 0;
+        }
     }
-}
 
     // public function getSHAREAttribute()
     // {
@@ -439,23 +424,23 @@ public function getSHARECOUNTAttribute()
     // }
 
     public function getLOANAttribute()
-{
-    $admin = Sacco::find($this->administrator_id);
-    $active_cycle = Sacco::find($this->cycle_id);
+    {
+        $admin = Sacco::find($this->administrator_id);
+        $active_cycle = $this->active_cycle;
 
-           if ($admin == null) {
+        if ($admin == null) {
             return 0;
         }
         if ($this->active_cycle == null) {
             return 0;
         }
 
-    return Transaction::where([
-        'sacco_id' => $this->id,
-        'type' => 'LOAN',
-        'cycle_id' => $active_cycle->id  // Corrected syntax
-    ])->sum('amount');
-}
+        return Transaction::where([
+            'sacco_id' => $this->id,
+            'type' => 'LOAN',
+            'cycle_id' => $active_cycle->id  // Corrected syntax
+        ])->sum('amount');
+    }
 
 
     // public function getLOANAttribute()
@@ -496,25 +481,24 @@ public function getSHARECOUNTAttribute()
     // }
 
     public function getLOANCOUNTAttribute()
-{
-    try {
-        $admin = Sacco::find($this->administrator_id);
-        $activeCycle = $this->active_cycle;
+    {
+        try {
+            $admin = Sacco::find($this->administrator_id);
+            $activeCycle = $this->active_cycle;
 
-        if ($admin == null || $activeCycle == null) {
+            if ($admin == null || $activeCycle == null) {
+                return 0;
+            }
+
+            return Loan::where([
+                'sacco_id' => $this->id,
+                'cycle_id' => $activeCycle->id
+            ])->count();
+        } catch (\Exception $e) {
+            // Log the error for debugging purposes
+            Log::error('Error in getLOANCOUNTAttribute: ' . $e->getMessage());
+            // Return 0 or handle the error based on your application's requirements
             return 0;
         }
-
-        return Loan::where([
-            'sacco_id' => $this->id,
-            'cycle_id' => $activeCycle->id
-        ])->count();
-    } catch (\Exception $e) {
-        // Log the error for debugging purposes
-        Log::error('Error in getLOANCOUNTAttribute: ' . $e->getMessage());
-        // Return 0 or handle the error based on your application's requirements
-        return 0;
     }
-}
-
 }

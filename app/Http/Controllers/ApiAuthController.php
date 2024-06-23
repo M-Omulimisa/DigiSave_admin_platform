@@ -8,6 +8,7 @@ use App\Models\Agent;
 use App\Models\Cycle;
 use App\Models\Transaction;
 use App\Mail\ResetPasswordMail;
+use App\Models\AdminRoleUser;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\DB;
 use App\Models\LoanScheem;
@@ -1684,6 +1685,24 @@ class ApiAuthController extends Controller
     }
 
 
+    public function my_roles()
+    {
+        $u = auth('api')->user();
+        $data = [];
+        foreach (AdminRoleUser::where([
+            'user_id' => $u->id,
+        ])->get() as $key => $role) {
+            if ($role->role == null) continue;
+            $r = AdminRole::find($role->role_id);
+            if ($r == null) continue;
+            $d['role_id'] = $role->role_id;
+            $d['role_name'] = $role->role->name;
+            $d['slug'] = $r->slug;
+            $data[] = $d;
+        }
+        return $this->success($data, "Success");
+    }
+
 
     public function group_register_v2(Request $r)
     {
@@ -1709,11 +1728,11 @@ class ApiAuthController extends Controller
         $exist = Sacco::where('phone_number', $phone_number)->first();
         if ($exist != null) {
             return $this->error('Group with the same phone number already exists.');
-        } 
+        }
         $exist = Sacco::where('email_address', $r->phone_number)->first();
         if ($exist != null) {
             return $this->error('Group with the same email address already exists.');
-        } 
+        }
 
         //existing sacco with same admin
         $exist = Sacco::where('administrator_id', $r->administrator_id)->first();
@@ -1741,9 +1760,9 @@ class ApiAuthController extends Controller
         $group->processed = 'Yes';
         try {
             $group->save();
-            $group = Sacco::find($group->id); 
+            $group = Sacco::find($group->id);
             $owner->sacco_id = $group->id;
-            $owner->save(); 
+            $owner->save();
             return $this->success($group, 'Group created successfully.');
         } catch (\Throwable $th) {
             return $this->error('Failed to create group: ' . $th->getMessage());

@@ -8,4 +8,6 @@ use Illuminate\Database\Eloquent\Model;
 class AdminRole extends Model
 {
     use HasFactory;
+    //table admin_roles
+    protected $table = 'admin_roles';
 }

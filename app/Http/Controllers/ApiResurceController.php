@@ -1115,6 +1115,11 @@ class ApiResurceController extends Controller
             Sacco::where([])->orderby('id', 'desc')->get(),
             $message = "Sussess",
             200
+        ); 
+        return $this->success(
+            Sacco::where([])->orderby('id', 'desc')->get(),
+            $message = "Sussess",
+            200
         );
     }
 

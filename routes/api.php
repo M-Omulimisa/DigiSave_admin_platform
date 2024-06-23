@@ -115,6 +115,7 @@ Route::get('news-posts', [ApiResurceController::class, 'news_posts']);
 //add extension v2 in front of the route
 Route::POST("v2-register", [ApiAuthController::class, "register_v2"]);
 Route::POST("v2-group-register", [ApiAuthController::class, "group_register_v2"]);
+Route::get('v2-my-roles', [ApiAuthController::class, 'my_roles']);
 
 
 Route::put('/update/{userId}', [ApiAuthController::class, 'updateUser']);
