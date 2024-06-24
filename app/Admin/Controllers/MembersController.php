@@ -2,9 +2,12 @@
 
 namespace App\Admin\Controllers;
 
+use App\Models\MemberPosition;
 use App\Models\OrgAllocation;
+use App\Models\Sacco;
 use App\Models\VslaOrganisationSacco;
 use App\Models\User;
+use App\Models\Utils;
 use Encore\Admin\Controllers\AdminController;
 use Encore\Admin\Facades\Admin;
 use Encore\Admin\Form;
@@ -18,7 +21,7 @@ class MembersController extends AdminController
      *
      * @var string
      */
-    protected $title = 'VSLA Members';
+    protected $title = 'VSLA Group Members';
 
     /**
      * Make a grid builder.
@@ -150,27 +153,74 @@ class MembersController extends AdminController
      * @return Form
      */
     protected function form()
-    {
-        $form = new Form(new User());
-        $u = Admin::user();
+{
+    $form = new Form(new User());
+    $u = Admin::user();
 
-        $form->text('first_name', __('First Name'))
-            ->rules('required')->help('Ensure the first letter of each word is capitalized.');
-        $form->text('last_name', __('Last Name'))
-            ->rules('required')->help('Ensure the first letter of each word is capitalized.');
-        $form->text('phone_number', __('Phone Number'))
-            ->rules('required');
-        $form->radio('sex', __('Gender'))
-            ->options([
-                'Male' => 'Male',
-                'Female' => 'Female',
-            ])
-            ->rules('required');
+    $form->text('first_name', __('First Name'))
+        ->rules('required')->help('Ensure the first letter of each word is capitalized.');
+    $form->text('last_name', __('Last Name'))
+        ->rules('required')->help('Ensure the first letter of each word is capitalized.');
+    $form->text('phone_number', __('Phone Number'))
+        ->rules('required');
+    $form->radio('sex', __('Gender'))
+        ->options([
+            'Male' => 'Male',
+            'Female' => 'Female',
+        ])
+        ->rules('required');
+    $form->select('sacco_id', __('Group'))
+        ->options(Sacco::all()->pluck('name', 'id'))
+        ->rules('required');
+    $form->select('position_id', __('Position'))
+        ->options(MemberPosition::all()->pluck('name', 'id'))
+        ->rules('required');
+    $form->text('location_lat', __('Latitude'));
+    $form->text('location_long', __('Longitude'));
 
-        $form->text('location_lat', __('Latitude'));
-        $form->text('location_long', __('Longitude'));
+    $form->saving(function (Form $form) {
+        // Perform any necessary logic before saving the form
+    });
 
-        return $form;
-    }
+    $form->saved(function (Form $form) {
+        $position = MemberPosition::find($form->position_id)->name;
+        $sacco = Sacco::find($form->sacco_id);
+        $saccoPhoneNumber = $sacco->phone_number;
+
+        if (in_array($position, ['Chairperson', 'Secretary', 'Treasurer'])) {
+            $password = str_pad(mt_rand(1, 99999), 5, '0', STR_PAD_LEFT);
+            $user = User::find($form->model()->id);
+            $user->password = bcrypt($password);
+
+            if (!$user->save()) {
+                admin_error('Error', 'Failed to create account. Please try again.');
+                return;
+            }
+
+            $message = "Success, admin account for Position: $position has been created successfully.  Use Phone number: {$form->phone_number} and Passcode: $password to login into your VSLA group. Group passcode: $saccoPhoneNumber";
+
+            // Validate the phone number and send SMS
+            if (Utils::phone_number_is_valid($form->phone_number)) {
+                try {
+                    $resp = Utils::send_sms($form->phone_number, $message);
+                    if ($resp) {
+                        admin_success($message);
+                    } else {
+                        admin_warning('Warning', 'Group member ' . $form->first_name . ' ' . $form->last_name . ' created successfully, but failed to send login credentials.');
+                    }
+                } catch (\Exception $e) {
+                    admin_error('Error', 'Failed to send SMS. Please check the phone number and try again.');
+                }
+            } else {
+                admin_warning('Warning', 'Group member ' . $form->first_name . ' ' . $form->last_name . ' created successfully, but the phone number is invalid.');
+            }
+        } else {
+            admin_success('Success', 'Group member ' . $form->first_name . ' ' . $form->last_name . ' created successfully');
+        }
+    });
+
+    return $form;
+}
+
 }
 ?>
