@@ -2,10 +2,10 @@
 
 namespace App\Admin\Controllers;
 
+use App\Models\MemberPosition;
 use App\Models\OrgAllocation;
 use App\Models\Sacco;
 use App\Models\VslaOrganisationSacco;
-use App\Models\MemberPosition;
 use Encore\Admin\Auth\Database\Administrator;
 use Encore\Admin\Controllers\AdminController;
 use Encore\Admin\Facades\Admin;
@@ -164,7 +164,7 @@ class SaccoController extends AdminController
         });
 
         $show->field('chairperson_name', __('Chairperson Name'))->as(function () {
-            $chairperson = \App\Models.User::where('sacco_id', $this->id)
+            $chairperson = \App\Models\User::where('sacco_id', $this->id)
                 ->whereHas('position', function ($query) {
                     $query->where('name', 'Chairperson');
                 })
@@ -187,20 +187,22 @@ class SaccoController extends AdminController
                 admin_error("You are not allowed to create new Sacco");
                 return back();
             }
-        } else {
-            // Sacco Details
-            $form->text('name', __('Name'))->rules('required');
-            $form->decimal('share_price', __('Share Price'))
-                ->help('UGX')
-                ->rules('required|numeric|min:0');
-            // Hide phone number field, generate it in the background
-            $form->hidden('phone_number');
-            $form->text('email_address', __('Email Address'));
-            $form->text('physical_address', __('Physical Address'));
-            $form->datetime('created_at', __('Establishment Date'))->rules('required');
-            $form->image('logo', __('VSLA Logo'));
+        }
 
-            $form->saving(function (Form $form) {
+        // Sacco Details
+        $form->text('name', __('Name'))->rules('required');
+        $form->decimal('share_price', __('Share Price'))
+            ->help('UGX')
+            ->rules('required|numeric|min:0');
+        // Hide phone number field, generate it in the background
+        $form->hidden('phone_number');
+        $form->text('email_address', __('Email Address'));
+        $form->text('physical_address', __('Physical Address'));
+        $form->datetime('created_at', __('Establishment Date'))->rules('required');
+        $form->image('logo', __('VSLA Logo'));
+
+        $form->saving(function (Form $form) {
+            if ($form->isCreating()) {
                 // Generate phone number in the background
                 if (!$form->phone_number) {
                     $initialPhoneNumber = '0701399995'; // Dummy initial phone number to generate from
@@ -231,9 +233,17 @@ class SaccoController extends AdminController
                 $user->save();
 
                 $form->administrator_id = $user->id;
-            });
+            } else {
+                // For editing, ensure administrator_id is not null
+                if (!$form->administrator_id) {
+                    $sacco = Sacco::find($form->model()->id);
+                    $form->administrator_id = $sacco->administrator_id;
+                }
+            }
+        });
 
-            $form->saved(function (Form $form) {
+        $form->saved(function (Form $form) {
+            if ($form->isCreating()) {
                 // Manually save Sacco with administrator ID
                 $sacco = new Sacco();
                 $sacco->name = $form->name;
@@ -256,10 +266,24 @@ class SaccoController extends AdminController
 
                 // Display success message
                 admin_success('Success', 'Group ' . $sacco->name . ' created successfully');
-            });
+            } else {
+                // Update existing Sacco
+                $sacco = Sacco::find($form->model()->id);
+                $sacco->name = $form->name;
+                $sacco->share_price = $form->share_price;
+                $sacco->phone_number = $form->phone_number;
+                $sacco->email_address = $form->email_address;
+                $sacco->physical_address = $form->physical_address;
+                $sacco->created_at = $form->created_at;
+                $sacco->administrator_id = $form->administrator_id;
+                $sacco->save();
 
-            $form->hidden('administrator_id');
-        }
+                // Display success message
+                admin_success('Success', 'Group ' . $sacco->name . ' updated successfully');
+            }
+        });
+
+        $form->hidden('administrator_id');
 
         return $form;
     }
