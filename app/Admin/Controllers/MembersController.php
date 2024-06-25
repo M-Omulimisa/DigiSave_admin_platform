@@ -88,10 +88,10 @@ class MembersController extends AdminController
         $grid->column('created_at', __('Date Joined'))->sortable()->display(function ($date) {
             return date('d M Y', strtotime($date));
         });
-        $grid->column('district', __('District'))->sortable();
-        $grid->column('subcounty', __('Subcounty'))->sortable();
-        $grid->column('parish', __('Parish'))->sortable();
-        $grid->column('village', __('Village'))->sortable();
+        // $grid->column('district', __('District'))->sortable();
+        // $grid->column('subcounty', __('Subcounty'))->sortable();
+        // $grid->column('parish', __('Parish'))->sortable();
+        // $grid->column('village', __('Village'))->sortable();
 
         // Adding search filters
         $grid->filter(function ($filter) {
