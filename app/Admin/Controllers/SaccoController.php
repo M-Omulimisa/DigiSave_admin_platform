@@ -201,6 +201,12 @@ class SaccoController extends AdminController
         $form->datetime('created_at', __('Establishment Date'))->rules('required');
         $form->image('logo', __('VSLA Logo'));
 
+        // Add location fields
+        $form->text('district', __('District'))->rules('required');
+        $form->text('subcounty', __('Subcounty'))->rules('required');
+        $form->text('parish', __('Parish'))->rules('required');
+        $form->text('village', __('Village'))->rules('required');
+
         $form->saving(function (Form $form) {
             if ($form->isCreating()) {
                 // Generate phone number in the background
@@ -252,6 +258,10 @@ class SaccoController extends AdminController
                 $sacco->email_address = $form->email_address;
                 $sacco->physical_address = $form->physical_address;
                 $sacco->created_at = $form->created_at;
+                $sacco->district = $form->district;
+                $sacco->subcounty = $form->subcounty;
+                $sacco->parish = $form->parish;
+                $sacco->village = $form->village;
                 $sacco->administrator_id = $form->administrator_id;
                 $sacco->save();
 
@@ -275,6 +285,10 @@ class SaccoController extends AdminController
                 $sacco->email_address = $form->email_address;
                 $sacco->physical_address = $form->physical_address;
                 $sacco->created_at = $form->created_at;
+                $sacco->district = $form->district;
+                $sacco->subcounty = $form->subcounty;
+                $sacco->parish = $form->parish;
+                $sacco->village = $form->village;
                 $sacco->administrator_id = $form->administrator_id;
                 $sacco->save();
 
@@ -288,3 +302,4 @@ class SaccoController extends AdminController
         return $form;
     }
 }
+?>

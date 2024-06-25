@@ -88,8 +88,10 @@ class MembersController extends AdminController
         $grid->column('created_at', __('Date Joined'))->sortable()->display(function ($date) {
             return date('d M Y', strtotime($date));
         });
-        $grid->column('location_lat', __('Latitude'))->sortable();
-        $grid->column('location_long', __('Longitude'))->sortable();
+        $grid->column('district', __('District'))->sortable();
+        $grid->column('subcounty', __('Subcounty'))->sortable();
+        $grid->column('parish', __('Parish'))->sortable();
+        $grid->column('village', __('Village'))->sortable();
 
         // Adding search filters
         $grid->filter(function ($filter) {
@@ -141,8 +143,10 @@ class MembersController extends AdminController
         $show->field('created_at', __('Date Joined'))->as(function ($date) {
             return date('d M Y', strtotime($date));
         });
-        $show->field('location_lat', __('Latitude'));
-        $show->field('location_long', __('Longitude'));
+        $show->field('district', __('District'));
+        $show->field('subcounty', __('Subcounty'));
+        $show->field('parish', __('Parish'));
+        $show->field('village', __('Village'));
 
         return $show;
     }
@@ -153,74 +157,75 @@ class MembersController extends AdminController
      * @return Form
      */
     protected function form()
-{
-    $form = new Form(new User());
-    $u = Admin::user();
+    {
+        $form = new Form(new User());
+        $u = Admin::user();
 
-    $form->text('first_name', __('First Name'))
-        ->rules('required')->help('Ensure the first letter of each word is capitalized.');
-    $form->text('last_name', __('Last Name'))
-        ->rules('required')->help('Ensure the first letter of each word is capitalized.');
-    $form->text('phone_number', __('Phone Number'))
-        ->rules('required');
-    $form->radio('sex', __('Gender'))
-        ->options([
-            'Male' => 'Male',
-            'Female' => 'Female',
-        ])
-        ->rules('required');
-    $form->select('sacco_id', __('Group'))
-        ->options(Sacco::all()->pluck('name', 'id'))
-        ->rules('required');
-    $form->select('position_id', __('Position'))
-        ->options(MemberPosition::all()->pluck('name', 'id'))
-        ->rules('required');
-    $form->text('location_lat', __('Latitude'));
-    $form->text('location_long', __('Longitude'));
+        $form->text('first_name', __('First Name'))
+            ->rules('required')->help('Ensure the first letter of each word is capitalized.');
+        $form->text('last_name', __('Last Name'))
+            ->rules('required')->help('Ensure the first letter of each word is capitalized.');
+        $form->text('phone_number', __('Phone Number'))
+            ->rules('required');
+        $form->radio('sex', __('Gender'))
+            ->options([
+                'Male' => 'Male',
+                'Female' => 'Female',
+            ])
+            ->rules('required');
+        $form->select('sacco_id', __('Group'))
+            ->options(Sacco::all()->pluck('name', 'id'))
+            ->rules('required');
+        $form->select('position_id', __('Position'))
+            ->options(MemberPosition::all()->pluck('name', 'id'))
+            ->rules('required');
+        $form->text('district', __('District'))->rules('required');
+        $form->text('subcounty', __('Subcounty'))->rules('required');
+        $form->text('parish', __('Parish'))->rules('required');
+        $form->text('village', __('Village'))->rules('required');
 
-    $form->saving(function (Form $form) {
-        // Perform any necessary logic before saving the form
-    });
+        $form->saving(function (Form $form) {
+            // Perform any necessary logic before saving the form
+        });
 
-    $form->saved(function (Form $form) {
-        $position = MemberPosition::find($form->position_id)->name;
-        $sacco = Sacco::find($form->sacco_id);
-        $saccoPhoneNumber = $sacco->phone_number;
+        $form->saved(function (Form $form) {
+            $position = MemberPosition::find($form->position_id)->name;
+            $sacco = Sacco::find($form->sacco_id);
+            $saccoPhoneNumber = $sacco->phone_number;
 
-        if (in_array($position, ['Chairperson', 'Secretary', 'Treasurer'])) {
-            $password = str_pad(mt_rand(1, 99999), 5, '0', STR_PAD_LEFT);
-            $user = User::find($form->model()->id);
-            $user->password = bcrypt($password);
+            if (in_array($position, ['Chairperson', 'Secretary', 'Treasurer'])) {
+                $password = str_pad(mt_rand(1, 99999), 5, '0', STR_PAD_LEFT);
+                $user = User::find($form->model()->id);
+                $user->password = bcrypt($password);
 
-            if (!$user->save()) {
-                admin_error('Error', 'Failed to create account. Please try again.');
-                return;
-            }
+                if (!$user->save()) {
+                    admin_error('Error', 'Failed to create account. Please try again.');
+                    return;
+                }
 
-            $message = "Success, admin account for Position: $position has been created successfully.  Use Phone number: {$form->phone_number} and Passcode: $password to login into your VSLA group. Group passcode: $saccoPhoneNumber";
+                $message = "Success, admin account for Position: $position has been created successfully. Use Phone number: {$form->phone_number} and Passcode: $password to login into your VSLA group. Group passcode: $saccoPhoneNumber";
 
-            // Validate the phone number and send SMS
-            if (Utils::phone_number_is_valid($form->phone_number)) {
-                try {
-                    $resp = Utils::send_sms($form->phone_number, $message);
-                    if ($resp) {
-                        admin_success($message);
-                    } else {
-                        admin_warning('Warning', 'Group member ' . $form->first_name . ' ' . $form->last_name . ' created successfully, but failed to send login credentials.');
+                // Validate the phone number and send SMS
+                if (Utils::phone_number_is_valid($form->phone_number)) {
+                    try {
+                        $resp = Utils::send_sms($form->phone_number, $message);
+                        if ($resp) {
+                            admin_success($message);
+                        } else {
+                            admin_warning('Warning', 'Group member ' . $form->first_name . ' ' . $form->last_name . ' created successfully, but failed to send login credentials.');
+                        }
+                    } catch (\Exception $e) {
+                        admin_error('Error', 'Failed to send SMS. Please check the phone number and try again.');
                     }
-                } catch (\Exception $e) {
-                    admin_error('Error', 'Failed to send SMS. Please check the phone number and try again.');
+                } else {
+                    admin_warning('Warning', 'Group member ' . $form->first_name . ' ' . $form->last_name . ' created successfully, but the phone number is invalid.');
                 }
             } else {
-                admin_warning('Warning', 'Group member ' . $form->first_name . ' ' . $form->last_name . ' created successfully, but the phone number is invalid.');
+                admin_success('Success', 'Group member ' . $form->first_name . ' ' . $form->last_name . ' created successfully');
             }
-        } else {
-            admin_success('Success', 'Group member ' . $form->first_name . ' ' . $form->last_name . ' created successfully');
-        }
-    });
+        });
 
-    return $form;
-}
-
+        return $form;
+    }
 }
 ?>
