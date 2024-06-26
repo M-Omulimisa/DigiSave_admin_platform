@@ -80,7 +80,7 @@ class ApiResurceController extends Controller
     // Begin transaction for database operations
     DB::beginTransaction();
     try {
-        if ($transaction->type == 'SAVING') {
+        if ($transaction->type == 'SHARE') {
             // For SAVING transactions, deduct the amount from the user's balance
             $amount = abs($transaction->amount); // Amount should be positive for reversal
             $user->balance -= $amount;
@@ -91,7 +91,7 @@ class ApiResurceController extends Controller
             $reversal->source_user_id = $transaction->source_user_id;
             $reversal->sacco_id = $transaction->sacco_id;
             $reversal->type = 'REVERSAL';
-            $reversal->source_type = 'SAVING';
+            $reversal->source_type = 'SHARE';
             $reversal->amount = -$amount;
             $reversal->description = "Reversal of SAVING: " . $transaction->description;
             $reversal->details = "Reversal of SAVING transaction ID: {$transaction->id}";
