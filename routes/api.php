@@ -39,6 +39,7 @@ Route::post("social-funds", [ApiResurceController::class, "socialFundCreate"]);
 Route::post("request-agent-otp-sms", [ApiResurceController::class, "request_otp_sms"]);
 Route::post("request-otp-sms", [ApiResurceController::class, "request_otp_sms"]);
 Route::get("transactions", [ApiResurceController::class, "transactions"]);
+Route::post("reverse-transaction", [ApiResurceController::class, "reverseTransaction"]);
 Route::get("loan-transactions", [ApiResurceController::class, "loan_transactions"]);
 Route::get("saccos", [ApiResurceController::class, "saccos"]);
 Route::get("agent-allocation", [ApiResurceController::class, "agent_allocations"]);

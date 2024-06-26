@@ -54,6 +54,97 @@ class ApiResurceController extends Controller
 
     use ApiResponser;
 
+    public function reverseTransaction(Request $request)
+{
+    $user = auth('api')->user();
+    if ($user == null) {
+        return $this->error('User not found.');
+    }
+
+    $request->validate([
+        'transaction_id' => 'required|exists:transactions,id',
+    ]);
+
+    $transaction = Transaction::find($request->transaction_id);
+
+    // Ensure the transaction belongs to the user's SACCO or the user itself
+    if ($transaction->sacco_id != $user->sacco_id && $transaction->user_id != $user->id) {
+        return $this->error('Unauthorized to reverse this transaction.');
+    }
+
+    // Check if the transaction has already been reversed
+    if ($transaction->is_reversed) {
+        return $this->error('This transaction has already been reversed.');
+    }
+
+    // Begin transaction for database operations
+    DB::beginTransaction();
+    try {
+        if ($transaction->type == 'SAVING') {
+            // For SAVING transactions, deduct the amount from the user's balance
+            $amount = abs($transaction->amount); // Amount should be positive for reversal
+            $user->balance -= $amount;
+
+            // Create a new transaction for the reversal
+            $reversal = new Transaction();
+            $reversal->user_id = $user->id;
+            $reversal->source_user_id = $transaction->source_user_id;
+            $reversal->sacco_id = $transaction->sacco_id;
+            $reversal->type = 'REVERSAL';
+            $reversal->source_type = 'SAVING';
+            $reversal->amount = -$amount;
+            $reversal->description = "Reversal of SAVING: " . $transaction->description;
+            $reversal->details = "Reversal of SAVING transaction ID: {$transaction->id}";
+
+            $reversal->save();
+
+            // Save the updated user balance
+            $user->save();
+        } elseif ($transaction->type == 'LOAN') {
+            // For LOAN transactions, add the amount back to the loan balance
+            $loan = Loan::find($transaction->loan_id);
+            if ($loan == null) {
+                return $this->error('Loan associated with this transaction not found.');
+            }
+
+            // Reverse the loan transaction
+            $amount = abs($transaction->amount); // Amount should be positive for reversal
+            $loan->balance += $amount;
+
+            // Create a new transaction for the reversal
+            $reversal = new Transaction();
+            $reversal->user_id = $user->id;
+            $reversal->source_user_id = $transaction->source_user_id;
+            $reversal->sacco_id = $transaction->sacco_id;
+            $reversal->type = 'REVERSAL';
+            $reversal->source_type = 'LOAN';
+            $reversal->amount = -$amount;
+            $reversal->description = "Reversal of LOAN: " . $transaction->description;
+            $reversal->details = "Reversal of LOAN transaction ID: {$transaction->id}";
+
+            $reversal->save();
+
+            // Save the updated loan balance
+            $loan->save();
+        } else {
+            return $this->error('Transaction type not supported for reversal.');
+        }
+
+        // Mark the original transaction as reversed
+        $transaction->is_reversed = true;
+        $transaction->save();
+
+        // Commit the transaction
+        DB::commit();
+
+        return $this->success(null, 'Transaction reversed successfully.');
+    } catch (\Exception $e) {
+        // Rollback the transaction if any error occurs
+        DB::rollback();
+        return $this->error('Failed to reverse transaction: ' . $e->getMessage());
+    }
+}
+
     public function transactions()
     {
 
