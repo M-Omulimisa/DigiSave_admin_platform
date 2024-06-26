@@ -127,7 +127,7 @@ class ApiResurceController extends Controller
             // Save the updated loan balance
             $loan->save();
         } else {
-            return $this->error('Transaction type not supported for reversal.');
+            return $this->error('Transaction type not supported for reversal:' . $transaction->type);
         }
 
         // Mark the original transaction as reversed
