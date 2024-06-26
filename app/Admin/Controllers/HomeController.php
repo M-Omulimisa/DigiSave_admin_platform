@@ -411,7 +411,7 @@ class HomeController extends Controller
                         'totalAccounts' => $totalAccounts,
                         'totalOrgAdmins' => $totalOrgAdmins,
                         'totalPwdMembers' => $pwdMembersCount,
-                        'youthMembersPercentage' => $percentageLoanSumPWDs,
+                        'youthMembersPercentage' => number_format($percentageLoanSumPWDs, 2),
                     ]) .
                     view('widgets.card_set', [
                         'femaleMembersCount' => $femaleMembersCount,
