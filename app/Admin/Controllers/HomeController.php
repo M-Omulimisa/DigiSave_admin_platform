@@ -133,7 +133,8 @@ class HomeController extends Controller
             })->count() / $totalMembers * 100 : 0;
 
             $filteredUsersForBalances = $filteredUsers->whereIn('sacco_id', $saccoIds);
-            $pwdUsers = $filteredUsersForBalances->where('pwd', 'Yes');
+            $pwdUsers = $filteredUsersForBalances->where('pwd', 'yes');
+            // dd($pwdUsers);
             $pwdMembersCount = $pwdUsers->count();
             $pwdUserIds = $pwdUsers->pluck('id');
 
@@ -253,9 +254,13 @@ class HomeController extends Controller
             })->count() / $totalMembers * 100 : 0;
 
             $filteredUsersForBalances = $filteredUsers;
-            $pwdUsers = $filteredUsersForBalances->where('pwd', 'Yes');
+
+            $pwdUsers = $filteredUsersForBalances->where('pwd', 'yes');
+
             $pwdMembersCount = $pwdUsers->count();
             $pwdUserIds = $pwdUsers->pluck('id');
+
+            $pwdMembersCount = $pwdUsers->count();
 
             $pwdTotalBalance = Transaction::where('type', 'SHARE')
                 ->whereIn('user_id', $pwdUserIds)
