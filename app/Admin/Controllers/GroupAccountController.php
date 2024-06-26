@@ -3,8 +3,6 @@
 namespace App\Admin\Controllers;
 
 use App\Models\OrgAllocation;
-use App\Models\Organization;
-use App\Models\OrganizationAssignment;
 use App\Models\User;
 use App\Models\VslaOrganisationSacco;
 use Encore\Admin\Controllers\AdminController;
@@ -98,8 +96,8 @@ class GroupAccountController extends AdminController
                         Sort by Created Date <span class="caret"></span>
                     </button>
                     <ul class="dropdown-menu" role="menu">
-                        <li><a href="'.url()->current().'?_sort=asc">Ascending</a></li>
-                        <li><a href="'.url()->current().'?_sort=desc">Descending</a></li>
+                        <li><a href="' . url()->current() . '?_sort=asc">Ascending</a></li>
+                        <li><a href="' . url()->current() . '?_sort=desc">Descending</a></li>
                     </ul>
                 </div>
             ');
@@ -119,56 +117,16 @@ class GroupAccountController extends AdminController
         $show = new Show(User::findOrFail($id));
 
         $show->field('id', __('Id'));
-        $show->field('username', __('Username'));
-        $show->field('password', __('Password'));
         $show->field('first_name', __('First Name'))->as(function ($firstName) {
             return ucwords(strtolower($firstName));
         });
         $show->field('last_name', __('Last Name'))->as(function ($lastName) {
             return ucwords(strtolower($lastName));
         });
-        $show->field('reg_date', __('Reg Date'));
-        $show->field('last_seen', __('Last Seen'));
-        $show->field('email', __('Email'));
-        $show->field('approved', __('Approved'));
-        $show->field('profile_photo', __('Profile Photo'));
-        $show->field('user_type', __('User Type'));
-        $show->field('sex', __('Sex'));
-        $show->field('reg_number', __('Reg Number'));
-        $show->field('country', __('Country'));
-        $show->field('occupation', __('Occupation'));
-        $show->field('profile_photo_large', __('Profile Photo Large'));
-        $show->field('phone_number', __('Phone Number'));
-        $show->field('location_lat', __('Location Lat'));
-        $show->field('location_long', __('Location Long'));
-        $show->field('facebook', __('Facebook'));
-        $show->field('twitter', __('Twitter'));
-        $show->field('whatsapp', __('Whatsapp'));
-        $show->field('linkedin', __('Linkedin'));
-        $show->field('website', __('Website'));
-        $show->field('other_link', __('Other Link'));
-        $show->field('cv', __('Cv'));
-        $show->field('language', __('Language'));
-        $show->field('about', __('About'));
-        $show->field('address', __('Address'))->as(function ($address) {
-            return ucwords(strtolower($address));
-        });
+        $show->field('phone_number', __('Group Code'));
+        $show->field('location_lat', __('Latitude'));
+        $show->field('location_long', __('Longitude'));
         $show->field('created_at', __('Created At'));
-        $show->field('updated_at', __('Updated At'));
-        $show->field('remember_token', __('Remember Token'));
-        $show->field('avatar', __('Avatar'));
-        $show->field('name', __('Name'));
-        $show->field('campus_id', __('Campus Id'));
-        $show->field('complete_profile', __('Complete Profile'));
-        $show->field('title', __('Title'));
-        $show->field('dob', __('Dob'));
-        $show->field('intro', __('Intro'));
-        $show->field('sacco_id', __('Sacco Id'));
-        $show->field('sacco_join_status', __('Sacco Join Status'));
-        $show->field('id_front', __('Id Front'));
-        $show->field('id_back', __('Id Back'));
-        $show->field('status', __('Status'));
-        $show->field('balance', __('Balance'));
 
         return $show;
     }
@@ -183,66 +141,21 @@ class GroupAccountController extends AdminController
         $form = new Form(new User());
         $u = Admin::user();
 
-        if ((!$u->isRole('admin')) && (!$u->isRole('sacco'))) {
-            if ($form->isCreating()) {
-                admin_error("You are not allowed to create new Sacco");
-                return back();
-            }
-        }
+        // Hide the creation option
+        // $form->disableCreating();
 
-        if (!$u->isRole('admin')) {
-            $form->hidden('sacco_id', __('Sacco'))->default($u->sacco_id)->readonly();
-        } else {
-            $form->select('sacco_id', __('Sacco'))->options(\App\Models\Sacco::pluck('name', 'id'))->rules('required');
-        }
-
-        $form->text('first_name', __('First Name'))
-            ->rules('required');
-        $form->text('last_name', __('Last Name'))
-            ->rules('required');
-        $form->text('phone_number', __('Phone Number'))
-            ->rules('required');
-
-        $form->radio('sex', __('Gender'))
-            ->options([
-                'Male' => 'Male',
-                'Female' => 'Female',
-            ])
-            ->rules('required');
-
-        $form->text('address', __('Address'));
-
-        $form->image('avatar', __('Passport Size Photo'));
-        $form->image('profile_photo_large', __('National ID Front'));
-        $form->image('profile_photo', __('National ID Back'));
-
-        $form->datetime('dob', __('Date of Birth'))->default(date('Y-m-d H:i:s' . strtotime('-18 years')));
-
-        $form->image('id_front', __('Id Front'));
-        $form->image('id_back', __('Id Back'));
-        $form->hidden('user_type', __('User Type'))->default('Member');
-
-        $form->divider('MEMBERSHIP STATUS');
-
-        $form->radioCard('status', __('User Status'))
-            ->options([
-                'Pending' => 'Pending',
-                'Approved' => 'Approved',
-            ]);
-
-        $form->radioCard('sacco_join_status', __('Membership Status'))
-            ->options([
-                'Pending' => 'Pending',
-                'Approved' => 'Approved',
-            ]);
-
-        $form->password('password', trans('admin.password'))->rules('confirmed|required');
-        $form->password('password_confirmation', trans('admin.password_confirmation'))->rules('required')
+        // Combine first and last name into Account Name and disable editing
+        $form->text('name', __('Account Name'))
             ->default(function ($form) {
-                return $form->model()->password;
-            });
-        $form->ignore(['password_confirmation']);
-        $form->ignore(['change_password']);
+                return ucwords(strtolower($form->model()->first_name . ' ' . $form->model()->last_name));
+            })
+            ->readonly();
+
+        // Form fields that are visible in the grid for editing
+        $form->text('phone_number', __('Group Code'))
+            ->rules('required');
+        $form->text('location_lat', __('Latitude'))->rules('required');
+        $form->text('location_long', __('Longitude'))->rules('required');
 
         return $form;
     }

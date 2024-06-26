@@ -17,10 +17,11 @@ class LoanScheemController extends AdminController
     {
         $grid = new Grid(new LoanScheem());
 
+        // Order by Sacco name in ascending order by default
+        $grid->model()->with('sacco')->orderBy(Sacco::select('name')->whereColumn('saccos.id', 'loan_scheems.sacco_id'), 'asc');
+
         $grid->column('id', __('ID'))->sortable();
-        $grid->column('sacco_id', __('Sacco'))->display(function ($saccoId) {
-            return Sacco::find($saccoId)->name ?? 'N/A';
-        })->sortable();
+        $grid->column('sacco.name', __('Sacco'));
         $grid->column('name', __('Name'))->sortable();
         $grid->column('description', __('Description'));
         $grid->column('initial_interest_type', __('Initial Interest Type'));
@@ -57,9 +58,7 @@ class LoanScheemController extends AdminController
         $show = new Show(LoanScheem::findOrFail($id));
 
         $show->field('id', __('ID'));
-        $show->field('sacco_id', __('Sacco'))->as(function ($saccoId) {
-            return Sacco::find($saccoId)->name ?? 'N/A';
-        });
+        $show->field('sacco.name', __('Sacco'));
         $show->field('name', __('Name'));
         $show->field('description', __('Description'));
         $show->field('initial_interest_type', __('Initial Interest Type'));
