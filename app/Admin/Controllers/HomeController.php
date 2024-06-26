@@ -371,11 +371,11 @@ class HomeController extends Controller
         $percentageLoansYouths = $totalLoans > 0 ? ($loansDisbursedToYouths / $totalLoans) * 100 : 0;
         $percentageLoansPwd = $totalLoans > 0 ? ($pwdTotalLoanCount / $totalLoans) * 100 : 0;
 
-        $totalLoanSum = $loanSumForWomen + $loanSumForMen + $loanSumForYouths + $pwdTotalBalance;
+        $totalLoanSum = $loanSumForWomen + $loanSumForMen + $loanSumForYouths;
         $percentageLoanSumWomen = $totalLoanSum > 0 ? ($loanSumForWomen / $totalLoanSum) * 100 : 0;
         $percentageLoanSumMen = $totalLoanSum > 0 ? ($loanSumForMen / $totalLoanSum) * 100 : 0;
         $percentageLoanSumYouths = $totalLoanSum > 0 ? ($loanSumForYouths / $totalLoanSum) * 100 : 0;
-        $percentageLoanSumPWDs = $totalLoanSum > 0 ? ($pwdTotalBalance / $totalLoanSum) * 100 : 0;
+        // $percentageLoanSumPWDs = $totalLoanSum > 0 ? ($pwdTotalBalance / $totalLoanSum) * 100 : 0;
 
         $quotes = [
             "Empowerment through savings and loans.",
