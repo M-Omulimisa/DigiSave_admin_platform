@@ -130,31 +130,6 @@ class ApiResurceController extends Controller
 
                 // Save the updated loan balance
                 $loan->save();
-            } elseif ($transaction->type == 'SHARE') {
-                // For SHARE transactions, deduct the amount and update the number of shares
-                $amount = abs($transaction->amount); // Amount should be positive for reversal
-                $user->balance -= $amount;
-
-                // Fetch the number of shares from the original transaction description
-                preg_match('/Puchase of (\d+) shares/', $transaction->description, $matches);
-                $numberOfShares = $matches[1] ?? 0;
-
-                // Reverse the share transaction
-                $reversal = new Transaction();
-                $reversal->user_id = $user->id;
-                $reversal->source_user_id = $transaction->source_user_id;
-                $reversal->sacco_id = $transaction->sacco_id;
-                $reversal->type = 'REVERSAL';
-                $reversal->source_type = 'SHARE';
-                $reversal->amount = -$amount;
-                $reversal->description = "Reversal of SHARE: " . $transaction->description;
-                $reversal->details = "Reversal of SHARE transaction ID: {$transaction->id}";
-
-                $reversal->save();
-
-                // Update the user's number of shares
-                $user->number_of_shares -= $numberOfShares;
-                $user->save();
             } else {
                 return $this->error('Transaction type not supported for reversal: ' . $transaction->type);
             }
