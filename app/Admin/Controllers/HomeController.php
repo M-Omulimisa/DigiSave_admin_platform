@@ -142,6 +142,10 @@ class HomeController extends Controller
                 ->sum('balance');
             $pwdTotalBalance = number_format($pwdTotalBalance, 2);
 
+            $pwdbalance = Transaction::whereIn('sacco_id', $saccoIds)->where('type', 'SHARE')
+                ->whereIn('user_id', $pwdUserIds)
+                ->sum('balance');
+
             $loansDisbursedToWomen = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
                 ->where('transactions.type', 'LOAN')
                 ->where('users.sex', 'Female')
@@ -261,6 +265,11 @@ class HomeController extends Controller
                 ->whereIn('user_id', $pwdUserIds)
                 ->sum('balance');
             $pwdTotalBalance = number_format($pwdTotalBalance, 2);
+            // $pwdbalance = $pwdTotalBalance;
+
+            $pwdbalance = Transaction::where('type', 'SHARE')
+                ->whereIn('user_id', $pwdUserIds)
+                ->sum('balance');
 
             $loansDisbursedToWomen = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
                 ->where('transactions.type', 'LOAN')
@@ -371,11 +380,11 @@ class HomeController extends Controller
         $percentageLoansYouths = $totalLoans > 0 ? ($loansDisbursedToYouths / $totalLoans) * 100 : 0;
         $percentageLoansPwd = $totalLoans > 0 ? ($pwdTotalLoanCount / $totalLoans) * 100 : 0;
 
-        $totalLoanSum = $loanSumForWomen + $loanSumForMen + $loanSumForYouths;
+        $totalLoanSum = $loanSumForWomen + $loanSumForMen + $loanSumForYouths + $pwdMembersCount;
         $percentageLoanSumWomen = $totalLoanSum > 0 ? ($loanSumForWomen / $totalLoanSum) * 100 : 0;
         $percentageLoanSumMen = $totalLoanSum > 0 ? ($loanSumForMen / $totalLoanSum) * 100 : 0;
         $percentageLoanSumYouths = $totalLoanSum > 0 ? ($loanSumForYouths / $totalLoanSum) * 100 : 0;
-        // $percentageLoanSumPWDs = $totalLoanSum > 0 ? ($pwdTotalBalance / $totalLoanSum) * 100 : 0;
+        $percentageLoanSumPWDs = $totalLoanSum > 0 ? ($pwdMembersCount / $totalLoanSum) * 100 : 0;
 
         $quotes = [
             "Empowerment through savings and loans.",
@@ -435,7 +444,7 @@ class HomeController extends Controller
                         'percentageLoansWomen' => $percentageLoansWomen,
                         'percentageLoansMen' => $percentageLoansMen,
                         'percentageLoansYouths' => $percentageLoansYouths,
-                        'percentageLoansPwd' => $percentageLoansPwd,
+                        'percentageLoansPwd' => $percentageLoanSumPWDs,
                         'percentageLoanSumWomen' => $percentageLoanSumWomen,
                         'percentageLoanSumMen' => $percentageLoanSumMen,
                         'percentageLoanSumYouths' => $percentageLoanSumYouths,
