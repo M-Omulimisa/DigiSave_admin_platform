@@ -53,7 +53,6 @@ class ApiResurceController extends Controller
 {
 
     use ApiResponser;
-
     public function reverseTransaction(Request $request)
     {
         $user = auth('api')->user();
@@ -80,7 +79,9 @@ class ApiResurceController extends Controller
         // Begin transaction for database operations
         DB::beginTransaction();
         try {
-            if ($transaction->type == 'SHARE') {
+            $reversal = null;
+
+            if ($transaction->type == 'SAVING') {
                 // For SAVING transactions, deduct the amount from the user's balance
                 $amount = abs($transaction->amount); // Amount should be positive for reversal
                 $user->balance -= $amount;
@@ -91,7 +92,7 @@ class ApiResurceController extends Controller
                 $reversal->source_user_id = $transaction->source_user_id;
                 $reversal->sacco_id = $transaction->sacco_id;
                 $reversal->type = 'REVERSAL';
-                $reversal->source_type = 'SHARE';
+                $reversal->source_type = 'SAVING';
                 $reversal->amount = -$amount;
                 $reversal->description = "Reversal of SAVING: " . $transaction->description;
                 $reversal->details = "Reversal of SAVING transaction ID: {$transaction->id}";
@@ -100,14 +101,17 @@ class ApiResurceController extends Controller
 
                 // Save the updated user balance
                 $user->save();
-            } elseif ($transaction->type == 'LOAN') {
-                // For LOAN transactions, add the amount back to the loan balance
-                $loan = Loan::find($transaction->loan_id);
+            } elseif ($transaction->type == 'LOAN' || $transaction->type == 'LOAN_INTEREST') {
+                // For LOAN and LOAN_INTEREST transactions, add the amount back to the loan balance
+                $loan = Loan::where('user_id', $transaction->user_id)
+                            ->where('sacco_id', $transaction->sacco_id)
+                            ->orderBy('created_at', 'desc')
+                            ->first();
                 if ($loan == null) {
                     return $this->error('Loan associated with this transaction not found.');
                 }
 
-                // Reverse the loan transaction
+                // Reverse the loan or loan interest transaction
                 $amount = abs($transaction->amount); // Amount should be positive for reversal
                 $loan->balance += $amount;
 
@@ -117,17 +121,42 @@ class ApiResurceController extends Controller
                 $reversal->source_user_id = $transaction->source_user_id;
                 $reversal->sacco_id = $transaction->sacco_id;
                 $reversal->type = 'REVERSAL';
-                $reversal->source_type = 'LOAN';
+                $reversal->source_type = $transaction->type;
                 $reversal->amount = -$amount;
-                $reversal->description = "Reversal of LOAN: " . $transaction->description;
-                $reversal->details = "Reversal of LOAN transaction ID: {$transaction->id}";
+                $reversal->description = "Reversal of {$transaction->type}: " . $transaction->description;
+                $reversal->details = "Reversal of {$transaction->type} transaction ID: {$transaction->id}";
 
                 $reversal->save();
 
                 // Save the updated loan balance
                 $loan->save();
+            } elseif ($transaction->type == 'SHARE') {
+                // For SHARE transactions, deduct the amount and update the number of shares
+                $amount = abs($transaction->amount); // Amount should be positive for reversal
+                $user->balance -= $amount;
+
+                // Fetch the number of shares from the original transaction description
+                preg_match('/Puchase of (\d+) shares/', $transaction->description, $matches);
+                $numberOfShares = $matches[1] ?? 0;
+
+                // Reverse the share transaction
+                $reversal = new Transaction();
+                $reversal->user_id = $user->id;
+                $reversal->source_user_id = $transaction->source_user_id;
+                $reversal->sacco_id = $transaction->sacco_id;
+                $reversal->type = 'REVERSAL';
+                $reversal->source_type = 'SHARE';
+                $reversal->amount = -$amount;
+                $reversal->description = "Reversal of SHARE: " . $transaction->description;
+                $reversal->details = "Reversal of SHARE transaction ID: {$transaction->id}";
+
+                $reversal->save();
+
+                // Update the user's number of shares
+                $user->number_of_shares -= $numberOfShares;
+                $user->save();
             } else {
-                return $this->error('Transaction type not supported for reversal: '.$transaction->type);
+                return $this->error('Transaction type not supported for reversal: ' . $transaction->type);
             }
 
             // Mark the original transaction as reversed
@@ -137,14 +166,13 @@ class ApiResurceController extends Controller
             // Commit the transaction
             DB::commit();
 
-            return $this->success(null, 'Transaction reversed successfully.');
+            return $this->success($reversal, 'Transaction reversed successfully.');
         } catch (\Exception $e) {
             // Rollback the transaction if any error occurs
             DB::rollback();
             return $this->error('Failed to reverse transaction: ' . $e->getMessage());
         }
     }
-
 
     public function transactions()
     {
