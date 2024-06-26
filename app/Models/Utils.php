@@ -18,6 +18,7 @@ define('TRANSACTION_TYPES', [
     'LOAN_INTEREST' => 'LOAN_INTEREST',
     'FEE' => 'FEE',
     'FINE' => 'FINE',
+    'REVERSAL' => 'REVERSAL',
     'WITHDRAWAL' => 'WITHDRAWAL',
     'CYCLE_PROFIT' => 'CYCLE_PROFIT',
 ]);
