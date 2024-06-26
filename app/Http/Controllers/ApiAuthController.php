@@ -1685,6 +1685,30 @@ class ApiAuthController extends Controller
     }
 
 
+    public function v2_login_code_request(Request $r)
+    {
+        $phone = Utils::prepare_phone_number($r->phone_number);
+        if (!Utils::phone_number_is_valid($phone)) {
+            return $this->error('Invalid phone number.');
+        }
+        $user = Administrator::where('phone_number', $phone)->first();
+        if ($user == null) {
+            return $this->error('User not found.');
+        }
+        $code = rand(1000, 9999);
+        $user->password = password_hash($code, PASSWORD_DEFAULT);
+        $user->save();
+        $message = "Your login code is $code";
+        $resp = Utils::send_sms($phone, $message);
+        if ($resp == 'success') {
+            return $this->success(null, 'Login code sent successfully.');
+        } else {
+            return $this->error('Failed to send login code.');
+        }
+    }
+
+
+
     public function my_roles()
     {
         $u = auth('api')->user();
