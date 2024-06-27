@@ -1541,7 +1541,7 @@ class ApiResurceController extends Controller
                 $transaction_user->sacco_id = $u->sacco_id;
                 $transaction_user->type = 'FINE';
                 $transaction_user->source_type = 'FINE';
-                $transaction_user->amount = +1 * $amount;
+                // $transaction_user->amount = +1 * $amount;
                 $transaction_user->details = $r->description;
                 $transaction_user->description = "Fine of UGX " . number_format($amount) . " from {$u->phone_number} - $u->name. Reason: {$r->description}.";
 
