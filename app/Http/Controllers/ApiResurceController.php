@@ -1450,13 +1450,22 @@ class ApiResurceController extends Controller
         if ($admin == null) {
             return $this->error('User not found.');
         }
+        /*         if ($admin->user_type != 'Admin') {
+            return $this->error('Only admins can create a transaction.');
+        } */
 
         $u = User::find($r->user_id);
         if ($u == null) {
             return $this->error('Receiver account not found.');
         }
 
-        if ($r->type == null || $r->amount == null) {
+        if ($u == null) {
+            return $this->error('User not found.');
+        }
+        if (
+            $r->type == null ||
+            $r->amount == null
+        ) {
             return $this->error('Some Information is still missing. Fill the missing information and try again.');
         }
 
@@ -1491,7 +1500,7 @@ class ApiResurceController extends Controller
                     return $this->error('Failed to save transaction, because ' . $th->getMessage() . '');
                 }
 
-                //add balance to sacco account
+                //add balance to sacc account
                 $transaction_sacco = new Transaction();
                 $transaction_sacco->user_id = $admin->id;
                 $transaction_sacco->source_user_id = $u->id;
@@ -1499,8 +1508,14 @@ class ApiResurceController extends Controller
                 $transaction_sacco->type = 'WITHDRAWAL';
                 $transaction_sacco->source_type = 'WITHDRAWAL';
                 $transaction_sacco->amount = $amount;
-                $transaction_sacco->details = $r->description;
+                $transaction_user->details = $r->description;
                 $transaction_sacco->description = "Withdrawal of UGX " . number_format($amount) . " from {$u->phone_number} - $u->name.";
+                try {
+                    $transaction_sacco->save();
+                } catch (\Throwable $th) {
+                    DB::rollback();
+                    return $this->error('Failed to save transaction, because ' . $th->getMessage() . '');
+                }
                 try {
                     $transaction_sacco->save();
                 } catch (\Throwable $th) {
@@ -1519,33 +1534,40 @@ class ApiResurceController extends Controller
             $amount = abs($r->amount);
             try {
                 DB::beginTransaction();
-                //create POSITIVE transaction for user
-                $transaction_user = new Transaction();
-                $transaction_user->user_id = $u->id;
-                $transaction_user->source_user_id = $admin->id;
-                $transaction_user->sacco_id = $u->sacco_id;
-                $transaction_user->type = 'FINE';
-                $transaction_user->source_type = 'FINE';
-                $transaction_user->amount = $amount; // Positive amount for fines
-                $transaction_user->details = $r->description;
-                $transaction_user->description = "Fine of UGX " . number_format($amount) . " to {$u->phone_number} - $u->name. Reason: {$r->description}.";
-                try {
-                    $transaction_user->save();
-                } catch (\Throwable $th) {
-                    DB::rollback();
-                    return $this->error('Failed to save transaction, because ' . $th->getMessage() . '');
-                }
+                //create NEGATIVE transaction for user
+                // $transaction_user = new Transaction();
+                // $transaction_user->user_id = $u->id;
+                // $transaction_user->source_user_id = $admin->id;
+                // $transaction_user->sacco_id = $u->sacco_id;
+                // $transaction_user->type = 'FINE';
+                // $transaction_user->source_type = 'FINE';
+                // $transaction_user->amount = -1 * $amount;
+                // $transaction_user->details = $r->description;
+                // $transaction_user->description = "Fine of UGX " . number_format($amount) . " from {$u->phone_number} - $u->name. Reason: {$r->description}.";
 
-                //add balance to sacco account
+                // try {
+                //     $transaction_user->save();
+                // } catch (\Throwable $th) {
+                //     DB::rollback();
+                //     return $this->error('Failed to save transaction, because ' . $th->getMessage() . '');
+                // }
+
+                //add balance to sacc account
                 $transaction_sacco = new Transaction();
                 $transaction_sacco->user_id = $admin->id;
                 $transaction_sacco->source_user_id = $u->id;
                 $transaction_sacco->sacco_id = $u->sacco_id;
                 $transaction_sacco->type = 'FINE';
                 $transaction_sacco->source_type = 'FINE';
-                $transaction_sacco->amount = $amount; // Positive amount for fines
-                $transaction_sacco->details = $r->description;
-                $transaction_sacco->description = "Fine of UGX " . number_format($amount) . " to {$u->phone_number} - $u->name. Reason: {$r->description}.";
+                $transaction_sacco->amount = $amount;
+                $transaction_user->details = $r->description;
+                $transaction_sacco->description = "Fine of UGX " . number_format($amount) . " from {$u->phone_number} - $u->name. Reason: {$r->description}.";
+                try {
+                    $transaction_sacco->save();
+                } catch (\Throwable $th) {
+                    DB::rollback();
+                    return $this->error('Failed to save transaction, because ' . $th->getMessage() . '');
+                }
                 try {
                     $transaction_sacco->save();
                 } catch (\Throwable $th) {
@@ -1560,20 +1582,27 @@ class ApiResurceController extends Controller
                 // something went wrong
                 return $this->error('Failed to save transaction, because ' . $e->getMessage() . '');
             }
-        } else if ($r->type == 'REGISTRATION') {
+        } else if ($r->type == 'REGESTRATION') {
+
             $amount = abs($r->amount);
             try {
                 DB::beginTransaction();
-                //add balance to sacco account
+                //add balance to sacc account
                 $transaction_sacco = new Transaction();
                 $transaction_sacco->user_id = $admin->id;
                 $transaction_sacco->source_user_id = $u->id;
                 $transaction_sacco->sacco_id = $u->sacco_id;
-                $transaction_sacco->type = 'REGISTRATION';
-                $transaction_sacco->source_type = 'REGISTRATION';
+                $transaction_sacco->type = 'REGESTRATION';
+                $transaction_sacco->source_type = 'REGESTRATION';
                 $transaction_sacco->amount = $amount;
-                $transaction_sacco->details = $r->description;
+                $transaction_user->details = $r->description;
                 $transaction_sacco->description = "Registration fees of UGX " . number_format($amount) . " from {$u->phone_number} - $u->name.";
+                try {
+                    $transaction_sacco->save();
+                } catch (\Throwable $th) {
+                    DB::rollback();
+                    return $this->error('Failed to save transaction, because ' . $th->getMessage() . '');
+                }
                 try {
                     $transaction_sacco->save();
                 } catch (\Throwable $th) {
@@ -1588,7 +1617,11 @@ class ApiResurceController extends Controller
                 // something went wrong
                 return $this->error('Failed to save transaction, because ' . $e->getMessage() . '');
             }
+
+
+            //create positive transaction for sacco
         } else if ($r->type == 'SAVING') {
+
             $amount = abs($r->amount);
             try {
                 DB::beginTransaction();
@@ -1601,7 +1634,7 @@ class ApiResurceController extends Controller
                 $transaction_user->source_type = 'SAVING';
                 $transaction_user->amount = $amount;
                 $transaction_user->details = $r->description;
-                $transaction_user->description = "Saving of UGX " . number_format($amount) . " from {$u->phone_number} - $u->name.";
+                $transaction_user->description =  "Saving of UGX " . number_format($amount) . " from {$u->phone_number} - $u->name.";
                 try {
                     $transaction_user->save();
                 } catch (\Throwable $th) {
@@ -1609,7 +1642,7 @@ class ApiResurceController extends Controller
                     return $this->error('Failed to save transaction, because ' . $th->getMessage() . '');
                 }
 
-                //add balance to sacco account
+                //add balance to sacc account
                 $transaction_sacco = new Transaction();
                 $transaction_sacco->user_id = $admin->id;
                 $transaction_sacco->source_user_id = $u->id;
@@ -1617,8 +1650,14 @@ class ApiResurceController extends Controller
                 $transaction_sacco->type = 'SAVING';
                 $transaction_sacco->source_type = 'SAVING';
                 $transaction_sacco->amount = $amount;
-                $transaction_sacco->details = $r->description;
+                $transaction_user->details = $r->description;
                 $transaction_sacco->description = "Saving of UGX " . number_format($amount) . " from {$u->phone_number} - $u->name.";
+                try {
+                    $transaction_sacco->save();
+                } catch (\Throwable $th) {
+                    DB::rollback();
+                    return $this->error('Failed to save transaction, because ' . $th->getMessage() . '');
+                }
                 try {
                     $transaction_sacco->save();
                 } catch (\Throwable $th) {
@@ -1633,6 +1672,9 @@ class ApiResurceController extends Controller
                 // something went wrong
                 return $this->error('Failed to save transaction, because ' . $e->getMessage() . '');
             }
+
+
+            //create positive transaction for sacco
         } else if ($r->type == 'LOAN_REPAYMENT') {
             $loan = Loan::find($r->loan_id);
             if ($loan == null) {
@@ -1646,11 +1688,36 @@ class ApiResurceController extends Controller
             $record->user_id = $u->id;
             $acc_balance = $u->balance;
 
+            // if ($amount > $acc_balance) {
+            //     return $this->error('You do not have enough money to pay this loan. Your balance is UGX ' . number_format($acc_balance) . '.');
+            // }
+
             $amount = abs($r->amount);
             try {
                 DB::beginTransaction();
+                //reduce user balance
+                // $transaction_user = new Transaction();
+                // $transaction_user->user_id = $u->id;
+                // $transaction_user->source_user_id = $admin->id;
+                // $transaction_user->sacco_id = $u->sacco_id;
+                // $transaction_user->type = 'LOAN_REPAYMENT';
+                // $transaction_user->source_type = 'LOAN_REPAYMENT';
+                // $transaction_user->amount = -1 * $amount;
+                // $transaction_user->description = "Loan Repayment of UGX " . number_format($amount) . " to {$u->phone_number} - $u->name. Loan Scheem: {$loan->scheme_name}. Reference: {$loan->id}.";
+                // $transaction_user->details = "Loan Repayment of UGX " . number_format($amount) . " to {$u->phone_number} - $u->name. Loan Scheem: {$loan->scheme_name}. Reference: {$loan->id}.";
+                // try {
+                //     if ($loan->balance == 0) {
+                //         // Update is_fully_paid field to 'Yes' as the loan is fully paid
+                //         $loan->is_fully_paid = 'Yes';
+                //         $loan->save();
+                //     }
+                //     $transaction_user->save();
+                // } catch (\Throwable $th) {
+                //     DB::rollback();
+                //     return $this->error('Failed to save transaction, because ' . $th->getMessage() . '');
+                // }
 
-                //add balance to sacco account
+                //add balance to sacc account
                 $transaction_sacco = new Transaction();
                 $transaction_sacco->user_id = $admin->id;
                 $transaction_sacco->source_user_id = $u->id;
@@ -1658,8 +1725,9 @@ class ApiResurceController extends Controller
                 $transaction_sacco->type = 'LOAN_REPAYMENT';
                 $transaction_sacco->source_type = 'LOAN_REPAYMENT';
                 $transaction_sacco->amount = $amount;
-                $transaction_sacco->description = "Loan Repayment of UGX " . number_format($amount) . " from {$u->phone_number} - $u->name. Loan Scheme: {$loan->scheme_name}. Reference: {$loan->id}.";
-                $transaction_sacco->details = "Loan Repayment of UGX " . number_format($amount) . " from {$u->phone_number} - $u->name. Loan Scheme: {$loan->scheme_name}. Reference: {$loan->id}.";
+                // $transaction_sacco->balance = $acc_balance;
+                $transaction_sacco->description = "Loan Repayment of UGX " . number_format($amount) . " from {$u->phone_number} - $u->name. Loan Scheem: {$loan->scheme_name}. Reference: {$loan->id}.";
+                $transaction_sacco->details = "Loan Repayment of UGX " . number_format($amount) . " from {$u->phone_number} - $u->name. Loan Scheem: {$loan->scheme_name}. Reference: {$loan->id}.";
                 try {
                     $transaction_sacco->save();
                 } catch (\Throwable $th) {
@@ -1702,7 +1770,9 @@ class ApiResurceController extends Controller
                 // something went wrong
                 return $this->error('Failed to save transaction, because ' . $e->getMessage() . '');
             }
+            return;
         }
+
 
         $tra = new Transaction();
         $tra->user_id = $u->id;
@@ -1729,6 +1799,7 @@ class ApiResurceController extends Controller
             return $this->error('Failed to save transaction, because ' . $th->getMessage() . '');
         }
     }
+
 
     public function transactions_transfer(Request $r)
     {
