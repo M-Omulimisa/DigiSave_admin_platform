@@ -80,8 +80,28 @@ class ApiResurceController extends Controller
         DB::beginTransaction();
         try {
             $reversal = null;
+            if ($transaction->type == 'FINE') {
+                // For FINE transactions, deduct the amount from the user's balance
+                $amount = abs($transaction->amount); // Amount should be positive for reversal
+                $user->balance -= $amount;
 
-            if ($transaction->type == 'SHARE') {
+                // Create a new transaction for the reversal
+                $reversal = new Transaction();
+                $reversal->user_id = $user->id;
+                $reversal->source_user_id = $transaction->source_user_id;
+                $reversal->sacco_id = $transaction->sacco_id;
+                $reversal->type = 'REVERSAL';
+                $reversal->source_type = 'FINE';
+                $reversal->amount = -$amount;
+                $reversal->description = "Reversal of FINE: " . $transaction->description;
+                $reversal->details = "Reversal of FINE transaction ID: {$transaction->id}";
+
+                $reversal->save();
+
+                // Save the updated user balance
+                $user->save();
+            }
+            elseif ($transaction->type == 'SHARE') {
                 // For SAVING transactions, deduct the amount from the user's balance
                 $amount = abs($transaction->amount); // Amount should be positive for reversal
                 $user->balance -= $amount;
