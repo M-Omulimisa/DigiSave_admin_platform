@@ -6,13 +6,41 @@ use App\Http\Controllers\MainController;
 use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\RedirectIfAuthenticated;
 use App\Models\Gen;
+use App\Models\User;
+use App\Models\Utils;
 use Encore\Admin\Facades\Admin;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 
-Route::get('policy', function(){
+Route::get('policy', function () {
     return view('policy');
+});
+Route::get('process-users', function () {
+    $users = User::where(['processed' => 'No'])->get();
+    echo "Total users: " . count($users) . "<br>";
+    foreach ($users as $user) {
+        $phone_number = Utils::prepare_phone_number($user->phone_number);
+        if (!Utils::phone_number_is_valid($phone_number)) {
+            $user->process_status = 'Failed';
+            $user->process_message = 'Invalid phone number: ' . $user->phone_number;
+            $user->save();
+            echo $user->process_message . "<br>";
+            continue;
+        }
+        $user->processed = 'Yes';
+        $user->process_status = 'Valid';
+        $user->process_message = 'Phone number is valid.';
+        try {
+            echo "Processing " . $user->phone_number . "<br>";
+            $user->save();
+        } catch (\Throwable $th) {
+            $user->process_status = 'Failed';
+            $user->process_message = $th->getMessage();
+            $user->save();
+            echo $user->process_message . "<br>"; 
+        }
+    }
 });
 
 Route::get('/gen-form', function () {
