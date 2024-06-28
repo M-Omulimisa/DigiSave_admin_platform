@@ -687,6 +687,10 @@ administrator_id
                     'name' => 'process_message',
                     'type' => 'Text',
                 ],
+                [
+                    'name' => 'pin',
+                    'type' => 'Text',
+                ],
             ]
         );
     }

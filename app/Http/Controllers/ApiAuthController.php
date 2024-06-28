@@ -1620,7 +1620,7 @@ class ApiAuthController extends Controller
         $user->last_name = $r->last_name;
         $user->first_name = $r->first_name;
 
-        $user->phone_number = $r->phone_number;
+        $user->phone_number = $phone_number;
         $user->sex = $r->sex;
         $user->name = $r->first_name . ' ' . $r->last_name;
         $user->reg_number = $code;
@@ -1641,6 +1641,8 @@ class ApiAuthController extends Controller
         $user->name = $r->first_name . ' ' . $r->last_name;
         $user->address = $r->address;
         $name = $r->first_name . ' ' . $r->last_name;
+        $user->dob = $r->dob;
+        $user->pwd = $r->pwd;
 
         // Generate a random 5-digit password
         // $password = str_pad(mt_rand(1, 99999), 5, '0', STR_PAD_LEFT);

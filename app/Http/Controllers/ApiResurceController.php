@@ -100,8 +100,7 @@ class ApiResurceController extends Controller
 
                 // Save the updated user balance
                 $user->save();
-            }
-            elseif ($transaction->type == 'SHARE') {
+            } elseif ($transaction->type == 'SHARE') {
                 // For SAVING transactions, deduct the amount from the user's balance
                 $amount = abs($transaction->amount); // Amount should be positive for reversal
                 $user->balance -= $amount;
@@ -124,9 +123,9 @@ class ApiResurceController extends Controller
             } elseif ($transaction->type == 'LOAN' || $transaction->type == 'LOAN_INTEREST') {
                 // For LOAN and LOAN_INTEREST transactions, add the amount back to the loan balance
                 $loan = Loan::where('user_id', $transaction->user_id)
-                            ->where('sacco_id', $transaction->sacco_id)
-                            ->orderBy('created_at', 'desc')
-                            ->first();
+                    ->where('sacco_id', $transaction->sacco_id)
+                    ->orderBy('created_at', 'desc')
+                    ->first();
                 if ($loan == null) {
                     return $this->error('Loan associated with this transaction not found.');
                 }
@@ -705,23 +704,26 @@ class ApiResurceController extends Controller
                 return $this->error('Account not found.');
             }
             $otp = rand(10000, 99999) . "";
+            $isTest = false;
             if (
                 str_contains($phone_number, '256783204665') ||
                 str_contains(strtolower($acc->first_name), 'test') ||
                 str_contains(strtolower($acc->last_name), 'test')
             ) {
                 $otp = '12345';
+                $isTest = true;
             }
 
             // Attempt to send OTP
             $resp = null;
             if (Utils::phone_number_is_valid($phone_number)) {
-
-                try {
-                    $resp = Utils::send_sms($phone_number, $otp . ' is your Digisave OTP.');
-                } catch (Exception $e) {
-                    // Log the error, but proceed with the response
-                    Log::error('Failed to send OTP because ' . $e->getMessage());
+                if (!$isTest) {
+                    try {
+                        $resp = Utils::send_sms($phone_number, $otp . ' is your Digisave OTP.');
+                    } catch (Exception $e) {
+                        // Log the error, but proceed with the response
+                        Log::error('Failed to send OTP because ' . $e->getMessage());
+                    }
                 }
                 // Send SMS only if the phone number is valid
                 // Utils::send_sms($phone_number, $message);
@@ -730,11 +732,16 @@ class ApiResurceController extends Controller
             // Update user's password with OTP hash
             $acc->password = password_hash($otp, PASSWORD_DEFAULT);
             $acc->save();
+            $message = "OTP sent successfully. $resp";
+
+            if ($isTest) {
+                $message = "OTP sent successfully. Code: $otp";
+            }
 
             // Return success response with OTP
             return $this->success(
                 $otp . "",
-                $message = "OTP sent successfully. $resp",
+                $message,
                 200
             );
         } else {
@@ -1230,7 +1237,7 @@ class ApiResurceController extends Controller
             Sacco::where([])->orderby('id', 'desc')->get(),
             $message = "Sussess",
             200
-        ); 
+        );
         return $this->success(
             Sacco::where([])->orderby('id', 'desc')->get(),
             $message = "Sussess",
