@@ -82,4 +82,5 @@ Route::group([
     $router->resource('product-orders', ProductOrderController::class);
     $router->resource('transactions', TransactionController::class);
     $router->resource('transactions-all', TransactionAllController::class);
+    $router->resource('users', MemberController::class);
 });

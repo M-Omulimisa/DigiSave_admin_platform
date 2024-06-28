@@ -6,6 +6,8 @@ use Carbon\Carbon;
 use Encore\Admin\Facades\Admin;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 use SplFileObject;
 
 define('TRANSACTION_TYPES', [
@@ -26,6 +28,36 @@ define('TRANSACTION_TYPES', [
 class Utils extends Model
 {
     use HasFactory;
+
+    public static function create_column($table, $new_cols)
+    {
+        try {
+            $colls_of_table = Schema::getColumnListing($table);
+            foreach ($new_cols as $new_col) {
+                if (!isset($new_col['name'])) {
+                    continue;
+                }
+                if (!isset($new_col['type'])) {
+                    continue;
+                }
+                if (!in_array($new_col['name'], $colls_of_table)) {
+                    Schema::table($table, function (Blueprint $t) use ($new_col) {
+                        $name = $new_col['name'];
+                        $type = $new_col['type'];
+                        $default = null;
+                        if (isset($new_col['default'])) {
+                            if ($type != 'Text') {
+                                $default = $new_col['default'];
+                            }
+                        }
+                        $t->$type($name)->default($default)->nullable();
+                    });
+                }
+            }
+        } catch (\Throwable $th) {
+            //throw $th->getMessage();
+        }
+    }
 
 
 
@@ -54,7 +86,7 @@ class Utils extends Model
         $url .= "&msg=$sms";
         $url .= "&type=json";
 
-        $url = "https://sms.dmarkmobile.com/v2/api/send_sms/".$url;
+        $url = "https://sms.dmarkmobile.com/v2/api/send_sms/" . $url;
 
         //use guzzle to make the request
         $body = null;
@@ -591,6 +623,8 @@ administrator_id
     }
     public static function system_boot()
     {
+        self::run_migrations();
+        self::process_user_accounts();
         /*         $d = env('types');
         echo '<pre>';
         print_r(TRANSACTION_TYPES);
@@ -609,6 +643,52 @@ administrator_id
                 $role->save();
             }
         }
+    }
+
+    public static function process_user_accounts()
+    {
+        $users = User::where(['processed' => 'No'])->get();
+        foreach ($users as $user) {
+            $phone_number = Utils::prepare_phone_number($user->phone_number);
+            if (!Utils::phone_number_is_valid($phone_number)) {
+                $user->process_status = 'Failed';
+                $user->process_message = 'Invalid phone number: ' . $user->phone_number;
+                $user->save();
+                continue;
+            }
+            $user->processed = 'Yes';
+            $user->process_status = 'Valid';
+            $user->process_message = 'Phone number is valid.';
+            try {
+                $user->save();
+            } catch (\Throwable $th) {
+                $user->process_status = 'Failed';
+                $user->process_message = $th->getMessage();
+                $user->save();
+            }
+        }
+    }
+    public static function run_migrations()
+    {
+        Utils::create_column(
+            (new User())->getTable(),
+            [
+                [
+                    'name' => 'processed',
+                    'type' => 'String',
+                    'default' => 'No',
+                ],
+                [
+                    'name' => 'process_status',
+                    'type' => 'String',
+                    'default' => 'Pending',
+                ],
+                [
+                    'name' => 'process_message',
+                    'type' => 'Text',
+                ],
+            ]
+        );
     }
 
     public static function start_session()
