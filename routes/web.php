@@ -23,6 +23,7 @@ Route::get('process-users', function () {
         $phone_number = Utils::prepare_phone_number($user->phone_number);
         if (!Utils::phone_number_is_valid($phone_number)) {
             $user->process_status = 'Failed';
+            $user->processed = 'Yes';
             $user->process_message = 'Invalid phone number: ' . $user->phone_number;
             $user->save();
             echo $user->process_message . "<br>";
@@ -38,7 +39,7 @@ Route::get('process-users', function () {
             $user->process_status = 'Failed';
             $user->process_message = $th->getMessage();
             $user->save();
-            echo $user->process_message . "<br>"; 
+            echo $user->process_message . "<br>";
         }
     }
 });
