@@ -53,6 +53,121 @@ class ApiResurceController extends Controller
 {
 
     use ApiResponser;
+    public function reverseTransaction(Request $request)
+    {
+        $user = auth('api')->user();
+        if ($user == null) {
+            return $this->error('User not found.');
+        }
+
+        $request->validate([
+            'transaction_id' => 'required|exists:transactions,id',
+        ]);
+
+        $transaction = Transaction::find($request->transaction_id);
+
+        // Ensure the transaction belongs to the user's SACCO or the user itself
+        if ($transaction->sacco_id != $user->sacco_id && $transaction->user_id != $user->id) {
+            return $this->error('Unauthorized to reverse this transaction.');
+        }
+
+        // Check if the transaction has already been reversed
+        if ($transaction->is_reversed) {
+            return $this->error('This transaction has already been reversed.');
+        }
+
+        // Begin transaction for database operations
+        DB::beginTransaction();
+        try {
+            $reversal = null;
+            if ($transaction->type == 'FINE') {
+                // For FINE transactions, deduct the amount from the user's balance
+                $amount = abs($transaction->amount); // Amount should be positive for reversal
+                $user->balance -= $amount;
+
+                // Create a new transaction for the reversal
+                $reversal = new Transaction();
+                $reversal->user_id = $user->id;
+                $reversal->source_user_id = $transaction->source_user_id;
+                $reversal->sacco_id = $transaction->sacco_id;
+                $reversal->type = 'REVERSAL';
+                $reversal->source_type = 'FINE';
+                $reversal->amount = -$amount;
+                $reversal->description = "Reversal of FINE: " . $transaction->description;
+                $reversal->details = "Reversal of FINE transaction ID: {$transaction->id}";
+
+                $reversal->save();
+
+                // Save the updated user balance
+                $user->save();
+            }
+            elseif ($transaction->type == 'SHARE') {
+                // For SAVING transactions, deduct the amount from the user's balance
+                $amount = abs($transaction->amount); // Amount should be positive for reversal
+                $user->balance -= $amount;
+
+                // Create a new transaction for the reversal
+                $reversal = new Transaction();
+                $reversal->user_id = $user->id;
+                $reversal->source_user_id = $transaction->source_user_id;
+                $reversal->sacco_id = $transaction->sacco_id;
+                $reversal->type = 'REVERSAL';
+                $reversal->source_type = 'SHARE';
+                $reversal->amount = -$amount;
+                $reversal->description = "Reversal of SHARE: " . $transaction->description;
+                $reversal->details = "Reversal of SHARE transaction ID: {$transaction->id}";
+
+                $reversal->save();
+
+                // Save the updated user balance
+                $user->save();
+            } elseif ($transaction->type == 'LOAN' || $transaction->type == 'LOAN_INTEREST') {
+                // For LOAN and LOAN_INTEREST transactions, add the amount back to the loan balance
+                $loan = Loan::where('user_id', $transaction->user_id)
+                            ->where('sacco_id', $transaction->sacco_id)
+                            ->orderBy('created_at', 'desc')
+                            ->first();
+                if ($loan == null) {
+                    return $this->error('Loan associated with this transaction not found.');
+                }
+
+                // Reverse the loan or loan interest transaction
+                $amount = abs($transaction->amount); // Amount should be positive for reversal
+                $loan->balance += $amount;
+
+                // Create a new transaction for the reversal
+                $reversal = new Transaction();
+                $reversal->user_id = $user->id;
+                $reversal->source_user_id = $transaction->source_user_id;
+                $reversal->sacco_id = $transaction->sacco_id;
+                $reversal->type = 'REVERSAL';
+                $reversal->source_type = $transaction->type;
+                $reversal->amount = -$amount;
+                $reversal->description = "Reversal of {$transaction->type}: " . $transaction->description;
+                $reversal->details = "Reversal of {$transaction->type} transaction ID: {$transaction->id}";
+
+                $reversal->save();
+
+                // Save the updated loan balance
+                $loan->save();
+            } else {
+                return $this->error('Transaction type not supported for reversal: ' . $transaction->type);
+            }
+
+            // Mark the original transaction as reversed
+            $transaction->is_reversed = true;
+            $transaction->save();
+
+            // Commit the transaction
+            DB::commit();
+
+            return $this->success($reversal, 'Transaction reversed successfully.');
+        } catch (\Exception $e) {
+            // Rollback the transaction if any error occurs
+            DB::rollback();
+            return $this->error('Failed to reverse transaction: ' . $e->getMessage());
+        }
+    }
 
     public function transactions()
     {
@@ -1451,9 +1566,10 @@ class ApiResurceController extends Controller
                 $transaction_user->sacco_id = $u->sacco_id;
                 $transaction_user->type = 'FINE';
                 $transaction_user->source_type = 'FINE';
-                $transaction_user->amount = -1 * $amount;
+                // $transaction_user->amount = +1 * $amount;
                 $transaction_user->details = $r->description;
                 $transaction_user->description = "Fine of UGX " . number_format($amount) . " from {$u->phone_number} - $u->name. Reason: {$r->description}.";
+
                 try {
                     $transaction_user->save();
                 } catch (\Throwable $th) {

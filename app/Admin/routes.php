@@ -24,6 +24,7 @@ Route::group([
     $router->get('/', 'HomeController@index')->name('home');
     $router->resource('gens', GenController::class);
     $router->resource('saccos', SaccoController::class);
+    $router->resource('scheme', LoanScheemController::class);
     $router->resource('districts', DistrictsController::class);
     $router->resource('subcounties', SubcountiesController::class);
     $router->resource('parishes', ParishesController::class);

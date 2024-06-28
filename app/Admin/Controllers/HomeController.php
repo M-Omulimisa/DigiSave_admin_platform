@@ -409,7 +409,7 @@ class HomeController extends Controller
                         'totalMembers' => $totalMembers,
                         'totalAccounts' => $totalAccounts,
                         'totalOrgAdmins' => $totalOrgAdmins,
-                        'totalPwdMembers' => $totalPwdMembers,
+                        'totalPwdMembers' => $pwdMembersCount,
                         'youthMembersPercentage' => number_format($youthMembersPercentage, 2),
                     ]) .
                     view('widgets.card_set', [
@@ -434,11 +434,11 @@ class HomeController extends Controller
                         'percentageLoansWomen' => $percentageLoansWomen,
                         'percentageLoansMen' => $percentageLoansMen,
                         'percentageLoansYouths' => $percentageLoansYouths,
-                        'percentageLoansPwd' => $percentageLoansPwd,
+                        // 'percentageLoansPwd' => $percentageLoansPwd,
                         'percentageLoanSumWomen' => $percentageLoanSumWomen,
                         'percentageLoanSumMen' => $percentageLoanSumMen,
                         'percentageLoanSumYouths' => $percentageLoanSumYouths,
-                        'pwdTotalLoanBalance' => $pwdTotalLoanBalance
+                        // 'pwdTotalLoanBalance' => $pwdTotalLoanBalance
                     ]) .
                     '</div>' .
                     view('widgets.chart_container', [
