@@ -48,7 +48,8 @@
             z-index: 1;
         }
 
-        .login-box, .info-box {
+        .login-box,
+        .info-box {
             flex: 1;
             padding: 50px;
         }
@@ -147,14 +148,17 @@
         }
 
         #loadingAnimation {
-            display: none; /* Hidden by default */
+            display: none;
+            /* Hidden by default */
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(255, 255, 255, 0.8); /* semi-transparent background */
-            z-index: 1000; /* Ensure it appears above other content */
+            background: rgba(255, 255, 255, 0.8);
+            /* semi-transparent background */
+            z-index: 1000;
+            /* Ensure it appears above other content */
             display: flex;
             justify-content: center;
             align-items: center;
@@ -173,24 +177,36 @@
             border-radius: 50%;
             --c: #0000, #f03355 1deg 120deg, #0000 121deg;
             background:
-            conic-gradient(from 0deg, var(--c)) top right,
-            conic-gradient(from 120deg, var(--c)) bottom,
-            conic-gradient(from 240deg, var(--c)) top left;
+                conic-gradient(from 0deg, var(--c)) top right,
+                conic-gradient(from 120deg, var(--c)) bottom,
+                conic-gradient(from 240deg, var(--c)) top left;
             background-size: 40px 40px;
             background-repeat: no-repeat;
             animation: l25 2s infinite cubic-bezier(0.3, 1, 0, 1);
         }
 
         @keyframes l25 {
-            33% { inset: -8px; transform: rotate(0deg); }
-            66% { inset: -8px; transform: rotate(180deg); }
-            100% { inset: 0; transform: rotate(180deg); }
+            33% {
+                inset: -8px;
+                transform: rotate(0deg);
+            }
+
+            66% {
+                inset: -8px;
+                transform: rotate(180deg);
+            }
+
+            100% {
+                inset: 0;
+                transform: rotate(180deg);
+            }
         }
     </style>
 </head>
 
 <body>
-    <img src="https://ucca-uganda.org/wp-content/uploads/2022/05/1y7-J5Fgr_2_tyFOXDZegOA.jpeg" alt="Background" class="background-image">
+    <img src="https://ucca-uganda.org/wp-content/uploads/2022/05/1y7-J5Fgr_2_tyFOXDZegOA.jpeg" alt="Background"
+        class="background-image">
     <div class="container">
         <div class="login-box">
             <div class="login-box-body">
@@ -217,8 +233,8 @@
                             @endforeach
                         @endif
 
-                        <input type="password" class="form-control" placeholder="Type your password"
-                            name="password" id="password">
+                        <input type="password" class="form-control" placeholder="Type your password" name="password"
+                            id="password">
                         <span class="toggle-password"><i class="fas fa-eye" id="togglePassword"></i></span>
                     </div>
                     <div class="mb-3 d-flex justify-content-between align-items-center">
@@ -238,7 +254,8 @@
                     </div>
                 </form>
                 <div class="text-center">
-                    <p>Forgot password? <a href="#" class="forgot-password" data-bs-toggle="modal" data-bs-target="#resetPasswordModal">Reset Password!</a></p>
+                    <p>Forgot password? <a href="#" class="forgot-password" data-bs-toggle="modal"
+                            data-bs-target="#resetPasswordModal">Reset Password!</a></p>
                 </div>
             </div>
         </div>
@@ -246,6 +263,7 @@
             <img src="https://iirr.org/wp-content/uploads/2021/09/IIRR-PING-logo-1-2.png" alt="Logo">
             <h2>DigiSave VSLA Platform</h2>
             <p>Join our community today</p>
+            <small>(c) 2024</small>
         </div>
     </div>
 
@@ -255,7 +273,8 @@
     </div>
 
     <!-- Reset Password Modal -->
-    <div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordModalLabel" aria-hidden="true">
+    <div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordModalLabel"
+        aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -266,7 +285,8 @@
                     <form id="resetPasswordForm">
                         <div class="mb-3">
                             <label for="emailOrPhone" class="form-label">Enter your email or phone number</label>
-                            <input type="text" class="form-control" id="emailOrPhone" name="identifier" placeholder="Email or Phone">
+                            <input type="text" class="form-control" id="emailOrPhone" name="identifier"
+                                placeholder="Email or Phone">
                         </div>
                         <button type="submit" class="btn btn-primary w-100">Submit</button>
                     </form>
@@ -320,7 +340,8 @@
                     error: function(xhr) {
                         hideLoader();
                         console.log(xhr.responseJSON); // Log the server error response
-                        toastr.error(xhr.responseJSON.message || 'Login failed. Please try again.');
+                        toastr.error(xhr.responseJSON.message ||
+                            'Login failed. Please try again.');
                     }
                 });
             });
@@ -342,12 +363,14 @@
                         console.log(response); // Log the server response
                         $('#resetPasswordForm').addClass('d-none');
                         $('#resetPasswordSuccess').removeClass('d-none');
-                        toastr.success(response.message || 'Password reset instructions have been sent!');
+                        toastr.success(response.message ||
+                            'Password reset instructions have been sent!');
                     },
                     error: function(xhr) {
                         hideLoader();
                         console.log(xhr.responseJSON); // Log the server error response
-                        toastr.error(xhr.responseJSON.message || 'Failed to reset password. Please try again.');
+                        toastr.error(xhr.responseJSON.message ||
+                            'Failed to reset password. Please try again.');
                     }
                 });
             });
