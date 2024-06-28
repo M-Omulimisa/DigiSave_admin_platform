@@ -30,7 +30,7 @@ class MemberController extends AdminController
         $grid->quickSearch('name')->placeholder('Search by name');
         $grid->disableBatchActions();
 
-        $grid->column('id', __('Id'))->sortable()->hide();
+        $grid->column('id', __('Id'))->sortable();
         $grid->column('username', __('Username'))->sortable()->filter('like');
         $grid->column('name', __('Name'))->sortable();
         $grid->column('avatar', __('Avatar'))->image(
