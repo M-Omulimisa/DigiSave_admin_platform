@@ -643,6 +643,7 @@ class ApiAuthController extends Controller
         $loanScheme->initial_interest_type = $request->input('initial_interest_type');
         $loanScheme->initial_interest_flat_amount = $request->input('initial_interest_flat_amount');
         $loanScheme->initial_interest_percentage = $request->input('initial_interest_percentage');
+        $loanScheme->savings_percentage = $request->input('savings_percentage');
         $loanScheme->bill_periodically = $request->input('bill_periodically');
         $loanScheme->billing_period = $request->input('billing_period');
         $loanScheme->periodic_interest_type = $request->input('periodic_interest_type');
