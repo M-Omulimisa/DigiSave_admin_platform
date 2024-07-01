@@ -102,6 +102,21 @@ class User extends Authenticatable implements JWTSubject
             ->sum('amount');
     }
 
+    public function getFINES()
+    {
+        $sacco = Sacco::find($this->sacco_id);
+        if ($sacco == null) {
+            return 0;
+        }
+        if ($sacco->active_cycle == null) {
+            return 0;
+        }
+        return Transaction::where('user_id', $this->id)
+            ->where('cycle_id',  $sacco->active_cycle->id)
+            ->where('type',  'FINE')
+            ->sum('amount');
+    }
+
     public function transactions()
     {
         return $this->hasMany(Transaction::class, 'user_id');
@@ -133,6 +148,7 @@ class User extends Authenticatable implements JWTSubject
         'name',
         'user_text',
         'SAVING',
+        'FINES',
         'SHARE_COUNT',
         'SHARE',
         'LOAN',
