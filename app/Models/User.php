@@ -102,7 +102,7 @@ class User extends Authenticatable implements JWTSubject
             ->sum('amount');
     }
 
-    public function getFINES()
+    public function getFINESAttribute()
     {
         $sacco = Sacco::find($this->sacco_id);
         if ($sacco == null) {
