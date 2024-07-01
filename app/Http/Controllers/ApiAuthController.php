@@ -1816,7 +1816,11 @@ class ApiAuthController extends Controller
                 'vision' => 'nullable|string|max:500',
                 'terms' => 'nullable|string|max:500',
                 'administrator_id' => 'nullable|numeric',
-                'uses_shares' => 'nullable|boolean'
+                'uses_shares' => 'nullable|boolean',
+                'district' => 'nullable|string|max:255',
+                'subcounty' => 'nullable|string|max:255',
+                'parish' => 'nullable|string|max:255',
+                'village' => 'nullable|string|max:255',
             ]);
 
             // Create a new group record in the database
