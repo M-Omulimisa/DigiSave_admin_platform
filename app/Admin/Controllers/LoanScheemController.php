@@ -24,6 +24,7 @@ class LoanScheemController extends AdminController
         $grid->column('sacco.name', __('Sacco'));
         $grid->column('name', __('Name'))->sortable();
         $grid->column('description', __('Description'));
+        $grid->column('savings_percentage', __('Savings Percentage'));
         $grid->column('initial_interest_type', __('Initial Interest Type'));
         $grid->column('initial_interest_flat_amount', __('Initial Interest Flat Amount'));
         $grid->column('initial_interest_percentage', __('Initial Interest Percentage'));
