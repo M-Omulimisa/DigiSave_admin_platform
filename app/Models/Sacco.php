@@ -136,6 +136,12 @@ class Sacco extends Model
     //     });
     // }
 
+       // Define the inverse relationship with the LoanScheem model
+       public function loanSchemes()
+       {
+           return $this->hasMany(LoanScheem::class);
+       }
+
     public function users()
     {
         return $this->hasMany(User::class);
