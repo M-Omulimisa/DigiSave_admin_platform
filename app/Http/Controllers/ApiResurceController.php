@@ -1057,8 +1057,9 @@ class ApiResurceController extends Controller
         }
     }
 
-    public function getPositionsBySaccoId($saccoId)
+    public function getPositionsBySaccoId(Request $request)
     {
+        $saccoId = $request->input('sacco_id');
         try {
             $positions = MemberPosition::getPositionsBySaccoId($saccoId);
             if ($positions->isEmpty()) {
