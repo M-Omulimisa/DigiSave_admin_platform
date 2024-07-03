@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use DB;
 
 class GroupInsert extends Model
 {
     use HasFactory;
+
     protected $table = 'saccos';
 
     protected $fillable = [
@@ -33,21 +35,26 @@ class GroupInsert extends Model
 
     public static function createGroup($data)
     {
-        // Check for existing group with the same name and phone number
-        // $existingGroup = static::where([
-        //     'name' => $data['name'],
-        //     'phone_number' => $data['phone_number'],
-        // ])->first();
+        // Use DB transaction to ensure data integrity
+        return DB::transaction(function () use ($data) {
+            // Create a new group record in the database
+            $newGroup = static::create($data);
 
-        // if ($existingGroup) {
-        //     // If a group with the same name and phone number exists, return an error
-        //     return ['error' => 'Group with the same name and phone number already exists'];
-        // }
+            // Create default positions for the group
+            $positions = [
+                ['name' => 'Chairperson', 'sacco_id' => $newGroup->id],
+                ['name' => 'Secretary', 'sacco_id' => $newGroup->id],
+                ['name' => 'Treasurer', 'sacco_id' => $newGroup->id],
+                ['name' => 'Member', 'sacco_id' => $newGroup->id],
+            ];
 
-        // Create a new group record in the database
-        $newGroup = static::create($data);
+            // Insert positions into the database
+            foreach ($positions as $position) {
+                MemberPosition::create($position);
+            }
 
-        // Return the entire data along with the ID for the newly created group
-        return ['group_id' => $newGroup->id, 'group_data' => $newGroup];
+            // Return the entire data along with the ID for the newly created group
+            return ['group_id' => $newGroup->id, 'group_data' => $newGroup];
+        });
     }
 }
