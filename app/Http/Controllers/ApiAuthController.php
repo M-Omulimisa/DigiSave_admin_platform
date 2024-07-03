@@ -1178,7 +1178,7 @@ class ApiAuthController extends Controller
 
         // Send a message about successful registration
         $registrationMessage = "You have successfully been registered as $positionName.";
-        Utils::send_message($acc->id, $message);
+        // Utils::send_message($acc->id, $message);
 
         return $this->success($acc, $message, 1);
     } catch (Exception $e) {
