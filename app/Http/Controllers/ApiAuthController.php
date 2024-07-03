@@ -1550,11 +1550,11 @@ class ApiAuthController extends Controller
         $message = "Group $name been created successfully. Use $code to access your group";
 
         $resp = null;
-        try {
-            $resp = Utils::send_sms($phone_number, $message);
-        } catch (Exception $e) {
-            return $this->error('Failed to send OTP because ' . $e->getMessage());
-        }
+        // try {
+        //     $resp = Utils::send_sms($phone_number, $message);
+        // } catch (Exception $e) {
+        //     return $this->error('Failed to send OTP because ' . $e->getMessage());
+        // }
 
         // if ($resp != 'success') {
         //     return $this->error('Failed to send OTP because ' . $resp);
