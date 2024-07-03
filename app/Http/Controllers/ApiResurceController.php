@@ -1057,6 +1057,19 @@ class ApiResurceController extends Controller
         }
     }
 
+    public function getPositionsBySaccoId($saccoId)
+    {
+        try {
+            $positions = MemberPosition::getPositionsBySaccoId($saccoId);
+            if ($positions->isEmpty()) {
+                return $this->error('No positions found for this SACCO.');
+            }
+            return $this->success($positions, 'Positions retrieved successfully.');
+        } catch (\Exception $e) {
+            return $this->error('Failed to retrieve positions: ' . $e->getMessage());
+        }
+    }
+
     public function get_positions()
     {
         $u = auth('api')->user();

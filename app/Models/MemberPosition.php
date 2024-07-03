@@ -19,4 +19,15 @@ class MemberPosition extends Model
     {
         return $this->hasMany(User::class);
     }
+
+    /**
+     * Get positions by sacco_id.
+     *
+     * @param int $saccoId
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public static function getPositionsBySaccoId(int $saccoId)
+    {
+        return self::where('sacco_id', $saccoId)->get();
+    }
 }
