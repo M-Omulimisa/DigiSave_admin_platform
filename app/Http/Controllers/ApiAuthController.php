@@ -1147,8 +1147,8 @@ class ApiAuthController extends Controller
             $transaction_sacco->user_id = $administrator_id;
             $transaction_sacco->source_user_id = $acc->id;
             $transaction_sacco->sacco_id = $acc->sacco_id;
-            $transaction_sacco->type = 'REGISTRATION';
-            $transaction_sacco->source_type = 'REGISTRATION';
+            $transaction_sacco->type = 'REGESTRATION';
+            $transaction_sacco->source_type = 'REGESTRATION';
             $transaction_sacco->amount = $amount;
             $transaction_sacco->description = "Registration fees of UGX " . number_format($amount) . " from {$acc->phone_number} - $acc->name.";
 
