@@ -1040,6 +1040,140 @@ class ApiAuthController extends Controller
         return $this->success($acc, $msg, $code);
     }
 
+    public function register_leader(Request $request)
+    {
+        $saccoId = $request->input('sacco_id');
+
+        // Use the sacco_id to find the corresponding Sacco model
+        $sacco = Sacco::find($saccoId);
+
+        // Check if the Sacco model is found
+        if ($sacco == null) {
+            // Handle case where Sacco is not found
+            return $this->error('Group not found.');
+        }
+
+        if (!isset($request->task)) {
+            return $this->error('Task is missing.');
+        }
+
+        $task = $request->task;
+
+        if (($task != 'Edit') && ($task != 'Create')) {
+            return $this->error('Invalid task.');
+        }
+
+        $phone_number = Utils::prepare_phone_number($request->phone_number);
+        if (!Utils::phone_number_is_valid($phone_number)) {
+            return $this->error('Invalid phone number.');
+        }
+
+        $account = null;
+        if ($task == 'Edit') {
+            if ($request->id == null) {
+                return $this->error('User id is missing.');
+            }
+            $acc = Administrator::find($request->id);
+            if ($acc == null) {
+                return $this->error('User not found.');
+            }
+            $old = Administrator::where('phone_number', $phone_number)
+                ->where('id', '!=', $request->id)
+                ->first();
+            if ($old != null) {
+                return $this->error('User with same phone number already exists. ' . $old->id . ' ' . $old->phone_number . ' ' . $old->first_name . ' ' . $old->last_name);
+            }
+        } else {
+            $old = Administrator::where('phone_number', $phone_number)
+                ->first();
+            if ($old != null) {
+                return $this->error('User with same phone number already exists.');
+            }
+
+            $acc = new Administrator();
+            $acc->sacco_id = $sacco->id;
+        }
+
+        if ($request->first_name == null || strlen($request->first_name) < 2) {
+            return $this->error('First name is missing.');
+        }
+        if ($request->last_name == null || strlen($request->last_name) < 2) {
+            return $this->error('Last name is missing.');
+        }
+        if ($request->sex == null || strlen($request->sex) < 2) {
+            return $this->error('Gender is missing.');
+        }
+
+        $msg = "";
+        $acc->first_name = $request->first_name;
+        $acc->last_name = $request->last_name;
+        $acc->name = $request->first_name . ' ' . $request->last_name;
+        $acc->campus_id = $request->campus_id;
+        $acc->phone_number = $phone_number;
+        $acc->username = $phone_number;
+        $acc->sex = $request->sex;
+        $acc->pwd = $request->pwd;
+        $acc->position_id = $request->position_id;
+        $acc->district_id = $request->district_id;
+        $acc->parish_id = $request->parish_id;
+        $acc->village_id = $request->village_id;
+        $acc->dob = $request->dob;
+        $acc->address = $request->address;
+        $acc->sacco_join_status = 'Approved';
+
+        $images = [];
+        if (!empty($_FILES)) {
+            $images = Utils::upload_images_2($_FILES, false);
+        }
+        if (!empty($images)) {
+            $acc->avatar = 'images/' . $images[0];
+        }
+
+        // Generate a random 5-digit password
+        $password = str_pad(mt_rand(1, 99999), 5, '0', STR_PAD_LEFT);
+        $acc->password = password_hash($password, PASSWORD_DEFAULT);
+
+        DB::beginTransaction();
+
+        try {
+            if (!$acc->save()) {
+                throw new Exception('Failed to create account. Please try again.');
+            }
+
+            $amount = abs($sacco->register_fee);
+            $transaction_sacco = new Transaction();
+            $transaction_sacco->user_id = $acc->id;
+            $transaction_sacco->source_user_id = $acc->id;
+            $transaction_sacco->sacco_id = $acc->sacco_id;
+            $transaction_sacco->type = 'REGISTRATION';
+            $transaction_sacco->source_type = 'REGISTRATION';
+            $transaction_sacco->amount = $amount;
+            $transaction_sacco->description = "Registration fees of UGX " . number_format($amount) . " from {$acc->phone_number} - $acc->name.";
+
+            if (!$transaction_sacco->save()) {
+                throw new Exception('Failed to save transaction.');
+            }
+
+            DB::commit();
+
+            // Send SMS with the generated password
+            $message = "Success, your admin account has been created successfully. Use Phone number: $phone_number and Passcode: $password to login into your VSLA group";
+
+            if (Utils::phone_number_is_valid($phone_number)) {
+                try {
+                    Utils::send_sms($phone_number, $message);
+                } catch (Exception $e) {
+                    return $this->error('Failed to send OTP because ' . $e->getMessage());
+                }
+            }
+
+            return $this->success($acc, $message, 1);
+        } catch (Exception $e) {
+            DB::rollback();
+            return $this->error($e->getMessage());
+        }
+    }
+
 
     public function update_admin(Request $request)
     {
