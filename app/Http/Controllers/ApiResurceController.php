@@ -1038,7 +1038,7 @@ class ApiResurceController extends Controller
             if ($sacco) {
                 // Get positions associated with the Sacco and filter by specific names
                 $positions = MemberPosition::where('sacco_id', $sacco->id)
-                    ->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer'])
+                    ->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer', 'Member'])
                     ->get();
 
                 // Return success response with positions
