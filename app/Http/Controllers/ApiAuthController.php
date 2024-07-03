@@ -1042,7 +1042,7 @@ class ApiAuthController extends Controller
 
     public function register_leader(Request $request)
     {
-        $saccoId = $request->input('sacco_id');
+        $saccoId = $request->sacco_id;
 
         // Use the sacco_id to find the corresponding Sacco model
         $sacco = Sacco::find($saccoId);
@@ -1135,6 +1135,8 @@ class ApiAuthController extends Controller
 
         DB::beginTransaction();
 
+        $administrator_id = $sacco->administrator_id;
+
         try {
             if (!$acc->save()) {
                 throw new Exception('Failed to create account. Please try again.');
@@ -1142,7 +1144,7 @@ class ApiAuthController extends Controller
 
             $amount = abs($sacco->register_fee);
             $transaction_sacco = new Transaction();
-            $transaction_sacco->user_id = $acc->id;
+            $transaction_sacco->user_id = $administrator_id;
             $transaction_sacco->source_user_id = $acc->id;
             $transaction_sacco->sacco_id = $acc->sacco_id;
             $transaction_sacco->type = 'REGISTRATION';
