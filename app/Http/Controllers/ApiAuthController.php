@@ -1483,15 +1483,15 @@ class ApiAuthController extends Controller
 
     public function register(Request $r)
     {
-        if ($r->phone_number == null) {
-            return $this->error('Phone number is required.');
-        }
+        // if ($r->phone_number == null) {
+        //     return $this->error('Phone number is required.');
+        // }
 
-        $phone_number = Utils::prepare_phone_number(trim($r->phone_number));
+        // $phone_number = Utils::prepare_phone_number(trim($r->phone_number));
 
-        if (!Utils::phone_number_is_valid($phone_number)) {
-            return $this->error('Register error phone number. ' . $phone_number);
-        }
+        // if (!Utils::phone_number_is_valid($phone_number)) {
+        //     return $this->error('Register error phone number. ' . $phone_number);
+        // }
 
         if ($r->name == null) {
             return $this->error('Name is required.');
