@@ -1517,13 +1517,13 @@ class ApiAuthController extends Controller
         $lon = $r->longitude;
 
         // Generate 8-digit code combining phone number digits, current year, and random letters
-        $code = substr($phone_number, 3, 3) . date('Y') . strtoupper(Str::random(2));
+        $code = date('Y') . strtoupper(Str::random(2));
         $user->username = $code;
 
         $user->phone_number = $code;
         $user->reg_number = $code;
         $user->country = "Uganda";
-        $user->occupation = $phone_number;
+        $user->occupation = "VSLA";
         $user->profile_photo_large = '';
         $user->location_lat = $lat;
         $user->location_long = $lon;
