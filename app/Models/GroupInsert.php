@@ -34,15 +34,15 @@ class GroupInsert extends Model
     public static function createGroup($data)
     {
         // Check for existing group with the same name and phone number
-        $existingGroup = static::where([
-            'name' => $data['name'],
-            'phone_number' => $data['phone_number'],
-        ])->first();
+        // $existingGroup = static::where([
+        //     'name' => $data['name'],
+        //     'phone_number' => $data['phone_number'],
+        // ])->first();
 
-        if ($existingGroup) {
-            // If a group with the same name and phone number exists, return an error
-            return ['error' => 'Group with the same name and phone number already exists'];
-        }
+        // if ($existingGroup) {
+        //     // If a group with the same name and phone number exists, return an error
+        //     return ['error' => 'Group with the same name and phone number already exists'];
+        // }
 
         // Create a new group record in the database
         $newGroup = static::create($data);
