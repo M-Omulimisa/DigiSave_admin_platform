@@ -85,6 +85,7 @@ Route::get('agent-saccos/{saccoIds}', [ApiResurceController::class, 'agent_sacco
 
 
 Route::POST("users/login", [ApiAuthController::class, "login"]);
+Route::POST("leader-login", [ApiAuthController::class, "login_leader"]);
 // Route::post("test-sms", [ApiResurceController::class], "send_SMS");
 Route::POST("login", [ApiAuthController::class, "login"]);
 Route::POST("admin/auth", [ApiAuthController::class, "verify_user"]);

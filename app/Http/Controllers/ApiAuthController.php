@@ -217,6 +217,132 @@ class ApiAuthController extends Controller
         return $this->success($newPassword, 'Password reset successfully. Please check your phone or email for the new password.', 200);
     }
 
+    public function login_leader(Request $r)
+    {
+        if ($r->phone_number == null) {
+            return $this->error('Phone number is required.');
+        }
+
+        if ($r->password == null) {
+            return $this->error('Password is required.');
+        }
+
+        $phone_number = Utils::prepare_phone_number($r->phone_number);
+        if (!Utils::phone_number_is_valid($phone_number)) {
+            return $this->error('Invalid phone number.');
+        }
+
+        $user = User::where('phone_number', $phone_number)->first();
+
+        if ($user == null) {
+            return $this->error('User not found.');
+        }
+
+        if ($user->position_id == null) {
+            return $this->error('User does not have a position assigned.');
+        }
+
+        // Get the position name
+        $position = MemberPosition::find($user->position_id);
+        if ($position == null) {
+            return $this->error('Position not found.');
+        }
+
+        $validPositions = ['chairperson', 'secretary', 'treasurer'];
+        if (!in_array(strtolower($position->name), $validPositions)) {
+            return $this->error('User does not hold a valid position.');
+        }
+
+        if ($r->password == null) {
+            return $this->error('Password is required.');
+        }
+
+        // Check if the user exists by username, email, or phone number
+        $u = User::where('username', $r->password)->first();
+        if ($u == null) {
+            $u = User::where('phone_number', $r->password)->first();
+        }
+        if ($u == null) {
+            $u = User::where('email', $r->password)->first();
+        }
+
+        if ($u == null) {
+            return $this->error('User account not found.');
+        }
+
+        // Verify the password
+        if (!Hash::check($r->password, $u->password)) {
+            return $this->error('Wrong credentials.');
+        }
+
+        // Generate JWT token
+        JWTAuth::factory()->setTTL(60 * 24 * 30 * 365);
+
+        $token = auth('api')->attempt([
+            'username' => $u->username,
+            'password' => $r->password,
+        ]);
+
+        if ($token == null) {
+            return $this->error('Failed to authenticate user.');
+        }
+
+        // Attach token to user object
+        $u->token = $token;
+        $u->remember_token = $token;
+
+        return $this->success([
+            'leader' => $user,
+            'user' => $u,
+        ], 'Login successful.', 1);
+    }
+
+    // public function login_leader(Request $r)
+    // {
+    //     if ($r->username == null) {
+    //         return $this->error('Phone number is missing.');
+    //     }
+
+    //     if ($r->password == null) {
+    //         return $this->error('Password is required.');
+    //     }
+
+    //     // Check if the user exists by username, email, or phone number
+    //     $u = User::where('username', $r->password)->first();
+    //     if ($u == null) {
+    //         $u = User::where('phone_number', $r->password)->first();
+    //     }
+    //     if ($u == null) {
+    //         $u = User::where('email', $r->password)->first();
+    //     }
+
+    //     if ($u == null) {
+    //         return $this->error('User account not found.');
+    //     }
+
+    //     // Verify the password
+    //     if (!Hash::check($r->password, $u->password)) {
+    //         return $this->error('Wrong credentials.');
+    //     }
+
+    //     // Generate JWT token
+    //     JWTAuth::factory()->setTTL(60 * 24 * 30 * 365);
+
+    //     $token = auth('api')->attempt([
+    //         'username' => $u->password,
+    //         'password' => $r->password,
+    //     ]);
+
+    //     if ($token == null) {
+    //         return $this->error('Failed to authenticate user.');
+    //     }
+
+    //     // Attach token to user object
+    //     $u->token = $token;
+    //     $u->remember_token = $token;
+
+    //     return $this->success($u, 'Logged in successfully.');
+    // }
 
     public function login(Request $r)
     {
