@@ -94,15 +94,15 @@ class SaccoController extends AdminController
             return $this->uses_shares == 0 ? 'Yes' : 'No';
         })->sortable();
 
-        $grid->column('uses_shares', __('Uses Shares'))
-        ->display(function () {
-            return $this->uses_shares == 1 ? 'Yes' : 'No';
-        })->sortable();
-
         // Adding new columns for share_price and min_cash_savings
         $grid->column('min_cash_savings', __('Minimum Cash Savings (UGX)'))
         ->display(function () {
             return $this->uses_shares == 0 ? number_format($this->share_price) : '0';
+        })->sortable();
+
+        $grid->column('uses_shares', __('Uses Shares'))
+        ->display(function () {
+            return $this->uses_shares == 1 ? 'Yes' : 'No';
         })->sortable();
 
         $grid->column('share_price', __('Share Price (UGX)'))
