@@ -291,6 +291,7 @@ class ApiAuthController extends Controller
         $u->token = $token;
         $u->remember_token = $token;
 
+
         return $this->success([
             'leader' => $user,
             'user' => $u,
