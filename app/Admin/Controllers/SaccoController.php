@@ -90,25 +90,25 @@ class SaccoController extends AdminController
 
         // Adding new columns for uses_cash and uses_shares
         $grid->column('uses_cash', __('Uses Cash'))
-        ->display(function () {
-            return $this->uses_shares == 0 ? 'Yes' : 'No';
-        })->sortable();
+            ->display(function () {
+                return $this->uses_shares == 0 ? 'Yes' : 'No';
+            })->sortable();
 
         // Adding new columns for share_price and min_cash_savings
         $grid->column('min_cash_savings', __('Minimum Cash Savings (UGX)'))
-        ->display(function () {
-            return $this->uses_shares == 0 ? number_format($this->share_price) : '0';
-        })->sortable();
+            ->display(function () {
+                return $this->uses_shares == 0 ? number_format($this->share_price) : '0';
+            })->sortable();
 
         $grid->column('uses_shares', __('Uses Shares'))
-        ->display(function () {
-            return $this->uses_shares == 1 ? 'Yes' : 'No';
-        })->sortable();
+            ->display(function () {
+                return $this->uses_shares == 1 ? 'Yes' : 'No';
+            })->sortable();
 
         $grid->column('share_price', __('Share Price (UGX)'))
-        ->display(function () {
-            return $this->uses_shares == 1 ? number_format($this->share_price) : '0';
-        })->sortable();
+            ->display(function () {
+                return $this->uses_shares == 1 ? number_format($this->share_price) : '0';
+            })->sortable();
 
         $grid->column('physical_address', __('Physical Address'))->sortable()->display(function ($address) {
             return ucwords(strtolower($address));
@@ -140,20 +140,42 @@ class SaccoController extends AdminController
             $filter->like('physical_address', 'Physical Address');
         });
 
-        // Adding custom dropdown for sorting
+        // Adding custom dropdown for sorting and filtering
         $grid->tools(function ($tools) {
             $tools->append('
-            <div class="btn-group pull-right" style="margin-right: 10px; margin-left: 10px;">
-                <button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown">
-                    Sort by Established <span class="caret"></span>
-                </button>
-                <ul class="dropdown-menu" role="menu">
-                    <li><a href="' . url()->current() . '?_sort=asc">Ascending</a></li>
-                    <li><a href="' . url()->current() . '?_sort=desc">Descending</a></li>
-                </ul>
-            </div>
-        ');
+                <div class="btn-group pull-right" style="margin-right: 10px; margin-left: 10px;">
+                    <button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown">
+                        Sort by Established <span class="caret"></span>
+                    </button>
+                    <ul class="dropdown-menu" role="menu">
+                        <li><a href="' . url()->current() . '?_sort=asc">Ascending</a></li>
+                        <li><a href="' . url()->current() . '?_sort=desc">Descending</a></li>
+                    </ul>
+                </div>
+            ');
+
+            // Adding custom dropdown for filtering uses_cash and uses_shares
+            $tools->append('
+                <div class="btn-group pull-right" style="margin-right: 10px; margin-left: 10px;">
+                    <button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown">
+                        Filter by Usage <span class="caret"></span>
+                    </button>
+                    <ul class="dropdown-menu" role="menu">
+                        <li><a href="' . url()->current() . '?uses_shares=0">Uses Cash</a></li>
+                        <li><a href="' . url()->current() . '?uses_shares=1">Uses Shares</a></li>
+                        <li><a href="' . url()->current() . '">All</a></li>
+                    </ul>
+                </div>
+            ');
         });
+
+        // Adding the filtering logic based on the dropdown selection
+        if (request()->has('uses_shares')) {
+            $uses_shares = request()->get('uses_shares');
+            if (in_array($uses_shares, ['0', '1'])) {
+                $grid->model()->where('uses_shares', $uses_shares);
+            }
+        }
 
         return $grid;
     }
