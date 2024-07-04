@@ -114,11 +114,6 @@ class SaccoController extends AdminController
             return ucwords(strtolower($address));
         });
 
-        $grid->column('created_at', __('Created At'))
-            ->display(function ($date) {
-                return date('d M Y', strtotime($date));
-            })->sortable();
-
         $grid->column('chairperson_name', __('Chairperson Name'))
             ->sortable()
             ->display(function () {
@@ -130,6 +125,11 @@ class SaccoController extends AdminController
 
                 return $user ? ucwords(strtolower($user->name)) : '';
             });
+
+        $grid->column('created_at', __('Created At'))
+            ->display(function ($date) {
+                return date('d M Y', strtotime($date));
+            })->sortable();
 
         // Adding search filters
         $grid->filter(function ($filter) {
