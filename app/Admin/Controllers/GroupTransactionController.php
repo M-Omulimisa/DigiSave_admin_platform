@@ -27,7 +27,7 @@ class GroupTransactionController extends AdminController
 
         return $content
             ->header($title)
-            ->description('List of transactions for the selected group')
+            // ->description('List of transactions for the selected group')
             ->body($this->grid($saccoId));
     }
 
