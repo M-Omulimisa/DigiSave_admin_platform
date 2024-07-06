@@ -27,7 +27,6 @@ class GroupTransactionController extends AdminController
 
         return $content
             ->header($title)
-            // ->description('List of transactions for the selected group')
             ->body($this->grid($saccoId));
     }
 
@@ -54,13 +53,17 @@ class GroupTransactionController extends AdminController
 
         // Add a column for editing transactions
         $grid->column('edit', __('Edit'))->display(function () {
-            return '<a href="' . url('transactions/' . $this->id . '/edit') . '">Edit</a>';
+            if ($this->type === 'SHARE') {
+                return '<a href="' . url('transactions/' . $this->id . '/edit') . '">Edit</a>';
+            } else {
+                return '<span style="color: grey;">Edit</span>';
+            }
         });
 
         $grid->filter(function ($filter) {
             $filter->disableIdFilter();
             $filter->like('user.name', 'User Name');
-            $filter->equal('type', 'Type')->select(['Send' => 'Send', 'Receive' => 'Receive']);
+            $filter->equal('type', 'Type')->select(['SHARE' => 'SHARE', 'Send' => 'Send', 'Receive' => 'Receive']);
             $filter->between('amount', 'Amount');
             $filter->between('created_at', 'Created At')->datetime();
         });
@@ -84,43 +87,42 @@ class GroupTransactionController extends AdminController
     }
 
     protected function form()
-{
-    $form = new Form(new Transaction());
+    {
+        $form = new Form(new Transaction());
 
-    $form->display('id', __('ID'));
-    $form->select('user_id', __('User'))
-        ->options(\App\Models\User::all()->pluck('name', 'id'))
-        ->rules('required');
-    $form->display('type', __('Type'))->with(function ($value) {
-        return $value;
-    }); // Make type field non-editable
-    $form->decimal('amount', __('Amount'))->rules('required|numeric|min:0');
-    $form->textarea('description', __('Description'))->rules('required');
-    $form->display('created_at', __('Created At'));
-    $form->display('updated_at', __('Updated At'));
+        $form->display('id', __('ID'));
+        $form->select('user_id', __('User'))
+            ->options(\App\Models\User::all()->pluck('name', 'id'))
+            ->rules('required');
+        $form->display('type', __('Type'))->with(function ($value) {
+            return $value;
+        }); // Make type field non-editable
+        $form->decimal('amount', __('Amount'))->rules('required|numeric|min:0');
+        $form->textarea('description', __('Description'))->rules('required');
+        $form->display('created_at', __('Created At'));
+        $form->display('updated_at', __('Updated At'));
 
-    // Adding JavaScript to update the description based on the amount
-    $form->html('<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        var amountField = document.querySelector("input[name=\'amount\']");
-        var descriptionField = document.querySelector("textarea[name=\'description\']");
-        var transactionTypeField = document.querySelector("div[data-value=\'type\']").innerText;
+        // Adding JavaScript to update the description based on the amount
+        $form->html('<script>
+        document.addEventListener("DOMContentLoaded", function() {
+            var amountField = document.querySelector("input[name=\'amount\']");
+            var descriptionField = document.querySelector("textarea[name=\'description\']");
+            var transactionTypeField = document.querySelector("div[data-value=\'type\']").innerText;
 
-        amountField.addEventListener("input", function() {
-            var userName = document.querySelector("select[name=\'user_id\'] option:checked").text;
-            var amount = amountField.value;
-            descriptionField.value = "Update of UGX " + amount + "on " + transactionTypeField + " for " + userName + " transaction.";
+            amountField.addEventListener("input", function() {
+                var userName = document.querySelector("select[name=\'user_id\'] option:checked").text;
+                var amount = amountField.value;
+                descriptionField.value = "Update of UGX " + amount + "on " + transactionTypeField + " for " + userName + " transaction.";
+            });
         });
-    });
-    </script>');
+        </script>');
 
-    // Handle the form saving event to update the description server-side
-    $form->saving(function (Form $form) {
-        $user = \App\Models\User::find($form->user_id);
-        $form->description = "Update of UGX {$form->amount} on {$form->model()->type} for {$user->name} transaction.";
-    });
+        // Handle the form saving event to update the description server-side
+        $form->saving(function (Form $form) {
+            $user = \App\Models\User::find($form->user_id);
+            $form->description = "Update of UGX {$form->amount} on {$form->model()->type} for {$user->name} transaction.";
+        });
 
-    return $form;
-}
-
+        return $form;
+    }
 }
