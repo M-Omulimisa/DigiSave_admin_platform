@@ -21,7 +21,7 @@ class GroupTransactionController extends AdminController
 
         // Fetch the group (Sacco) name
         $sacco = Sacco::find($saccoId);
-        $groupName = $sacco ? $sacco->name : 'Unknown Group';
+        $groupName = $sacco ? $this->sentenceCase($sacco->name) : 'Unknown Group';
 
         $title = "{$groupName} Transactions";
 
@@ -29,6 +29,18 @@ class GroupTransactionController extends AdminController
             ->header($title)
             ->body($this->grid($saccoId));
     }
+
+    /**
+     * Convert a string to sentence case.
+     *
+     * @param string $string
+     * @return string
+     */
+    protected function sentenceCase($string)
+    {
+        return ucfirst(strtolower($string));
+    }
+
 
     protected function grid($saccoId)
     {
