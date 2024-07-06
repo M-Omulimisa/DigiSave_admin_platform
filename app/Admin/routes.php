@@ -81,7 +81,7 @@ Route::group([
     $router->resource('event-bookings', EventBookingController::class);
     $router->resource('products', ProductController::class);
     $router->resource('product-orders', ProductOrderController::class);
-    $router->resource('transactions', TransactionController::class);
+    $router->resource('transactions', GroupTransactionController::class);
     $router->resource('transactions-all', TransactionAllController::class);
     $router->resource('users', MemberController::class);
 });
