@@ -341,128 +341,184 @@ class SaccoController extends AdminController
     }
 
     protected function form()
-    {
-        $form = new Form(new Sacco());
+{
+    $form = new Form(new Sacco());
 
-        $u = Admin::user();
+    $u = Admin::user();
 
-        if (!$u->isRole('admin')) {
-            if ($form->isCreating()) {
-                admin_error("You are not allowed to create new Sacco");
-                return back();
+    if (!$u->isRole('admin')) {
+        if ($form->isCreating()) {
+            admin_error("You are not allowed to create new Sacco");
+            return back();
+        }
+    }
+
+    // Sacco Details
+    $form->text('name', __('Name'))->rules('required');
+
+    // Adding saving type select field as non-database field
+    $form->select('saving_types', __('Saving Type'))->options([
+        'shares' => 'Shares',
+        'cash' => 'Cash'
+    ])->rules('required')->attribute(['name' => 'saving_types']);
+
+    // Adding conditionally rendered fields for share price and cash savings
+    $form->decimal('share_price', __('Share Price (UGX)'))->help('UGX')->rules('numeric|min:0')->attribute(['class' => 'shares']);
+    $form->decimal('share_price', __('Minimum Cash Savings (UGX)'))->help('UGX')->rules('numeric|min:0')->attribute(['class' => 'cash']);
+
+    $form->hidden('uses_shares');
+    $form->hidden('phone_number');
+
+    $form->text('email_address', __('Email Address'));
+    $form->text('physical_address', __('Physical Address'));
+    $form->datetime('created_at', __('Establishment Date'))->rules('required');
+    $form->image('logo', __('VSLA Logo'));
+
+    // Add location fields
+    $form->text('district', __('District'));
+    $form->text('subcounty', __('Subcounty'));
+    $form->text('parish', __('Parish'));
+    $form->text('village', __('Village'));
+
+    $form->saving(function (Form $form) {
+        if ($form->isCreating()) {
+            // Generate phone number in the background
+            if (!$form->phone_number) {
+                $initialPhoneNumber = '0701399995'; // Dummy initial phone number to generate from
+                $form->phone_number = substr($initialPhoneNumber, 3, 3) . date('Y') . strtoupper(Str::random(2));
+            }
+
+            // Set uses_shares based on saving type
+            $form->uses_shares = request()->get('saving_types') == 'shares' ? 1 : 0;
+
+            // Create new administrator
+            $user = new Administrator();
+            $name = $form->name;  // Using Sacco name for admin name
+            $phone_number = $form->phone_number;
+            $x = explode(' ', $name);
+
+            if (isset($x[0]) && isset($x[1])) {
+                $user->first_name = $x[0];
+                $user->last_name = $x[1];
+            } else {
+                $user->first_name = $name;
+                $user->last_name = '';
+            }
+
+            // Generate 8-digit code combining phone number digits, current year, and random letters
+            $code = substr($phone_number, 3, 3) . date('Y') . strtoupper(Str::random(2));
+            $user->username = $code;
+            $user->phone_number = $phone_number;
+            $user->name = $name;
+            $user->password = bcrypt($code);
+
+            $user->save();
+
+            $form->administrator_id = $user->id;
+        } else {
+            // For editing, ensure administrator_id is not null
+            if (!$form->administrator_id) {
+                $sacco = Sacco::find($form->model()->id);
+                $form->administrator_id = $sacco->administrator_id;
             }
         }
 
-        // Sacco Details
-        $form->text('name', __('Name'))->rules('required');
-        $form->decimal('share_price', __('Share Price'))
-            ->help('UGX')
-            ->rules('required|numeric|min:0');
-        // Hide phone number field, generate it in the background
-        $form->hidden('phone_number');
-        $form->text('email_address', __('Email Address'));
-        $form->text('physical_address', __('Physical Address'));
-        $form->datetime('created_at', __('Establishment Date'))->rules('required');
-        $form->image('logo', __('VSLA Logo'));
+        // Set uses_shares based on saving type for both create and update
+        $form->uses_shares = request()->get('saving_types') == 'shares' ? 1 : 0;
+    });
 
-        // Add location fields
-        $form->text('district', __('District'))->rules('required');
-        $form->text('subcounty', __('Subcounty'))->rules('required');
-        $form->text('parish', __('Parish'))->rules('required');
-        $form->text('village', __('Village'))->rules('required');
+    $form->saved(function (Form $form) {
+        if ($form->isCreating()) {
+            // Manually save Sacco with administrator ID
+            $sacco = new Sacco();
+            $sacco->name = $form->name;
+            $sacco->phone_number = $form->phone_number;
+            $sacco->email_address = $form->email_address;
+            $sacco->physical_address = $form->physical_address;
+            $sacco->created_at = $form->created_at;
+            $sacco->district = $form->district;
+            $sacco->subcounty = $form->subcounty;
+            $sacco->parish = $form->parish;
+            $sacco->village = $form->village;
+            $sacco->administrator_id = $form->administrator_id;
+            $sacco->uses_shares = $form->uses_shares;
 
-        $form->saving(function (Form $form) {
-            if ($form->isCreating()) {
-                // Generate phone number in the background
-                if (!$form->phone_number) {
-                    $initialPhoneNumber = '0701399995'; // Dummy initial phone number to generate from
-                    $form->phone_number = substr($initialPhoneNumber, 3, 3) . date('Y') . strtoupper(Str::random(2));
-                }
+            if (request()->get('saving_types') == 'shares') {
+                $sacco->share_price = $form->share_price;
+            } else {
+                $sacco->share_price = $form->min_cash_savings;
+            }
 
-                // Create new administrator
-                $user = new Administrator();
-                $name = $form->name;  // Using Sacco name for admin name
-                $phone_number = $form->phone_number;
-                $x = explode(' ', $name);
+            $sacco->save();
 
-                if (isset($x[0]) && isset($x[1])) {
-                    $user->first_name = $x[0];
-                    $user->last_name = $x[1];
+            // Create default positions
+            $positions = ['Chairperson', 'Secretary', 'Treasurer'];
+            foreach ($positions as $positionName) {
+                MemberPosition::create([
+                    'name' => $positionName,
+                    'sacco_id' => $sacco->id,
+                ]);
+            }
+
+            // Display success message
+            admin_success('Success', 'Group ' . $sacco->name . ' created successfully');
+        } else {
+            // Update existing Sacco
+            $sacco = Sacco::find($form->model()->id);
+            $sacco->name = $form->name;
+            $sacco->phone_number = $form->phone_number;
+            $sacco->email_address = $form->email_address;
+            $sacco->physical_address = $form->physical_address;
+            $sacco->created_at = $form->created_at;
+            $sacco->district = $form->district;
+            $sacco->subcounty = $form->subcounty;
+            $sacco->parish = $form->parish;
+            $sacco->village = $form->village;
+            $sacco->uses_shares = $form->uses_shares;
+            $sacco->administrator_id = $form->administrator_id;
+
+            if (request()->get('saving_types') == 'shares') {
+                $sacco->share_price = $form->share_price;
+                // $sacco->share_price = null;
+            } else {
+                $sacco->share_price = $form->share_price;
+                // $sacco->share_price = null;
+            }
+
+            $sacco->save();
+
+            // Display success message
+            admin_success('Success', 'Group ' . $sacco->name . ' updated successfully');
+        }
+    });
+
+    $form->hidden('administrator_id');
+
+    // Adding JavaScript for toggling fields
+    $form->html('<script>
+        $(document).ready(function() {
+            toggleSavingTypeFields();
+            $("select[name=\'saving_types\']").change(function() {
+                toggleSavingTypeFields();
+            });
+
+            function toggleSavingTypeFields() {
+                var savingType = $("select[name=\'saving_types\']").val();
+                if (savingType === "shares") {
+                    $(".cash").parents(".form-group").hide();
+                    $(".shares").parents(".form-group").show();
+                    $("input[name=\'uses_shares\']").val(1); // Set uses_shares to 1 for shares
                 } else {
-                    $user->first_name = $name;
-                    $user->last_name = '';
-                }
-
-                // Generate 8-digit code combining phone number digits, current year, and random letters
-                $code = substr($phone_number, 3, 3) . date('Y') . strtoupper(Str::random(2));
-                $user->username = $code;
-                $user->phone_number = $phone_number;
-                $user->name = $name;
-                $user->password = bcrypt($code);
-
-                $user->save();
-
-                $form->administrator_id = $user->id;
-            } else {
-                // For editing, ensure administrator_id is not null
-                if (!$form->administrator_id) {
-                    $sacco = Sacco::find($form->model()->id);
-                    $form->administrator_id = $sacco->administrator_id;
+                    $(".shares").parents(".form-group").hide();
+                    $(".cash").parents(".form-group").show();
+                    $("input[name=\'uses_shares\']").val(0); // Set uses_shares to 0 for cash
                 }
             }
         });
+    </script>');
 
-        $form->saved(function (Form $form) {
-            if ($form->isCreating()) {
-                // Manually save Sacco with administrator ID
-                $sacco = new Sacco();
-                $sacco->name = $form->name;
-                $sacco->share_price = $form->share_price;
-                $sacco->phone_number = $form->phone_number;
-                $sacco->email_address = $form->email_address;
-                $sacco->physical_address = $form->physical_address;
-                $sacco->created_at = $form->created_at;
-                $sacco->district = $form->district;
-                $sacco->subcounty = $form->subcounty;
-                $sacco->parish = $form->parish;
-                $sacco->village = $form->village;
-                $sacco->administrator_id = $form->administrator_id;
-                $sacco->save();
+    return $form;
+}
 
-                // Create default positions
-                $positions = ['Chairperson', 'Secretary', 'Treasurer'];
-                foreach ($positions as $positionName) {
-                    MemberPosition::create([
-                        'name' => $positionName,
-                        'sacco_id' => $sacco->id,
-                    ]);
-                }
 
-                // Display success message
-                admin_success('Success', 'Group ' . $sacco->name . ' created successfully');
-            } else {
-                // Update existing Sacco
-                $sacco = Sacco::find($form->model()->id);
-                $sacco->name = $form->name;
-                $sacco->share_price = $form->share_price;
-                $sacco->phone_number = $form->phone_number;
-                $sacco->email_address = $form->email_address;
-                $sacco->physical_address = $form->physical_address;
-                $sacco->created_at = $form->created_at;
-                $sacco->district = $form->district;
-                $sacco->subcounty = $form->subcounty;
-                $sacco->parish = $form->parish;
-                $sacco->village = $form->village;
-                $sacco->administrator_id = $form->administrator_id;
-                $sacco->save();
-
-                // Display success message
-                admin_success('Success', 'Group ' . $sacco->name . ' updated successfully');
-            }
-        });
-
-        $form->hidden('administrator_id');
-
-        return $form;
-    }
 }
