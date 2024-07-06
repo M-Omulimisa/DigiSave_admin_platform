@@ -42,7 +42,9 @@ class GroupTransactionController extends AdminController
         $grid->column('id', __('ID'))->sortable();
         $grid->column('user.name', __('User Name'))->sortable();
         $grid->column('type', __('Type'))->sortable();
-        $grid->column('amount', __('Amount'))->sortable();
+        $grid->column('amount', __('Amount'))->display(function ($amount) {
+            return number_format($amount, 2, '.', ',') . ' UGX';
+        })->sortable();
         $grid->column('description', __('Description'));
         $grid->column('created_at', __('Created At'))->sortable();
 
@@ -78,7 +80,9 @@ class GroupTransactionController extends AdminController
         $show->field('id', __('ID'));
         $show->field('user.name', __('User Name'));
         $show->field('type', __('Type'));
-        $show->field('amount', __('Amount'));
+        $show->field('amount', __('Amount'))->as(function ($amount) {
+            return number_format($amount, 2, '.', ',') . ' UGX';
+        });
         $show->field('description', __('Description'));
         $show->field('created_at', __('Created At'));
         $show->field('updated_at', __('Updated At'));
