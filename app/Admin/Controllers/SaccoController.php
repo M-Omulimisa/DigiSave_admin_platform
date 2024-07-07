@@ -269,10 +269,10 @@ class SaccoController extends AdminController
         $form->text('village', __('Village'));
 
         // Add a select field for transactions view
-        $form->select('view_transactions', __('View Transactions'))->options([
-            'yes' => 'Yes',
-            'no' => 'No'
-        ])->rules('required');
+        // $form->select('view_transactions', __('View Transactions'))->options([
+        //     'yes' => 'Yes',
+        //     'no' => 'No'
+        // ])->rules('required');
 
         $form->saving(function (Form $form) {
             if ($form->isCreating()) {
