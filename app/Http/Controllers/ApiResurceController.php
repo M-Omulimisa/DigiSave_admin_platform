@@ -390,68 +390,68 @@ class ApiResurceController extends Controller
         return $this->success('SMS sent successfully to ' . $phone_number);
     }
 
-    public function loan_schemes()
-    {
-        $u = auth('api')->user();
-
-        if ($u == null) {
-            return $this->error('User not found.');
-        }
-
-        $sacco = Sacco::find($u->sacco_id);
-
-        if ($sacco === null) {
-            return $this->error('Group not found.');
-        }
-
-        // Fetch the active cycle for the user's SACCO
-        $activeCycle = Cycle::where('sacco_id', $sacco->id)
-            ->where('status', 'Active')
-            ->first();
-
-        if ($activeCycle === null) {
-            return $this->error('No active cycle found.');
-        }
-
-        // Fetch loan schemes for the active cycle
-        $loanSchemes = LoanScheem::whereHas('sacco', function ($query) use ($activeCycle) {
-            $query->where('cycle_id', $activeCycle->id);
-        })->orderby('id', 'desc')->get();
-
-        return $this->success(
-            $loanSchemes,
-            $message = "Success.",
-            200
-        );
-    }
-
-    // public function loan_schemes(Request $r)
+    // public function loan_schemes()
     // {
     //     $u = auth('api')->user();
 
     //     if ($u == null) {
     //         return $this->error('User not found.');
     //     }
+
     //     $sacco = Sacco::find($u->sacco_id);
 
     //     if ($sacco === null) {
     //         return $this->error('Group not found.');
     //     }
+
     //     // Fetch the active cycle for the user's SACCO
     //     $activeCycle = Cycle::where('sacco_id', $sacco->id)
     //         ->where('status', 'Active')
     //         ->first();
 
+    //     if ($activeCycle === null) {
+    //         return $this->error('No active cycle found.');
+    //     }
+
+    //     // Fetch loan schemes for the active cycle
+    //     $loanSchemes = LoanScheem::whereHas('sacco', function ($query) use ($activeCycle) {
+    //         $query->where('cycle_id', $activeCycle->id);
+    //     })->orderby('id', 'desc')->get();
+
     //     return $this->success(
-    //         LoanScheem::where(
-    //             [
-    //                 'sacco_id' => $u->sacco_id
-    //             ]
-    //         )->orderby('id', 'desc')->get(),
+    //         $loanSchemes,
     //         $message = "Success.",
     //         200
     //     );
     // }
+
+    public function loan_schemes(Request $r)
+    {
+        $u = auth('api')->user();
+
+        if ($u == null) {
+            return $this->error('User not found.');
+        }
+        $sacco = Sacco::find($u->sacco_id);
+
+        if ($sacco === null) {
+            return $this->error('Group not found.');
+        }
+        // Fetch the active cycle for the user's SACCO
+        $activeCycle = Cycle::where('sacco_id', $sacco->id)
+            ->where('status', 'Active')
+            ->first();
+
+        return $this->success(
+            LoanScheem::where(
+                [
+                    'sacco_id' => $u->sacco_id
+                ]
+            )->orderby('id', 'desc')->get(),
+            $message = "Success.",
+            200
+        );
+    }
 
     //     public function getPositionsBySaccoId(Request $request)
     // {
