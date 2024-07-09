@@ -390,7 +390,7 @@ class ApiResurceController extends Controller
         return $this->success('SMS sent successfully to ' . $phone_number);
     }
 
-    public function loan_schemes(Request $r)
+    public function loan_schemes()
     {
         $u = auth('api')->user();
 
