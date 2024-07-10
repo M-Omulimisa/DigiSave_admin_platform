@@ -51,140 +51,36 @@ class HomeController extends Controller
         return redirect()->back()->withErrors(['error' => 'Both start and end dates are required.']);
     }
 
-    $admin = Admin::user();
-    $adminId = $admin->id;
-    $isAdmin = $admin->isRole('admin');
-    $saccoIds = [];
+    // Retrieve the data from session
+    $statistics = Session::get('dashboard_data');
 
-    if (!$isAdmin) {
-        $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
-        if (!$orgAllocation) {
-            Auth::logout();
-            $message = "You are not allocated to any organization. Please contact M-Omulimisa Service Help for assistance.";
-            Session::flash('warning', $message);
-            admin_error($message);
-            return redirect('auth/logout');
-        }
-
-        $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgAllocation->vsla_organisation_id)
-            ->pluck('sacco_id')
-            ->toArray();
-    } else {
-        $saccoIds = Sacco::pluck('id')->toArray();
+    if (!$statistics) {
+        return redirect()->back()->withErrors(['error' => 'No data available for export.']);
     }
-
-    $filteredUsers = User::whereIn('sacco_id', $saccoIds)->get();
-
-    // Fetch data based on date range
-    $groupsOnboarded = Sacco::whereIn('id', $saccoIds)->whereBetween('created_at', [$startDate, $endDate])->count();
-    $totalMembers = $filteredUsers->whereBetween('created_at', [$startDate, $endDate])->count();
-    $membersByGender = $filteredUsers->whereBetween('created_at', [$startDate, $endDate])
-        ->groupBy('sex')
-        ->map(function ($group) {
-            return $group->count();
-        });
-
-    $youthMembers = $filteredUsers->whereBetween('created_at', [$startDate, $endDate])
-        ->filter(function ($user) {
-            return Carbon::parse($user->dob)->age < 35;
-        })
-        ->count();
-
-    $pwds = $filteredUsers->whereBetween('created_at', [$startDate, $endDate])
-        ->where('pwd', 'yes')
-        ->count();
-
-    $totalSavings = Transaction::whereIn('sacco_id', $saccoIds)
-        ->where('type', 'SHARE')
-        ->whereBetween('created_at', [$startDate, $endDate])
-        ->sum('amount');
-
-    $savingsByGender = Transaction::select('users.sex', DB::raw('sum(transactions.amount) as total'))
-        ->join('users', 'transactions.user_id', '=', 'users.id')
-        ->whereIn('users.sacco_id', $saccoIds)
-        ->where('transactions.type', 'SHARE')
-        ->whereBetween('transactions.created_at', [$startDate, $endDate])
-        ->groupBy('users.sex')
-        ->get();
-
-    $savingsByYouth = Transaction::whereIn('sacco_id', $saccoIds)
-        ->whereHas('user', function ($query) {
-            $query->whereDate('dob', '>', now()->subYears(35));
-        })
-        ->where('type', 'SHARE')
-        ->whereBetween('created_at', [$startDate, $endDate])
-        ->sum('amount');
-
-    $savingsByPwd = Transaction::whereIn('sacco_id', $saccoIds)
-        ->whereHas('user', function ($query) {
-            $query->where('pwd', 'yes');
-        })
-        ->where('type', 'SHARE')
-        ->whereBetween('created_at', [$startDate, $endDate])
-        ->sum('amount');
-
-    $totalLoans = abs(Transaction::whereIn('sacco_id', $saccoIds)
-        ->where('type', 'LOAN')
-        ->whereBetween('created_at', [$startDate, $endDate])
-        ->sum('amount'));
-
-    $loansByGender = Transaction::select('users.sex', DB::raw('sum(transactions.amount) as total'))
-        ->join('users', 'transactions.user_id', '=', 'users.id')
-        ->whereIn('users.sacco_id', $saccoIds)
-        ->where('transactions.type', 'LOAN')
-        ->whereBetween('transactions.created_at', [$startDate, $endDate])
-        ->groupBy('users.sex')
-        ->get();
-
-    $loansByYouth = abs(Transaction::whereIn('sacco_id', $saccoIds)
-        ->whereHas('user', function ($query) {
-            $query->whereDate('dob', '>', now()->subYears(35));
-        })
-        ->where('type', 'LOAN')
-        ->whereBetween('created_at', [$startDate, $endDate])
-        ->sum('amount'));
-
-    $loansByPwd = abs(Transaction::whereIn('sacco_id', $saccoIds)
-        ->whereHas('user', function ($query) {
-            $query->where('pwd', 'yes');
-        })
-        ->where('type', 'LOAN')
-        ->whereBetween('created_at', [$startDate, $endDate])
-        ->sum('amount'));
 
     // Prepare data for export
     $data = [
         ['Metric', 'Value'],
-        ['Total Number of Groups Registered', $groupsOnboarded],
-        ['Total Number of Members', $totalMembers],
+        ['Total Number of Groups Registered', $statistics['totalAccounts']],
+        ['Total Number of Members', $statistics['totalMembers']],
         ['Number of Members by Gender', ''],
+        ['  Female', $statistics['femaleMembersCount']],
+        ['  Male', $statistics['maleMembersCount']],
+        ['Number of Youth Members', $statistics['youthMembersCount']],
+        ['Number of PWDs', $statistics['totalPwdMembers']],
+        // ['Total Savings', $statistics['totalSavings']],
+        ['Savings by Gender', ''],
+        ['  Female', $statistics['femaleTotalBalance']],
+        ['  Male', $statistics['maleTotalBalance']],
+        ['Savings by Youth', $statistics['youthTotalBalance']],
+        ['Savings by PWDs', $statistics['pwdTotalBalance']],
+        ['Total Loans', $statistics['totalLoanAmount']],
+        ['Loans by Gender', ''],
+        ['  Female', $statistics['loanSumForWomen']],
+        ['  Male', $statistics['loanSumForMen']],
+        ['Loans by Youth', $statistics['loanSumForYouths']],
+        ['Loans by PWDs', $statistics['pwdTotalLoanBalance']],
     ];
-
-    foreach ($membersByGender as $sex => $count) {
-        $data[] = ['  ' . $sex, $count];
-    }
-
-    $data[] = ['Number of Youth Members', $youthMembers];
-    $data[] = ['Number of PWDs', $pwds];
-    $data[] = ['Total Savings', $totalSavings];
-    $data[] = ['Savings by Gender', ''];
-
-    foreach ($savingsByGender as $saving) {
-        $data[] = ['  ' . $saving->sex, $saving->total];
-    }
-
-    $data[] = ['Savings by Youth', $savingsByYouth];
-    $data[] = ['Savings by PWDs', $savingsByPwd];
-    $data[] = ['Total Loans', $totalLoans];
-    $data[] = ['Loans by Gender', ''];
-
-    // Add separate entries for each gender in loans
-    foreach ($loansByGender as $loan) {
-        $data[] = ['  ' . $loan->sex, abs($loan->total)];
-    }
-
-    $data[] = ['Loans by Youth', $loansByYouth];
-    $data[] = ['Loans by PWDs', $loansByPwd];
 
     $fileName = 'export_data_' . $startDate . '_to_' . $endDate . '.csv';
     $filePath = storage_path('exports/' . $fileName);
@@ -221,6 +117,7 @@ class HomeController extends Controller
         'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
     ])->deleteFileAfterSend(true);
 }
+
 
     public function index(Content $content)
     {
@@ -567,6 +464,47 @@ class HomeController extends Controller
             "Savings groups transform lives.",
             "In unity, there is strength."
         ];
+
+        $data = [
+            'totalAccounts' => $totalAccounts,
+            'totalOrgAdmins' => $totalOrgAdmins,
+            'totalSaccos' => $totalSaccos,
+            'organisationCount' => $organisationCount,
+            'totalMembers' => $totalMembers,
+            'totalPwdMembers' => $totalPwdMembers,
+            'villageAgents' => $villageAgents,
+            'youthMembersPercentage' => $youthMembersPercentage,
+            'femaleMembersCount' => $femaleMembersCount,
+            'femaleTotalBalance' => $femaleTotalBalance,
+            'maleMembersCount' => $maleMembersCount,
+            'maleTotalBalance' => $maleTotalBalance,
+            'youthMembersCount' => $youthMembersCount,
+            'youthTotalBalance' => $youthTotalBalance,
+            'pwdMembersCount' => $pwdMembersCount,
+            'pwdTotalBalance' => $pwdTotalBalance,
+            'loansDisbursedToWomen' => $loansDisbursedToWomen,
+            'loansDisbursedToMen' => $loansDisbursedToMen,
+            'loansDisbursedToYouths' => $loansDisbursedToYouths,
+            'loanSumForWomen' => $loanSumForWomen,
+            'loanSumForMen' => $loanSumForMen,
+            'loanSumForYouths' => $loanSumForYouths,
+            'pwdTotalLoanCount' => $pwdTotalLoanCount,
+            'pwdTotalLoanBalance' => $pwdTotalLoanBalance,
+            'totalLoanAmount' => $totalLoanAmount,
+            'totalLoanBalance' => $totalLoanBalance,
+            'monthYearList' => $monthYearList,
+            'totalSavingsList' => $totalSavingsList,
+            'topSavingGroups' => $topSavingGroups,
+            'registrationDates' => $registrationDates,
+            'registrationCounts' => $registrationCounts,
+            'orgName' => $orgName,
+            'organizationContainer' => $organizationContainer,
+            'userName' => $userName,
+            'quotes' => $quotes,
+        ];
+
+        // Storing the data in session to make it accessible for exportData method
+        Session::put('dashboard_data', $data);
 
         return $content
             ->header('<div style="text-align: center; color: #066703; font-size: 30px; font-weight: bold; padding-top: 20px;">' . $orgName . '</div>')
