@@ -42,88 +42,101 @@ class HomeController extends Controller
 {
 
     public function exportData(Request $request)
-    {
-        $startDate = $request->input('start_date');
-        $endDate = $request->input('end_date');
+{
+    $startDate = $request->input('start_date');
+    $endDate = $request->input('end_date');
 
-        // Validate date inputs
-        if (!$startDate || !$endDate) {
-            return redirect()->back()->withErrors(['error' => 'Both start and end dates are required.']);
-        }
-
-        // Fetch data based on date range
-        $groupsOnboarded = Sacco::whereBetween('created_at', [$startDate, $endDate])->count();
-        $membersByGender = User::select('sex', DB::raw('count(*) as total'))
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->groupBy('sex')
-            ->get();
-        $pwds = User::where('pwd', 'yes')->whereBetween('created_at', [$startDate, $endDate])->count();
-        $savingsByGender = Transaction::select('users.sex', DB::raw('sum(transactions.amount) as total'))
-            ->join('users', 'transactions.user_id', '=', 'users.id')
-            ->where('transactions.type', 'SHARE')
-            ->whereBetween('transactions.created_at', [$startDate, $endDate])
-            ->groupBy('users.sex')
-            ->get();
-        $loansByGender = Transaction::select('users.sex', DB::raw('sum(transactions.amount) as total'))
-            ->join('users', 'transactions.user_id', '=', 'users.id')
-            ->where('transactions.type', 'LOAN')
-            ->whereBetween('transactions.created_at', [$startDate, $endDate])
-            ->groupBy('users.sex')
-            ->get();
-        $youthPwds = User::where('pwd', 'yes')
-            ->whereDate('dob', '>', now()->subYears(35))
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->count();
-
-        // Prepare data for export
-        $data = [
-            ['Metric', 'Value'],
-            ['Number of Groups Onboarded', $groupsOnboarded],
-            ['Members Onboarded by Gender', ''],
-            ...$membersByGender->map(fn ($item) => [$item->sex, $item->total])->toArray(),
-            ['PWDs', $pwds],
-            ['Savings by Gender', ''],
-            ...$savingsByGender->map(fn ($item) => [$item->sex, $item->total])->toArray(),
-            ['Loans by Gender', ''],
-            ...$loansByGender->map(fn ($item) => [$item->sex, $item->total])->toArray(),
-            ['Youth PWDs', $youthPwds],
-        ];
-
-        $fileName = 'export_data_' . $startDate . '_to_' . $endDate . '.csv';
-        $filePath = storage_path('exports/' . $fileName);
-
-        // Ensure the directory exists
-        if (!file_exists(storage_path('exports'))) {
-            mkdir(storage_path('exports'), 0755, true);
-        }
-
-        // Write data to CSV
-        try {
-            $file = fopen($filePath, 'w');
-            if ($file === false) {
-                throw new Exception('File open failed.');
-            }
-
-            // Write UTF-8 BOM for proper encoding in Excel
-            fwrite($file, "\xEF\xBB\xBF");
-
-            foreach ($data as $row) {
-                if (fputcsv($file, array_map('strval', $row)) === false) {
-                    throw new Exception('CSV write failed.');
-                }
-            }
-
-            fclose($file);
-        } catch (Exception $e) {
-            return response()->json(['error' => 'Error writing to CSV: ' . $e->getMessage()], 500);
-        }
-
-        // Return the CSV file as a download response
-        return response()->download($filePath, $fileName, [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
-        ])->deleteFileAfterSend(true);
+    // Validate date inputs
+    if (!$startDate || !$endDate) {
+        return redirect()->back()->withErrors(['error' => 'Both start and end dates are required.']);
     }
+
+    // Fetch data based on date range
+    $groupsOnboarded = Sacco::whereBetween('created_at', [$startDate, $endDate])->count();
+    $membersByGender = User::select('sex', DB::raw('count(*) as total'))
+        ->whereBetween('created_at', [$startDate, $endDate])
+        ->groupBy('sex')
+        ->get();
+    $pwds = User::where('pwd', 'yes')->whereBetween('created_at', [$startDate, $endDate])->count();
+    $savingsByGender = Transaction::select('users.sex', DB::raw('sum(transactions.amount) as total'))
+        ->join('users', 'transactions.user_id', '=', 'users.id')
+        ->where('transactions.type', 'SHARE')
+        ->whereBetween('transactions.created_at', [$startDate, $endDate])
+        ->groupBy('users.sex')
+        ->get();
+    $loansByGender = Transaction::select('users.sex', DB::raw('sum(transactions.amount) as total'))
+        ->join('users', 'transactions.user_id', '=', 'users.id')
+        ->where('transactions.type', 'LOAN')
+        ->whereBetween('transactions.created_at', [$startDate, $endDate])
+        ->groupBy('users.sex')
+        ->get();
+    $youthPwds = User::where('pwd', 'yes')
+        ->whereDate('dob', '>', now()->subYears(35))
+        ->whereBetween('created_at', [$startDate, $endDate])
+        ->count();
+
+    // Prepare data for export
+    $data = [
+        ['Metric', 'Value'],
+        ['Number of Groups Onboarded', $groupsOnboarded],
+        ['Members Onboarded by Gender', ''],
+    ];
+
+    foreach ($membersByGender as $member) {
+        $data[] = [$member->sex, $member->total];
+    }
+
+    $data[] = ['PWDs', $pwds];
+    $data[] = ['Savings by Gender', ''];
+
+    foreach ($savingsByGender as $saving) {
+        $data[] = [$saving->sex, $saving->total];
+    }
+
+    $data[] = ['Loans by Gender', ''];
+
+    foreach ($loansByGender as $loan) {
+        $data[] = [$loan->sex, $loan->total];
+    }
+
+    $data[] = ['Youth PWDs', $youthPwds];
+
+    $fileName = 'export_data_' . $startDate . '_to_' . $endDate . '.csv';
+    $filePath = storage_path('exports/' . $fileName);
+
+    // Ensure the directory exists
+    if (!file_exists(storage_path('exports'))) {
+        mkdir(storage_path('exports'), 0755, true);
+    }
+
+    // Write data to CSV
+    try {
+        $file = fopen($filePath, 'w');
+        if ($file === false) {
+            throw new Exception('File open failed.');
+        }
+
+        // Write UTF-8 BOM for proper encoding in Excel
+        fwrite($file, "\xEF\xBB\xBF");
+
+        foreach ($data as $row) {
+            if (fputcsv($file, array_map('strval', $row)) === false) {
+                throw new Exception('CSV write failed.');
+            }
+        }
+
+        fclose($file);
+    } catch (Exception $e) {
+        return response()->json(['error' => 'Error writing to CSV: ' . $e->getMessage()], 500);
+    }
+
+    // Return the CSV file as a download response
+    return response()->download($filePath, $fileName, [
+        'Content-Type' => 'text/csv',
+        'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+    ])->deleteFileAfterSend(true);
+}
+
 
     public function index(Content $content)
     {
