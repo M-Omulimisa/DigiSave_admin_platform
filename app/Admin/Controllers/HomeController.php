@@ -133,6 +133,7 @@ class HomeController extends Controller
     $data[] = ['Total Loans', $totalLoans];
     $data[] = ['Loans by Gender', ''];
 
+    // Add separate entries for each gender in loans
     foreach ($loansByGender as $loan) {
         $data[] = ['  ' . $loan->sex, abs($loan->total)];
     }
