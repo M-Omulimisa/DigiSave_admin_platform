@@ -67,7 +67,7 @@ class HomeController extends Controller
         ['  Female', $statistics['femaleMembersCount']],
         ['  Male', $statistics['maleMembersCount']],
         ['Number of Youth Members', $statistics['youthMembersCount']],
-        ['Number of PWDs', $statistics['pwdMembersCount']],
+        // ['Number of PWDs', $statistics['pwdMembersCount']],
         // ['Total Savings', $statistics['totalSavings']],
         ['Savings by Gender', ''],
         ['  Female', $statistics['femaleTotalBalance']],
