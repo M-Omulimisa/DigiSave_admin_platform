@@ -51,56 +51,101 @@ class HomeController extends Controller
         return redirect()->back()->withErrors(['error' => 'Both start and end dates are required.']);
     }
 
-    // Fetch data based on date range
-    $groupsOnboarded = Sacco::whereBetween('created_at', [$startDate, $endDate])->count();
-    $totalMembers = User::whereBetween('created_at', [$startDate, $endDate])->count();
-    $membersByGender = User::select('sex', DB::raw('count(*) as total'))
-        ->whereBetween('created_at', [$startDate, $endDate])
-        ->groupBy('sex')
-        ->get();
-    $youthMembers = User::whereDate('dob', '>', now()->subYears(35))
-        ->whereBetween('created_at', [$startDate, $endDate])
-        ->count();
-    $pwds = User::where('pwd', 'yes')->whereBetween('created_at', [$startDate, $endDate])->count();
+    $admin = Admin::user();
+    $adminId = $admin->id;
+    $isAdmin = $admin->isRole('admin');
+    $saccoIds = [];
 
-    $totalSavings = Transaction::where('type', 'SHARE')
+    if (!$isAdmin) {
+        $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+        if (!$orgAllocation) {
+            Auth::logout();
+            $message = "You are not allocated to any organization. Please contact M-Omulimisa Service Help for assistance.";
+            Session::flash('warning', $message);
+            admin_error($message);
+            return redirect('auth/logout');
+        }
+
+        $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgAllocation->vsla_organisation_id)
+            ->pluck('sacco_id')
+            ->toArray();
+    } else {
+        $saccoIds = Sacco::pluck('id')->toArray();
+    }
+
+    $filteredUsers = User::whereIn('sacco_id', $saccoIds)->get();
+
+    // Fetch data based on date range
+    $groupsOnboarded = Sacco::whereIn('id', $saccoIds)->whereBetween('created_at', [$startDate, $endDate])->count();
+    $totalMembers = $filteredUsers->whereBetween('created_at', [$startDate, $endDate])->count();
+    $membersByGender = $filteredUsers->whereBetween('created_at', [$startDate, $endDate])
+        ->groupBy('sex')
+        ->map(function ($group) {
+            return $group->count();
+        });
+
+    $youthMembers = $filteredUsers->whereBetween('created_at', [$startDate, $endDate])
+        ->filter(function ($user) {
+            return Carbon::parse($user->dob)->age < 35;
+        })
+        ->count();
+
+    $pwds = $filteredUsers->whereBetween('created_at', [$startDate, $endDate])
+        ->where('pwd', 'yes')
+        ->count();
+
+    $totalSavings = Transaction::whereIn('sacco_id', $saccoIds)
+        ->where('type', 'SHARE')
         ->whereBetween('created_at', [$startDate, $endDate])
         ->sum('amount');
+
     $savingsByGender = Transaction::select('users.sex', DB::raw('sum(transactions.amount) as total'))
         ->join('users', 'transactions.user_id', '=', 'users.id')
+        ->whereIn('users.sacco_id', $saccoIds)
         ->where('transactions.type', 'SHARE')
         ->whereBetween('transactions.created_at', [$startDate, $endDate])
         ->groupBy('users.sex')
         ->get();
-    $savingsByYouth = Transaction::whereHas('user', function($query) {
+
+    $savingsByYouth = Transaction::whereIn('sacco_id', $saccoIds)
+        ->whereHas('user', function ($query) {
             $query->whereDate('dob', '>', now()->subYears(35));
         })
         ->where('type', 'SHARE')
         ->whereBetween('created_at', [$startDate, $endDate])
         ->sum('amount');
-    $savingsByPwd = Transaction::whereHas('user', function($query) {
+
+    $savingsByPwd = Transaction::whereIn('sacco_id', $saccoIds)
+        ->whereHas('user', function ($query) {
             $query->where('pwd', 'yes');
         })
         ->where('type', 'SHARE')
         ->whereBetween('created_at', [$startDate, $endDate])
         ->sum('amount');
 
-    $totalLoans = abs(Transaction::where('type', 'LOAN')
+    $totalLoans = abs(Transaction::whereIn('sacco_id', $saccoIds)
+        ->where('type', 'LOAN')
         ->whereBetween('created_at', [$startDate, $endDate])
         ->sum('amount'));
+
     $loansByGender = Transaction::select('users.sex', DB::raw('sum(transactions.amount) as total'))
         ->join('users', 'transactions.user_id', '=', 'users.id')
+        ->whereIn('users.sacco_id', $saccoIds)
         ->where('transactions.type', 'LOAN')
         ->whereBetween('transactions.created_at', [$startDate, $endDate])
         ->groupBy('users.sex')
         ->get();
-    $loansByYouth = abs(Transaction::whereHas('user', function($query) {
+
+    $loansByYouth = abs(Transaction::whereIn('sacco_id', $saccoIds)
+        ->whereHas('user', function ($query) {
             $query->whereDate('dob', '>', now()->subYears(35));
         })
         ->where('type', 'LOAN')
         ->whereBetween('created_at', [$startDate, $endDate])
         ->sum('amount'));
-    $loansByPwd = abs(Transaction::whereHas('user', function($query) {
+
+    $loansByPwd = abs(Transaction::whereIn('sacco_id', $saccoIds)
+        ->whereHas('user', function ($query) {
             $query->where('pwd', 'yes');
         })
         ->where('type', 'LOAN')
@@ -115,8 +160,8 @@ class HomeController extends Controller
         ['Number of Members by Gender', ''],
     ];
 
-    foreach ($membersByGender as $member) {
-        $data[] = ['  ' . $member->sex, $member->total];
+    foreach ($membersByGender as $sex => $count) {
+        $data[] = ['  ' . $sex, $count];
     }
 
     $data[] = ['Number of Youth Members', $youthMembers];
