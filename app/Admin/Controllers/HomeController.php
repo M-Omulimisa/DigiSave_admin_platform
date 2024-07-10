@@ -85,27 +85,27 @@ class HomeController extends Controller
         ->whereBetween('created_at', [$startDate, $endDate])
         ->sum('amount');
 
-    $totalLoans = Transaction::where('type', 'LOAN')
+    $totalLoans = abs(Transaction::where('type', 'LOAN')
         ->whereBetween('created_at', [$startDate, $endDate])
-        ->sum('amount');
+        ->sum('amount'));
     $loansByGender = Transaction::select('users.sex', DB::raw('sum(transactions.amount) as total'))
         ->join('users', 'transactions.user_id', '=', 'users.id')
         ->where('transactions.type', 'LOAN')
         ->whereBetween('transactions.created_at', [$startDate, $endDate])
         ->groupBy('users.sex')
         ->get();
-    $loansByYouth = Transaction::whereHas('user', function($query) {
+    $loansByYouth = abs(Transaction::whereHas('user', function($query) {
             $query->whereDate('dob', '>', now()->subYears(35));
         })
         ->where('type', 'LOAN')
         ->whereBetween('created_at', [$startDate, $endDate])
-        ->sum('amount');
-    $loansByPwd = Transaction::whereHas('user', function($query) {
+        ->sum('amount'));
+    $loansByPwd = abs(Transaction::whereHas('user', function($query) {
             $query->where('pwd', 'yes');
         })
         ->where('type', 'LOAN')
         ->whereBetween('created_at', [$startDate, $endDate])
-        ->sum('amount');
+        ->sum('amount'));
 
     // Prepare data for export
     $data = [
@@ -134,7 +134,7 @@ class HomeController extends Controller
     $data[] = ['Loans by Gender', ''];
 
     foreach ($loansByGender as $loan) {
-        $data[] = ['  ' . $loan->sex, $loan->total];
+        $data[] = ['  ' . $loan->sex, abs($loan->total)];
     }
 
     $data[] = ['Loans by Youth', $loansByYouth];
