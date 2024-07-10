@@ -13,6 +13,12 @@ use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Encore\Admin\Show;
 use Illuminate\Support\Str;
+// use Maatwebsite\Excel\Facades\Excel;
+use Maatwebsite\Excel\Excel;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithHeadings;
+use Illuminate\Support\Facades\Response;
 
 class SaccoController extends AdminController
 {
@@ -85,13 +91,11 @@ class SaccoController extends AdminController
                 return $user ? $user->phone_number : '';
             });
 
-        // Adding new columns for uses_cash and uses_shares
         $grid->column('uses_cash', __('Uses Cash'))
             ->display(function () {
                 return $this->uses_shares == 0 ? 'Yes' : 'No';
             })->sortable();
 
-        // Adding new columns for share_price and min_cash_savings
         $grid->column('min_cash_savings', __('Minimum Cash Savings (UGX)'))
             ->display(function () {
                 return $this->uses_shares == 0 ? number_format($this->share_price) : '0';
@@ -132,6 +136,12 @@ class SaccoController extends AdminController
         $grid->column('view_transactions', __('View Transactions'))
             ->display(function () {
                 return '<a href="' . url('/transactions?sacco_id=' . $this->id) . '">View Transactions</a>';
+            });
+
+        // Adding the export column with direct download
+        $grid->column('export', __('Export'))
+            ->display(function () {
+                return '<a href="#" class="btn btn-sm btn-primary export-excel" data-id="' . $this->id . '">Export Excel</a> ';
             });
 
         // Adding search filters
@@ -191,7 +201,6 @@ class SaccoController extends AdminController
 
         return $grid;
     }
-
 
     protected function detail($id)
     {
@@ -267,12 +276,6 @@ class SaccoController extends AdminController
         $form->text('subcounty', __('Subcounty'));
         $form->text('parish', __('Parish'));
         $form->text('village', __('Village'));
-
-        // Add a select field for transactions view
-        // $form->select('view_transactions', __('View Transactions'))->options([
-        //     'yes' => 'Yes',
-        //     'no' => 'No'
-        // ])->rules('required');
 
         $form->saving(function (Form $form) {
             if ($form->isCreating()) {
@@ -411,4 +414,95 @@ class SaccoController extends AdminController
 
         return $form;
     }
+    public function exportExcel($id)
+    {
+        $sacco = Sacco::find($id);
+
+        if (!$sacco) {
+            return response()->json(['error' => 'Sacco not found'], 404);
+        }
+
+        return Excel::download(new SaccoExport($sacco), 'sacco_' . $id . '.xlsx');
+    }
 }
+
+class SaccoExport implements FromCollection, WithHeadings
+{
+    protected $sacco;
+
+    public function __construct(Sacco $sacco)
+    {
+        $this->sacco = $sacco;
+    }
+
+    public function collection()
+    {
+        return collect([
+            [
+                'Name' => $this->sacco->name,
+                'Phone Number' => $this->sacco->phone_number,
+                'Uses Shares' => $this->sacco->uses_shares ? 'Yes' : 'No',
+                'Share Price' => $this->sacco->share_price,
+                'Physical Address' => $this->sacco->physical_address,
+                'Chairperson Name' => $this->sacco->chairperson_name,
+                'Created At' => $this->sacco->created_at->format('d M Y')
+            ]
+        ]);
+    }
+
+    public function headings(): array
+    {
+        return [
+            'Name',
+            'Phone Number',
+            'Uses Shares',
+            'Share Price',
+            'Physical Address',
+            'Chairperson Name',
+            'Created At'
+        ];
+    }
+}
+
+// Adding the export buttons script
+?>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.export-excel').forEach(function(button) {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const saccoId = e.target.getAttribute('data-id');
+                fetch(`/saccos/export-excel/${saccoId}`)
+                    .then(response => response.blob())
+                    .then(blob => {
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `sacco_${saccoId}.xlsx`;
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                    });
+            });
+        });
+
+        document.querySelectorAll('.export-pdf').forEach(function(button) {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const saccoId = e.target.getAttribute('data-id');
+                fetch(`/saccos/export-pdf/${saccoId}`)
+                    .then(response => response.blob())
+                    .then(blob => {
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `sacco_${saccoId}.pdf`;
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                    });
+            });
+        });
+    });
+</script>

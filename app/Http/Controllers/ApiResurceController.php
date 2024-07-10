@@ -2242,7 +2242,7 @@ class ApiResurceController extends Controller
                 }
             }
 
-            return $this->success($meeting, $message = "Meeting created successfully.", 200);
+            return $this->success($meeting, $message = "Meeting created successfully.");
         } catch (\Throwable $th) {
             return $this->error('Failed to create meeting: ' . $th->getMessage());
         }

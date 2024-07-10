@@ -19,7 +19,6 @@ Route::group([
     $router->get('auth/setting', [NewAuthController::class, 'getSetting'])->name('setting');
     $router->put('auth/setting', [NewAuthController::class, 'putSetting']);
 
-
     $router->resource('trainings', TrainingController::class);
     $router->get('/', 'HomeController@index')->name('home');
     $router->resource('gens', GenController::class);
@@ -46,6 +45,8 @@ Route::group([
 
     $router->get('saccos/export-pdf/{id}', 'SaccoController@exportPDF')->name('saccos.export-pdf');
 
+    // Add the export data route
+    $router->get('export-data', 'HomeController@exportData')->name('export-data');
 
     /* ========================START OF NEW THINGS===========================*/
 
