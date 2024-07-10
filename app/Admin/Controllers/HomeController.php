@@ -83,21 +83,27 @@ class HomeController extends Controller
     ];
 
     foreach ($membersByGender as $member) {
-        $data[] = [$member->sex, $member->total];
+        $data[] = ['  ' . $member->sex, $member->total];
     }
 
     $data[] = ['PWDs', $pwds];
     $data[] = ['Savings by Gender', ''];
 
     foreach ($savingsByGender as $saving) {
-        $data[] = [$saving->sex, $saving->total];
+        $data[] = ['  ' . $saving->sex, $saving->total];
     }
+
+    $totalSavings = $savingsByGender->sum('total');
+    $data[] = ['  Total Savings', $totalSavings];
 
     $data[] = ['Loans by Gender', ''];
 
     foreach ($loansByGender as $loan) {
-        $data[] = [$loan->sex, $loan->total];
+        $data[] = ['  ' . $loan->sex, $loan->total];
     }
+
+    $totalLoans = $loansByGender->sum('total');
+    $data[] = ['  Total Loans', $totalLoans];
 
     $data[] = ['Youth PWDs', $youthPwds];
 
