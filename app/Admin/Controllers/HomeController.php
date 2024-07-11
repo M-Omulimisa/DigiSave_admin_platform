@@ -132,11 +132,11 @@ class HomeController extends Controller
 
         $femaleUsersIds = $femaleUsers->pluck('id')->toArray();
         $femaleTotalBalance = number_format(Transaction::whereIn('user_id', $femaleUsersIds)->where('type', 'SHARE')
-        ->count('balance'));
+        ->sum('balance'));
 
         $maleUsersIds = $MaleUsers->pluck('id')->toArray();
         $maleTotalBalance = number_format(Transaction::whereIn('user_id', $maleUsersIds)->where('type', 'SHARE')
-        ->count('balance'));
+        ->sum('balance'));
 
         $youthUsersIds = $youthUsers->pluck('id')->toArray();
         $youthTotalBalance = number_format(Transaction::whereIn('user_id', $youthUsersIds)->where('type', 'SHARE')
@@ -248,11 +248,11 @@ class HomeController extends Controller
 
     $femaleUsersIds = $femaleUsers->pluck('id')->toArray();
     $femaleTotalBalance = number_format(Transaction::whereIn('user_id', $femaleUsersIds)->where('type', 'SHARE')
-    ->count('balance'));
+    ->sum('balance'));
 
     $maleUsersIds = $MaleUsers->pluck('id')->toArray();
     $maleTotalBalance = number_format(Transaction::whereIn('user_id', $maleUsersIds)->where('type', 'SHARE')
-    ->count('balance'));
+    ->sum('balance'));
 
     $youthUsersIds = $youthUsers->pluck('id')->toArray();
     $youthTotalBalance = number_format(Transaction::whereIn('user_id', $youthUsersIds)->where('type', 'SHARE')
