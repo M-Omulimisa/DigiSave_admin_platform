@@ -152,11 +152,6 @@ class HomeController extends Controller
                 ->where('users.sex', 'Male')
                 ->count();
 
-            $pwdTotalLoanCount = Transaction::join('users', 'transactions.user_id', '=', 'users.id')
-            ->where('transactions.type', 'LOAN')
-            ->where('pwd', 'yes')
-            ->count();
-
             // Get the IDs of youth users
             $youthIds = User::whereIn('sacco_id', $saccoIds)
                 ->whereDate('dob', '>', now()->subYears(35))
@@ -204,9 +199,9 @@ class HomeController extends Controller
                 ->where('type', 'LOAN')
                 ->sum('amount');
 
-            // $pwdTotalLoanCount = Transaction::whereIn('sacco_id', $saccoIds)->where('type', 'LOAN')
-            //     ->whereIn('source_user_id', $pwdUserIds)
-            //     ->count();
+            $pwdTotalLoanCount = Transaction::whereIn('sacco_id', $saccoIds)->where('type', 'LOAN')
+                ->whereIn('source_user_id', $pwdUserIds)
+                ->count();
 
             // $pwdTotalLoanBalance = Transaction::whereIn('sacco_id', $saccoIds)->where('type', 'LOAN')
             //     ->whereIn('source_user_id', $pwdUserIds)
@@ -296,11 +291,6 @@ class HomeController extends Controller
                 ->where('users.sex', 'Male')
                 ->count();
 
-            $pwdTotalLoanCount = Transaction::join('users', 'transactions.user_id', '=', 'users.id')
-            ->where('transactions.type', 'LOAN')
-            ->where('pwd', 'yes')
-            ->count();
-
             // Get the IDs of youth users
             $youthIds = User::whereDate('dob', '>', now()->subYears(35))
                 ->pluck('id');
@@ -347,9 +337,9 @@ class HomeController extends Controller
                 ->where('type', 'LOAN')
                 ->sum('balance');
 
-            // $pwdTotalLoanCount = Transaction::where('type', 'LOAN')
-            //     ->whereIn('source_user_id', $pwdUserIds)
-            //     ->count();
+            $pwdTotalLoanCount = Transaction::where('type', 'LOAN')
+                ->whereIn('source_user_id', $pwdUserIds)
+                ->count();
 
             // $pwdTotalLoanBalance = Transaction::where('type', 'LOAN')
             //     ->whereIn('source_user_id', $pwdUserIds)
