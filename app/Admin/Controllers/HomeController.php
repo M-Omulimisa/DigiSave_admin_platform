@@ -35,6 +35,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
 use SplFileObject;
+use Illuminate\Http\Request;
 
 class HomeController extends Controller
 {
