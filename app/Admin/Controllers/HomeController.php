@@ -183,7 +183,7 @@ class HomeController extends Controller
                 ->where('users.sex', 'Male')
                 ->sum('transactions.amount');
 
-            $pwdTotalLoanBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            $pwdTotalLoanBalance = Transaction::join('users', 'transactions.user_id', '=', 'users.id')
             ->where('transactions.type', 'LOAN')
             ->where('pwd', 'yes')
             ->sum('transactions.amount');
@@ -315,7 +315,7 @@ class HomeController extends Controller
                 ->where('users.sex', 'Male')
                 ->sum('transactions.amount');
 
-            $pwdTotalLoanBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            $pwdTotalLoanBalance = Transaction::join('users', 'transactions.user_id', '=', 'users.id')
             ->where('transactions.type', 'LOAN')
             ->where('pwd', 'yes')
             ->sum('transactions.amount');
