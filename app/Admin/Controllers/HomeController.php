@@ -121,6 +121,9 @@ class HomeController extends Controller
                 ->whereBetween('created_at', [$startDate, $endDate])
                 ->count();
 
+        $pwdUsers = $filteredUsers->where('pwd', 'Yes');
+        $pwdMembersCount = $pwdUsers->count();
+
         // Prepare statistics
         $statistics = [
             'totalAccounts' => Sacco::whereHas('users', function ($query) use ($startDate, $endDate, $saccoIds) {
@@ -140,7 +143,7 @@ class HomeController extends Controller
             'youthMembersCount' => $filteredUsers->filter(function ($user) {
                 return Carbon::parse($user->dob)->age < 35;
             })->count(),
-            'pwdMembersCount' => $filteredUsers->where('pwd', 'yes')->count(),
+            'pwdMembersCount' => $pwdMembersCount,
             'femaleTotalBalance' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
                 ->whereIn('users.id', $filteredUserIds)
                 ->where('transactions.type', 'SHARE')
