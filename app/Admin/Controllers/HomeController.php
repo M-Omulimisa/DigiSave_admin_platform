@@ -114,7 +114,7 @@ class HomeController extends Controller
             })->count(),
             'totalMembers' => $filteredUsers->count(),
             // dd($filteredUsers->count()),
-            'femaleMemberCount' => $filteredUsers->where('user_type', '!=', 'Admin')
+            'femaleMembersCount' => $filteredUsers->where('user_type', '!=', 'Admin')
             ->whereBetween('users.created_at', [$startDate, $endDate])
             ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
                 return $query->whereIn('users.sacco_id', $saccoIds);
@@ -209,7 +209,8 @@ class HomeController extends Controller
         ];
     }
 
-    else{$filteredUsers = $filteredUsers->filter(function ($user) use ($startDate, $endDate) {
+    else{
+        $filteredUsers = $filteredUsers->filter(function ($user) use ($startDate, $endDate) {
         return Carbon::parse($user->created_at)->between($startDate, $endDate);
     });
 
