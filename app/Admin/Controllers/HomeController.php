@@ -462,17 +462,17 @@ class HomeController extends Controller
 
         $femaleUsers = $filteredUsersForBalances->where('sex', 'Female');
         $femaleMembersCount = $femaleUsers->count();
-        $femaleTotalBalance = number_format($femaleUsers->sum('amount'), 2);
+        $femaleTotalBalance = number_format($femaleUsers->sum('balance'), 2);
 
         $maleUsers = $filteredUsersForBalances->where('sex', 'Male');
         $maleMembersCount = $maleUsers->count();
-        $maleTotalBalance = number_format($maleUsers->sum('amount'), 2);
+        $maleTotalBalance = number_format($maleUsers->sum('balance'), 2);
 
         $youthUsers = $filteredUsersForBalances->filter(function ($user) {
             return Carbon::parse($user->dob)->age < 35;
         });
         $youthMembersCount = $youthUsers->count();
-        $youthTotalBalance = number_format($youthUsers->sum('amount'), 2);
+        $youthTotalBalance = number_format($youthUsers->sum('balance'), 2);
 
         $totalLoans = $loansDisbursedToWomen + $loansDisbursedToMen + $loansDisbursedToYouths;
         $percentageLoansWomen = $totalLoans > 0 ? ($loansDisbursedToWomen / $totalLoans) * 100 : 0;
