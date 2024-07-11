@@ -13,27 +13,10 @@ use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Encore\Admin\Show;
 use Illuminate\Support\Str;
-use Maatwebsite\Excel\Facades\Excel;
-use Barryvdh\DomPDF\Facade\Pdf;
-use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\WithHeadings;
 
 class SaccoController extends AdminController
 {
     protected $title = 'VSLA Groups';
-
-    public function exportExcel($id)
-    {
-        $sacco = Sacco::find($id);
-        return Excel::download(new SaccoExport($sacco), 'sacco_' . $id . '.xlsx');
-    }
-
-    public function exportPDF($id)
-    {
-        $sacco = Sacco::find($id);
-        $pdf = Pdf::loadView('sacco.pdf', ['sacco' => $sacco]);
-        return $pdf->download('sacco_' . $id . '.pdf');
-    }
 
     protected function grid()
     {
@@ -102,11 +85,13 @@ class SaccoController extends AdminController
                 return $user ? $user->phone_number : '';
             });
 
+        // Adding new columns for uses_cash and uses_shares
         $grid->column('uses_cash', __('Uses Cash'))
             ->display(function () {
                 return $this->uses_shares == 0 ? 'Yes' : 'No';
             })->sortable();
 
+        // Adding new columns for share_price and min_cash_savings
         $grid->column('min_cash_savings', __('Minimum Cash Savings (UGX)'))
             ->display(function () {
                 return $this->uses_shares == 0 ? number_format($this->share_price) : '0';
@@ -147,13 +132,6 @@ class SaccoController extends AdminController
         $grid->column('view_transactions', __('View Transactions'))
             ->display(function () {
                 return '<a href="' . url('/transactions?sacco_id=' . $this->id) . '">View Transactions</a>';
-            });
-
-        // Adding the export column
-        $grid->column('export', __('Export'))
-            ->display(function () {
-                return '<a href="' . url('/saccos/export-excel/' . $this->id) . '" class="btn btn-sm btn-primary">Export Excel</a> ' .
-                       '<a href="' . url('/saccos/export-pdf/' . $this->id) . '" class="btn btn-sm btn-secondary">Export PDF</a>';
             });
 
         // Adding search filters
@@ -213,6 +191,7 @@ class SaccoController extends AdminController
 
         return $grid;
     }
+
 
     protected function detail($id)
     {
@@ -288,6 +267,12 @@ class SaccoController extends AdminController
         $form->text('subcounty', __('Subcounty'));
         $form->text('parish', __('Parish'));
         $form->text('village', __('Village'));
+
+        // Add a select field for transactions view
+        // $form->select('view_transactions', __('View Transactions'))->options([
+        //     'yes' => 'Yes',
+        //     'no' => 'No'
+        // ])->rules('required');
 
         $form->saving(function (Form $form) {
             if ($form->isCreating()) {
@@ -425,44 +410,5 @@ class SaccoController extends AdminController
         </script>');
 
         return $form;
-    }
-}
-
-// Define SaccoExport class outside the SaccoController class
-class SaccoExport implements FromCollection, WithHeadings
-{
-    protected $sacco;
-
-    public function __construct(Sacco $sacco)
-    {
-        $this->sacco = $sacco;
-    }
-
-    public function collection()
-    {
-        return collect([
-            [
-                'Name' => $this->sacco->name,
-                'Phone Number' => $this->sacco->phone_number,
-                'Uses Shares' => $this->sacco->uses_shares ? 'Yes' : 'No',
-                'Share Price' => $this->sacco->share_price,
-                'Physical Address' => $this->sacco->physical_address,
-                'Chairperson Name' => $this->sacco->chairperson_name,
-                'Created At' => $this->sacco->created_at->format('d M Y')
-            ]
-        ]);
-    }
-
-    public function headings(): array
-    {
-        return [
-            'Name',
-            'Phone Number',
-            'Uses Shares',
-            'Share Price',
-            'Physical Address',
-            'Chairperson Name',
-            'Created At'
-        ];
     }
 }
