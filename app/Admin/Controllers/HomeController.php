@@ -170,8 +170,8 @@ class HomeController extends Controller
             'pwdMembersCount' => $pwdMembersCount,
             'femaleTotalBalance' => $femaleTotalBalance,
             'maleTotalBalance' => $maleTotalBalance,
-            'youthTotalBalance' => number_format($youthTotalBalance),
-            'pwdTotalBalance' => number_format($pwdTotalBalance),
+            'youthTotalBalance' => $youthTotalBalance,
+            'pwdTotalBalance' => $pwdTotalBalance,
             'totalLoanAmount' => number_format(Transaction::where('type', 'LOAN')
                 ->whereBetween('created_at', [$startDate, $endDate])
                 ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
