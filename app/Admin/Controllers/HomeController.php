@@ -122,7 +122,7 @@ private function getTotalAccounts($filteredUsers)
 
 private function getTotalBalance($users, $type)
 {
-    return number_format(Transaction::whereIn('source_user_id', $users->pluck('id')->toArray())->where('type', $type)->sum('balance'));
+    return number_format(Transaction::whereIn('user_id', $users->pluck('id')->toArray())->where('type', $type)->sum('balance'));
 }
 
 private function getTotalLoanAmount($users, $startDate, $endDate)
@@ -132,7 +132,7 @@ private function getTotalLoanAmount($users, $startDate, $endDate)
 
 private function getLoanSumForGender($users, $gender, $startDate, $endDate)
 {
-    return number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+    return number_format(Transaction::join('users', 'transactions.user_id', '=', 'users.id')
         ->where('transactions.type', 'LOAN')
         ->where('users.sex', $gender)
         ->whereBetween('users.created_at', [$startDate, $endDate])
@@ -141,7 +141,7 @@ private function getLoanSumForGender($users, $gender, $startDate, $endDate)
 
 private function getLoanSumForYouths($users, $startDate, $endDate)
 {
-    return number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+    return number_format(Transaction::join('users', 'transactions.user_id', '=', 'users.id')
         ->where('transactions.type', 'LOAN')
         ->whereBetween('users.created_at', [$startDate, $endDate])
         ->whereDate('users.dob', '>', now()->subYears(35))
@@ -150,7 +150,7 @@ private function getLoanSumForYouths($users, $startDate, $endDate)
 
 private function getTotalLoanBalance($users, $startDate, $endDate)
 {
-    return number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+    return number_format(Transaction::join('users', 'transactions.user_id', '=', 'users.id')
         ->where('transactions.type', 'LOAN')
         ->where('users.pwd', 'yes')
         ->whereBetween('users.created_at', [$startDate, $endDate])
