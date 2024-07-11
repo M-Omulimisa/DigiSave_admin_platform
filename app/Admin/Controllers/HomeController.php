@@ -339,7 +339,7 @@ class HomeController extends Controller
                 ->count();
 
             $pwdTotalLoanBalance = Transaction::where('type', 'LOAN')
-                ->whereIn('user_id', $pwdUserIds)
+                ->whereIn('source_user_id', $pwdUserIds)
                 ->sum('balance');
 
             $transactions = Transaction::all();
