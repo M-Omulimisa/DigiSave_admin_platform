@@ -17,11 +17,23 @@ use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
-use Illuminate\Support\Facades\Response;
 
 class SaccoController extends AdminController
 {
     protected $title = 'VSLA Groups';
+
+    public function exportExcel($id)
+    {
+        $sacco = Sacco::find($id);
+        return Excel::download(new SaccoExport($sacco), 'sacco_' . $id . '.xlsx');
+    }
+
+    public function exportPDF($id)
+    {
+        $sacco = Sacco::find($id);
+        $pdf = Pdf::loadView('sacco.pdf', ['sacco' => $sacco]);
+        return $pdf->download('sacco_' . $id . '.pdf');
+    }
 
     protected function grid()
     {
@@ -137,11 +149,11 @@ class SaccoController extends AdminController
                 return '<a href="' . url('/transactions?sacco_id=' . $this->id) . '">View Transactions</a>';
             });
 
-        // Adding the export column with direct download
+        // Adding the export column
         $grid->column('export', __('Export'))
             ->display(function () {
-                return '<a href="#" class="btn btn-sm btn-primary export-excel" data-id="' . $this->id . '">Export Excel</a> ' .
-                       '<a href="#" class="btn btn-sm btn-secondary export-pdf" data-id="' . $this->id . '">Export PDF</a>';
+                return '<a href="' . url('/saccos/export-excel/' . $this->id) . '" class="btn btn-sm btn-primary">Export Excel</a> ' .
+                       '<a href="' . url('/saccos/export-pdf/' . $this->id) . '" class="btn btn-sm btn-secondary">Export PDF</a>';
             });
 
         // Adding search filters
@@ -453,6 +465,4 @@ class SaccoExport implements FromCollection, WithHeadings
             'Created At'
         ];
     }
-
-
 }
