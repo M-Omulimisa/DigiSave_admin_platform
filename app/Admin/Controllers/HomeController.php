@@ -55,14 +55,27 @@ class HomeController extends Controller
         return redirect()->back()->withErrors(['error' => 'Both start and end dates are required.']);
     }
 
+    $users = User::all();
     $admin = Admin::user();
     $adminId = $admin->id;
 
-    // Initialize variables
-    $filteredUsers = User::query()->whereNotIn('user_type', ['Admin', '5']);
-    $saccoIds = [];
+    // Filter out specific user types
+    $filteredUsers = $users->reject(function ($user) use ($adminId) {
+        return $user->id === $adminId && $user->user_type === 'Admin';
+    });
 
-    // Apply filters based on the user's role and organization
+    $filteredUsers = $filteredUsers->reject(function ($user) {
+        return $user->user_type === '4';
+    });
+
+    $filteredUsers = $filteredUsers->reject(function ($user) {
+        return $user->user_type === '5';
+    });
+
+    $filteredUsers = $filteredUsers->filter(function ($user) {
+        return $user->user_type === null || !in_array($user->user_type, ['Admin', '5']);
+    });
+
     if (!$admin->isRole('admin')) {
         $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
         if (!$orgAllocation) {
@@ -75,25 +88,26 @@ class HomeController extends Controller
 
         $orgIds = $orgAllocation->vsla_organisation_id;
         $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgIds)->pluck('sacco_id')->toArray();
-
-        $filteredUsers->whereIn('sacco_id', $saccoIds);
+        $filteredUsers = $filteredUsers->whereIn('sacco_id', $saccoIds);
     }
 
-    $filteredUsers = $filteredUsers->whereBetween('created_at', [$startDate, $endDate])->get();
+    // Filter users by date range
+    $filteredUsers = $filteredUsers->filter(function ($user) use ($startDate, $endDate) {
+        return Carbon::parse($user->created_at)->between($startDate, $endDate);
+    });
 
-    // Prepare statistics
-    $statistics = [
-        'totalAccounts' => Sacco::whereHas('users', function ($query) use ($startDate, $endDate, $saccoIds) {
-            $query->whereHas('position', function ($query) {
-                $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
-            })->whereNotNull('phone_number')
+    // Calculate statistics
+    $totalAccounts = Sacco::whereHas('users', function ($query) use ($startDate, $endDate, $filteredUsers) {
+        $query->whereIn('id', $filteredUsers->pluck('id'))
+              ->whereHas('position', function ($query) {
+                  $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+              })->whereNotNull('phone_number')
                 ->whereNotNull('name')
-                ->whereNotIn('user_type', ['Admin', '5'])
                 ->whereBetween('created_at', [$startDate, $endDate]);
-            if (!empty($saccoIds)) {
-                $query->whereIn('sacco_id', $saccoIds);
-            }
-        })->count(),
+    })->count();
+
+    $statistics = [
+        'totalAccounts' => $totalAccounts,
         'totalMembers' => $filteredUsers->count(),
         'femaleMembersCount' => $filteredUsers->where('sex', 'Female')->count(),
         'maleMembersCount' => $filteredUsers->where('sex', 'Male')->count(),
@@ -104,84 +118,70 @@ class HomeController extends Controller
         'femaleTotalBalance' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
             ->where('transactions.type', 'SHARE')
             ->where('users.sex', 'Female')
-            ->whereNotIn('users.user_type', ['Admin', '5'])
-            ->whereBetween('users.created_at', [$startDate, $endDate])
-            ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
-                return $query->whereIn('users.sacco_id', $saccoIds);
-            })
+            ->whereIn('users.id', $filteredUsers->pluck('id'))
             ->sum('transactions.balance'), 2),
         'maleTotalBalance' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
             ->where('transactions.type', 'SHARE')
             ->where('users.sex', 'Male')
-            ->whereNotIn('users.user_type', ['Admin', '5'])
-            ->whereBetween('users.created_at', [$startDate, $endDate])
-            ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
-                return $query->whereIn('users.sacco_id', $saccoIds);
-            })
+            ->whereIn('users.id', $filteredUsers->pluck('id'))
             ->sum('transactions.balance'), 2),
         'youthTotalBalance' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
             ->where('transactions.type', 'SHARE')
-            ->whereNotIn('users.user_type', ['Admin', '5'])
-            ->whereBetween('users.created_at', [$startDate, $endDate])
+            ->whereIn('users.id', $filteredUsers->pluck('id'))
             ->whereDate('users.dob', '>', now()->subYears(35))
-            ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
-                return $query->whereIn('users.sacco_id', $saccoIds);
-            })
             ->sum('transactions.balance'), 2),
         'pwdTotalBalance' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
             ->where('transactions.type', 'SHARE')
-            ->whereNotIn('users.user_type', ['Admin', '5'])
-            ->whereBetween('users.created_at', [$startDate, $endDate])
             ->where('users.pwd', 'yes')
-            ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
-                return $query->whereIn('users.sacco_id', $saccoIds);
-            })
+            ->whereIn('users.id', $filteredUsers->pluck('id'))
             ->sum('transactions.balance'), 2),
-        'totalLoanAmount' => number_format(Transaction::where('type', 'LOAN')
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
-                return $query->whereIn('sacco_id', $saccoIds);
-            })
-            ->whereHas('user', function ($query) {
-                $query->whereNotIn('user_type', ['Admin', '5']);
-            })
-            ->sum('amount'), 2),
+        'totalLoanAmount' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'LOAN')
+            ->whereIn('users.id', $filteredUsers->pluck('id'))
+            ->sum('transactions.amount'), 2),
         'loanSumForWomen' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
             ->where('transactions.type', 'LOAN')
             ->where('users.sex', 'Female')
-            ->whereNotIn('users.user_type', ['Admin', '5'])
-            ->whereBetween('users.created_at', [$startDate, $endDate])
-            ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
-                return $query->whereIn('users.sacco_id', $saccoIds);
-            })
+            ->whereIn('users.id', $filteredUsers->pluck('id'))
             ->sum('transactions.amount'), 2),
         'loanSumForMen' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
             ->where('transactions.type', 'LOAN')
             ->where('users.sex', 'Male')
-            ->whereNotIn('users.user_type', ['Admin', '5'])
-            ->whereBetween('users.created_at', [$startDate, $endDate])
-            ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
-                return $query->whereIn('users.sacco_id', $saccoIds);
-            })
+            ->whereIn('users.id', $filteredUsers->pluck('id'))
             ->sum('transactions.amount'), 2),
         'loanSumForYouths' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
             ->where('transactions.type', 'LOAN')
-            ->whereNotIn('users.user_type', ['Admin', '5'])
-            ->whereBetween('users.created_at', [$startDate, $endDate])
+            ->whereIn('users.id', $filteredUsers->pluck('id'))
             ->whereDate('users.dob', '>', now()->subYears(35))
-            ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
-                return $query->whereIn('users.sacco_id', $saccoIds);
-            })
             ->sum('transactions.amount'), 2),
         'pwdTotalLoanBalance' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
             ->where('transactions.type', 'LOAN')
             ->where('users.pwd', 'yes')
-            ->whereNotIn('users.user_type', ['Admin', '5'])
-            ->whereBetween('users.created_at', [$startDate, $endDate])
-            ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
-                return $query->whereIn('users.sacco_id', $saccoIds);
-            })
+            ->whereIn('users.id', $filteredUsers->pluck('id'))
             ->sum('transactions.amount'), 2),
+    ];
+
+    // Prepare data for export
+    $data = [
+        ['Metric', 'Value'],
+        ['Total Number of Groups Registered', $statistics['totalAccounts']],
+        ['Total Number of Members', $statistics['totalMembers']],
+        ['Number of Members by Gender', ''],
+        ['  Female', $statistics['femaleMembersCount']],
+        ['  Male', $statistics['maleMembersCount']],
+        ['Number of Youth Members', $statistics['youthMembersCount']],
+        ['Number of PWDs', $statistics['pwdMembersCount']],
+        ['Savings by Gender', ''],
+        ['  Female', $statistics['femaleTotalBalance']],
+        ['  Male', $statistics['maleTotalBalance']],
+        ['Savings by Youth', $statistics['youthTotalBalance']],
+        ['Savings by PWDs', $statistics['pwdTotalBalance']],
+        ['Total Loans', $statistics['totalLoanAmount']],
+        ['Loans by Gender', ''],
+        ['  Female', $statistics['loanSumForWomen']],
+        ['  Male', $statistics['loanSumForMen']],
+        ['Loans by Youth', $statistics['loanSumForYouths']],
+        ['Loans by PWDs', $statistics['pwdTotalLoanBalance']],
     ];
 
     $fileName = 'export_data_' . $startDate . '_to_' . $endDate . '.csv';
@@ -201,29 +201,6 @@ class HomeController extends Controller
 
         // Write UTF-8 BOM for proper encoding in Excel
         fwrite($file, "\xEF\xBB\xBF");
-
-        // Prepare data for export
-        $data = [
-            ['Metric', 'Value'],
-            ['Total Number of Groups Registered', $statistics['totalAccounts']],
-            ['Total Number of Members', $statistics['totalMembers']],
-            ['Number of Members by Gender', ''],
-            ['  Female', $statistics['femaleMembersCount']],
-            ['  Male', $statistics['maleMembersCount']],
-            ['Number of Youth Members', $statistics['youthMembersCount']],
-            ['Number of PWDs', $statistics['pwdMembersCount']],
-            ['Savings by Gender', ''],
-            ['  Female', $statistics['femaleTotalBalance']],
-            ['  Male', $statistics['maleTotalBalance']],
-            ['Savings by Youth', $statistics['youthTotalBalance']],
-            ['Savings by PWDs', $statistics['pwdTotalBalance']],
-            ['Total Loans', $statistics['totalLoanAmount']],
-            ['Loans by Gender', ''],
-            ['  Female', $statistics['loanSumForWomen']],
-            ['  Male', $statistics['loanSumForMen']],
-            ['Loans by Youth', $statistics['loanSumForYouths']],
-            ['Loans by PWDs', $statistics['pwdTotalLoanBalance']],
-        ];
 
         foreach ($data as $row) {
             if (fputcsv($file, array_map('strval', $row)) === false) {
