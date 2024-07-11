@@ -124,8 +124,8 @@ class HomeController extends Controller
         $pwdUsers = $filteredUsers->where('pwd', 'Yes');
         $pwdMembersCount = $pwdUsers->count();
 
-        $femaleUsers = $filteredUsers->where('sex', 'female');
-        $MaleUsers = $filteredUsers->where('sex', 'male');
+        $femaleUsers = $filteredUsers->where('sex', 'Female');
+        $MaleUsers = $filteredUsers->where('sex', 'Male');
         $youthUsers = $filteredUsers->filter(function ($user) {
         return Carbon::parse($user->dob)->age < 35;
         });
@@ -133,6 +133,7 @@ class HomeController extends Controller
         $femaleUsersIds = $femaleUsers->pluck('id')->toArray();
         $femaleTotalBalance = number_format(Transaction::whereIn('source_user_id', $femaleUsersIds)->where('type', 'SHARE')
         ->sum('balance'));
+        // dd($femaleTotalBalance);
 
         $maleUsersIds = $MaleUsers->pluck('id')->toArray();
         $maleTotalBalance = number_format(Transaction::whereIn('source_user_id', $maleUsersIds)->where('type', 'SHARE')
@@ -240,8 +241,8 @@ class HomeController extends Controller
     $pwdUsers = $filteredUsers->where('pwd', 'Yes');
     $pwdMembersCount = $pwdUsers->count();
 
-    $femaleUsers = $filteredUsers->where('sex', 'female');
-    $MaleUsers = $filteredUsers->where('sex', 'male');
+    $femaleUsers = $filteredUsers->where('sex', 'Female');
+    $MaleUsers = $filteredUsers->where('sex', 'Male');
     $youthUsers = $filteredUsers->filter(function ($user) {
     return Carbon::parse($user->dob)->age < 35;
     });
@@ -249,6 +250,8 @@ class HomeController extends Controller
     $femaleUsersIds = $femaleUsers->pluck('id')->toArray();
     $femaleTotalBalance = number_format(Transaction::whereIn('user_id', $femaleUsersIds)->where('type', 'SHARE')
     ->sum('balance'));
+
+    // dd($femaleTotalBalance);
 
     $maleUsersIds = $MaleUsers->pluck('id')->toArray();
     $maleTotalBalance = number_format(Transaction::whereIn('user_id', $maleUsersIds)->where('type', 'SHARE')
@@ -795,6 +798,8 @@ class HomeController extends Controller
         $femaleUsers = $filteredUsersForBalances->where('sex', 'Female');
         $femaleMembersCount = $femaleUsers->count();
         $femaleTotalBalance = number_format($femaleUsers->sum('balance'), 2);
+
+        dd($femaleTotalBalance);
 
         $maleUsers = $filteredUsersForBalances->where('sex', 'Male');
         $maleMembersCount = $maleUsers->count();
