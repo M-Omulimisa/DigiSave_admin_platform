@@ -14,7 +14,6 @@ use Encore\Admin\Grid;
 use Encore\Admin\Show;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
-// use Maatwebsite\Excel\Excel;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -414,18 +413,9 @@ class SaccoController extends AdminController
 
         return $form;
     }
-    public function exportExcel($id)
-    {
-        $sacco = Sacco::find($id);
-
-        if (!$sacco) {
-            return response()->json(['error' => 'Sacco not found'], 404);
-        }
-
-        return Excel::download(new SaccoExport($sacco), 'sacco_' . $id . '.xlsx');
-    }
 }
 
+// Define SaccoExport class outside the SaccoController class
 class SaccoExport implements FromCollection, WithHeadings
 {
     protected $sacco;
