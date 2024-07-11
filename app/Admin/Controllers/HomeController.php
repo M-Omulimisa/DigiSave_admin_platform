@@ -124,6 +124,14 @@ class HomeController extends Controller
         $pwdUsers = $filteredUsers->where('pwd', 'Yes');
         $pwdMembersCount = $pwdUsers->count();
 
+        $femaleUsers = $filteredUsers->where('sex', 'Female');
+        $MaleUsers = $filteredUsers->where('sex', 'Male');
+
+        $maleTotalBalance = number_format($MaleUsers->sum('balance'), 2);
+        $femaleTotalBalance = number_format($femaleUsers->sum('balance'), 2);
+
+
+
         // Prepare statistics
         $statistics = [
             'totalAccounts' => Sacco::whereHas('users', function ($query) use ($startDate, $endDate, $saccoIds) {
@@ -144,41 +152,15 @@ class HomeController extends Controller
                 return Carbon::parse($user->dob)->age < 35;
             })->count(),
             'pwdMembersCount' => $pwdMembersCount,
-            'femaleTotalBalance' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->whereIn('users.id', $filteredUserIds)
-                ->where('transactions.type', 'SHARE')
-                ->where('users.sex', 'Female')
-                ->whereBetween('users.created_at', [$startDate, $endDate])
-                ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
-                    return $query->whereIn('users.sacco_id', $saccoIds);
-                })
-                ->sum('transactions.balance'), 2),
-            'maleTotalBalance' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->whereIn('users.id', $filteredUserIds)
-                ->where('transactions.type', 'SHARE')
-                ->where('users.sex', 'Male')
-                ->whereBetween('users.created_at', [$startDate, $endDate])
-                ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
-                    return $query->whereIn('users.sacco_id', $saccoIds);
-                })
-                ->sum('transactions.balance'), 2),
-            'youthTotalBalance' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->whereIn('users.id', $filteredUserIds)
-                ->where('transactions.type', 'SHARE')
-                ->whereBetween('users.created_at', [$startDate, $endDate])
-                ->whereDate('users.dob', '>', now()->subYears(35))
-                ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
-                    return $query->whereIn('users.sacco_id', $saccoIds);
-                })
-                ->sum('transactions.balance'), 2),
-            'pwdTotalBalance' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->whereIn('users.id', $filteredUserIds)
-                ->where('transactions.type', 'SHARE')
-                ->whereBetween('users.created_at', [$startDate, $endDate])
-                ->where('users.pwd', 'yes')
-                ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
-                    return $query->whereIn('users.sacco_id', $saccoIds);
-                })
+            'femaleTotalBalance' => $femaleTotalBalance,
+            'maleTotalBalance' => $maleTotalBalance,
+            'youthTotalBalance' => number_format(
+                $filteredUsers->filter(function ($user) {
+                return Carbon::parse($user->dob)->age < 35;
+            })
+            ->sum('transactions.balance'), 2),
+            'pwdTotalBalance' => number_format(
+                $pwdUsers
                 ->sum('transactions.balance'), 2),
             'totalLoanAmount' => number_format(Transaction::where('type', 'LOAN')
                 ->whereBetween('created_at', [$startDate, $endDate])
