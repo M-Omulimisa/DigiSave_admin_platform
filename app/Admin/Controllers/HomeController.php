@@ -66,7 +66,6 @@ class HomeController extends Controller
             ['  Male', $statistics['maleMembersCount']],
             ['Number of Youth Members', $statistics['youthMembersCount']],
             ['Number of PWDs', $statistics['pwdMembersCount']],
-            // ['Total Savings', $statistics['totalSavings']],
             ['Savings by Gender', ''],
             ['  Female', $statistics['femaleTotalBalance']],
             ['  Male', $statistics['maleTotalBalance']],
@@ -92,7 +91,7 @@ class HomeController extends Controller
         try {
             $file = fopen($filePath, 'w');
             if ($file === false) {
-                throw new Exception('File open failed.');
+                throw new \Exception('File open failed.');
             }
 
             // Write UTF-8 BOM for proper encoding in Excel
@@ -100,12 +99,12 @@ class HomeController extends Controller
 
             foreach ($data as $row) {
                 if (fputcsv($file, array_map('strval', $row)) === false) {
-                    throw new Exception('CSV write failed.');
+                    throw new \Exception('CSV write failed.');
                 }
             }
 
             fclose($file);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             return response()->json(['error' => 'Error writing to CSV: ' . $e->getMessage()], 500);
         }
 
@@ -488,6 +487,8 @@ class HomeController extends Controller
             "In unity, there is strength."
         ];
 
+        $totalLoanAmount = $loanSumForWomen + $loanSumForMen + $loanSumForYouths;
+
         $data = [
             'totalSaccos' => $totalAccounts,
             'villageAgents' => $villageAgents,
@@ -520,6 +521,7 @@ class HomeController extends Controller
             'percentageLoanSumMen' => $percentageLoanSumMen,
             'percentageLoanSumYouths' => $percentageLoanSumYouths,
             'pwdTotalLoanBalance' => $pwdTotalLoanBalance,
+            'totalLoanAmount' => $totalLoanAmount,
         ];
 
         // Store the data in the session to make it accessible for exportData method
