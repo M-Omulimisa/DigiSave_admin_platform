@@ -312,10 +312,10 @@ class HomeController extends Controller
                 ->where('users.sex', 'Male')
                 ->sum('transactions.amount');
 
-            // $pwdTotalLoanBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            // ->where('transactions.type', 'LOAN')
-            // ->where('pwd', 'yes')
-            // ->sum('transactions.amount');
+            $pwdTotalLoanBalance = Transaction::join('users', 'transactions.user_id', '=', 'users.id')
+            ->where('transactions.type', 'LOAN')
+            ->where('pwd', 'yes')
+            ->sum('transactions.amount');
 
             // Count loans disbursed to youths
             $loansDisbursedToYouths = Transaction::whereIn('source_user_id', $youthIds)
@@ -338,9 +338,9 @@ class HomeController extends Controller
                 ->whereIn('source_user_id', $pwdUserIds)
                 ->count();
 
-            $pwdTotalLoanBalance = Transaction::where('type', 'LOAN')
-                ->whereIn('source_user_id', $pwdUserIds)
-                ->sum('balance');
+            // $pwdTotalLoanBalance = Transaction::where('type', 'LOAN')
+            //     ->whereIn('source_user_id', $pwdUserIds)
+            //     ->sum('balance');
 
             $transactions = Transaction::all();
             $monthYearList = [];
