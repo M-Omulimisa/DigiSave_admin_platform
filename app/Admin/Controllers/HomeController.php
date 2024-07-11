@@ -79,7 +79,7 @@ class HomeController extends Controller
         $filteredUsers->whereIn('sacco_id', $saccoIds);
     }
 
-    $filteredUsers->whereBetween('created_at', [$startDate, $endDate])->get();
+    $filteredUsers = $filteredUsers->whereBetween('created_at', [$startDate, $endDate])->get();
 
     // Prepare statistics
     $statistics = [
