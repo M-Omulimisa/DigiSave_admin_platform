@@ -172,12 +172,12 @@ class HomeController extends Controller
             'maleTotalBalance' => $maleTotalBalance,
             'youthTotalBalance' => $youthTotalBalance,
             'pwdTotalBalance' => $pwdTotalBalance,
-            // 'totalLoanAmount' => number_format(Transaction::where('type', 'LOAN')
-            //     ->whereBetween('created_at', [$startDate, $endDate])
-            //     ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
-            //         return $query->whereIn('sacco_id', $saccoIds);
-            //     })
-            //     ->sum('amount'), 2),
+            'totalLoanAmount' => number_format(Transaction::where('type', 'LOAN')
+                ->whereBetween('created_at', [$startDate, $endDate])
+                ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
+                    return $query->whereIn('sacco_id', $saccoIds);
+                })
+                ->sum('amount'), 2),
             'loanSumForWomen' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
                 ->where('transactions.type', 'LOAN')
                 ->where('users.sex', 'Female')
