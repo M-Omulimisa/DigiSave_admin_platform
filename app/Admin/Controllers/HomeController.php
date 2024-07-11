@@ -434,11 +434,11 @@ class HomeController extends Controller
                         'percentageLoansWomen' => $percentageLoansWomen,
                         'percentageLoansMen' => $percentageLoansMen,
                         'percentageLoansYouths' => $percentageLoansYouths,
-                        // 'percentageLoansPwd' => $percentageLoansPwd,
+                        'percentageLoansPwd' => $percentageLoansPwd,
                         'percentageLoanSumWomen' => $percentageLoanSumWomen,
                         'percentageLoanSumMen' => $percentageLoanSumMen,
                         'percentageLoanSumYouths' => $percentageLoanSumYouths,
-                        // 'pwdTotalLoanBalance' => $pwdTotalLoanBalance
+                        'pwdTotalLoanBalance' => $pwdTotalLoanBalance
                     ]) .
                     '</div>' .
                     view('widgets.chart_container', [
