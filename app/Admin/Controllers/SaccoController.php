@@ -140,7 +140,8 @@ class SaccoController extends AdminController
         // Adding the export column with direct download
         $grid->column('export', __('Export'))
             ->display(function () {
-                return '<a href="#" class="btn btn-sm btn-primary export-excel" data-id="' . $this->id . '">Export Excel</a> ';
+                return '<a href="#" class="btn btn-sm btn-primary export-excel" data-id="' . $this->id . '">Export Excel</a> ' .
+                       '<a href="#" class="btn btn-sm btn-secondary export-pdf" data-id="' . $this->id . '">Export PDF</a>';
             });
 
         // Adding search filters
@@ -452,47 +453,6 @@ class SaccoExport implements FromCollection, WithHeadings
             'Created At'
         ];
     }
+
+
 }
-
-// Adding the export buttons script
-?>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('.export-excel').forEach(function(button) {
-            button.addEventListener('click', function(e) {
-                e.preventDefault();
-                const saccoId = e.target.getAttribute('data-id');
-                fetch(`/saccos/export-excel/${saccoId}`)
-                    .then(response => response.blob())
-                    .then(blob => {
-                        const url = window.URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `sacco_${saccoId}.xlsx`;
-                        document.body.appendChild(a);
-                        a.click();
-                        a.remove();
-                    });
-            });
-        });
-
-        document.querySelectorAll('.export-pdf').forEach(function(button) {
-            button.addEventListener('click', function(e) {
-                e.preventDefault();
-                const saccoId = e.target.getAttribute('data-id');
-                fetch(`/saccos/export-pdf/${saccoId}`)
-                    .then(response => response.blob())
-                    .then(blob => {
-                        const url = window.URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `sacco_${saccoId}.pdf`;
-                        document.body.appendChild(a);
-                        a.click();
-                        a.remove();
-                    });
-            });
-        });
-    });
-</script>
