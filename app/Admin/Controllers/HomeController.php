@@ -261,11 +261,14 @@ public function index(Content $content)
         $organizationContainer = '';
         $orgName = 'DigiSave VSLA Platform';
         $totalSaccos = Sacco::count();
+        // dd($totalSaccos);
         $organisationCount = VslaOrganisation::count();
         $totalMembers = $filteredUsers->count();
         $totalPwdMembers = $filteredUsers->where('pwd', 'yes')->count();
         $villageAgents = User::where('user_type', '4')->count();
-        $youthMembersPercentage = $this->calculateYouthMembersPercentage($filteredUsers);
+        $youthMembersPercentage = ($totalMembers > 0) ? $filteredUsers->filter(function ($user) {
+            return Carbon::parse($user->dob)->age < 35;
+        })->count() / $totalMembers * 100 : 0;
 
         $filteredUsersForBalances = $filteredUsers;
         $pwdUsers = $filteredUsersForBalances->where('pwd', 'Yes');
