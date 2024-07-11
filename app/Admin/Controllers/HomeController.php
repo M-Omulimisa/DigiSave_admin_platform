@@ -176,17 +176,17 @@ class HomeController extends Controller
             $loanSumForWomen = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
                 ->where('transactions.type', 'LOAN')
                 ->where('users.sex', 'Female')
-                ->sum('transactions.balance');
+                ->sum('transactions.amount');
 
             $loanSumForMen = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
                 ->where('transactions.type', 'LOAN')
                 ->where('users.sex', 'Male')
-                ->sum('transactions.balance');
+                ->sum('transactions.amount');
 
-            $pwdTotalLoanBalance = Transaction::join('users', 'transactions.user_id', '=', 'users.id')
+            $pwdTotalLoanBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
             ->where('transactions.type', 'LOAN')
-            ->where('pwd', 'yes')
-            ->sum('transactions.balance');
+            ->where('users.pwd', 'yes')
+            ->sum('transactions.amount');
 
 
 
@@ -310,17 +310,17 @@ class HomeController extends Controller
             $loanSumForWomen = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
                 ->where('transactions.type', 'LOAN')
                 ->where('users.sex', 'Female')
-                ->sum('transactions.balance');
+                ->sum('transactions.amount');
 
             $loanSumForMen = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
                 ->where('transactions.type', 'LOAN')
                 ->where('users.sex', 'Male')
-                ->sum('transactions.balance');
+                ->sum('transactions.amount');
 
-            $pwdTotalLoanBalance = Transaction::join('users', 'transactions.user_id', '=', 'users.id')
+            $pwdTotalLoanBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
             ->where('transactions.type', 'LOAN')
-            ->where('pwd', 'yes')
-            ->sum('transactions.balance');
+            ->where('users.pwd', 'yes')
+            ->sum('transactions.amount');
 
             // Count loans disbursed to youths
             $loansDisbursedToYouths = Transaction::whereIn('source_user_id', $youthIds)
