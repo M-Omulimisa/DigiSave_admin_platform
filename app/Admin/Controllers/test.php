@@ -78,13 +78,6 @@ class HomeController extends Controller
         return $user->user_type === null || !in_array($user->user_type, ['Admin', '5']);
     });
 
-    // $filteredUsers = $filteredUsers->filter(function ($user) use ($startDate, $endDate) {
-    //     return Carbon::parse($user->created_at)->between($startDate, $endDate);
-    // });
-
-    $filteredUsers = $filteredUsers
-    ->whereBetween('created_at', [$startDate, $endDate]);
-
     // Apply filters based on the user's role and organization
     if (!$admin->isRole('admin')) {
         $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
@@ -95,31 +88,17 @@ class HomeController extends Controller
             admin_error($message);
             return redirect('auth/logout');
         }
-        $organization = VslaOrganisation::find($orgAllocation->vsla_organisation_id);
-        $orgIds = $orgAllocation->vsla_organisation_id;
 
+        $orgIds = $orgAllocation->vsla_organisation_id;
         $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgIds)->pluck('sacco_id')->toArray();
-        $OrgAdmins = OrgAllocation::where('vsla_organisation_id', $orgIds)->pluck('vsla_organisation_id')->toArray();
-        $totalOrgAdmins = count($OrgAdmins);
-        $filteredUsers =  $filteredUsers->whereIn('sacco_id', $saccoIds);
+
+        $filteredUsers->whereIn('sacco_id', $saccoIds);
+
+        $filteredUsers = $filteredUsers->filter(function ($user) use ($startDate, $endDate) {
+            return Carbon::parse($user->created_at)->between($startDate, $endDate);
+        });
 
         $filteredUserIds = $filteredUsers->pluck('id')->toArray();
-
-        $totalMembers = $filteredUsers
-        ->count();
-
-        $saccoIdsWithPositions = User::whereIn('sacco_id', $saccoIds)
-                ->whereHas('position', function ($query) {
-                    $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
-                })
-                ->pluck('sacco_id')
-                ->unique()
-                ->toArray();
-
-        $totalAccounts = User::where('user_type', 'Admin')
-                ->whereIn('sacco_id', $saccoIdsWithPositions)
-                ->whereBetween('created_at', [$startDate, $endDate])
-                ->count();
 
         // Prepare statistics
         $statistics = [
@@ -135,8 +114,20 @@ class HomeController extends Controller
             })->count(),
             'totalMembers' => $filteredUsers->count(),
             // dd($filteredUsers->count()),
-            'femaleMembersCount' => $filteredUsers->where('sex', 'Female')->count(),
-            'maleMembersCount' => $filteredUsers->where('sex', 'Male')->count(),
+            'femaleMembersCount' => $filteredUsers->where('user_type', '!=', 'Admin')
+            ->whereBetween('users.created_at', [$startDate, $endDate])
+            ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
+                return $query->whereIn('users.sacco_id', $saccoIds);
+            })
+            ->where('sex', 'Female')->count(),
+            'maleMembersCount' => $filteredUsers->where('user_type', '!=', 'Admin')
+            ->whereBetween('users.created_at', [$startDate, $endDate])
+            ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
+                return $query->whereIn('users.sacco_id', $saccoIds);
+            })
+            ->where('sex', 'male')->count(),
+            // 'femaleMembersCount' => $filteredUsers->where('sex', 'Female')->count(),
+            // 'maleMembersCount' => $filteredUsers->where('sex', 'Male')->count(),
             'youthMembersCount' => $filteredUsers->filter(function ($user) {
                 return Carbon::parse($user->dob)->age < 35;
             })->count(),
