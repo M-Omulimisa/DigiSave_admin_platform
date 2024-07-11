@@ -41,6 +41,11 @@ class HomeController extends Controller
 {
     public function exportData(Request $request)
     {
+        // Clear any output buffers to ensure no HTML/JS is included
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
 
@@ -114,6 +119,7 @@ class HomeController extends Controller
             'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
         ])->deleteFileAfterSend(true);
     }
+
 
     public function index(Content $content)
     {
@@ -506,12 +512,12 @@ class HomeController extends Controller
             'youthTotalBalance' => $youthTotalBalance,
             'pwdMembersCount' => $pwdMembersCount,
             'pwdTotalBalance' => $pwdTotalBalance,
-            'loansDisbursedToWomen' => $loansDisbursedToWomen,
-            'loansDisbursedToMen' => $loansDisbursedToMen,
-            'loansDisbursedToYouths' => $loansDisbursedToYouths,
-            'loanSumForWomen' => $loanSumForWomen,
-            'loanSumForMen' => $loanSumForMen,
-            'loanSumForYouths' => $loanSumForYouths,
+            'loansDisbursedToWomen' => abs($loansDisbursedToWomen),
+            'loansDisbursedToMen' => abs($loansDisbursedToMen),
+            'loansDisbursedToYouths' => abs($loansDisbursedToYouths),
+            'loanSumForWomen' => abs($loanSumForWomen),
+            'loanSumForMen' => abs($loanSumForMen),
+            'loanSumForYouths' => abs($loanSumForYouths),
             'pwdTotalLoanCount' => $pwdTotalLoanCount,
             'percentageLoansWomen' => $percentageLoansWomen,
             'percentageLoansMen' => $percentageLoansMen,
@@ -519,9 +525,9 @@ class HomeController extends Controller
             'percentageLoansPwd' => $percentageLoansPwd,
             'percentageLoanSumWomen' => $percentageLoanSumWomen,
             'percentageLoanSumMen' => $percentageLoanSumMen,
-            'percentageLoanSumYouths' => $percentageLoanSumYouths,
-            'pwdTotalLoanBalance' => $pwdTotalLoanBalance,
-            'totalLoanAmount' => $totalLoanAmount,
+            'percentageLoanSumYouths' => abs($percentageLoanSumYouths),
+            'pwdTotalLoanBalance' => abs($pwdTotalLoanBalance),
+            'totalLoanAmount' => abs($totalLoanAmount),
         ];
 
         // Store the data in the session to make it accessible for exportData method
@@ -534,7 +540,8 @@ class HomeController extends Controller
                     '<div style="background-color: #F8E5E9; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
                     <div style="display: flex; align-items: center; justify-content: space-between;">
                         <div>
-                            <h2 style="margin: 0; font-size: 24px; font-weight: bold; color: #298803;">Welcome back, ' . $userName . '!</h2>
+                            <h2 style="margin: 0; font-size: 24px; font-weight: bold; color: #298803;">Welcome back, ' . $userName .
+                    '!</h2>
                             <div id="quote-slider" style="margin: 5px 0 0; font-size: 16px; color: #666; height: 20px;">
                                 <p>' . $quotes[0] . '</p>
                             </div>
