@@ -271,7 +271,7 @@ class HomeController extends Controller
             ];
         });
 
-        dd($formattedBalances);
+        die($formattedBalances);
 
             $pwdTotalBalance = Transaction::where('type', 'SHARE')
                 ->whereIn('user_id', $pwdUserIds)
