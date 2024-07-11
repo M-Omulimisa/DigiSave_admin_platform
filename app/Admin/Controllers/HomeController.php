@@ -126,9 +126,25 @@ class HomeController extends Controller
 
         $femaleUsers = $filteredUsers->where('sex', 'Female');
         $MaleUsers = $filteredUsers->where('sex', 'Male');
+        $youthUsers = $filteredUsers->filter(function ($user) {
+        return Carbon::parse($user->dob)->age < 35;
+        });
 
-        $maleTotalBalance = number_format($MaleUsers->sum('balance'), 2);
-        $femaleTotalBalance = number_format($femaleUsers->sum('balance'), 2);
+        $femaleUsersIds = $femaleUsers->pluck('id')->toArray();
+        $femaleTotalBalance = number_format(Transaction::whereIn('user_id', $femaleUsersIds)->where('type', 'SHARE')
+        ->sum('balance'));
+
+        $maleUsersIds = $MaleUsers->pluck('id')->toArray();
+        $maleTotalBalance = number_format(Transaction::whereIn('user_id', $maleUsersIds)->where('type', 'SHARE')
+        ->sum('balance'));
+
+        $youthUsersIds = $youthUsers->pluck('id')->toArray();
+        $youthTotalBalance = number_format(Transaction::whereIn('user_id', $youthUsersIds)->where('type', 'SHARE')
+        ->sum('balance'));
+
+        $pwdUsersIds = $pwdUsers->pluck('id')->toArray();
+        $pwdTotalBalance = number_format(Transaction::whereIn('user_id', $pwdUsersIds)->where('type', 'SHARE')
+        ->sum('balance'));
 
 
 
@@ -154,14 +170,8 @@ class HomeController extends Controller
             'pwdMembersCount' => $pwdMembersCount,
             'femaleTotalBalance' => $femaleTotalBalance,
             'maleTotalBalance' => $maleTotalBalance,
-            'youthTotalBalance' => number_format(
-                $filteredUsers->filter(function ($user) {
-                return Carbon::parse($user->dob)->age < 35;
-            })
-            ->sum('transactions.balance'), 2),
-            'pwdTotalBalance' => number_format(
-                $pwdUsers
-                ->sum('transactions.balance'), 2),
+            'youthTotalBalance' => number_format($youthTotalBalance),
+            'pwdTotalBalance' => number_format($pwdTotalBalance),
             'totalLoanAmount' => number_format(Transaction::where('type', 'LOAN')
                 ->whereBetween('created_at', [$startDate, $endDate])
                 ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
