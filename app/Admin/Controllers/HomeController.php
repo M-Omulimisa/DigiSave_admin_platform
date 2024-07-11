@@ -131,19 +131,19 @@ class HomeController extends Controller
         });
 
         $femaleUsersIds = $femaleUsers->pluck('id')->toArray();
-        $femaleTotalBalance = number_format(Transaction::whereIn('user_id', $femaleUsersIds)->where('type', 'SHARE')
+        $femaleTotalBalance = number_format(Transaction::whereIn('source_user_id', $femaleUsersIds)->where('type', 'SHARE')
         ->sum('balance'));
 
         $maleUsersIds = $MaleUsers->pluck('id')->toArray();
-        $maleTotalBalance = number_format(Transaction::whereIn('user_id', $maleUsersIds)->where('type', 'SHARE')
+        $maleTotalBalance = number_format(Transaction::whereIn('source_user_id', $maleUsersIds)->where('type', 'SHARE')
         ->sum('balance'));
 
         $youthUsersIds = $youthUsers->pluck('id')->toArray();
-        $youthTotalBalance = number_format(Transaction::whereIn('user_id', $youthUsersIds)->where('type', 'SHARE')
+        $youthTotalBalance = number_format(Transaction::whereIn('source_user_id', $youthUsersIds)->where('type', 'SHARE')
         ->sum('balance'));
 
         $pwdUsersIds = $pwdUsers->pluck('id')->toArray();
-        $pwdTotalBalance = number_format(Transaction::whereIn('user_id', $pwdUsersIds)->where('type', 'SHARE')
+        $pwdTotalBalance = number_format(Transaction::whereIn('source_user_id', $pwdUsersIds)->where('type', 'SHARE')
         ->sum('balance'));
 
 
@@ -172,12 +172,12 @@ class HomeController extends Controller
             'maleTotalBalance' => $maleTotalBalance,
             'youthTotalBalance' => $youthTotalBalance,
             'pwdTotalBalance' => $pwdTotalBalance,
-            'totalLoanAmount' => number_format(Transaction::where('type', 'LOAN')
-                ->whereBetween('created_at', [$startDate, $endDate])
-                ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
-                    return $query->whereIn('sacco_id', $saccoIds);
-                })
-                ->sum('amount'), 2),
+            // 'totalLoanAmount' => number_format(Transaction::where('type', 'LOAN')
+            //     ->whereBetween('created_at', [$startDate, $endDate])
+            //     ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
+            //         return $query->whereIn('sacco_id', $saccoIds);
+            //     })
+            //     ->sum('amount'), 2),
             'loanSumForWomen' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
                 ->where('transactions.type', 'LOAN')
                 ->where('users.sex', 'Female')
