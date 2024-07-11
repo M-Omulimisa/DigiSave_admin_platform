@@ -799,7 +799,7 @@ class HomeController extends Controller
         $femaleMembersCount = $femaleUsers->count();
         $femaleTotalBalance = number_format($femaleUsers->sum('balance'), 2);
 
-        dd($femaleTotalBalance);
+        // dd($femaleTotalBalance);
 
         $maleUsers = $filteredUsersForBalances->where('sex', 'Male');
         $maleMembersCount = $maleUsers->count();
