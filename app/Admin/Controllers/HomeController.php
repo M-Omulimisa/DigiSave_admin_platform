@@ -183,10 +183,7 @@ class HomeController extends Controller
                 ->where('users.sex', 'Male')
                 ->sum('transactions.amount');
 
-            $pwdTotalLoanBalance = Transaction::join('users', 'transactions.user_id', '=', 'users.id')
-            ->where('transactions.type', 'LOAN')
-            ->where('pwd', 'yes')
-            ->sum('transactions.amount');
+
 
             // Count loans disbursed to youths
             $loansDisbursedToYouths = Transaction::whereIn('sacco_id', $saccoIds)->whereIn('source_user_id', $youthIds)
@@ -203,9 +200,9 @@ class HomeController extends Controller
                 ->whereIn('source_user_id', $pwdUserIds)
                 ->count();
 
-            // $pwdTotalLoanBalance = Transaction::whereIn('sacco_id', $saccoIds)->where('type', 'LOAN')
-            //     ->whereIn('source_user_id', $pwdUserIds)
-            //     ->sum('balance');
+            $pwdTotalLoanBalance = Transaction::whereIn('sacco_id', $saccoIds)->where('type', 'LOAN')
+                ->whereIn('user_id', $pwdUserIds)
+                ->sum('balance');
 
             $totalLoanAmount = Transaction::whereIn('sacco_id', $saccoIds)->whereIn('user_id', $filteredUsers->pluck('id'))
                 ->where('type', 'LOAN')
@@ -315,7 +312,7 @@ class HomeController extends Controller
                 ->where('users.sex', 'Male')
                 ->sum('transactions.amount');
 
-            $pwdTotalLoanBalance = Transaction::join('users', 'transactions.user_id', '=', 'users.id')
+            $pwdTotalLoanBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
             ->where('transactions.type', 'LOAN')
             ->where('pwd', 'yes')
             ->sum('transactions.amount');
