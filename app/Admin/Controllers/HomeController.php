@@ -98,6 +98,9 @@ class HomeController extends Controller
     $filteredUsers = $filteredUsers->filter(function ($user) use ($startDate, $endDate) {
         return Carbon::parse($user->created_at)->between($startDate, $endDate);
     });
+
+    $filteredUserIds = $filteredUsers->pluck('id')->toArray();
+
     // Prepare statistics
     $statistics = [
         'totalAccounts' => Sacco::whereHas('users', function ($query) use ($startDate, $endDate, $saccoIds) {
@@ -118,6 +121,7 @@ class HomeController extends Controller
         })->count(),
         'pwdMembersCount' => $filteredUsers->where('pwd', 'yes')->count(),
         'femaleTotalBalance' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->whereIn('users.id', $filteredUserIds)
             ->where('transactions.type', 'SHARE')
             ->where('users.sex', 'Female')
             ->whereBetween('users.created_at', [$startDate, $endDate])
@@ -126,6 +130,7 @@ class HomeController extends Controller
             })
             ->sum('transactions.balance'), 2),
         'maleTotalBalance' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->whereIn('users.id', $filteredUserIds)
             ->where('transactions.type', 'SHARE')
             ->where('users.sex', 'Male')
             ->whereBetween('users.created_at', [$startDate, $endDate])
@@ -134,6 +139,7 @@ class HomeController extends Controller
             })
             ->sum('transactions.balance'), 2),
         'youthTotalBalance' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->whereIn('users.id', $filteredUserIds)
             ->where('transactions.type', 'SHARE')
             ->whereBetween('users.created_at', [$startDate, $endDate])
             ->whereDate('users.dob', '>', now()->subYears(35))
@@ -142,6 +148,7 @@ class HomeController extends Controller
             })
             ->sum('transactions.balance'), 2),
         'pwdTotalBalance' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->whereIn('users.id', $filteredUserIds)
             ->where('transactions.type', 'SHARE')
             ->whereBetween('users.created_at', [$startDate, $endDate])
             ->where('users.pwd', 'yes')
