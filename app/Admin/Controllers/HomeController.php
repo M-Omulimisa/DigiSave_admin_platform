@@ -38,6 +38,83 @@ use SplFileObject;
 
 class HomeController extends Controller
 {
+    public function exportData(Request $request)
+    {
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+
+        // Validate date inputs
+        if (!$startDate || !$endDate) {
+            return redirect()->back()->withErrors(['error' => 'Both start and end dates are required.']);
+        }
+
+        // Retrieve the data from session
+        $statistics = Session::get('dashboard_data');
+
+        if (!$statistics) {
+            return redirect()->back()->withErrors(['error' => 'No data available for export.']);
+        }
+
+        // Prepare data for export
+        $data = [
+            ['Metric', 'Value'],
+            ['Total Number of Groups Registered', $statistics['totalAccounts']],
+            ['Total Number of Members', $statistics['totalMembers']],
+            ['Number of Members by Gender', ''],
+            ['  Female', $statistics['femaleMembersCount']],
+            ['  Male', $statistics['maleMembersCount']],
+            ['Number of Youth Members', $statistics['youthMembersCount']],
+            ['Number of PWDs', $statistics['pwdMembersCount']],
+            // ['Total Savings', $statistics['totalSavings']],
+            ['Savings by Gender', ''],
+            ['  Female', $statistics['femaleTotalBalance']],
+            ['  Male', $statistics['maleTotalBalance']],
+            ['Savings by Youth', $statistics['youthTotalBalance']],
+            ['Savings by PWDs', $statistics['pwdTotalBalance']],
+            ['Total Loans', $statistics['totalLoanAmount']],
+            ['Loans by Gender', ''],
+            ['  Female', $statistics['loanSumForWomen']],
+            ['  Male', $statistics['loanSumForMen']],
+            ['Loans by Youth', $statistics['loanSumForYouths']],
+            ['Loans by PWDs', $statistics['pwdTotalLoanBalance']],
+        ];
+
+        $fileName = 'export_data_' . $startDate . '_to_' . $endDate . '.csv';
+        $filePath = storage_path('exports/' . $fileName);
+
+        // Ensure the directory exists
+        if (!file_exists(storage_path('exports'))) {
+            mkdir(storage_path('exports'), 0755, true);
+        }
+
+        // Write data to CSV
+        try {
+            $file = fopen($filePath, 'w');
+            if ($file === false) {
+                throw new Exception('File open failed.');
+            }
+
+            // Write UTF-8 BOM for proper encoding in Excel
+            fwrite($file, "\xEF\xBB\xBF");
+
+            foreach ($data as $row) {
+                if (fputcsv($file, array_map('strval', $row)) === false) {
+                    throw new Exception('CSV write failed.');
+                }
+            }
+
+            fclose($file);
+        } catch (Exception $e) {
+            return response()->json(['error' => 'Error writing to CSV: ' . $e->getMessage()], 500);
+        }
+
+        // Return the CSV file as a download response
+        return response()->download($filePath, $fileName, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+        ])->deleteFileAfterSend(true);
+    }
+
     public function index(Content $content)
     {
         foreach (Sacco::where(["processed" => "no"])->get() as $key => $sacco) {
@@ -184,9 +261,9 @@ class HomeController extends Controller
                 ->sum('transactions.amount');
 
             $pwdTotalLoanBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->where('transactions.type', 'LOAN')
-            ->where('users.pwd', 'yes')
-            ->sum('transactions.amount');
+                ->where('transactions.type', 'LOAN')
+                ->where('users.pwd', 'yes')
+                ->sum('transactions.amount');
 
 
 
@@ -263,20 +340,20 @@ class HomeController extends Controller
             $pwdUserIds = $pwdUsers->pluck('id');
 
             $pwdBalances = Transaction::where('type', 'SHARE')
-            ->whereIn('user_id', $pwdUserIds)
-            ->select('user_id', DB::raw('SUM(balance) as total_balance'))
-            ->groupBy('user_id')
-            ->get();
+                ->whereIn('user_id', $pwdUserIds)
+                ->select('user_id', DB::raw('SUM(balance) as total_balance'))
+                ->groupBy('user_id')
+                ->get();
 
-        // Formatting the output
-        $formattedBalances = $pwdBalances->map(function($balance) {
-            return [
-                'user_id' => $balance->user_id,
-                'total_balance' => $balance->total_balance,
-            ];
-        });
+            // Formatting the output
+            $formattedBalances = $pwdBalances->map(function ($balance) {
+                return [
+                    'user_id' => $balance->user_id,
+                    'total_balance' => $balance->total_balance,
+                ];
+            });
 
-        // die($formattedBalances);
+            // die($formattedBalances);
 
             $pwdTotalBalance = Transaction::where('type', 'SHARE')
                 ->whereIn('user_id', $pwdUserIds)
@@ -318,9 +395,9 @@ class HomeController extends Controller
                 ->sum('transactions.amount');
 
             $pwdTotalLoanBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->where('transactions.type', 'LOAN')
-            ->where('users.pwd', 'yes')
-            ->sum('transactions.amount');
+                ->where('transactions.type', 'LOAN')
+                ->where('users.pwd', 'yes')
+                ->sum('transactions.amount');
 
             // Count loans disbursed to youths
             $loansDisbursedToYouths = Transaction::whereIn('source_user_id', $youthIds)
@@ -410,6 +487,43 @@ class HomeController extends Controller
             "In unity, there is strength."
         ];
 
+        $data = [
+            'totalSaccos' => $totalAccounts,
+            'villageAgents' => $villageAgents,
+            'organisationCount' => $organisationCount,
+            'totalMembers' => $totalMembers,
+            'totalAccounts' => $totalAccounts,
+            'totalOrgAdmins' => $totalOrgAdmins,
+            'totalPwdMembers' => $pwdMembersCount,
+            'youthMembersPercentage' => number_format($youthMembersPercentage, 2),
+            'femaleMembersCount' => $femaleMembersCount,
+            'femaleTotalBalance' => $femaleTotalBalance,
+            'maleMembersCount' => $maleMembersCount,
+            'maleTotalBalance' => $maleTotalBalance,
+            'youthMembersCount' => $youthMembersCount,
+            'youthTotalBalance' => $youthTotalBalance,
+            'pwdMembersCount' => $pwdMembersCount,
+            'pwdTotalBalance' => $pwdTotalBalance,
+            'loansDisbursedToWomen' => $loansDisbursedToWomen,
+            'loansDisbursedToMen' => $loansDisbursedToMen,
+            'loansDisbursedToYouths' => $loansDisbursedToYouths,
+            'loanSumForWomen' => $loanSumForWomen,
+            'loanSumForMen' => $loanSumForMen,
+            'loanSumForYouths' => $loanSumForYouths,
+            'pwdTotalLoanCount' => $pwdTotalLoanCount,
+            'percentageLoansWomen' => $percentageLoansWomen,
+            'percentageLoansMen' => $percentageLoansMen,
+            'percentageLoansYouths' => $percentageLoansYouths,
+            'percentageLoansPwd' => $percentageLoansPwd,
+            'percentageLoanSumWomen' => $percentageLoanSumWomen,
+            'percentageLoanSumMen' => $percentageLoanSumMen,
+            'percentageLoanSumYouths' => $percentageLoanSumYouths,
+            'pwdTotalLoanBalance' => $pwdTotalLoanBalance,
+        ];
+
+        // Store the data in the session to make it accessible for exportData method
+        Session::put('dashboard_data', $data);
+
         return $content
             ->header('<div style="text-align: center; color: #066703; font-size: 30px; font-weight: bold; padding-top: 20px;">' . $orgName . '</div>')
             ->body(
@@ -426,7 +540,14 @@ class HomeController extends Controller
                             <img src="https://www.pngmart.com/files/21/Admin-Profile-PNG-Clipart.png" alt="Welcome Image" style="height: 100px;">
                         </div>
                     </div>
-                </div>' .
+                </div>' . '<div style="text-align: right; margin-bottom: 20px;">
+    <form action="' . route(config('admin.route.prefix') . '.export-data') . '" method="GET">
+        <input type="date" name="start_date" required>
+        <input type="date" name="end_date" required>
+        <button type="submit" class="btn btn-primary">Export Data</button>
+    </form>
+</div>'
+                    .
                     '<div style="background-color: #E9F9E9; padding: 10px; padding-top: 5px; border-radius: 5px;">' .
                     view('widgets.statistics', [
                         'totalSaccos' => $totalAccounts,
