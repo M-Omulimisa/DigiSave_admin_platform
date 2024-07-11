@@ -209,7 +209,7 @@ class HomeController extends Controller
         ];
     }
 
-    $filteredUsers = $filteredUsers->filter(function ($user) use ($startDate, $endDate) {
+    else{$filteredUsers = $filteredUsers->filter(function ($user) use ($startDate, $endDate) {
         return Carbon::parse($user->created_at)->between($startDate, $endDate);
     });
 
@@ -282,7 +282,7 @@ class HomeController extends Controller
             ->where('users.pwd', 'yes')
             ->whereBetween('users.created_at', [$startDate, $endDate])
             ->sum('transactions.amount'), 2),
-    ];
+    ];};
 
     $fileName = 'export_data_' . $startDate . '_to_' . $endDate . '.csv';
     $filePath = storage_path('exports/' . $fileName);
