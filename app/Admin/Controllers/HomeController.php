@@ -39,86 +39,224 @@ use Illuminate\Http\Request;
 
 class HomeController extends Controller
 {
+
     public function exportData(Request $request)
-    {
-        // Clear any output buffers to ensure no HTML/JS is included
-        while (ob_get_level()) {
-            ob_end_clean();
-        }
-
-        $startDate = $request->input('start_date');
-        $endDate = $request->input('end_date');
-
-        // Validate date inputs
-        if (!$startDate || !$endDate) {
-            return redirect()->back()->withErrors(['error' => 'Both start and end dates are required.']);
-        }
-
-        // Retrieve the data from session
-        $statistics = Session::get('dashboard_data');
-
-        if (!$statistics) {
-            return redirect()->back()->withErrors(['error' => 'No data available for export.']);
-        }
-
-        // Prepare data for export
-        $data = [
-            ['Metric', 'Value'],
-            ['Total Number of Groups Registered', $statistics['totalAccounts']],
-            ['Total Number of Members', $statistics['totalMembers']],
-            ['Number of Members by Gender', ''],
-            ['  Female', $statistics['femaleMembersCount']],
-            ['  Male', $statistics['maleMembersCount']],
-            ['Number of Youth Members', $statistics['youthMembersCount']],
-            ['Number of PWDs', $statistics['pwdMembersCount']],
-            ['Savings by Gender', ''],
-            ['  Female', $statistics['femaleTotalBalance']],
-            ['  Male', $statistics['maleTotalBalance']],
-            ['Savings by Youth', $statistics['youthTotalBalance']],
-            ['Savings by PWDs', $statistics['pwdTotalBalance']],
-            ['Total Loans', $statistics['totalLoanAmount']],
-            ['Loans by Gender', ''],
-            ['  Female', $statistics['loanSumForWomen']],
-            ['  Male', $statistics['loanSumForMen']],
-            ['Loans by Youth', $statistics['loanSumForYouths']],
-            ['Loans by PWDs', $statistics['pwdTotalLoanBalance']],
-        ];
-
-        $fileName = 'export_data_' . $startDate . '_to_' . $endDate . '.csv';
-        $filePath = storage_path('exports/' . $fileName);
-
-        // Ensure the directory exists
-        if (!file_exists(storage_path('exports'))) {
-            mkdir(storage_path('exports'), 0755, true);
-        }
-
-        // Write data to CSV
-        try {
-            $file = fopen($filePath, 'w');
-            if ($file === false) {
-                throw new \Exception('File open failed.');
-            }
-
-            // Write UTF-8 BOM for proper encoding in Excel
-            fwrite($file, "\xEF\xBB\xBF");
-
-            foreach ($data as $row) {
-                if (fputcsv($file, array_map('strval', $row)) === false) {
-                    throw new \Exception('CSV write failed.');
-                }
-            }
-
-            fclose($file);
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Error writing to CSV: ' . $e->getMessage()], 500);
-        }
-
-        // Return the CSV file as a download response
-        return response()->download($filePath, $fileName, [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
-        ])->deleteFileAfterSend(true);
+{
+    // Clear any output buffers to ensure no HTML/JS is included
+    while (ob_get_level()) {
+        ob_end_clean();
     }
+
+    $startDate = $request->input('start_date');
+    $endDate = $request->input('end_date');
+
+    // Validate date inputs
+    if (!$startDate || !$endDate) {
+        return redirect()->back()->withErrors(['error' => 'Both start and end dates are required.']);
+    }
+
+    // Retrieve the data based on the date range
+    $filteredUsers = User::whereBetween('created_at', [$startDate, $endDate])->get();
+
+    $statistics = [
+        'totalAccounts' => Sacco::whereHas('users', function ($query) use ($startDate, $endDate) {
+            $query->whereHas('position', function ($query) {
+                $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+            })->whereNotNull('phone_number')
+                ->whereNotNull('name')
+                ->whereBetween('created_at', [$startDate, $endDate]);
+        })->count(),
+        'totalMembers' => $filteredUsers->count(),
+        'femaleMembersCount' => $filteredUsers->where('sex', 'Female')->count(),
+        'maleMembersCount' => $filteredUsers->where('sex', 'Male')->count(),
+        'youthMembersCount' => $filteredUsers->filter(function ($user) {
+            return Carbon::parse($user->dob)->age < 35;
+        })->count(),
+        'pwdMembersCount' => $filteredUsers->where('pwd', 'yes')->count(),
+        'femaleTotalBalance' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'SHARE')
+            ->where('users.sex', 'Female')
+            ->whereBetween('users.created_at', [$startDate, $endDate])
+            ->sum('transactions.balance'), 2),
+        'maleTotalBalance' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'SHARE')
+            ->where('users.sex', 'Male')
+            ->whereBetween('users.created_at', [$startDate, $endDate])
+            ->sum('transactions.balance'), 2),
+        'youthTotalBalance' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'SHARE')
+            ->whereBetween('users.created_at', [$startDate, $endDate])
+            ->whereDate('users.dob', '>', now()->subYears(35))
+            ->sum('transactions.balance'), 2),
+        'pwdTotalBalance' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'SHARE')
+            ->whereBetween('users.created_at', [$startDate, $endDate])
+            ->where('users.pwd', 'yes')
+            ->sum('transactions.balance'), 2),
+        'totalLoanAmount' => number_format(Transaction::where('type', 'LOAN')
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->sum('amount'), 2),
+        'loanSumForWomen' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'LOAN')
+            ->where('users.sex', 'Female')
+            ->whereBetween('users.created_at', [$startDate, $endDate])
+            ->sum('transactions.amount'), 2),
+        'loanSumForMen' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'LOAN')
+            ->where('users.sex', 'Male')
+            ->whereBetween('users.created_at', [$startDate, $endDate])
+            ->sum('transactions.amount'), 2),
+        'loanSumForYouths' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'LOAN')
+            ->whereBetween('users.created_at', [$startDate, $endDate])
+            ->whereDate('users.dob', '>', now()->subYears(35))
+            ->sum('transactions.amount'), 2),
+        'pwdTotalLoanBalance' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'LOAN')
+            ->where('users.pwd', 'yes')
+            ->whereBetween('users.created_at', [$startDate, $endDate])
+            ->sum('transactions.amount'), 2),
+    ];
+
+    // Prepare data for export
+    $data = [
+        ['Metric', 'Value'],
+        ['Total Number of Groups Registered', $statistics['totalAccounts']],
+        ['Total Number of Members', $statistics['totalMembers']],
+        ['Number of Members by Gender', ''],
+        ['  Female', $statistics['femaleMembersCount']],
+        ['  Male', $statistics['maleMembersCount']],
+        ['Number of Youth Members', $statistics['youthMembersCount']],
+        ['Number of PWDs', $statistics['pwdMembersCount']],
+        ['Savings by Gender', ''],
+        ['  Female', $statistics['femaleTotalBalance']],
+        ['  Male', $statistics['maleTotalBalance']],
+        ['Savings by Youth', $statistics['youthTotalBalance']],
+        ['Savings by PWDs', $statistics['pwdTotalBalance']],
+        ['Total Loans', $statistics['totalLoanAmount']],
+        ['Loans by Gender', ''],
+        ['  Female', $statistics['loanSumForWomen']],
+        ['  Male', $statistics['loanSumForMen']],
+        ['Loans by Youth', $statistics['loanSumForYouths']],
+        ['Loans by PWDs', $statistics['pwdTotalLoanBalance']],
+    ];
+
+    $fileName = 'export_data_' . $startDate . '_to_' . $endDate . '.csv';
+    $filePath = storage_path('exports/' . $fileName);
+
+    // Ensure the directory exists
+    if (!file_exists(storage_path('exports'))) {
+        mkdir(storage_path('exports'), 0755, true);
+    }
+
+    // Write data to CSV
+    try {
+        $file = fopen($filePath, 'w');
+        if ($file === false) {
+            throw new \Exception('File open failed.');
+        }
+
+        // Write UTF-8 BOM for proper encoding in Excel
+        fwrite($file, "\xEF\xBB\xBF");
+
+        foreach ($data as $row) {
+            if (fputcsv($file, array_map('strval', $row)) === false) {
+                throw new \Exception('CSV write failed.');
+            }
+        }
+
+        fclose($file);
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'Error writing to CSV: ' . $e->getMessage()], 500);
+    }
+
+    // Return the CSV file as a download response
+    return response()->download($filePath, $fileName, [
+        'Content-Type' => 'text/csv',
+        'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+    ])->deleteFileAfterSend(true);
+}
+
+    // public function exportData(Request $request)
+    // {
+    //     // Clear any output buffers to ensure no HTML/JS is included
+    //     while (ob_get_level()) {
+    //         ob_end_clean();
+    //     }
+
+    //     $startDate = $request->input('start_date');
+    //     $endDate = $request->input('end_date');
+
+    //     // Validate date inputs
+    //     if (!$startDate || !$endDate) {
+    //         return redirect()->back()->withErrors(['error' => 'Both start and end dates are required.']);
+    //     }
+
+    //     // Retrieve the data from session
+    //     $statistics = Session::get('dashboard_data');
+
+    //     if (!$statistics) {
+    //         return redirect()->back()->withErrors(['error' => 'No data available for export.']);
+    //     }
+
+    //     // Prepare data for export
+    //     $data = [
+    //         ['Metric', 'Value'],
+    //         ['Total Number of Groups Registered', $statistics['totalAccounts']],
+    //         ['Total Number of Members', $statistics['totalMembers']],
+    //         ['Number of Members by Gender', ''],
+    //         ['  Female', $statistics['femaleMembersCount']],
+    //         ['  Male', $statistics['maleMembersCount']],
+    //         ['Number of Youth Members', $statistics['youthMembersCount']],
+    //         ['Number of PWDs', $statistics['pwdMembersCount']],
+    //         ['Savings by Gender', ''],
+    //         ['  Female', $statistics['femaleTotalBalance']],
+    //         ['  Male', $statistics['maleTotalBalance']],
+    //         ['Savings by Youth', $statistics['youthTotalBalance']],
+    //         ['Savings by PWDs', $statistics['pwdTotalBalance']],
+    //         ['Total Loans', $statistics['totalLoanAmount']],
+    //         ['Loans by Gender', ''],
+    //         ['  Female', $statistics['loanSumForWomen']],
+    //         ['  Male', $statistics['loanSumForMen']],
+    //         ['Loans by Youth', $statistics['loanSumForYouths']],
+    //         ['Loans by PWDs', $statistics['pwdTotalLoanBalance']],
+    //     ];
+
+    //     $fileName = 'export_data_' . $startDate . '_to_' . $endDate . '.csv';
+    //     $filePath = storage_path('exports/' . $fileName);
+
+    //     // Ensure the directory exists
+    //     if (!file_exists(storage_path('exports'))) {
+    //         mkdir(storage_path('exports'), 0755, true);
+    //     }
+
+    //     // Write data to CSV
+    //     try {
+    //         $file = fopen($filePath, 'w');
+    //         if ($file === false) {
+    //             throw new \Exception('File open failed.');
+    //         }
+
+    //         // Write UTF-8 BOM for proper encoding in Excel
+    //         fwrite($file, "\xEF\xBB\xBF");
+
+    //         foreach ($data as $row) {
+    //             if (fputcsv($file, array_map('strval', $row)) === false) {
+    //                 throw new \Exception('CSV write failed.');
+    //             }
+    //         }
+
+    //         fclose($file);
+    //     } catch (\Exception $e) {
+    //         return response()->json(['error' => 'Error writing to CSV: ' . $e->getMessage()], 500);
+    //     }
+
+    //     // Return the CSV file as a download response
+    //     return response()->download($filePath, $fileName, [
+    //         'Content-Type' => 'text/csv',
+    //         'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+    //     ])->deleteFileAfterSend(true);
+    // }
 
 
     public function index(Content $content)
