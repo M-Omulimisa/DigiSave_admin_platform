@@ -122,39 +122,39 @@ private function getTotalAccounts($filteredUsers)
 
 private function getTotalBalance($users, $type)
 {
-    return number_format(Transaction::whereIn('user_id', $users->pluck('id')->toArray())->where('type', $type)->sum('balance'));
+    return Transaction::whereIn('user_id', $users->pluck('id')->toArray())->where('type', $type)->sum('balance');
 }
 
 private function getTotalLoanAmount($users, $startDate, $endDate)
 {
-    return number_format(Transaction::where('type', 'LOAN')->whereBetween('created_at', [$startDate, $endDate])->sum('amount'), 2);
+    return Transaction::where('type', 'LOAN')->whereBetween('created_at', [$startDate, $endDate])->sum('amount');
 }
 
 private function getLoanSumForGender($users, $gender, $startDate, $endDate)
 {
-    return number_format(Transaction::join('users', 'transactions.user_id', '=', 'users.id')
+    return Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
         ->where('transactions.type', 'LOAN')
         ->where('users.sex', $gender)
         ->whereBetween('users.created_at', [$startDate, $endDate])
-        ->sum('transactions.amount'), 2);
+        ->sum('transactions.amount');
 }
 
 private function getLoanSumForYouths($users, $startDate, $endDate)
 {
-    return number_format(Transaction::join('users', 'transactions.user_id', '=', 'users.id')
+    return Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
         ->where('transactions.type', 'LOAN')
         ->whereBetween('users.created_at', [$startDate, $endDate])
         ->whereDate('users.dob', '>', now()->subYears(35))
-        ->sum('transactions.amount'), 2);
+        ->sum('transactions.amount');
 }
 
 private function getTotalLoanBalance($users, $startDate, $endDate)
 {
-    return number_format(Transaction::join('users', 'transactions.user_id', '=', 'users.id')
+    return Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
         ->where('transactions.type', 'LOAN')
         ->where('users.pwd', 'yes')
         ->whereBetween('users.created_at', [$startDate, $endDate])
-        ->sum('transactions.amount'), 2);
+        ->sum('transactions.amount');
 }
 
 private function generateCsv($statistics, $startDate, $endDate)
