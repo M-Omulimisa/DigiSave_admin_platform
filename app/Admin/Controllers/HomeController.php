@@ -114,8 +114,20 @@ class HomeController extends Controller
             })->count(),
             'totalMembers' => $filteredUsers->count(),
             // dd($filteredUsers->count()),
-            'femaleMembersCount' => $filteredUsers->where('sex', 'Female')->count(),
-            'maleMembersCount' => $filteredUsers->where('sex', 'Male')->count(),
+            'femaleMemberCount' => $filteredUsers->where('user_type', '!=', 'Admin')
+            ->whereBetween('users.created_at', [$startDate, $endDate])
+            ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
+                return $query->whereIn('users.sacco_id', $saccoIds);
+            })
+            ->where('sex', 'Female')->count(),
+            'maleMembersCount' => $filteredUsers->where('user_type', '!=', 'Admin')
+            ->whereBetween('users.created_at', [$startDate, $endDate])
+            ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
+                return $query->whereIn('users.sacco_id', $saccoIds);
+            })
+            ->where('sex', 'male')->count(),
+            // 'femaleMembersCount' => $filteredUsers->where('sex', 'Female')->count(),
+            // 'maleMembersCount' => $filteredUsers->where('sex', 'Male')->count(),
             'youthMembersCount' => $filteredUsers->filter(function ($user) {
                 return Carbon::parse($user->dob)->age < 35;
             })->count(),
