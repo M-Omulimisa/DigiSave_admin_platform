@@ -213,88 +213,6 @@ class HomeController extends Controller
         ])->deleteFileAfterSend(true);
     }
 
-    // public function exportData(Request $request)
-    // {
-    //     // Clear any output buffers to ensure no HTML/JS is included
-    //     while (ob_get_level()) {
-    //         ob_end_clean();
-    //     }
-
-    //     $startDate = $request->input('start_date');
-    //     $endDate = $request->input('end_date');
-
-    //     // Validate date inputs
-    //     if (!$startDate || !$endDate) {
-    //         return redirect()->back()->withErrors(['error' => 'Both start and end dates are required.']);
-    //     }
-
-    //     // Retrieve the data from session
-    //     $statistics = Session::get('dashboard_data');
-
-    //     if (!$statistics) {
-    //         return redirect()->back()->withErrors(['error' => 'No data available for export.']);
-    //     }
-
-    //     // Prepare data for export
-    //     $data = [
-    //         ['Metric', 'Value'],
-    //         ['Total Number of Groups Registered', $statistics['totalAccounts']],
-    //         ['Total Number of Members', $statistics['totalMembers']],
-    //         ['Number of Members by Gender', ''],
-    //         ['  Female', $statistics['femaleMembersCount']],
-    //         ['  Male', $statistics['maleMembersCount']],
-    //         ['Number of Youth Members', $statistics['youthMembersCount']],
-    //         ['Number of PWDs', $statistics['pwdMembersCount']],
-    //         ['Savings by Gender', ''],
-    //         ['  Female', $statistics['femaleTotalBalance']],
-    //         ['  Male', $statistics['maleTotalBalance']],
-    //         ['Savings by Youth', $statistics['youthTotalBalance']],
-    //         ['Savings by PWDs', $statistics['pwdTotalBalance']],
-    //         ['Total Loans', $statistics['totalLoanAmount']],
-    //         ['Loans by Gender', ''],
-    //         ['  Female', $statistics['loanSumForWomen']],
-    //         ['  Male', $statistics['loanSumForMen']],
-    //         ['Loans by Youth', $statistics['loanSumForYouths']],
-    //         ['Loans by PWDs', $statistics['pwdTotalLoanBalance']],
-    //     ];
-
-    //     $fileName = 'export_data_' . $startDate . '_to_' . $endDate . '.csv';
-    //     $filePath = storage_path('exports/' . $fileName);
-
-    //     // Ensure the directory exists
-    //     if (!file_exists(storage_path('exports'))) {
-    //         mkdir(storage_path('exports'), 0755, true);
-    //     }
-
-    //     // Write data to CSV
-    //     try {
-    //         $file = fopen($filePath, 'w');
-    //         if ($file === false) {
-    //             throw new \Exception('File open failed.');
-    //         }
-
-    //         // Write UTF-8 BOM for proper encoding in Excel
-    //         fwrite($file, "\xEF\xBB\xBF");
-
-    //         foreach ($data as $row) {
-    //             if (fputcsv($file, array_map('strval', $row)) === false) {
-    //                 throw new \Exception('CSV write failed.');
-    //             }
-    //         }
-
-    //         fclose($file);
-    //     } catch (\Exception $e) {
-    //         return response()->json(['error' => 'Error writing to CSV: ' . $e->getMessage()], 500);
-    //     }
-
-    //     // Return the CSV file as a download response
-    //     return response()->download($filePath, $fileName, [
-    //         'Content-Type' => 'text/csv',
-    //         'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
-    //     ])->deleteFileAfterSend(true);
-    // }
-
-
     public function index(Content $content)
     {
         foreach (Sacco::where(["processed" => "no"])->get() as $key => $sacco) {
@@ -390,6 +308,7 @@ class HomeController extends Controller
             })->count() / $totalMembers * 100 : 0;
 
             $filteredUsersForBalances = $filteredUsers->whereIn('sacco_id', $saccoIds);
+            $filteredUsersIds = $filteredUsers->pluck('id');
             $pwdUsers = $filteredUsers->where('pwd', 'Yes');
             $pwdMembersCount = $pwdUsers->count();
             $pwdUserIds = $pwdUsers->pluck('id');
@@ -540,6 +459,18 @@ class HomeController extends Controller
             ->whereIn('source_user_id', $pwdUserIds)
             ->where('type', 'LOAN')
             ->sum('balance'), 2);
+
+            $maleTotalBalance = Transaction::join('users', 'transactions.source_user_id', '=', $filteredUsersIds)
+                ->whereIn('sacco_id', $saccoIds)
+                ->where('transactions.type', 'SHARE')
+                ->where('users.sex', 'Male')
+                ->sum('transactions.balance');
+
+            $femaleTotalBalance = Transaction::join('users', 'transactions.source_user_id', '=', $filteredUsersIds)
+                ->whereIn('sacco_id', $saccoIds)
+                ->where('transactions.type', 'SHARE')
+                ->where('users.sex', 'Female')
+                ->sum('transactions.balance');
 
 
             // $topSavingGroups = User::where('user_type', 'Admin')->whereIn('sacco_id', $saccoIds)->get()->sortByDesc('balance')->take(6);
@@ -693,24 +624,35 @@ class HomeController extends Controller
             $percentageLoansPwd = $totalLoans > 0 ? ($loansGivenToPwds / $totalLoans) * 100 : 0;
 
             $youthTotalBalance = number_format(Transaction::whereIn('source_user_id', $youthIds)
-            ->where('type', 'LOAN')
-            ->sum('balance'), 2);
+                -> where('type', 'LOAN')
+                ->sum('balance'), 2);
 
             $pwdTotalBalance = number_format(Transaction::whereIn('source_user_id', $pwdUserIds)
-            ->where('type', 'LOAN')
-            ->sum('balance'), 2);
+                ->where('type', 'LOAN')
+                ->sum('balance'), 2);
 
+            $filteredUsersIds = $filteredUsers->pluck('id');
+
+            $maleTotalBalance = Transaction::join('users', 'transactions.source_user_id', '=', $filteredUsersIds)
+                ->where('transactions.type', 'SHARE')
+                ->where('users.sex', 'Male')
+                ->sum('transactions.balance');
+
+            $femaleTotalBalance = Transaction::join('users', 'transactions.source_user_id', '=', $filteredUsersIds)
+                ->where('transactions.type', 'SHARE')
+                ->where('users.sex', 'Female')
+                ->sum('transactions.balance');
         }
 
         $femaleUsers = $filteredUsersForBalances->where('sex', 'Female');
         $femaleMembersCount = $femaleUsers->count();
-        $femaleTotalBalance = number_format($femaleUsers->sum('balance'), 2);
+        // $femaleTotalBalance = number_format($femaleUsers->sum('balance'), 2);
 
         // dd($femaleTotalBalance);
 
         $maleUsers = $filteredUsersForBalances->where('sex', 'Male');
         $maleMembersCount = $maleUsers->count();
-        $maleTotalBalance = number_format($maleUsers->sum('balance'), 2);
+        // $maleTotalBalance = number_format($maleUsers->sum('balance'), 2);
 
         $youthUsers = $filteredUsersForBalances->filter(function ($user) {
             return Carbon::parse($user->dob)->age < 35;
