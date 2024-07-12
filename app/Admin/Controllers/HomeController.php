@@ -111,6 +111,20 @@ class HomeController extends Controller
             'pwdTotalLoanBalance' => $this->getTotalLoanBalance($pwdUsers, $startDate, $endDate),
         ];
 
+        // Calculate percentages based on the filtered totals for male and female
+        $totalLoansForMenAndWomen = $statistics['loanSumForWomen'] + $statistics['loanSumForMen'];
+        $percentageLoansWomen = $totalLoansForMenAndWomen > 0 ? ($statistics['loanSumForWomen'] / $totalLoansForMenAndWomen) * 100 : 0;
+        $percentageLoansMen = $totalLoansForMenAndWomen > 0 ? ($statistics['loanSumForMen'] / $totalLoansForMenAndWomen) * 100 : 0;
+
+        // Calculate percentages based on the total loans for men and women and then filter youths and PWDs
+        $percentageLoansYouths = ($totalLoansForMenAndWomen > 0 && $statistics['totalLoanAmount'] > 0) ? ($statistics['loanSumForYouths'] / $totalLoansForMenAndWomen) * 100 : 0;
+        $percentageLoansPwd = ($totalLoansForMenAndWomen > 0 && $statistics['totalLoanAmount'] > 0) ? ($statistics['pwdTotalLoanBalance'] / $totalLoansForMenAndWomen) * 100 : 0;
+
+        $statistics['percentageLoansWomen'] = $percentageLoansWomen;
+        $statistics['percentageLoansMen'] = $percentageLoansMen;
+        $statistics['percentageLoansYouths'] = $percentageLoansYouths;
+        $statistics['percentageLoansPwd'] = $percentageLoansPwd;
+
         return $this->generateCsv($statistics, $startDate, $endDate);
     }
 
@@ -192,8 +206,13 @@ class HomeController extends Controller
                 ['Loans by Gender', ''],
                 ['  Female', $statistics['loanSumForWomen']],
                 ['  Male', $statistics['loanSumForMen']],
+                ['Percentage Loans by Gender', ''],
+                ['  Female', $statistics['percentageLoansWomen'] . '%'],
+                ['  Male', $statistics['percentageLoansMen'] . '%'],
                 ['Loans by Youth', $statistics['loanSumForYouths']],
+                ['Percentage Loans by Youth', $statistics['percentageLoansYouths'] . '%'],
                 ['Loans by PWDs', $statistics['pwdTotalLoanBalance']],
+                ['Percentage Loans by PWDs', $statistics['percentageLoansPwd'] . '%'],
             ];
 
             foreach ($data as $row) {
@@ -212,88 +231,6 @@ class HomeController extends Controller
             'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
         ])->deleteFileAfterSend(true);
     }
-
-    // public function exportData(Request $request)
-    // {
-    //     // Clear any output buffers to ensure no HTML/JS is included
-    //     while (ob_get_level()) {
-    //         ob_end_clean();
-    //     }
-
-    //     $startDate = $request->input('start_date');
-    //     $endDate = $request->input('end_date');
-
-    //     // Validate date inputs
-    //     if (!$startDate || !$endDate) {
-    //         return redirect()->back()->withErrors(['error' => 'Both start and end dates are required.']);
-    //     }
-
-    //     // Retrieve the data from session
-    //     $statistics = Session::get('dashboard_data');
-
-    //     if (!$statistics) {
-    //         return redirect()->back()->withErrors(['error' => 'No data available for export.']);
-    //     }
-
-    //     // Prepare data for export
-    //     $data = [
-    //         ['Metric', 'Value'],
-    //         ['Total Number of Groups Registered', $statistics['totalAccounts']],
-    //         ['Total Number of Members', $statistics['totalMembers']],
-    //         ['Number of Members by Gender', ''],
-    //         ['  Female', $statistics['femaleMembersCount']],
-    //         ['  Male', $statistics['maleMembersCount']],
-    //         ['Number of Youth Members', $statistics['youthMembersCount']],
-    //         ['Number of PWDs', $statistics['pwdMembersCount']],
-    //         ['Savings by Gender', ''],
-    //         ['  Female', $statistics['femaleTotalBalance']],
-    //         ['  Male', $statistics['maleTotalBalance']],
-    //         ['Savings by Youth', $statistics['youthTotalBalance']],
-    //         ['Savings by PWDs', $statistics['pwdTotalBalance']],
-    //         ['Total Loans', $statistics['totalLoanAmount']],
-    //         ['Loans by Gender', ''],
-    //         ['  Female', $statistics['loanSumForWomen']],
-    //         ['  Male', $statistics['loanSumForMen']],
-    //         ['Loans by Youth', $statistics['loanSumForYouths']],
-    //         ['Loans by PWDs', $statistics['pwdTotalLoanBalance']],
-    //     ];
-
-    //     $fileName = 'export_data_' . $startDate . '_to_' . $endDate . '.csv';
-    //     $filePath = storage_path('exports/' . $fileName);
-
-    //     // Ensure the directory exists
-    //     if (!file_exists(storage_path('exports'))) {
-    //         mkdir(storage_path('exports'), 0755, true);
-    //     }
-
-    //     // Write data to CSV
-    //     try {
-    //         $file = fopen($filePath, 'w');
-    //         if ($file === false) {
-    //             throw new \Exception('File open failed.');
-    //         }
-
-    //         // Write UTF-8 BOM for proper encoding in Excel
-    //         fwrite($file, "\xEF\xBB\xBF");
-
-    //         foreach ($data as $row) {
-    //             if (fputcsv($file, array_map('strval', $row)) === false) {
-    //                 throw new \Exception('CSV write failed.');
-    //             }
-    //         }
-
-    //         fclose($file);
-    //     } catch (\Exception $e) {
-    //         return response()->json(['error' => 'Error writing to CSV: ' . $e->getMessage()], 500);
-    //     }
-
-    //     // Return the CSV file as a download response
-    //     return response()->download($filePath, $fileName, [
-    //         'Content-Type' => 'text/csv',
-    //         'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
-    //     ])->deleteFileAfterSend(true);
-    // }
-
 
     public function index(Content $content)
     {
