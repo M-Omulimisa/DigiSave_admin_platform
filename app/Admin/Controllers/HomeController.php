@@ -459,28 +459,34 @@ class HomeController extends Controller
             ->sum('balance'), 2);
 
             $pwdTotalBalance = number_format(Transaction::whereIn('sacco_id', $saccoIds)
-            ->whereIn('source_user_id', $pwdUserIds)
-            ->where('type', 'LOAN')
-            ->sum('balance'), 2);
+                ->whereIn('source_user_id', $pwdUserIds)
+                ->where('type', 'LOAN')
+                ->sum('balance'), 2);
 
             // dd($filteredUsersIds);
 
 
-            $maleTotalBalance = Transaction::join('users', 'transactions.user_id', '=', 'users.id')
-                ->whereIn('users.sacco_id', $saccoIds)
+            $maleTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
                 ->where('users.sex', 'Male')
-                // ->where('users.sacco_join_status', 'Approved')
-                // ->where('users.user_type', '!=', 'Admin')
-                ->where('transactions.type', 'SHARE')
-                ->sum('transactions.balance');
+                ->whereNotIn('users.id', function ($query) {
+                    $query->select('id')
+                        ->from('users')
+                        ->whereIn('user_type', ['Admin', '5']);
+                })
+                ->whereNotIn('users.sacco_id', $saccoIds)
+                ->where('t.type', 'SHARE')
+                ->sum('t.balance');
 
-                $femaleTotalBalance = Transaction::join('users', 'transactions.user_id', '=', 'users.id')
-                ->whereIn('users.sacco_id', $saccoIds)
+            $femaleTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
                 ->where('users.sex', 'Female')
-                // ->where('users.sacco_join_status', 'Approved')
-                // ->where('users.user_type', '!=', 'Admin')
-                ->where('transactions.type', 'SHARE')
-                ->sum('transactions.balance');
+                ->whereNotIn('users.id', function ($query) {
+                    $query->select('id')
+                        ->from('users')
+                        ->whereIn('user_type', ['Admin', '5']);
+                })
+                ->whereNotIn('users.sacco_id', $saccoIds)
+                ->where('t.type', 'SHARE')
+                ->sum('t.balance');
 
 
             // $topSavingGroups = User::where('user_type', 'Admin')->whereIn('sacco_id', $saccoIds)->get()->sortByDesc('balance')->take(6);
@@ -647,22 +653,27 @@ class HomeController extends Controller
 
             // dd($filteredUsersIds);
 
-            $maleTotalBalance = Transaction::join('users', 'transactions.user_id', '=', 'users.id')
-                ->whereIn('transactions.user_id', $filteredUsersIds)
-                ->where('transactions.type', 'SHARE')
+            $maleTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
                 ->where('users.sex', 'Male')
+                ->whereNotIn('users.id', function ($query) {
+                    $query->select('id')
+                        ->from('users')
+                        ->whereIn('user_type', ['Admin', '5']);
+                })
+                ->where('t.type', 'SHARE')
                 ->where('users.sacco_join_status', 'Approved')
-                ->where('users.user_type', '!=', 'admin')
-                ->sum('transactions.balance');
+                ->sum('t.balance');
 
-                $femaleTotalBalance = Transaction::join('users', 'transactions.user_id', '=', 'users.id')
-                ->whereIn('transactions.user_id', $filteredUsersIds)
-                ->where('transactions.type', 'SHARE')
+            $femaleTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
                 ->where('users.sex', 'Female')
+                ->whereNotIn('users.id', function ($query) {
+                    $query->select('id')
+                        ->from('users')
+                        ->whereIn('user_type', ['Admin', '5']);
+                })
+                ->where('t.type', 'SHARE')
                 ->where('users.sacco_join_status', 'Approved')
-                ->where('users.user_type', '!=', 'admin')
-                ->sum('transactions.balance');
-
+                ->sum('t.balance');
         }
             $femaleUsers = $filteredUsersForBalances->where('sex', 'Female');
             $femaleMembersCount = $femaleUsers->count();
