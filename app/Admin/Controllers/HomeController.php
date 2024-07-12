@@ -469,7 +469,7 @@ class HomeController extends Controller
             $maleTotalBalance = Transaction::join('users', 'transactions.user_id', '=', 'users.id')
                 ->whereIn('users.sacco_id', $saccoIds)
                 ->where('users.sex', 'Male')
-                // ->where('users.sacco_join_status', 'Approved')
+                ->where('users.sacco_join_status', 'Approved')
                 ->where('users.user_type', '!=', 'admin')
                 ->where('transactions.type', 'SHARE')
                 ->sum('transactions.balance');
@@ -477,7 +477,7 @@ class HomeController extends Controller
                 $femaleTotalBalance = Transaction::join('users', 'transactions.user_id', '=', 'users.id')
                 ->whereIn('users.sacco_id', $saccoIds)
                 ->where('users.sex', 'Female')
-                // ->where('users.sacco_join_status', 'Approved')
+                ->where('users.sacco_join_status', 'Approved')
                 ->where('users.user_type', '!=', 'admin')
                 ->where('transactions.type', 'SHARE')
                 ->sum('transactions.balance');
