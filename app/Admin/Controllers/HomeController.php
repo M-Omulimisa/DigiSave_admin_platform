@@ -706,8 +706,8 @@ class HomeController extends Controller
         <input type="date" name="start_date" required>
         <input type="date" name="end_date" required>
         <button type="submit" class="btn btn-primary">Export Data</button>
-    </form>
-</div>'
+                </form>
+                  </div>'
                     .
                     '<div style="background-color: #E9F9E9; padding: 10px; padding-top: 5px; border-radius: 5px;">' .
                     view('widgets.statistics', [
@@ -746,7 +746,7 @@ class HomeController extends Controller
                         'percentageLoanSumWomen' => $percentageLoanSumWomen,
                         'percentageLoanSumMen' => $percentageLoanSumMen,
                         // 'percentageLoanSumYouths' => $percentageLoanSumYouths,
-                        'pwdTotalLoanBalance' => $pwdTotalLoanBalance
+                        'pwdTotalLoanBalance' => $pwdTotalLoanBalance,
                     ]) .
                     '</div>' .
                     view('widgets.chart_container', [
@@ -770,7 +770,7 @@ class HomeController extends Controller
                     </div>'
             );
     }
-}
+}}
 ?>
 
 
