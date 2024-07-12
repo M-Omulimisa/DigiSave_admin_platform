@@ -750,9 +750,9 @@ class HomeController extends Controller
                     ]) .
                     view('widgets.card_set', [
                         'femaleMembersCount' => $femaleMembersCount,
-                        'femaleTotalBalance' => number_format($femaleTotalBalance, 2),
+                        'femaleTotalBalance' => $femaleTotalBalance,
                         'maleMembersCount' => $maleMembersCount,
-                        'maleTotalBalance' => number_format($maleTotalBalance, 2),
+                        'maleTotalBalance' => $maleTotalBalance,
                         'youthMembersCount' => $youthMembersCount,
                         'youthTotalBalance' => $youthTotalBalance,
                         'pwdMembersCount' => $pwdMembersCount,
