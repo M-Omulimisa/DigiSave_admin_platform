@@ -531,6 +531,16 @@ class HomeController extends Controller
             $percentageLoansYouths = $totalLoans > 0 ? ($loansGivenToYouths / $totalLoans) * 100 : 0;
             $percentageLoansPwd = $totalLoans > 0 ? ($loansGivenToPwds / $totalLoans) * 100 : 0;
 
+            $youthTotalBalance = number_format(Transaction::whereIn('sacco_id', $saccoIds)
+            ->whereIn('source_user_id', $youthIds)
+            ->where('type', 'LOAN')
+            ->sum('balance'), 2);
+
+            $pwdTotalBalance = number_format(Transaction::whereIn('sacco_id', $saccoIds)
+            ->whereIn('source_user_id', $pwdUserIds)
+            ->where('type', 'LOAN')
+            ->sum('balance'), 2);
+
 
             // $topSavingGroups = User::where('user_type', 'Admin')->whereIn('sacco_id', $saccoIds)->get()->sortByDesc('balance')->take(6);
         } else {
@@ -681,6 +691,15 @@ class HomeController extends Controller
             // Calculate percentages
             $percentageLoansYouths = $totalLoans > 0 ? ($loansGivenToYouths / $totalLoans) * 100 : 0;
             $percentageLoansPwd = $totalLoans > 0 ? ($loansGivenToPwds / $totalLoans) * 100 : 0;
+
+            $youthTotalBalance = number_format(Transaction::whereIn('source_user_id', $youthIds)
+            ->where('type', 'LOAN')
+            ->sum('balance'), 2);
+
+            $pwdTotalBalance = number_format(Transaction::whereIn('source_user_id', $pwdUserIds)
+            ->where('type', 'LOAN')
+            ->sum('balance'), 2);
+
         }
 
         $femaleUsers = $filteredUsersForBalances->where('sex', 'Female');
@@ -697,7 +716,7 @@ class HomeController extends Controller
             return Carbon::parse($user->dob)->age < 35;
         });
         $youthMembersCount = $youthUsers->count();
-        $youthTotalBalance = number_format($youthUsers->sum('balance'), 2);
+        // $youthTotalBalance = number_format($youthUsers->sum('balance'), 2);
 
         $totalLoans = $loansDisbursedToWomen + $loansDisbursedToMen;
         $percentageLoansWomen = $totalLoans > 0 ? ($loansDisbursedToWomen / $totalLoans) * 100 : 0;
