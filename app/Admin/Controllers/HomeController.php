@@ -466,7 +466,7 @@ class HomeController extends Controller
             // dd($filteredUsersIds);
 
 
-            $maleTotalBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            $maleTotalBalance = Transaction::join('users', 'transactions.user_id', '=', 'users.id')
                 ->whereIn('transactions.sacco_id', $saccoIds)
                 ->where('users.sex', 'Male')
                 ->where('users.sacco_join_status', 'Approved')
@@ -474,7 +474,7 @@ class HomeController extends Controller
                 ->where('transactions.type', 'SHARE')
                 ->sum('transactions.balance');
 
-                $femaleTotalBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                $femaleTotalBalance = Transaction::join('users', 'transactions.user_id', '=', 'users.id')
                 ->whereIn('transactions.sacco_id', $saccoIds)
                 ->where('users.sex', 'Female')
                 ->where('users.sacco_join_status', 'Approved')
@@ -647,7 +647,7 @@ class HomeController extends Controller
 
             // dd($filteredUsersIds);
 
-            $maleTotalBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            $maleTotalBalance = Transaction::join('users', 'transactions.user_id', '=', 'users.id')
                 ->whereIn('transactions.source_user_id', $filteredUsersIds)
                 ->where('transactions.type', 'SHARE')
                 ->where('users.sex', 'Male')
@@ -655,7 +655,7 @@ class HomeController extends Controller
                 ->where('users.user_type', '!=', 'admin')
                 ->sum('transactions.balance');
 
-                $femaleTotalBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                $femaleTotalBalance = Transaction::join('users', 'transactions.user_id', '=', 'users.id')
                 ->whereIn('transactions.source_user_id', $filteredUsersIds)
                 ->where('transactions.type', 'SHARE')
                 ->where('users.sex', 'Female')
