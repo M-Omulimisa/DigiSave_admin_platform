@@ -463,15 +463,17 @@ class HomeController extends Controller
             ->where('type', 'LOAN')
             ->sum('balance'), 2);
 
+            // dd($filteredUsersIds);
+
 
             $maleTotalBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->whereIn('transactions.source_user_id', $filteredUsersIds)
+                // ->whereIn('transactions.source_user_id', $filteredUsersIds)
                 ->where('transactions.type', 'SHARE')
                 ->where('users.sex', 'Male')
                 ->sum('transactions.balance');
 
             $femaleTotalBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->whereIn('transactions.source_user_id', $filteredUsersIds)
+                // ->whereIn('transactions.source_user_id', $filteredUsersIds)
                 ->where('transactions.type', 'SHARE')
                 ->where('users.sex', 'Female')
                 ->sum('transactions.balance');
@@ -639,14 +641,16 @@ class HomeController extends Controller
 
             $filteredUsersIds = $filteredUsers->pluck('id')->toArray();
 
+            // dd($filteredUsersIds);
+
             $maleTotalBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->whereIn('transactions.source_user_id', $filteredUsersIds)
+                // ->whereIn('transactions.source_user_id', $filteredUsersIds)
                 ->where('transactions.type', 'SHARE')
                 ->where('users.sex', 'Male')
                 ->sum('transactions.balance');
 
             $femaleTotalBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->whereIn('transactions.source_user_id', $filteredUsersIds)
+                // ->whereIn('transactions.source_user_id', $filteredUsersIds)
                 ->where('transactions.type', 'SHARE')
                 ->where('users.sex', 'Female')
                 ->sum('transactions.balance');
