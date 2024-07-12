@@ -645,49 +645,31 @@ class HomeController extends Controller
         }
 
         $femaleUsers = $filteredUsersForBalances->where('sex', 'Female');
-$femaleMembersCount = $femaleUsers->count();
-$femaleTotalBalance = number_format($femaleUsers->sum('balance'), 2);
+        $femaleMembersCount = $femaleUsers->count();
+        $femaleTotalBalance = number_format($femaleUsers->sum('balance'), 2);
 
-$maleUsers = $filteredUsersForBalances->where('sex', 'Male');
-$maleMembersCount = $maleUsers->count();
-$maleTotalBalance = number_format($maleUsers->sum('balance'), 2);
+        // dd($femaleTotalBalance);
 
-$youthUsers = $filteredUsersForBalances->filter(function ($user) {
-    return Carbon::parse($user->dob)->age < 35;
-});
-$youthMembersCount = $youthUsers->count();
-$youthTotalBalance = number_format($youthUsers->sum('balance'), 2);
+        $maleUsers = $filteredUsersForBalances->where('sex', 'Male');
+        $maleMembersCount = $maleUsers->count();
+        $maleTotalBalance = number_format($maleUsers->sum('balance'), 2);
 
-$totalLoansForMenAndWomen = $loansDisbursedToWomen + $loansDisbursedToMen;
-$percentageLoansWomen = $totalLoansForMenAndWomen > 0 ? ($loansDisbursedToWomen / $totalLoansForMenAndWomen) * 100 : 0;
-$percentageLoansMen = $totalLoansForMenAndWomen > 0 ? ($loansDisbursedToMen / $totalLoansForMenAndWomen) * 100 : 0;
+        $youthUsers = $filteredUsersForBalances->filter(function ($user) {
+            return Carbon::parse($user->dob)->age < 35;
+        });
+        $youthMembersCount = $youthUsers->count();
+        $youthTotalBalance = number_format($youthUsers->sum('balance'), 2);
 
-$totalLoansYouths = $filteredUsersForBalances->filter(function ($user) {
-    return Carbon::parse($user->dob)->age < 35;
-})->pluck('id')->count();
-$loansDisbursedToYouths = Transaction::whereIn('user_id', $filteredUsersForBalances->pluck('id'))
-    ->whereIn('source_user_id', $youthUsers->pluck('id'))
-    ->where('type', 'LOAN')
-    ->count();
-$percentageLoansYouths = $totalLoansForMenAndWomen > 0 ? ($loansDisbursedToYouths / $totalLoansForMenAndWomen) * 100 : 0;
+        $totalLoans = $loansDisbursedToWomen + $loansDisbursedToMen;
+        $percentageLoansWomen = $totalLoans > 0 ? ($loansDisbursedToWomen / $totalLoans) * 100 : 0;
+        $percentageLoansMen = $totalLoans > 0 ? ($loansDisbursedToMen / $totalLoans) * 100 : 0;
+        $percentageLoansYouths = $totalLoans > 0 ? ($loansDisbursedToYouths / $totalLoans) * 100 : 0;
+        $percentageLoansPwd = $totalLoans > 0 ? ($pwdTotalLoanCount / $totalLoans) * 100 : 0;
 
-$totalLoansPwd = $filteredUsersForBalances->filter(function ($user) {
-    return $user->pwd === 'Yes';
-})->pluck('id')->count();
-$pwdTotalLoanCount = Transaction::whereIn('user_id', $filteredUsersForBalances->pluck('id'))
-    ->where('type', 'LOAN')
-    ->whereIn('source_user_id', $filteredUsersForBalances->where('pwd', 'Yes')->pluck('id'))
-    ->count();
-$percentageLoansPwd = $totalLoansForMenAndWomen > 0 ? ($pwdTotalLoanCount / $totalLoansForMenAndWomen) * 100 : 0;
-
-$loanSumForWomen = Transaction::whereIn('source_user_id', $femaleUsers->pluck('id'))->sum('amount');
-$loanSumForMen = Transaction::whereIn('source_user_id', $maleUsers->pluck('id'))->sum('amount');
-$loanSumForYouths = Transaction::whereIn('source_user_id', $youthUsers->pluck('id'))->sum('amount');
-$totalLoanSum = $loanSumForWomen + $loanSumForMen + $loanSumForYouths;
-
-$percentageLoanSumWomen = $totalLoanSum > 0 ? ($loanSumForWomen / $totalLoanSum) * 100 : 0;
-$percentageLoanSumMen = $totalLoanSum > 0 ? ($loanSumForMen / $totalLoanSum) * 100 : 0;
-$percentageLoanSumYouths = $totalLoanSum > 0 ? ($loanSumForYouths / $totalLoanSum) * 100 : 0;
+        $totalLoanSum = $loanSumForWomen + $loanSumForMen;
+        $percentageLoanSumWomen = $totalLoanSum > 0 ? ($loanSumForWomen / $totalLoanSum) * 100 : 0;
+        $percentageLoanSumMen = $totalLoanSum > 0 ? ($loanSumForMen / $totalLoanSum) * 100 : 0;
+        $percentageLoanSumYouths = $totalLoanSum > 0 ? ($loanSumForYouths / $totalLoanSum) * 100 : 0;
 
         $quotes = [
             "Empowerment through savings and loans.",
