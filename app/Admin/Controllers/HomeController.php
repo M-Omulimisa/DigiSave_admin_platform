@@ -660,13 +660,13 @@ class HomeController extends Controller
         $youthMembersCount = $youthUsers->count();
         $youthTotalBalance = number_format($youthUsers->sum('balance'), 2);
 
-        $totalLoans = $loansDisbursedToWomen + $loansDisbursedToMen;
+        $totalLoans = $loansDisbursedToWomen + $loansDisbursedToMen + $loansDisbursedToYouths;
         $percentageLoansWomen = $totalLoans > 0 ? ($loansDisbursedToWomen / $totalLoans) * 100 : 0;
         $percentageLoansMen = $totalLoans > 0 ? ($loansDisbursedToMen / $totalLoans) * 100 : 0;
         $percentageLoansYouths = $totalLoans > 0 ? ($loansDisbursedToYouths / $totalLoans) * 100 : 0;
         $percentageLoansPwd = $totalLoans > 0 ? ($pwdTotalLoanCount / $totalLoans) * 100 : 0;
 
-        $totalLoanSum = $loanSumForWomen + $loanSumForMen;
+        $totalLoanSum = $loanSumForWomen + $loanSumForMen + $loanSumForYouths;
         $percentageLoanSumWomen = $totalLoanSum > 0 ? ($loanSumForWomen / $totalLoanSum) * 100 : 0;
         $percentageLoanSumMen = $totalLoanSum > 0 ? ($loanSumForMen / $totalLoanSum) * 100 : 0;
         $percentageLoanSumYouths = $totalLoanSum > 0 ? ($loanSumForYouths / $totalLoanSum) * 100 : 0;
