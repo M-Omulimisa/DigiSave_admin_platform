@@ -41,390 +41,177 @@ class HomeController extends Controller
 {
 
     public function exportData(Request $request)
-{
-    // Clear any output buffers to ensure no HTML/JS is included
-    while (ob_get_level()) {
-        ob_end_clean();
-    }
-
-    $startDate = $request->input('start_date');
-    $endDate = $request->input('end_date');
-
-    // Validate date inputs
-    if (!$startDate || !$endDate) {
-        return redirect()->back()->withErrors(['error' => 'Both start and end dates are required.']);
-    }
-
-
-
-    $users = User::all();
-    $admin = Admin::user();
-    $adminId = $admin->id;
-
-    // Filter out specific user types
-    $filteredUsers = $users->reject(function ($user) use ($adminId) {
-        return $user->id === $adminId && $user->user_type === 'Admin';
-    });
-
-    $filteredUsers = $filteredUsers->reject(function ($user) {
-        return $user->user_type === '4';
-    });
-
-    $filteredUsers = $filteredUsers->reject(function ($user) {
-        return $user->user_type === '5';
-    });
-
-    $filteredUsers = $filteredUsers->filter(function ($user) {
-        return $user->user_type === null || !in_array($user->user_type, ['Admin', '5']);
-    });
-
-    // Apply filters based on the user's role and organization
-    if (!$admin->isRole('admin')) {
-        $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
-        if (!$orgAllocation) {
-            Auth::logout();
-            $message = "You are not allocated to any organization. Please contact M-Omulimisa Service Help for assistance.";
-            Session::flash('warning', $message);
-            admin_error($message);
-            return redirect('auth/logout');
+    {
+        // Clear any output buffers to ensure no HTML/JS is included
+        while (ob_get_level()) {
+            ob_end_clean();
         }
 
-        $orgIds = $orgAllocation->vsla_organisation_id;
-        $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgIds)->pluck('sacco_id')->toArray();
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
 
-        $filteredUsers->whereIn('sacco_id', $saccoIds);
+        // Validate date inputs
+        if (!$startDate || !$endDate) {
+            return redirect()->back()->withErrors(['error' => 'Both start and end dates are required.']);
+        }
 
-        $filteredUsers = $filteredUsers->filter(function ($user) use ($startDate, $endDate) {
+        $admin = Admin::user();
+        $adminId = $admin->id;
+
+        // Get all users, then apply filters
+        $users = User::all()->reject(function ($user) use ($adminId) {
+            return $user->id === $adminId && $user->user_type === 'Admin';
+        })->reject(function ($user) {
+            return in_array($user->user_type, ['4', '5', 'Admin']);
+        });
+
+        // Apply date filter
+        $filteredUsers = $users->filter(function ($user) use ($startDate, $endDate) {
             return Carbon::parse($user->created_at)->between($startDate, $endDate);
         });
 
-        $filteredUserIds = $filteredUsers->pluck('id')->toArray();
-
-        // Prepare statistics
-        $statistics = [
-            'totalAccounts' => Sacco::whereHas('users', function ($query) use ($startDate, $endDate, $saccoIds) {
-                $query->whereHas('position', function ($query) {
-                    $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
-                })->whereNotNull('phone_number')
-                    ->whereNotNull('name')
-                    ->whereBetween('created_at', [$startDate, $endDate]);
-                if (!empty($saccoIds)) {
-                    $query->whereIn('sacco_id', $saccoIds);
-                }
-            })->count(),
-            'totalMembers' => $filteredUsers->count(),
-            // dd($filteredUsers->count()),
-            'femaleMembersCount' => $filteredUsers->where('user_type', '!=', 'Admin')
-            ->whereBetween('users.created_at', [$startDate, $endDate])
-            ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
-                return $query->whereIn('users.sacco_id', $saccoIds);
-            })
-            ->where('sex', 'Female')->count(),
-            'maleMembersCount' => $filteredUsers->where('user_type', '!=', 'Admin')
-            ->whereBetween('users.created_at', [$startDate, $endDate])
-            ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
-                return $query->whereIn('users.sacco_id', $saccoIds);
-            })
-            ->where('sex', 'male')->count(),
-            // 'femaleMembersCount' => $filteredUsers->where('sex', 'Female')->count(),
-            // 'maleMembersCount' => $filteredUsers->where('sex', 'Male')->count(),
-            'youthMembersCount' => $filteredUsers->filter(function ($user) {
-                return Carbon::parse($user->dob)->age < 35;
-            })->count(),
-            'pwdMembersCount' => $filteredUsers->where('pwd', 'yes')->count(),
-            'femaleTotalBalance' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->whereIn('users.id', $filteredUserIds)
-                ->where('transactions.type', 'SHARE')
-                ->where('users.sex', 'Female')
-                ->whereBetween('users.created_at', [$startDate, $endDate])
-                ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
-                    return $query->whereIn('users.sacco_id', $saccoIds);
-                })
-                ->sum('transactions.balance'), 2),
-            'maleTotalBalance' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->whereIn('users.id', $filteredUserIds)
-                ->where('transactions.type', 'SHARE')
-                ->where('users.sex', 'Male')
-                ->whereBetween('users.created_at', [$startDate, $endDate])
-                ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
-                    return $query->whereIn('users.sacco_id', $saccoIds);
-                })
-                ->sum('transactions.balance'), 2),
-            'youthTotalBalance' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->whereIn('users.id', $filteredUserIds)
-                ->where('transactions.type', 'SHARE')
-                ->whereBetween('users.created_at', [$startDate, $endDate])
-                ->whereDate('users.dob', '>', now()->subYears(35))
-                ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
-                    return $query->whereIn('users.sacco_id', $saccoIds);
-                })
-                ->sum('transactions.balance'), 2),
-            'pwdTotalBalance' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->whereIn('users.id', $filteredUserIds)
-                ->where('transactions.type', 'SHARE')
-                ->whereBetween('users.created_at', [$startDate, $endDate])
-                ->where('users.pwd', 'yes')
-                ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
-                    return $query->whereIn('users.sacco_id', $saccoIds);
-                })
-                ->sum('transactions.balance'), 2),
-            'totalLoanAmount' => number_format(Transaction::where('type', 'LOAN')
-                ->whereBetween('created_at', [$startDate, $endDate])
-                ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
-                    return $query->whereIn('sacco_id', $saccoIds);
-                })
-                ->sum('amount'), 2),
-            'loanSumForWomen' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->where('transactions.type', 'LOAN')
-                ->where('users.sex', 'Female')
-                ->whereBetween('users.created_at', [$startDate, $endDate])
-                ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
-                    return $query->whereIn('users.sacco_id', $saccoIds);
-                })
-                ->sum('transactions.amount'), 2),
-            'loanSumForMen' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->where('transactions.type', 'LOAN')
-                ->where('users.sex', 'Male')
-                ->whereBetween('users.created_at', [$startDate, $endDate])
-                ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
-                    return $query->whereIn('users.sacco_id', $saccoIds);
-                })
-                ->sum('transactions.amount'), 2),
-            'loanSumForYouths' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->where('transactions.type', 'LOAN')
-                ->whereBetween('users.created_at', [$startDate, $endDate])
-                ->whereDate('users.dob', '>', now()->subYears(35))
-                ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
-                    return $query->whereIn('users.sacco_id', $saccoIds);
-                })
-                ->sum('transactions.amount'), 2),
-            'pwdTotalLoanBalance' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->where('transactions.type', 'LOAN')
-                ->where('users.pwd', 'yes')
-                ->whereBetween('users.created_at', [$startDate, $endDate])
-                ->when(!empty($saccoIds), function ($query) use ($saccoIds) {
-                    return $query->whereIn('users.sacco_id', $saccoIds);
-                })
-                ->sum('transactions.amount'), 2),
-        ];
-    }
-
-    else{
-        $filteredUsers = $filteredUsers->filter(function ($user) use ($startDate, $endDate) {
-        return Carbon::parse($user->created_at)->between($startDate, $endDate);
-    });
-
-    $filteredUserIds = $filteredUsers->pluck('id')->toArray();
-
-    // Prepare statistics
-    $statistics = [
-        'totalAccounts' => Sacco::whereHas('users', function ($query) use ($startDate, $endDate) {
-            $query->whereHas('position', function ($query) {
-                $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
-            })->whereNotNull('phone_number')
-                ->whereNotNull('name')
-                ->whereBetween('created_at', [$startDate, $endDate]);
-            if (!empty($saccoIds)) {
-                $query->whereIn('sacco_id', $saccoIds);
+        // Additional filters based on admin role
+        if (!$admin->isRole('admin')) {
+            $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+            if (!$orgAllocation) {
+                Auth::logout();
+                $message = "You are not allocated to any organization. Please contact M-Omulimisa Service Help for assistance.";
+                Session::flash('warning', $message);
+                admin_error($message);
+                return redirect('auth/logout');
             }
-        })->count(),
-        'totalMembers' => $filteredUsers->count(),
-        // dd($filteredUsers->count()),
-        'femaleMembersCount' => $filteredUsers->where('sex', 'Female')->count(),
-        'maleMembersCount' => $filteredUsers->where('sex', 'Male')->count(),
-        'youthMembersCount' => $filteredUsers->filter(function ($user) {
+
+            $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgAllocation->vsla_organisation_id)->pluck('sacco_id')->toArray();
+            $filteredUsers = $filteredUsers->whereIn('sacco_id', $saccoIds);
+        }
+
+        // Calculate statistics
+        $femaleUsers = $filteredUsers->where('sex', 'Female');
+        $maleUsers = $filteredUsers->where('sex', 'Male');
+        $youthUsers = $filteredUsers->filter(function ($user) {
             return Carbon::parse($user->dob)->age < 35;
-        })->count(),
-        'pwdMembersCount' => $filteredUsers->where('pwd', 'yes')->count(),
-        'femaleTotalBalance' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->whereIn('users.id', $filteredUserIds)
-            ->where('transactions.type', 'SHARE')
-            ->where('users.sex', 'Female')
-            ->whereBetween('users.created_at', [$startDate, $endDate])
-            ->sum('transactions.balance'), 2),
-        'maleTotalBalance' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->whereIn('users.id', $filteredUserIds)
-            ->where('transactions.type', 'SHARE')
-            ->where('users.sex', 'Male')
-            ->whereBetween('users.created_at', [$startDate, $endDate])
-            ->sum('transactions.balance'), 2),
-        'youthTotalBalance' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-        ->whereIn('users.id', $filteredUserIds)
-            ->where('transactions.type', 'SHARE')
-            ->whereBetween('users.created_at', [$startDate, $endDate])
-            ->whereDate('users.dob', '>', now()->subYears(35))
-            ->sum('transactions.balance'), 2),
-        'pwdTotalBalance' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-        ->whereIn('users.id', $filteredUserIds)
-            ->where('transactions.type', 'SHARE')
-            ->whereBetween('users.created_at', [$startDate, $endDate])
-            ->where('users.pwd', 'yes')
-            ->sum('transactions.balance'), 2),
-        'totalLoanAmount' => number_format(Transaction::where('type', 'LOAN')
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->sum('amount'), 2),
-        'loanSumForWomen' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->where('transactions.type', 'LOAN')
-            ->where('users.sex', 'Female')
-            ->whereBetween('users.created_at', [$startDate, $endDate])
-            ->sum('transactions.amount'), 2),
-        'loanSumForMen' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->where('transactions.type', 'LOAN')
-            ->where('users.sex', 'Male')
-            ->whereBetween('users.created_at', [$startDate, $endDate])
-            ->sum('transactions.amount'), 2),
-        'loanSumForYouths' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->where('transactions.type', 'LOAN')
-            ->whereBetween('users.created_at', [$startDate, $endDate])
-            ->whereDate('users.dob', '>', now()->subYears(35))
-            ->sum('transactions.amount'), 2),
-        'pwdTotalLoanBalance' => number_format(Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->where('transactions.type', 'LOAN')
-            ->where('users.pwd', 'yes')
-            ->whereBetween('users.created_at', [$startDate, $endDate])
-            ->sum('transactions.amount'), 2),
-    ];};
+        });
+        $pwdUsers = $filteredUsers->where('pwd', 'Yes');
 
-    $fileName = 'export_data_' . $startDate . '_to_' . $endDate . '.csv';
-    $filePath = storage_path('exports/' . $fileName);
-
-    // Ensure the directory exists
-    if (!file_exists(storage_path('exports'))) {
-        mkdir(storage_path('exports'), 0755, true);
-    }
-
-    // Write data to CSV
-    try {
-        $file = fopen($filePath, 'w');
-        if ($file === false) {
-            throw new \Exception('File open failed.');
-        }
-
-        // Write UTF-8 BOM for proper encoding in Excel
-        fwrite($file, "\xEF\xBB\xBF");
-
-        // Prepare data for export
-        $data = [
-            ['Metric', 'Value'],
-            ['Total Number of Groups Registered', $statistics['totalAccounts']],
-            ['Total Number of Members', $statistics['totalMembers']],
-            ['Number of Members by Gender', ''],
-            ['  Female', $statistics['femaleMembersCount']],
-            ['  Male', $statistics['maleMembersCount']],
-            ['Number of Youth Members', $statistics['youthMembersCount']],
-            ['Number of PWDs', $statistics['pwdMembersCount']],
-            ['Savings by Gender', ''],
-            ['  Female', $statistics['femaleTotalBalance']],
-            ['  Male', $statistics['maleTotalBalance']],
-            ['Savings by Youth', $statistics['youthTotalBalance']],
-            ['Savings by PWDs', $statistics['pwdTotalBalance']],
-            ['Total Loans', $statistics['totalLoanAmount']],
-            ['Loans by Gender', ''],
-            ['  Female', $statistics['loanSumForWomen']],
-            ['  Male', $statistics['loanSumForMen']],
-            ['Loans by Youth', $statistics['loanSumForYouths']],
-            ['Loans by PWDs', $statistics['pwdTotalLoanBalance']],
+        $statistics = [
+            'totalAccounts' => $this->getTotalAccounts($filteredUsers),
+            'totalMembers' => $filteredUsers->count(),
+            'femaleMembersCount' => $femaleUsers->count(),
+            'maleMembersCount' => $maleUsers->count(),
+            'youthMembersCount' => $youthUsers->count(),
+            'pwdMembersCount' => $pwdUsers->count(),
+            'femaleTotalBalance' => $this->getTotalBalance($femaleUsers, 'SHARE'),
+            'maleTotalBalance' => $this->getTotalBalance($maleUsers, 'SHARE'),
+            'youthTotalBalance' => $this->getTotalBalance($youthUsers, 'SHARE'),
+            'pwdTotalBalance' => $this->getTotalBalance($pwdUsers, 'SHARE'),
+            'totalLoanAmount' => $this->getTotalLoanAmount($filteredUsers, $startDate, $endDate),
+            'loanSumForWomen' => $this->getLoanSumForGender($filteredUsers, 'Female', $startDate, $endDate),
+            'loanSumForMen' => $this->getLoanSumForGender($filteredUsers, 'Male', $startDate, $endDate),
+            'loanSumForYouths' => $this->getLoanSumForYouths($filteredUsers, $startDate, $endDate),
+            'pwdTotalLoanBalance' => $this->getTotalLoanBalance($pwdUsers, $startDate, $endDate),
         ];
 
-        foreach ($data as $row) {
-            if (fputcsv($file, array_map('strval', $row)) === false) {
-                throw new \Exception('CSV write failed.');
-            }
-        }
-
-        fclose($file);
-    } catch (\Exception $e) {
-        return response()->json(['error' => 'Error writing to CSV: ' . $e->getMessage()], 500);
+        return $this->generateCsv($statistics, $startDate, $endDate);
     }
 
-    // Return the CSV file as a download response
-    return response()->download($filePath, $fileName, [
-        'Content-Type' => 'text/csv',
-        'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
-    ])->deleteFileAfterSend(true);
-}
+    private function getTotalAccounts($filteredUsers)
+    {
+        // Calculate total accounts based on the same logic as the dashboard
+        // Add your logic here
+    }
 
-    // public function exportData(Request $request)
-    // {
-    //     // Clear any output buffers to ensure no HTML/JS is included
-    //     while (ob_get_level()) {
-    //         ob_end_clean();
-    //     }
+    private function getTotalBalance($users, $type)
+    {
+        return Transaction::whereIn('user_id', $users->pluck('id')->toArray())->where('type', $type)->sum('balance');
+    }
 
-    //     $startDate = $request->input('start_date');
-    //     $endDate = $request->input('end_date');
+    private function getTotalLoanAmount($users, $startDate, $endDate)
+    {
+        return Transaction::where('type', 'LOAN')->whereBetween('created_at', [$startDate, $endDate])->sum('amount');
+    }
 
-    //     // Validate date inputs
-    //     if (!$startDate || !$endDate) {
-    //         return redirect()->back()->withErrors(['error' => 'Both start and end dates are required.']);
-    //     }
+    private function getLoanSumForGender($users, $gender, $startDate, $endDate)
+    {
+        return Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'LOAN')
+            ->where('users.sex', $gender)
+            ->whereBetween('users.created_at', [$startDate, $endDate])
+            ->sum('transactions.amount');
+    }
 
-    //     // Retrieve the data from session
-    //     $statistics = Session::get('dashboard_data');
+    private function getLoanSumForYouths($users, $startDate, $endDate)
+    {
+        return Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'LOAN')
+            ->whereBetween('users.created_at', [$startDate, $endDate])
+            ->whereDate('users.dob', '>', now()->subYears(35))
+            ->sum('transactions.amount');
+    }
 
-    //     if (!$statistics) {
-    //         return redirect()->back()->withErrors(['error' => 'No data available for export.']);
-    //     }
+    private function getTotalLoanBalance($users, $startDate, $endDate)
+    {
+        return Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'LOAN')
+            ->where('users.pwd', 'yes')
+            ->whereBetween('users.created_at', [$startDate, $endDate])
+            ->sum('transactions.amount');
+    }
 
-    //     // Prepare data for export
-    //     $data = [
-    //         ['Metric', 'Value'],
-    //         ['Total Number of Groups Registered', $statistics['totalAccounts']],
-    //         ['Total Number of Members', $statistics['totalMembers']],
-    //         ['Number of Members by Gender', ''],
-    //         ['  Female', $statistics['femaleMembersCount']],
-    //         ['  Male', $statistics['maleMembersCount']],
-    //         ['Number of Youth Members', $statistics['youthMembersCount']],
-    //         ['Number of PWDs', $statistics['pwdMembersCount']],
-    //         ['Savings by Gender', ''],
-    //         ['  Female', $statistics['femaleTotalBalance']],
-    //         ['  Male', $statistics['maleTotalBalance']],
-    //         ['Savings by Youth', $statistics['youthTotalBalance']],
-    //         ['Savings by PWDs', $statistics['pwdTotalBalance']],
-    //         ['Total Loans', $statistics['totalLoanAmount']],
-    //         ['Loans by Gender', ''],
-    //         ['  Female', $statistics['loanSumForWomen']],
-    //         ['  Male', $statistics['loanSumForMen']],
-    //         ['Loans by Youth', $statistics['loanSumForYouths']],
-    //         ['Loans by PWDs', $statistics['pwdTotalLoanBalance']],
-    //     ];
+    private function generateCsv($statistics, $startDate, $endDate)
+    {
+        $fileName = 'export_data_' . $startDate . '_to_' . $endDate . '.csv';
+        $filePath = storage_path('exports/' . $fileName);
 
-    //     $fileName = 'export_data_' . $startDate . '_to_' . $endDate . '.csv';
-    //     $filePath = storage_path('exports/' . $fileName);
+        if (!file_exists(storage_path('exports'))) {
+            mkdir(storage_path('exports'), 0755, true);
+        }
 
-    //     // Ensure the directory exists
-    //     if (!file_exists(storage_path('exports'))) {
-    //         mkdir(storage_path('exports'), 0755, true);
-    //     }
+        try {
+            $file = fopen($filePath, 'w');
+            if ($file === false) {
+                throw new \Exception('File open failed.');
+            }
 
-    //     // Write data to CSV
-    //     try {
-    //         $file = fopen($filePath, 'w');
-    //         if ($file === false) {
-    //             throw new \Exception('File open failed.');
-    //         }
+            fwrite($file, "\xEF\xBB\xBF");
 
-    //         // Write UTF-8 BOM for proper encoding in Excel
-    //         fwrite($file, "\xEF\xBB\xBF");
+            $data = [
+                ['Metric', 'Value'],
+                ['Total Number of Groups Registered', $statistics['totalAccounts']],
+                ['Total Number of Members', $statistics['totalMembers']],
+                ['Number of Members by Gender', ''],
+                ['  Female', $statistics['femaleMembersCount']],
+                ['  Male', $statistics['maleMembersCount']],
+                ['Number of Youth Members', $statistics['youthMembersCount']],
+                ['Number of PWDs', $statistics['pwdMembersCount']],
+                ['Savings by Gender', ''],
+                ['  Female', $statistics['femaleTotalBalance']],
+                ['  Male', $statistics['maleTotalBalance']],
+                ['Savings by Youth', $statistics['youthTotalBalance']],
+                ['Savings by PWDs', $statistics['pwdTotalBalance']],
+                ['Total Loans', $statistics['totalLoanAmount']],
+                ['Loans by Gender', ''],
+                ['  Female', $statistics['loanSumForWomen']],
+                ['  Male', $statistics['loanSumForMen']],
+                ['Loans by Youth', $statistics['loanSumForYouths']],
+                ['Loans by PWDs', $statistics['pwdTotalLoanBalance']],
+            ];
 
-    //         foreach ($data as $row) {
-    //             if (fputcsv($file, array_map('strval', $row)) === false) {
-    //                 throw new \Exception('CSV write failed.');
-    //             }
-    //         }
+            foreach ($data as $row) {
+                if (fputcsv($file, array_map('strval', $row)) === false) {
+                    throw new \Exception('CSV write failed.');
+                }
+            }
 
-    //         fclose($file);
-    //     } catch (\Exception $e) {
-    //         return response()->json(['error' => 'Error writing to CSV: ' . $e->getMessage()], 500);
-    //     }
+            fclose($file);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error writing to CSV: ' . $e->getMessage()], 500);
+        }
 
-    //     // Return the CSV file as a download response
-    //     return response()->download($filePath, $fileName, [
-    //         'Content-Type' => 'text/csv',
-    //         'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
-    //     ])->deleteFileAfterSend(true);
-    // }
-
+        return response()->download($filePath, $fileName, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+        ])->deleteFileAfterSend(true);
+    }
 
     public function index(Content $content)
     {
@@ -521,6 +308,7 @@ class HomeController extends Controller
             })->count() / $totalMembers * 100 : 0;
 
             $filteredUsersForBalances = $filteredUsers->whereIn('sacco_id', $saccoIds);
+            $filteredUsersIds = $filteredUsers->pluck('id');
             $pwdUsers = $filteredUsers->where('pwd', 'Yes');
             $pwdMembersCount = $pwdUsers->count();
             $pwdUserIds = $pwdUsers->pluck('id');
@@ -632,7 +420,64 @@ class HomeController extends Controller
                 return count($item);
             })->values()->toArray();
 
-            $topSavingGroups = User::where('user_type', 'Admin')->whereIn('sacco_id', $saccoIds)->get()->sortByDesc('balance')->take(6);
+            $topSavingGroups = User::where('user_type', 'Admin')
+                ->whereIn('sacco_id', $saccoIds)
+                ->whereHas('sacco', function ($query) {
+                    $query->where('status', '!=', 'deleted');
+                })
+                ->get()
+                ->sortByDesc('balance')
+                ->take(6);
+
+
+            // Here
+
+            // Calculate total loans
+            $totalLoans = Transaction::whereIn('sacco_id', $saccoIds)
+                ->where('type', 'LOAN')
+                ->count();
+
+            // Calculate loans given to youths
+            $loansGivenToYouths = Transaction::whereIn('sacco_id', $saccoIds)
+                ->whereIn('source_user_id', $youthIds)
+                ->where('type', 'LOAN')
+                ->count();
+
+            // Calculate loans given to PWDs
+            $loansGivenToPwds = Transaction::whereIn('sacco_id', $saccoIds)
+                ->whereIn('source_user_id', $pwdUserIds)
+                ->where('type', 'LOAN')
+                ->count();
+
+            // Calculate percentages
+            $percentageLoansYouths = $totalLoans > 0 ? ($loansGivenToYouths / $totalLoans) * 100 : 0;
+            $percentageLoansPwd = $totalLoans > 0 ? ($loansGivenToPwds / $totalLoans) * 100 : 0;
+
+            $youthTotalBalance = number_format(Transaction::whereIn('sacco_id', $saccoIds)
+            ->whereIn('source_user_id', $youthIds)
+            ->where('type', 'LOAN')
+            ->sum('balance'), 2);
+
+            $pwdTotalBalance = number_format(Transaction::whereIn('sacco_id', $saccoIds)
+            ->whereIn('source_user_id', $pwdUserIds)
+            ->where('type', 'LOAN')
+            ->sum('balance'), 2);
+
+
+            $maleTotalBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.source_user_id', $filteredUsersIds)
+                ->where('transactions.type', 'SHARE')
+                ->where('users.sex', 'Male')
+                ->sum('transactions.balance');
+
+            $femaleTotalBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.source_user_id', $filteredUsersIds)
+                ->where('transactions.type', 'SHARE')
+                ->where('users.sex', 'Female')
+                ->sum('transactions.balance');
+
+
+            // $topSavingGroups = User::where('user_type', 'Admin')->whereIn('sacco_id', $saccoIds)->get()->sortByDesc('balance')->take(6);
         } else {
             $organizationContainer = '';
             $orgName = 'DigiSave VSLA Platform';
@@ -763,32 +608,76 @@ class HomeController extends Controller
             })->values()->toArray();
 
             $topSavingGroups = User::where('user_type', 'Admin')->get()->sortByDesc('balance')->take(6);
-        }
 
-        $femaleUsers = $filteredUsersForBalances->where('sex', 'Female');
-        $femaleMembersCount = $femaleUsers->count();
-        $femaleTotalBalance = number_format($femaleUsers->sum('balance'), 2);
+            //Here
+
+            // Calculate total loans
+            $totalLoans = Transaction::where('type', 'LOAN')
+                ->count();
+
+            // Calculate loans given to youths
+            $loansGivenToYouths = Transaction::whereIn('source_user_id', $youthIds)
+                ->where('type', 'LOAN')
+                ->count();
+
+            // Calculate loans given to PWDs
+            $loansGivenToPwds = Transaction::whereIn('source_user_id', $pwdUserIds)
+                ->where('type', 'LOAN')
+                ->count();
+
+            // Calculate percentages
+            $percentageLoansYouths = $totalLoans > 0 ? ($loansGivenToYouths / $totalLoans) * 100 : 0;
+            $percentageLoansPwd = $totalLoans > 0 ? ($loansGivenToPwds / $totalLoans) * 100 : 0;
+
+            $youthTotalBalance = number_format(Transaction::whereIn('source_user_id', $youthIds)
+                -> where('type', 'LOAN')
+            ->sum('balance'), 2);
+
+            $pwdTotalBalance = number_format(Transaction::whereIn('source_user_id', $pwdUserIds)
+                ->where('type', 'LOAN')
+                ->sum('balance'), 2);
+
+            $filteredUsersIds = $filteredUsers->pluck('id')->toArray();
+
+            $maleTotalBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.source_user_id', $filteredUsersIds)
+                ->where('transactions.type', 'SHARE')
+                ->where('users.sex', 'Male')
+                ->sum('transactions.balance');
+
+            $femaleTotalBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.source_user_id', $filteredUsersIds)
+                ->where('transactions.type', 'SHARE')
+                ->where('users.sex', 'Female')
+                ->sum('transactions.balance');
+
+        }
+            $femaleUsers = $filteredUsersForBalances->where('sex', 'Female');
+            $femaleMembersCount = $femaleUsers->count();
+        // $femaleTotalBalance = number_format($femaleUsers->sum('balance'), 2);
+
+        // dd($femaleTotalBalance);
 
         $maleUsers = $filteredUsersForBalances->where('sex', 'Male');
         $maleMembersCount = $maleUsers->count();
-        $maleTotalBalance = number_format($maleUsers->sum('balance'), 2);
+        // $maleTotalBalance = number_format($maleUsers->sum('balance'), 2);
 
         $youthUsers = $filteredUsersForBalances->filter(function ($user) {
             return Carbon::parse($user->dob)->age < 35;
         });
         $youthMembersCount = $youthUsers->count();
-        $youthTotalBalance = number_format($youthUsers->sum('balance'), 2);
+        // $youthTotalBalance = number_format($youthUsers->sum('balance'), 2);
 
-        $totalLoans = $loansDisbursedToWomen + $loansDisbursedToMen + $loansDisbursedToYouths;
+        $totalLoans = $loansDisbursedToWomen + $loansDisbursedToMen;
         $percentageLoansWomen = $totalLoans > 0 ? ($loansDisbursedToWomen / $totalLoans) * 100 : 0;
         $percentageLoansMen = $totalLoans > 0 ? ($loansDisbursedToMen / $totalLoans) * 100 : 0;
-        $percentageLoansYouths = $totalLoans > 0 ? ($loansDisbursedToYouths / $totalLoans) * 100 : 0;
-        $percentageLoansPwd = $totalLoans > 0 ? ($pwdTotalLoanCount / $totalLoans) * 100 : 0;
+        // $percentageLoansYouths = $totalLoans > 0 ? ($loansDisbursedToYouths / $totalLoans) * 100 : 0;
+        // $percentageLoansPwd = $totalLoans > 0 ? ($pwdTotalLoanCount / $totalLoans) * 100 : 0;
 
-        $totalLoanSum = $loanSumForWomen + $loanSumForMen + $loanSumForYouths;
+        $totalLoanSum = $loanSumForWomen + $loanSumForMen;
         $percentageLoanSumWomen = $totalLoanSum > 0 ? ($loanSumForWomen / $totalLoanSum) * 100 : 0;
         $percentageLoanSumMen = $totalLoanSum > 0 ? ($loanSumForMen / $totalLoanSum) * 100 : 0;
-        $percentageLoanSumYouths = $totalLoanSum > 0 ? ($loanSumForYouths / $totalLoanSum) * 100 : 0;
+        // $percentageLoanSumYouths = $totalLoanSum > 0 ? ($loanSumForYouths / $totalLoanSum) * 100 : 0;
 
         $quotes = [
             "Empowerment through savings and loans.",
@@ -799,44 +688,6 @@ class HomeController extends Controller
         ];
 
         $totalLoanAmount = $loanSumForWomen + $loanSumForMen + $loanSumForYouths;
-
-        $data = [
-            'totalSaccos' => $totalAccounts,
-            'villageAgents' => $villageAgents,
-            'organisationCount' => $organisationCount,
-            'totalMembers' => $totalMembers,
-            'totalAccounts' => $totalAccounts,
-            'totalOrgAdmins' => $totalOrgAdmins,
-            'totalPwdMembers' => $pwdMembersCount,
-            'youthMembersPercentage' => number_format($youthMembersPercentage, 2),
-            'femaleMembersCount' => $femaleMembersCount,
-            'femaleTotalBalance' => $femaleTotalBalance,
-            'maleMembersCount' => $maleMembersCount,
-            'maleTotalBalance' => $maleTotalBalance,
-            'youthMembersCount' => $youthMembersCount,
-            'youthTotalBalance' => $youthTotalBalance,
-            'pwdMembersCount' => $pwdMembersCount,
-            'pwdTotalBalance' => $pwdTotalBalance,
-            'loansDisbursedToWomen' => abs($loansDisbursedToWomen),
-            'loansDisbursedToMen' => abs($loansDisbursedToMen),
-            'loansDisbursedToYouths' => abs($loansDisbursedToYouths),
-            'loanSumForWomen' => abs($loanSumForWomen),
-            'loanSumForMen' => abs($loanSumForMen),
-            'loanSumForYouths' => abs($loanSumForYouths),
-            'pwdTotalLoanCount' => $pwdTotalLoanCount,
-            'percentageLoansWomen' => $percentageLoansWomen,
-            'percentageLoansMen' => $percentageLoansMen,
-            'percentageLoansYouths' => $percentageLoansYouths,
-            'percentageLoansPwd' => $percentageLoansPwd,
-            'percentageLoanSumWomen' => $percentageLoanSumWomen,
-            'percentageLoanSumMen' => $percentageLoanSumMen,
-            'percentageLoanSumYouths' => abs($percentageLoanSumYouths),
-            'pwdTotalLoanBalance' => abs($pwdTotalLoanBalance),
-            'totalLoanAmount' => abs($totalLoanAmount),
-        ];
-
-        // Store the data in the session to make it accessible for exportData method
-        Session::put('dashboard_data', $data);
 
         return $content
             ->header('<div style="text-align: center; color: #066703; font-size: 30px; font-weight: bold; padding-top: 20px;">' . $orgName . '</div>')
@@ -860,8 +711,8 @@ class HomeController extends Controller
         <input type="date" name="start_date" required>
         <input type="date" name="end_date" required>
         <button type="submit" class="btn btn-primary">Export Data</button>
-    </form>
-</div>'
+                </form>
+                  </div>'
                     .
                     '<div style="background-color: #E9F9E9; padding: 10px; padding-top: 5px; border-radius: 5px;">' .
                     view('widgets.statistics', [
@@ -899,8 +750,8 @@ class HomeController extends Controller
                         'percentageLoansPwd' => $percentageLoansPwd,
                         'percentageLoanSumWomen' => $percentageLoanSumWomen,
                         'percentageLoanSumMen' => $percentageLoanSumMen,
-                        'percentageLoanSumYouths' => $percentageLoanSumYouths,
-                        'pwdTotalLoanBalance' => $pwdTotalLoanBalance
+                        // 'percentageLoanSumYouths' => $percentageLoanSumYouths,
+                        'pwdTotalLoanBalance' => $pwdTotalLoanBalance,
                     ]) .
                     '</div>' .
                     view('widgets.chart_container', [
