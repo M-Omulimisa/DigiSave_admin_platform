@@ -470,7 +470,7 @@ class HomeController extends Controller
                 ->whereIn('users.sacco_id', $saccoIds)
                 ->where('users.sex', 'Male')
                 // ->where('users.sacco_join_status', 'Approved')
-                ->where('users.user_type', '!=', 'Admin')
+                // ->where('users.user_type', '!=', 'Admin')
                 ->where('transactions.type', 'SHARE')
                 ->sum('transactions.balance');
 
@@ -478,7 +478,7 @@ class HomeController extends Controller
                 ->whereIn('users.sacco_id', $saccoIds)
                 ->where('users.sex', 'Female')
                 // ->where('users.sacco_join_status', 'Approved')
-                ->where('users.user_type', '!=', 'Admin')
+                // ->where('users.user_type', '!=', 'Admin')
                 ->where('transactions.type', 'SHARE')
                 ->sum('transactions.balance');
 
