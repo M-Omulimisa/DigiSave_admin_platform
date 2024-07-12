@@ -460,14 +460,15 @@ class HomeController extends Controller
             ->where('type', 'LOAN')
             ->sum('balance'), 2);
 
-            $maleTotalBalance = Transaction::join('users', 'transactions.source_user_id', '=', $filteredUsersIds)
-                ->whereIn('sacco_id', $saccoIds)
+
+            $maleTotalBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.source_user_id', $filteredUsersIds)
                 ->where('transactions.type', 'SHARE')
                 ->where('users.sex', 'Male')
                 ->sum('transactions.balance');
 
-            $femaleTotalBalance = Transaction::join('users', 'transactions.source_user_id', '=', $filteredUsersIds)
-                ->whereIn('sacco_id', $saccoIds)
+            $femaleTotalBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.source_user_id', $filteredUsersIds)
                 ->where('transactions.type', 'SHARE')
                 ->where('users.sex', 'Female')
                 ->sum('transactions.balance');
@@ -625,27 +626,29 @@ class HomeController extends Controller
 
             $youthTotalBalance = number_format(Transaction::whereIn('source_user_id', $youthIds)
                 -> where('type', 'LOAN')
-                ->sum('balance'), 2);
+            ->sum('balance'), 2);
 
             $pwdTotalBalance = number_format(Transaction::whereIn('source_user_id', $pwdUserIds)
                 ->where('type', 'LOAN')
                 ->sum('balance'), 2);
 
-            $filteredUsersIds = $filteredUsers->pluck('id');
+            $filteredUsersIds = $filteredUsers->pluck('id')->toArray();
 
-            $maleTotalBalance = Transaction::join('users', 'transactions.source_user_id', '=', $filteredUsersIds)
+            $maleTotalBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.source_user_id', $filteredUsersIds)
                 ->where('transactions.type', 'SHARE')
                 ->where('users.sex', 'Male')
                 ->sum('transactions.balance');
 
-            $femaleTotalBalance = Transaction::join('users', 'transactions.source_user_id', '=', $filteredUsersIds)
+            $femaleTotalBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.source_user_id', $filteredUsersIds)
                 ->where('transactions.type', 'SHARE')
                 ->where('users.sex', 'Female')
                 ->sum('transactions.balance');
-        }
 
-        $femaleUsers = $filteredUsersForBalances->where('sex', 'Female');
-        $femaleMembersCount = $femaleUsers->count();
+
+            $femaleUsers = $filteredUsersForBalances->where('sex', 'Female');
+            $femaleMembersCount = $femaleUsers->count();
         // $femaleTotalBalance = number_format($femaleUsers->sum('balance'), 2);
 
         // dd($femaleTotalBalance);
