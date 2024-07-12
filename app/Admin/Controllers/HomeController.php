@@ -510,6 +510,27 @@ class HomeController extends Controller
                 ->sortByDesc('balance')
                 ->take(6);
 
+            // Calculate total loans
+            $totalLoans = Transaction::whereIn('sacco_id', $saccoIds)
+                ->where('type', 'LOAN')
+                ->count();
+
+            // Calculate loans given to youths
+            $loansGivenToYouths = Transaction::whereIn('sacco_id', $saccoIds)
+                ->whereIn('source_user_id', $youthIds)
+                ->where('type', 'LOAN')
+                ->count();
+
+            // Calculate loans given to PWDs
+            $loansGivenToPwds = Transaction::whereIn('sacco_id', $saccoIds)
+                ->whereIn('source_user_id', $pwdUserIds)
+                ->where('type', 'LOAN')
+                ->count();
+
+            // Calculate percentages
+            $percentageLoansYouths = $totalLoans > 0 ? ($loansGivenToYouths / $totalLoans) * 100 : 0;
+            $percentageLoansPwd = $totalLoans > 0 ? ($loansGivenToPwds / $totalLoans) * 100 : 0;
+
 
             // $topSavingGroups = User::where('user_type', 'Admin')->whereIn('sacco_id', $saccoIds)->get()->sortByDesc('balance')->take(6);
         } else {
@@ -642,6 +663,24 @@ class HomeController extends Controller
             })->values()->toArray();
 
             $topSavingGroups = User::where('user_type', 'Admin')->get()->sortByDesc('balance')->take(6);
+
+            // Calculate total loans
+            $totalLoans = Transaction::where('type', 'LOAN')
+                ->count();
+
+            // Calculate loans given to youths
+            $loansGivenToYouths = Transaction::whereIn('source_user_id', $youthIds)
+                ->where('type', 'LOAN')
+                ->count();
+
+            // Calculate loans given to PWDs
+            $loansGivenToPwds = Transaction::whereIn('source_user_id', $pwdUserIds)
+                ->where('type', 'LOAN')
+                ->count();
+
+            // Calculate percentages
+            $percentageLoansYouths = $totalLoans > 0 ? ($loansGivenToYouths / $totalLoans) * 100 : 0;
+            $percentageLoansPwd = $totalLoans > 0 ? ($loansGivenToPwds / $totalLoans) * 100 : 0;
         }
 
         $femaleUsers = $filteredUsersForBalances->where('sex', 'Female');
@@ -663,13 +702,13 @@ class HomeController extends Controller
         $totalLoans = $loansDisbursedToWomen + $loansDisbursedToMen;
         $percentageLoansWomen = $totalLoans > 0 ? ($loansDisbursedToWomen / $totalLoans) * 100 : 0;
         $percentageLoansMen = $totalLoans > 0 ? ($loansDisbursedToMen / $totalLoans) * 100 : 0;
-        $percentageLoansYouths = $totalLoans > 0 ? ($loansDisbursedToYouths / $totalLoans) * 100 : 0;
-        $percentageLoansPwd = $totalLoans > 0 ? ($pwdTotalLoanCount / $totalLoans) * 100 : 0;
+        // $percentageLoansYouths = $totalLoans > 0 ? ($loansDisbursedToYouths / $totalLoans) * 100 : 0;
+        // $percentageLoansPwd = $totalLoans > 0 ? ($pwdTotalLoanCount / $totalLoans) * 100 : 0;
 
         $totalLoanSum = $loanSumForWomen + $loanSumForMen;
         $percentageLoanSumWomen = $totalLoanSum > 0 ? ($loanSumForWomen / $totalLoanSum) * 100 : 0;
         $percentageLoanSumMen = $totalLoanSum > 0 ? ($loanSumForMen / $totalLoanSum) * 100 : 0;
-        $percentageLoanSumYouths = $totalLoanSum > 0 ? ($loanSumForYouths / $totalLoanSum) * 100 : 0;
+        // $percentageLoanSumYouths = $totalLoanSum > 0 ? ($loanSumForYouths / $totalLoanSum) * 100 : 0;
 
         $quotes = [
             "Empowerment through savings and loans.",
@@ -742,7 +781,7 @@ class HomeController extends Controller
                         'percentageLoansPwd' => $percentageLoansPwd,
                         'percentageLoanSumWomen' => $percentageLoanSumWomen,
                         'percentageLoanSumMen' => $percentageLoanSumMen,
-                        'percentageLoanSumYouths' => $percentageLoanSumYouths,
+                        // 'percentageLoanSumYouths' => $percentageLoanSumYouths,
                         'pwdTotalLoanBalance' => $pwdTotalLoanBalance
                     ]) .
                     '</div>' .
