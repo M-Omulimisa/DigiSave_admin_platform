@@ -6,6 +6,8 @@ use App\Models\Cycle;
 use App\Models\Meeting;
 use App\Models\Sacco;
 use App\Models\User;
+use App\Models\OrgAllocation;
+use App\Models\VslaOrganisationSacco;
 use Encore\Admin\Controllers\AdminController;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
@@ -21,6 +23,33 @@ class MeetingController extends AdminController
         $grid = new Grid(new Meeting());
 
         $u = Auth::user();
+        $adminId = $u->id;
+
+        // Default sort order
+        $sortOrder = request()->get('_sort', 'desc');
+        if (!in_array($sortOrder, ['asc', 'desc'])) {
+            $sortOrder = 'desc';
+        }
+
+        if (!$u->isRole('admin')) {
+            $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+            if ($orgAllocation) {
+                $orgId = $orgAllocation->vsla_organisation_id;
+                $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
+                $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
+                $grid->model()->whereIn('sacco_id', $saccoIds)
+                    ->where('administrator_id', $adminId)
+                    ->orderBy('created_at', $sortOrder);
+            } else {
+                // If the user has no organization allocation, limit to their Sacco
+                $grid->model()->where('sacco_id', $u->sacco_id)
+                    ->where('administrator_id', $adminId)
+                    ->orderBy('created_at', $sortOrder);
+            }
+        } else {
+            // For admins, display all records ordered by created_at
+            $grid->model()->orderBy('created_at', $sortOrder);
+        }
 
         $grid->filter(function ($filter) {
             $filter->disableIdFilter();
@@ -35,11 +64,6 @@ class MeetingController extends AdminController
                 $query->whereIn('cycle_id', $cycleIds);
             }, 'Cycle Name');
         });
-
-        if (!$u->isRole('admin')) {
-            // Apply filters based on user roles if necessary
-            $grid->model()->where('sacco_id', $u->sacco_id)->where('administrator_id', $u->id);
-        }
 
         $grid->column('sacco.name', __('Group Name'));
         // Display the cycle name directly using its id
@@ -188,4 +212,3 @@ class MeetingController extends AdminController
         return $form;
     }
 }
-
