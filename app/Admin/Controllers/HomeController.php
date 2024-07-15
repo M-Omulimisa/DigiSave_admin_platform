@@ -793,9 +793,9 @@ class HomeController extends Controller
                         'maleMembersCount' => $maleMembersCount,
                         'maleTotalBalance' => number_format($maleTotalBalance, 2),
                         'youthMembersCount' => $youthMembersCount,
-                        'youthTotalBalance' => $youthTotalBalance,
+                        'youthTotalBalance' => number_format($youthTotalBalance),
                         'pwdMembersCount' => $pwdMembersCount,
-                        'pwdTotalBalance' => $pwdTotalBalance,
+                        'pwdTotalBalance' => number_format($pwdTotalBalance),
                     ]) .
                     '<div style="background-color: #E9F9E9; padding: 10px; padding-top: 5px; border-radius: 5px;">' .
                     view('widgets.category', [
