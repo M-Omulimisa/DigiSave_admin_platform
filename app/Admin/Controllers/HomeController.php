@@ -472,7 +472,7 @@ class HomeController extends Controller
             // Fetch saccoIds where the status is deleted or inactive
 $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
 
-// Fetch male users with their balances and sacco status
+// Fetch male users with their balances, sacco status, and sacco name
 $maleUsers = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
     ->join('saccos as s', 'users.sacco_id', '=', 's.id')
     ->where('users.sex', 'Male')
@@ -483,12 +483,12 @@ $maleUsers = User::join('transactions as t', 'users.id', '=', 't.source_user_id'
     })
     ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
     ->where('t.type', 'SHARE')
-    ->select('users.id', 'users.name', DB::raw('SUM(t.balance) as total_balance'), 's.status as sacco_status')
-    ->groupBy('users.id', 'users.name', 's.status')
+    ->select('users.id', 'users.name', DB::raw('SUM(t.balance) as total_balance'), 's.status as sacco_status', 's.name as sacco_name')
+    ->groupBy('users.id', 'users.name', 's.status', 's.name')
     ->get()
     ->toArray();
 
-// Fetch female users with their balances and sacco status
+// Fetch female users with their balances, sacco status, and sacco name
 $femaleUsers = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
     ->join('saccos as s', 'users.sacco_id', '=', 's.id')
     ->where('users.sex', 'Female')
@@ -499,8 +499,8 @@ $femaleUsers = User::join('transactions as t', 'users.id', '=', 't.source_user_i
     })
     ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
     ->where('t.type', 'SHARE')
-    ->select('users.id', 'users.name', DB::raw('SUM(t.balance) as total_balance'), 's.status as sacco_status')
-    ->groupBy('users.id', 'users.name', 's.status')
+    ->select('users.id', 'users.name', DB::raw('SUM(t.balance) as total_balance'), 's.status as sacco_status', 's.name as sacco_name')
+    ->groupBy('users.id', 'users.name', 's.status', 's.name')
     ->get()
     ->toArray();
 
