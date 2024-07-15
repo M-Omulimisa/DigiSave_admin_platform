@@ -285,9 +285,6 @@ class HomeController extends Controller
             $OrgAdmins = OrgAllocation::where('vsla_organisation_id', $orgIds)->pluck('vsla_organisation_id')->toArray();
             $totalOrgAdmins = count($OrgAdmins);
 
-            $saccoIds = Sacco::whereIn('id', $saccoIds)
-              ->where('status', '!=', 'deleted')->pluck('id')->toArray();
-
             $totalSaccos = Sacco::whereIn('id', $saccoIds)->count();
             $organisationCount = VslaOrganisation::where('id', $orgIds)->count();
             $totalMembers = $filteredUsers->whereIn('sacco_id', $saccoIds)->count();
@@ -464,81 +461,43 @@ class HomeController extends Controller
             $pwdTotalBalance = number_format(Transaction::whereIn('sacco_id', $saccoIds)
                 ->whereIn('source_user_id', $pwdUserIds)
                 ->where('type', 'LOAN')
-                ->sum('balance'), 2);
+            ->sum('balance'), 2);
 
             // dd($filteredUsersIds);
 
-            // Fetch saccoIds where the status is deleted
-            // Fetch saccoIds where the status is deleted or inactive
-// Fetch saccoIds where the status is deleted or inactive
-// Fetch saccoIds where the status is deleted or inactive
-$deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
+            $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
 
-// Fetch total balances for male users across all groups (excluding deleted and inactive Saccos and Admins)
-$maleTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
-    ->join('saccos as s', 'users.sacco_id', '=', 's.id')
-    ->where('users.sex', 'Male')
-    ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-    ->where('t.type', 'SHARE')
-    ->where(function ($query) {
-        $query->whereNull('users.user_type')
-              ->orWhere('users.user_type', '<>', 'Admin');
-    })
-    ->select(DB::raw('SUM(t.amount) as total_balance'))
-    ->first()
-    ->total_balance;
 
-// Fetch total balances for female users across all groups (excluding deleted and inactive Saccos and Admins)
-$femaleTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
-    ->join('saccos as s', 'users.sacco_id', '=', 's.id')
-    ->where('users.sex', 'Female')
-    ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-    ->where('t.type', 'SHARE')
-    ->where(function ($query) {
-        $query->whereNull('users.user_type')
-              ->orWhere('users.user_type', '<>', 'Admin');
-    })
-    ->select(DB::raw('SUM(t.amount) as total_balance'))
-    ->first()
-    ->total_balance;
+            // Fetch total balances for male users across all groups (excluding deleted and inactive Saccos and Admins)
+            $maleTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
+            ->join('saccos as s', 'users.sacco_id', '=', 's.id')
+            ->where('users.sex', 'Male')
+            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+            ->where('t.type', 'SHARE')
+            ->where(function ($query) {
+                $query->whereNull('users.user_type')
+                ->orWhere('users.user_type', '<>', 'Admin');
+            })
+            ->select(DB::raw('SUM(t.amount) as total_balance'))
+            ->first()
+            ->total_balance;
 
-// Display the results
-dd(['male_total_balance' => $maleTotalBalance, 'female_total_balance' => $femaleTotalBalance]);
+            // Fetch total balances for female users across all groups (excluding deleted and inactive Saccos and Admins)
+            $femaleTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
+            ->join('saccos as s', 'users.sacco_id', '=', 's.id')
+            ->where('users.sex', 'Female')
+            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+            ->where('t.type', 'SHARE')
+            ->where(function ($query) {
+                $query->whereNull('users.user_type')
+                ->orWhere('users.user_type', '<>', 'Admin');
+            })
+            ->select(DB::raw('SUM(t.amount) as total_balance'))
+            ->first()
+            ->total_balance;
 
-// Fetch male users with their balances, sacco status, and sacco name
-$maleUsers = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
-    ->join('saccos as s', 'users.sacco_id', '=', 's.id')
-    ->where('users.sex', 'Male')
-    ->whereNotIn('users.id', function ($query) {
-        $query->select('id')
-            ->from('users')
-            ->whereIn('user_type', ['Admin', '5']);
-    })
-    ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-    ->where('t.type', 'SHARE')
-    ->select('users.id', 'users.name', DB::raw('SUM(t.balance) as total_balance'), 's.status as sacco_status', 's.name as sacco_name')
-    ->groupBy('users.id', 'users.name', 's.status', 's.name')
-    ->get()
-    ->toArray();
-
-// Fetch female users with their balances, sacco status, and sacco name
-$femaleUsers = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
-    ->join('saccos as s', 'users.sacco_id', '=', 's.id')
-    ->where('users.sex', 'Female')
-    ->whereNotIn('users.id', function ($query) {
-        $query->select('id')
-            ->from('users')
-            ->whereIn('user_type', ['Admin', '5']);
-    })
-    ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-    ->where('t.type', 'SHARE')
-    ->select('users.id', 'users.name', DB::raw('SUM(t.balance) as total_balance'), 's.status as sacco_status', 's.name as sacco_name')
-    ->groupBy('users.id', 'users.name', 's.status', 's.name')
-    ->get()
-    ->toArray();
-
-// Display the results
-dd($maleUsers, $femaleUsers);
+            // Display the results
+            // dd(['male_total_balance' => $maleTotalBalance, 'female_total_balance' => $femaleTotalBalance]);;
 
             // $topSavingGroups = User::where('user_type', 'Admin')->whereIn('sacco_id', $saccoIds)->get()->sortByDesc('balance')->take(6);
         } else {
