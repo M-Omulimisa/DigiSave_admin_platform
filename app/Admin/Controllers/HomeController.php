@@ -469,35 +469,43 @@ class HomeController extends Controller
             // dd($filteredUsersIds);
 
             // Fetch saccoIds where the status is deleted
-            $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
+            // Fetch saccoIds where the status is deleted or inactive
+$deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
 
 // Fetch male users with their balances and sacco status
 $maleUsers = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
-->join('saccos as s', 'users.sacco_id', '=', 's.id')
-->where('users.sex', 'Male')
-->whereIn('users.user_type', ['Admin', 'admin', '5'])
-->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-->where('t.type', 'SHARE')
-->select('users.id', 'users.name', DB::raw('SUM(t.balance) as total_balance'), 's.status as sacco_status')
-->groupBy('users.id', 'users.name', 's.status')
-->get()
-->toArray();
+    ->join('saccos as s', 'users.sacco_id', '=', 's.id')
+    ->where('users.sex', 'Male')
+    ->whereNotIn('users.id', function ($query) {
+        $query->select('id')
+            ->from('users')
+            ->whereIn('user_type', ['Admin', '5']);
+    })
+    ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+    ->where('t.type', 'SHARE')
+    ->select('users.id', 'users.name', DB::raw('SUM(t.balance) as total_balance'), 's.status as sacco_status')
+    ->groupBy('users.id', 'users.name', 's.status')
+    ->get()
+    ->toArray();
 
 // Fetch female users with their balances and sacco status
 $femaleUsers = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
-->join('saccos as s', 'users.sacco_id', '=', 's.id')
-->where('users.sex', 'Female')
-->whereIn('users.user_type', ['Admin', 'admin', '5'])
-->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-->where('t.type', 'SHARE')
-->select('users.id', 'users.name', DB::raw('SUM(t.balance) as total_balance'), 's.status as sacco_status')
-->groupBy('users.id', 'users.name', 's.status')
-->get()
-->toArray();
+    ->join('saccos as s', 'users.sacco_id', '=', 's.id')
+    ->where('users.sex', 'Female')
+    ->whereNotIn('users.id', function ($query) {
+        $query->select('id')
+            ->from('users')
+            ->whereIn('user_type', ['Admin', '5']);
+    })
+    ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+    ->where('t.type', 'SHARE')
+    ->select('users.id', 'users.name', DB::raw('SUM(t.balance) as total_balance'), 's.status as sacco_status')
+    ->groupBy('users.id', 'users.name', 's.status')
+    ->get()
+    ->toArray();
 
 // Display the results
 dd($maleUsers, $femaleUsers);
-
 
             // $topSavingGroups = User::where('user_type', 'Admin')->whereIn('sacco_id', $saccoIds)->get()->sortByDesc('balance')->take(6);
         } else {
