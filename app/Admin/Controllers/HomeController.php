@@ -478,14 +478,21 @@ $targetSaccoName = 'Rwencundeezi A Youth Twetungure';
 
 // Fetch users with their balances, sacco status, sacco name, and user type for the specified sacco name
 $usersInTargetSacco = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
-    ->join('saccos as s', 'users.sacco_id', '=', 's.id')
-    ->where('s.name', $targetSaccoName)
-    ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-    ->where('t.type', 'SHARE')
-    ->select('users.id', 'users.name', 'users.user_type', DB::raw('SUM(t.balance) as total_balance'), 's.status as sacco_status', 's.name as sacco_name')
-    ->groupBy('users.id', 'users.name', 'users.user_type', 's.status', 's.name')
-    ->get()
-    ->toArray();
+->join('saccos as s', 'users.sacco_id', '=', 's.id')
+->where('s.name', $targetSaccoName)
+->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+->where('t.type', 'SHARE')
+->select(
+    'users.id',
+    DB::raw('CONCAT(users.first_name, " ", users.last_name) as full_name'),
+    'users.user_type',
+    DB::raw('SUM(t.balance) as total_balance'),
+    's.status as sacco_status',
+    's.name as sacco_name'
+)
+->groupBy('users.id', 'users.first_name', 'users.last_name', 'users.user_type', 's.status', 's.name')
+->get()
+->toArray();
 
 // Display the results
 dd($usersInTargetSacco);
