@@ -495,7 +495,7 @@ $individualTransactions = User::join('transactions as t', 'users.id', '=', 't.so
     ->toArray();
 
 // Display the individual transactions
-dd($individualTransactions);
+// dd($individualTransactions);
 
 // Fetch aggregated balances for users in the specified sacco name
 $usersInTargetSacco = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
@@ -507,7 +507,7 @@ $usersInTargetSacco = User::join('transactions as t', 'users.id', '=', 't.source
         'users.id',
         DB::raw('CONCAT(users.first_name, " ", users.last_name) as full_name'),
         'users.user_type',
-        DB::raw('SUM(t.balance) as total_balance'),
+        DB::raw('SUM(t.amount) as total_balance'),
         's.status as sacco_status',
         's.name as sacco_name'
     )
