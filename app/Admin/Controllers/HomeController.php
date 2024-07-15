@@ -474,33 +474,36 @@ class HomeController extends Controller
 // Fetch saccoIds where the status is deleted or inactive
 $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
 
-// Define the Sacco name you want to filter by
-$targetSaccoName = 'Rwencundeezi A Youth Twetungure';
-
-// Fetch users with their balances, sacco status, sacco name, and user type for the specified sacco name, excluding admins and including those with null user_type
-$usersInTargetSacco = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
+// Fetch total balances for male users across all groups (excluding deleted and inactive Saccos and Admins)
+$maleTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
     ->join('saccos as s', 'users.sacco_id', '=', 's.id')
-    ->where('s.name', $targetSaccoName)
+    ->where('users.sex', 'Male')
     ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
     ->where('t.type', 'SHARE')
     ->where(function ($query) {
         $query->whereNull('users.user_type')
               ->orWhere('users.user_type', '<>', 'Admin');
     })
-    ->select(
-        'users.id',
-        DB::raw('CONCAT(users.first_name, " ", users.last_name) as full_name'),
-        'users.user_type',
-        DB::raw('SUM(t.amount) as total_balance'),
-        's.status as sacco_status',
-        's.name as sacco_name'
-    )
-    ->groupBy('users.id', 'users.first_name', 'users.last_name', 'users.user_type', 's.status', 's.name')
-    ->get()
-    ->toArray();
+    ->select(DB::raw('SUM(t.amount) as total_balance'))
+    ->first()
+    ->total_balance;
+
+// Fetch total balances for female users across all groups (excluding deleted and inactive Saccos and Admins)
+$femaleTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
+    ->join('saccos as s', 'users.sacco_id', '=', 's.id')
+    ->where('users.sex', 'Female')
+    ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+    ->where('t.type', 'SHARE')
+    ->where(function ($query) {
+        $query->whereNull('users.user_type')
+              ->orWhere('users.user_type', '<>', 'Admin');
+    })
+    ->select(DB::raw('SUM(t.amount) as total_balance'))
+    ->first()
+    ->total_balance;
 
 // Display the results
-dd($usersInTargetSacco);
+dd(['male_total_balance' => $maleTotalBalance, 'female_total_balance' => $femaleTotalBalance]);
 
 // Fetch male users with their balances, sacco status, and sacco name
 $maleUsers = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
