@@ -453,10 +453,10 @@ class HomeController extends Controller
             $percentageLoansYouths = $totalLoans > 0 ? ($loansGivenToYouths / $totalLoans) * 100 : 0;
             $percentageLoansPwd = $totalLoans > 0 ? ($loansGivenToPwds / $totalLoans) * 100 : 0;
 
-            $youthTotalBalance = number_format(Transaction::whereIn('sacco_id', $saccoIds)
-            ->whereIn('source_user_id', $youthIds)
-            ->where('type', 'LOAN')
-            ->sum('balance'), 2);
+            // $youthTotalBalance = number_format(Transaction::whereIn('sacco_id', $saccoIds)
+            // ->whereIn('source_user_id', $youthIds)
+            // ->where('type', 'LOAN')
+            // ->sum('balance'), 2);
 
             // $pwdTotalBalance = number_format(Transaction::whereIn('sacco_id', $saccoIds)
             //     ->whereIn('source_user_id', $pwdUserIds)
@@ -466,6 +466,20 @@ class HomeController extends Controller
             // dd($filteredUsersIds);
 
             $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
+
+            $youthTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
+            ->join('saccos as s', 'users.sacco_id', '=', 's.id')
+            ->whereIn('users.sacco_id', $youthIds)
+            ->whereIn('users.id', 'Yes')
+            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+            ->where('t.type', 'SHARE')
+            ->where(function ($query) {
+                $query->whereNull('users.user_type')
+                ->orWhere('users.user_type', '<>', 'Admin');
+            })
+            ->select(DB::raw('SUM(t.amount) as total_balance'))
+            ->first()
+            ->total_balance;
 
             $pwdTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
             ->join('saccos as s', 'users.sacco_id', '=', 's.id')
