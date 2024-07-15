@@ -487,7 +487,7 @@ $individualTransactions = User::join('transactions as t', 'users.id', '=', 't.so
         'users.id',
         DB::raw('CONCAT(users.first_name, " ", users.last_name) as full_name'),
         'users.user_type',
-        't.balance',
+        't.amount',
         's.status as sacco_status',
         's.name as sacco_name'
     )
