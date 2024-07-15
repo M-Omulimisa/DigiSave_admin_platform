@@ -469,27 +469,29 @@ class HomeController extends Controller
             // dd($filteredUsersIds);
 
 
+            $deletedSaccoIds = Sacco::where('status', 'deleted')->pluck('id');
+
             $maleTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
-                ->where('users.sex', 'Male')
-                ->whereNotIn('users.id', function ($query) {
-                    $query->select('id')
-                        ->from('users')
-                        ->whereIn('user_type', ['Admin', '5']);
-                })
-                ->whereNotIn('users.sacco_id', $saccoIds)
-                ->where('t.type', 'SHARE')
-                ->sum('t.balance');
+            ->where('users.sex', 'Male')
+            ->whereNotIn('users.id', function ($query) {
+                $query->select('id')
+                ->from('users')
+                ->whereIn('user_type', ['Admin', '5']);
+            })
+            ->whereNotIn('users.sacco_id', $deletedSaccoIds)
+            ->where('t.type', 'SHARE')
+            ->sum('t.balance');
 
             $femaleTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
-                ->where('users.sex', 'Female')
-                ->whereNotIn('users.id', function ($query) {
-                    $query->select('id')
-                        ->from('users')
-                        ->whereIn('user_type', ['Admin', '5']);
-                })
-                ->whereNotIn('users.sacco_id', $saccoIds)
-                ->where('t.type', 'SHARE')
-                ->sum('t.balance');
+            ->where('users.sex', 'Female')
+            ->whereNotIn('users.id', function ($query) {
+                $query->select('id')
+                ->from('users')
+                ->whereIn('user_type', ['Admin', '5']);
+            })
+            ->whereNotIn('users.sacco_id', $deletedSaccoIds)
+            ->where('t.type', 'SHARE')
+            ->sum('t.balance');
 
 
             // $topSavingGroups = User::where('user_type', 'Admin')->whereIn('sacco_id', $saccoIds)->get()->sortByDesc('balance')->take(6);
