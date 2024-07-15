@@ -285,6 +285,9 @@ class HomeController extends Controller
             $OrgAdmins = OrgAllocation::where('vsla_organisation_id', $orgIds)->pluck('vsla_organisation_id')->toArray();
             $totalOrgAdmins = count($OrgAdmins);
 
+            $saccoIds = Sacco::whereIn('id', $saccoIds)
+              ->where('status', '!=', 'deleted')->pluck('id')->toArray();
+
             $totalSaccos = Sacco::whereIn('id', $saccoIds)->count();
             $organisationCount = VslaOrganisation::where('id', $orgIds)->count();
             $totalMembers = $filteredUsers->whereIn('sacco_id', $saccoIds)->count();
