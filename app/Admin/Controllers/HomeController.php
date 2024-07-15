@@ -458,15 +458,28 @@ class HomeController extends Controller
             ->where('type', 'LOAN')
             ->sum('balance'), 2);
 
-            $pwdTotalBalance = number_format(Transaction::whereIn('sacco_id', $saccoIds)
-                ->whereIn('source_user_id', $pwdUserIds)
-                ->where('type', 'LOAN')
-            ->sum('balance'), 2);
+            // $pwdTotalBalance = number_format(Transaction::whereIn('sacco_id', $saccoIds)
+            //     ->whereIn('source_user_id', $pwdUserIds)
+            //     ->where('type', 'LOAN')
+            // ->sum('balance'), 2);
 
             // dd($filteredUsersIds);
 
             $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
 
+            $pwdTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
+            ->join('saccos as s', 'users.sacco_id', '=', 's.id')
+            ->whereIn('users.sacco_id', $saccoIds)
+            ->where('users.pwd', 'Yes')
+            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+            ->where('t.type', 'SHARE')
+            ->where(function ($query) {
+                $query->whereNull('users.user_type')
+                ->orWhere('users.user_type', '<>', 'Admin');
+            })
+            ->select(DB::raw('SUM(t.amount) as total_balance'))
+            ->first()
+            ->total_balance;
 
             // Fetch total balances for male users across all groups (excluding deleted and inactive Saccos and Admins)
             $maleTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
