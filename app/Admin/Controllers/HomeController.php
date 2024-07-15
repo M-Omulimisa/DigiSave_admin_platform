@@ -477,7 +477,7 @@ class HomeController extends Controller
                         ->from('users')
                         ->whereIn('user_type', ['Admin', '5']);
                 })
-                ->whereIn('users.sacco_id', $saccoIds)
+                ->whereNotIn('users.sacco_id', $saccoIds)
                 ->whereNotIn('users.sacco_id', $deletedSaccoIds)
                 ->where('t.type', 'SHARE')
                 ->sum('t.balance');
@@ -489,7 +489,7 @@ class HomeController extends Controller
                         ->from('users')
                         ->whereIn('user_type', ['Admin', '5']);
                 })
-                ->whereIn('users.sacco_id', $saccoIds)
+                ->whereNotIn('users.sacco_id', $saccoIds)
                 ->whereNotIn('users.sacco_id', $deletedSaccoIds)
                 ->where('t.type', 'SHARE')
                 ->sum('t.balance');
