@@ -457,9 +457,9 @@ class HomeController extends Controller
             $percentageLoansPwd = $totalLoans > 0 ? ($loansGivenToPwds / $totalLoans) * 100 : 0;
 
             $youthTotalBalance = number_format(Transaction::whereIn('sacco_id', $saccoIds)
-            ->whereIn('source_user_id', $youthIds)
-            ->where('type', 'LOAN')
-            ->sum('balance'), 2);
+                ->whereIn('source_user_id', $youthIds)
+                ->where('type', 'LOAN')
+                ->sum('balance'), 2);
 
             $pwdTotalBalance = number_format(Transaction::whereIn('sacco_id', $saccoIds)
                 ->whereIn('source_user_id', $pwdUserIds)
@@ -468,6 +468,7 @@ class HomeController extends Controller
 
             // dd($filteredUsersIds);
 
+            // Fetch saccoIds where the status is deleted
             $deletedSaccoIds = Sacco::where('status', 'deleted')->pluck('id');
 
             // Fetch male users with their balances and sacco status
@@ -476,13 +477,13 @@ class HomeController extends Controller
                 ->where('users.sex', 'Male')
                 ->whereNotIn('users.id', function ($query) {
                     $query->select('id')
-                    ->from('users')
-                    ->whereIn('user_type', ['Admin', '5']);
+                        ->from('users')
+                        ->whereIn('user_type', ['Admin', '5']);
                 })
-                // ->whereNotIn('users.sacco_id', $deletedSaccoIds)
+                ->whereNotIn('users.sacco_id', $deletedSaccoIds)
                 ->where('t.type', 'SHARE')
-                ->select('users.id', DB::raw('SUM(t.balance) as total_balance'), 's.status')
-                ->groupBy('users.id', 's.status')
+                ->select('users.id', 'users.name', DB::raw('SUM(t.balance) as total_balance'), 's.status as sacco_status')
+                ->groupBy('users.id', 'users.name', 's.status')
                 ->get();
 
             // Fetch female users with their balances and sacco status
@@ -491,13 +492,13 @@ class HomeController extends Controller
                 ->where('users.sex', 'Female')
                 ->whereNotIn('users.id', function ($query) {
                     $query->select('id')
-                    ->from('users')
-                    ->whereIn('user_type', ['Admin', '5']);
+                        ->from('users')
+                        ->whereIn('user_type', ['Admin', '5']);
                 })
-                // ->whereNotIn('users.sacco_id', $deletedSaccoIds)
+                ->whereNotIn('users.sacco_id', $deletedSaccoIds)
                 ->where('t.type', 'SHARE')
-                ->select('users.id', DB::raw('SUM(t.balance) as total_balance'), 's.status')
-                ->groupBy('users.id', 's.status')
+                ->select('users.id', 'users.name', DB::raw('SUM(t.balance) as total_balance'), 's.status as sacco_status')
+                ->groupBy('users.id', 'users.name', 's.status')
                 ->get();
 
             // Display the results
