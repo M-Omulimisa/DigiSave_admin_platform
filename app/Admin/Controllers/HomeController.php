@@ -470,7 +470,7 @@ class HomeController extends Controller
 
             $deletedSaccoIds = Sacco::where('status', 'deleted')->pluck('id');
 
-            $ // Fetch male users with their balances and sacco status
+            // Fetch male users with their balances and sacco status
             $maleUsers = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
                 ->join('saccos as s', 'users.sacco_id', '=', 's.id')
                 ->where('users.sex', 'Male')
