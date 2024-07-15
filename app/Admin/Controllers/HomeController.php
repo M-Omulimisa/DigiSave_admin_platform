@@ -470,18 +470,19 @@ class HomeController extends Controller
 
             // Fetch saccoIds where the status is deleted
             // Fetch saccoIds where the status is deleted or inactive
+// Fetch saccoIds where the status is deleted or inactive
 $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
 
 // Define the Sacco name you want to filter by
 $targetSaccoName = 'Rwencundeezi A Youth Twetungure';
 
-// Fetch users with their balances and sacco status for the specified sacco name
+// Fetch users with their balances, sacco status, sacco name, and user type for the specified sacco name
 $usersInTargetSacco = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
     ->join('saccos as s', 'users.sacco_id', '=', 's.id')
     ->where('s.name', $targetSaccoName)
     ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
     ->where('t.type', 'SHARE')
-    ->select('users.id', 'users.name', DB::raw('SUM(t.balance) as total_balance'), 's.status as sacco_status', 's.name as sacco_name')
+    ->select('users.id', 'users.name', 'users.user_type', DB::raw('SUM(t.balance) as total_balance'), 's.status as sacco_status', 's.name as sacco_name')
     ->groupBy('users.id', 'users.name', 'users.user_type', 's.status', 's.name')
     ->get()
     ->toArray();
