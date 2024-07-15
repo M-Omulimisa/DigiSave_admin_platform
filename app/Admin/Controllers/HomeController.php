@@ -482,7 +482,7 @@ $usersInTargetSacco = User::join('transactions as t', 'users.id', '=', 't.source
     ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
     ->where('t.type', 'SHARE')
     ->select('users.id', 'users.name', DB::raw('SUM(t.balance) as total_balance'), 's.status as sacco_status', 's.name as sacco_name')
-    ->groupBy('users.id', 'users.name', 's.status', 's.name')
+    ->groupBy('users.id', 'users.name', 'users.user_type', 's.status', 's.name')
     ->get()
     ->toArray();
 
