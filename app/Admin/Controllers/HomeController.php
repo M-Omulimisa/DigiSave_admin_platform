@@ -469,7 +469,7 @@ class HomeController extends Controller
             // dd($filteredUsersIds);
 
             // Fetch saccoIds where the status is deleted
-$deletedSaccoIds = Sacco::where('status', 'deleted')->pluck('id');
+            $deletedSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
 
 // Fetch male users with their balances and sacco status
 $maleUsers = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
