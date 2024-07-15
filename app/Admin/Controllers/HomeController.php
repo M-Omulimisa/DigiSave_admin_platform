@@ -477,32 +477,13 @@ $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->
 // Define the Sacco name you want to filter by
 $targetSaccoName = 'Rwencundeezi A Youth Twetungure';
 
-// Fetch individual transactions for the specified sacco name
-$individualTransactions = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
-    ->join('saccos as s', 'users.sacco_id', '=', 's.id')
-    ->where('s.name', $targetSaccoName)
-    ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-    ->where('t.type', 'SHARE')
-    ->select(
-        'users.id',
-        DB::raw('CONCAT(users.first_name, " ", users.last_name) as full_name'),
-        'users.user_type',
-        't.amount',
-        's.status as sacco_status',
-        's.name as sacco_name'
-    )
-    ->get()
-    ->toArray();
-
-// Display the individual transactions
-// dd($individualTransactions);
-
-// Fetch aggregated balances for users in the specified sacco name
+// Fetch users with their balances, sacco status, sacco name, and user type for the specified sacco name, excluding admins
 $usersInTargetSacco = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
     ->join('saccos as s', 'users.sacco_id', '=', 's.id')
     ->where('s.name', $targetSaccoName)
     ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
     ->where('t.type', 'SHARE')
+    ->where('users.user_type', '<>', 'Admin')
     ->select(
         'users.id',
         DB::raw('CONCAT(users.first_name, " ", users.last_name) as full_name'),
