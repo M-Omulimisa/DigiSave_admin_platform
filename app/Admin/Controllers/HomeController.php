@@ -475,6 +475,7 @@ class HomeController extends Controller
 $maleUsers = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
     ->join('saccos as s', 'users.sacco_id', '=', 's.id')
     ->where('users.sex', 'Male')
+    ->whereNotIn('users.user_type', ['Admin', 'admin', '5'])
     ->whereNotIn('users.id', function ($query) {
         $query->select('id')
             ->from('users')
@@ -491,6 +492,7 @@ $maleUsers = User::join('transactions as t', 'users.id', '=', 't.source_user_id'
 $femaleUsers = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
     ->join('saccos as s', 'users.sacco_id', '=', 's.id')
     ->where('users.sex', 'Female')
+    ->whereNotIn('users.user_type', ['Admin', 'admin', '5'])
     ->whereNotIn('users.id', function ($query) {
         $query->select('id')
             ->from('users')
