@@ -471,7 +471,7 @@ class HomeController extends Controller
 
             $deletedSaccoIds = Sacco::where('status', 'deleted')->pluck('id');
 
-            dd($deletedSaccoIds);
+            // dd($deletedSaccoIds);
 
             $maleTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
             ->where('users.sex', 'Male')
