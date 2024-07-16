@@ -53,7 +53,7 @@ class GroupTransactionController extends AdminController
         $grid->column('id', __('ID'))->sortable();
         $grid->column('user.name', __('Account'))->sortable();
         $grid->column('type', __('Type'))->display(function ($type) {
-            return $type === 'REGESTRATION' ? 'Registration' : $type;
+            return $type === 'REGESTRATION' ? 'REGISTRATION' : $type;
         })->sortable();
         $grid->column('amount', __('Amount (UGX)'))->display(function ($amount) {
             return number_format($amount, 2, '.', ',');
