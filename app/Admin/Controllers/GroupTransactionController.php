@@ -41,7 +41,6 @@ class GroupTransactionController extends AdminController
         return ucfirst(strtolower($string));
     }
 
-
     protected function grid($saccoId)
     {
         $grid = new Grid(new Transaction());
@@ -53,7 +52,9 @@ class GroupTransactionController extends AdminController
 
         $grid->column('id', __('ID'))->sortable();
         $grid->column('user.name', __('Account'))->sortable();
-        $grid->column('type', __('Type'))->sortable();
+        $grid->column('type', __('Type'))->display(function ($type) {
+            return $type === 'REGESTRATION' ? 'Registration' : $type;
+        })->sortable();
         $grid->column('amount', __('Amount (UGX)'))->display(function ($amount) {
             return number_format($amount, 2, '.', ',');
         })->sortable();
@@ -77,7 +78,7 @@ class GroupTransactionController extends AdminController
         $grid->filter(function ($filter) {
             $filter->disableIdFilter();
             $filter->like('user.name', 'User Name');
-            $filter->equal('type', 'Type')->select(['SHARE' => 'SHARE', 'Send' => 'Send', 'Receive' => 'Receive']);
+            $filter->equal('type', 'Type')->select(['SHARE' => 'SHARE', 'Send' => 'Send', 'Receive' => 'Receive', 'REGESTRATION' => 'Registration']);
             $filter->between('amount', 'Amount');
             $filter->between('created_at', 'Created At')->datetime();
         });
@@ -91,7 +92,9 @@ class GroupTransactionController extends AdminController
 
         $show->field('id', __('ID'));
         $show->field('user.name', __('User Name'));
-        $show->field('type', __('Type'));
+        $show->field('type', __('Type'))->as(function ($type) {
+            return $type === 'REGESTRATION' ? 'Registration' : $type;
+        });
         $show->field('amount', __('Amount'))->as(function ($amount) {
             return number_format($amount, 2, '.', ',') . ' UGX';
         });
@@ -111,7 +114,7 @@ class GroupTransactionController extends AdminController
             ->options(\App\Models\User::all()->pluck('name', 'id'))
             ->rules('required');
         $form->display('type', __('Type'))->with(function ($value) {
-            return $value;
+            return $value === 'REGESTRATION' ? 'Registration' : $value;
         }); // Make type field non-editable
         $form->decimal('amount', __('Amount'))->rules('required|numeric|min:0');
         $form->textarea('description', __('Description'))->rules('required');
@@ -128,7 +131,7 @@ class GroupTransactionController extends AdminController
             amountField.addEventListener("input", function() {
                 var userName = document.querySelector("select[name=\'user_id\'] option:checked").text;
                 var amount = amountField.value;
-                descriptionField.value = "Update of UGX " + amount + "on " + transactionTypeField + " for " + userName + " transaction.";
+                descriptionField.value = "Update of UGX " + amount + " on " + transactionTypeField + " for " + userName + " transaction.";
             });
         });
         </script>');
