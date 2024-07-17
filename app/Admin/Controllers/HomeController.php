@@ -646,8 +646,13 @@ class HomeController extends Controller
                 return count($item);
             })->values()->toArray();
 
-            $topSavingGroups = User::where('user_type', 'Admin')->get()->sortByDesc('balance')->take(6);
-
+            $topSavingGroups = User::where('user_type', 'Admin')
+            ->whereHas('sacco', function ($query) {
+                $query->where('status', '!=', 'deleted');
+            })
+            ->get()
+            ->sortByDesc('balance')
+            ->take(6);
             //Here
 
             // Calculate total loans
