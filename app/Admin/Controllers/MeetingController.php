@@ -85,22 +85,29 @@ class MeetingController extends AdminController
                 return $user ? ucwords(strtolower($user->name)) : '';
             });
 
-        // Display member names for attendance in a beautiful way
         $grid->column('members', __('Attendance'))->display(function ($members) {
             $memberIds = json_decode($members, true);
             if (json_last_error() === JSON_ERROR_NONE && is_array($memberIds) && !empty($memberIds)) {
-                $memberNames = User::whereIn('id', $memberIds)->get()->pluck('name')->toArray();
-                $formattedMembers = '<div class="card-deck">';
-                foreach ($memberNames as $name) {
-                    $formattedMembers .= '<div class="card text-white bg-info mb-3" style="max-width: 18rem;">';
-                    $formattedMembers .= '<div class="card-body"><h5 class="card-title">' . $name . '</h5></div>';
+                // Filter out any non-numeric IDs
+                $validMemberIds = array_filter($memberIds, function ($id) {
+                    return is_numeric($id);
+                });
+
+                if (!empty($validMemberIds)) {
+                    $memberNames = User::whereIn('id', $validMemberIds)->get()->pluck('name')->toArray();
+                    $formattedMembers = '<div class="card-deck">';
+                    foreach ($memberNames as $name) {
+                        $formattedMembers .= '<div class="card text-white bg-info mb-3" style="max-width: 18rem;">';
+                        $formattedMembers .= '<div class="card-body"><h5 class="card-title">' . $name . '</h5></div>';
+                        $formattedMembers .= '</div>';
+                    }
                     $formattedMembers .= '</div>';
+                    return $formattedMembers;
                 }
-                $formattedMembers .= '</div>';
-                return $formattedMembers;
             }
             return 'No attendance recorded';
         });
+
 
         // Update the 'minutes' column
         $grid->column('minutes', __('Minutes'))->display(function ($minutes) {
