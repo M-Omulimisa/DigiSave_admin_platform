@@ -423,7 +423,7 @@ class HomeController extends Controller
             $topSavingGroups = User::where('user_type', 'Admin')
                 ->whereIn('sacco_id', $saccoIds)
                 ->whereHas('sacco', function ($query) {
-                    $query->where('status', '!=', 'deleted');
+                    $query->whereNotIn('status', ['deleted', 'inactive']);
                 })
                 ->get()
                 ->sortByDesc('balance')
@@ -648,7 +648,7 @@ class HomeController extends Controller
 
             $topSavingGroups = User::where('user_type', 'Admin')
             ->whereHas('sacco', function ($query) {
-                $query->where('status', '!=', 'deleted');
+                $query->whereNotIn('status', ['deleted', 'inactive']);
             })
             ->get()
             ->sortByDesc('balance')
