@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\OrgAllocation;
 use App\Models\VslaOrganisationSacco;
 use Encore\Admin\Controllers\AdminController;
+use Encore\Admin\Facades\Admin;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Encore\Admin\Show;
@@ -24,6 +25,9 @@ class MeetingController extends AdminController
 
         $u = Auth::user();
         $adminId = $u->id;
+
+        $admin = Admin::user();
+        $adminId = $admin->id;
 
         // Default sort order
         $sortOrder = request()->get('_sort', 'desc');
