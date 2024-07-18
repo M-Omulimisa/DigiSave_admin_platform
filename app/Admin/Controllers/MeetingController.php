@@ -31,24 +31,37 @@ class MeetingController extends AdminController
             $sortOrder = 'desc';
         }
 
-        if (!$u->isRole('admin')) {
+        $grid->model()->where('status', '!=', 'deleted');
+
+        if (!$admin->isRole('admin')) {
             $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
             if ($orgAllocation) {
                 $orgId = $orgAllocation->vsla_organisation_id;
                 $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
                 $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
-                $grid->model()->whereIn('sacco_id', $saccoIds)
-                    ->where('administrator_id', $adminId)
+                $grid->model()->whereIn('id', $saccoIds)
+                    ->where(function ($query) {
+                        $query->whereHas('users', function ($query) {
+                            $query->whereHas('position', function ($query) {
+                                $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+                            })->whereNotNull('phone_number')
+                                ->whereNotNull('name');
+                        });
+                    })
                     ->orderBy('created_at', $sortOrder);
-            } else {
-                // If the user has no organization allocation, limit to their Sacco
-                $grid->model()->where('sacco_id', $u->sacco_id)
-                    ->where('administrator_id', $adminId)
-                    ->orderBy('created_at', $sortOrder);
+                $grid->disableCreateButton();
             }
         } else {
             // For admins, display all records ordered by created_at
-            $grid->model()->orderBy('created_at', $sortOrder);
+            $grid->model()->where(function ($query) {
+                $query->whereHas('users', function ($query) {
+                    $query->whereHas('position', function ($query) {
+                        $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+                    })->whereNotNull('phone_number')
+                        ->whereNotNull('name');
+                });
+            })
+                ->orderBy('created_at', $sortOrder);
         }
 
         $grid->filter(function ($filter) {
