@@ -1625,22 +1625,22 @@ class ApiResurceController extends Controller
             try {
                 DB::beginTransaction();
                 //create NEGATIVE transaction for user
-                $transaction_user = new Transaction();
-                $transaction_user->user_id = $u->id;
-                $transaction_user->source_user_id = $admin->id;
-                $transaction_user->sacco_id = $u->sacco_id;
-                $transaction_user->type = 'FINE';
-                $transaction_user->source_type = 'FINE';
-                // $transaction_user->amount = +1 * $amount;
-                $transaction_user->details = $r->description;
-                $transaction_user->description = "Fine of UGX " . number_format($amount) . " from {$u->phone_number} - $u->name. Reason: {$r->description}.";
+                // $transaction_user = new Transaction();
+                // $transaction_user->user_id = $u->id;
+                // $transaction_user->source_user_id = $admin->id;
+                // $transaction_user->sacco_id = $u->sacco_id;
+                // $transaction_user->type = 'FINE';
+                // $transaction_user->source_type = 'FINE';
+                // // $transaction_user->amount = +1 * $amount;
+                // $transaction_user->details = $r->description;
+                // $transaction_user->description = "Fine of UGX " . number_format($amount) . " from {$u->phone_number} - $u->name. Reason: {$r->description}.";
 
-                try {
-                    $transaction_user->save();
-                } catch (\Throwable $th) {
-                    DB::rollback();
-                    return $this->error('Failed to save transaction, because ' . $th->getMessage() . '');
-                }
+                // try {
+                //     $transaction_user->save();
+                // } catch (\Throwable $th) {
+                //     DB::rollback();
+                //     return $this->error('Failed to save transaction, because ' . $th->getMessage() . '');
+                // }
 
                 //add balance to sacc account
                 $transaction_sacco = new Transaction();
