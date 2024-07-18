@@ -45,8 +45,11 @@ class MeetingController extends AdminController
             // dd($saccoIds);
 
             $grid->model()
-                    ->whereIn('sacco_id', $saccoIds)
-                    ->orderBy('created_at', $sortOrder);
+            ->whereIn('sacco_id', $saccoIds)
+            ->whereHas('sacco', function ($query) {
+                $query->whereNotIn('status', ['deleted', 'inactive']);
+            })
+            ->orderBy('created_at', $sortOrder);
                 // ->orderBy('created_at', $sortOrder);
 
             $grid->disableCreateButton();
@@ -54,7 +57,10 @@ class MeetingController extends AdminController
     } else {
         // For admins, display all records ordered by created_at
         $grid->model()
-            ->orderBy('created_at', $sortOrder);
+        ->whereHas('sacco', function ($query) {
+            $query->whereNotIn('status', ['deleted', 'inactive']);
+        })
+        ->orderBy('created_at', $sortOrder);
     }
 
     $grid->filter(function ($filter) {
