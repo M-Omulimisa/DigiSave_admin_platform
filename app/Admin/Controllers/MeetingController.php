@@ -42,6 +42,8 @@ class MeetingController extends AdminController
             $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
             $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
 
+            dd($saccoIds);
+
             // Join the meetings table with saccos to filter by sacco_id
             $grid->model()->whereIn('sacco_id', $saccoIds)
                 ->orderBy('created_at', $sortOrder);
