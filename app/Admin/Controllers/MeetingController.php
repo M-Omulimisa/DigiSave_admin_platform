@@ -93,6 +93,7 @@ class MeetingController extends AdminController
 
     $grid->column('members', __('Attendance'))->display(function ($members) {
         $memberIds = json_decode($members, true);
+        dd($memberIds);
         if (json_last_error() === JSON_ERROR_NONE && is_array($memberIds) && !empty($memberIds)) {
             // Filter out any non-numeric IDs
             $validMemberIds = array_filter($memberIds, function ($id) {
