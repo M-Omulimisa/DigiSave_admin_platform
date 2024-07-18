@@ -35,7 +35,7 @@ class MeetingController extends AdminController
             $sortOrder = 'desc';
         }
 
-        $grid->model()->where('status', '!=', 'deleted');
+        // $grid->model()->where('status', '!=', 'deleted');
 
         if (!$admin->isRole('admin')) {
             $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
@@ -46,12 +46,6 @@ class MeetingController extends AdminController
 
                 // Join the meetings table with saccos to filter by sacco_id
                 $grid->model()->whereIn('sacco_id', $saccoIds)
-                    // ->whereHas('sacco.users', function ($query) {
-                    //     $query->whereHas('position', function ($query) {
-                    //         $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
-                    //     })->whereNotNull('phone_number')
-                    //         ->whereNotNull('name');
-                    // })
                     ->orderBy('created_at', $sortOrder);
 
                 $grid->disableCreateButton();
@@ -59,12 +53,6 @@ class MeetingController extends AdminController
         } else {
             // For admins, display all records ordered by created_at
             $grid->model()
-            // ->whereHas('sacco.users', function ($query) {
-            //     $query->whereHas('position', function ($query) {
-            //         $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
-            //     })->whereNotNull('phone_number')
-            //         ->whereNotNull('name');
-            // })
             ->orderBy('created_at', $sortOrder);
         }
 
