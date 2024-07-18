@@ -56,13 +56,82 @@ class MeetingController extends AdminController
             ->orderBy('created_at', $sortOrder);
         }
 
-        // Additional grid configurations like columns, filters, etc.
-        $grid->column('id', __('ID'));
-        $grid->column('title', __('Title'));
+        $grid->filter(function ($filter) {
+            $filter->disableIdFilter();
+
+            // Filter by group name
+            $filter->equal('sacco_id', 'Group Name')->select(Sacco::all()->pluck('name', 'id'));
+
+            // Filter by cycle name
+            $filter->where(function ($query) {
+                $cycleName = $this->input;
+                $cycleIds = Cycle::where('name', 'like', "%$cycleName%")->pluck('id');
+                $query->whereIn('cycle_id', $cycleIds);
+            }, 'Cycle Name');
+        });
+
+        $grid->column('sacco.name', __('Group Name'));
+        // Display the cycle name directly using its id
+        $grid->column('cycle_id', __('Cycle'))->display(function ($cycleId) {
+            $cycle = Cycle::find($cycleId);
+            return $cycle ? $cycle->name : 'Unknown';
+        });
+        $grid->column('name', __('Meeting'))->editable()->sortable();
         $grid->column('date', __('Date'));
-        $grid->column('location', __('Location'));
-        $grid->column('created_at', __('Created at'));
-        $grid->column('updated_at', __('Updated at'));
+        $grid->column('chairperson_name', __('Chairperson Name'))
+            ->sortable()
+            ->display(function () {
+                $user = User::where('sacco_id', $this->sacco_id)
+                    ->whereHas('position', function ($query) {
+                        $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+                    })
+                    ->first();
+
+                return $user ? ucwords(strtolower($user->name)) : '';
+            });
+
+        $grid->column('members', __('Attendance'))->display(function ($members) {
+            $memberIds = json_decode($members, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($memberIds) && !empty($memberIds)) {
+                // Filter out any non-numeric IDs
+                $validMemberIds = array_filter($memberIds, function ($id) {
+                    return is_numeric($id);
+                });
+
+                if (!empty($validMemberIds)) {
+                    $memberNames = User::whereIn('id', $validMemberIds)->get()->pluck('name')->toArray();
+                    $formattedMembers = '<div class="card-deck">';
+                    foreach ($memberNames as $name) {
+                        $formattedMembers .= '<div class="card text-white bg-info mb-3" style="max-width: 18rem;">';
+                        $formattedMembers .= '<div class="card-body"><h5 class="card-title">' . $name . '</h5></div>';
+                        $formattedMembers .= '</div>';
+                    }
+                    $formattedMembers .= '</div>';
+                    return $formattedMembers;
+                }
+            }
+            return 'No attendance recorded';
+        });
+
+
+        // Update the 'minutes' column
+        $grid->column('minutes', __('Minutes'))->display(function ($minutes) {
+            $minutesData = json_decode($minutes, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $formattedMinutes = '<div class="row">';
+                foreach ($minutesData as $section => $items) {
+                    $formattedMinutes .= '<div class="col-md-6"><div class="card"><div class="card-body">';
+                    $formattedMinutes .= '<h5 class="card-title">' . ucfirst(str_replace('_', ' ', $section)) . ':</h5><ul class="list-group list-group-flush">';
+                    foreach ($items as $item) {
+                        $formattedMinutes .= '<li class="list-group-item">' . $item['title'] . ': ' . $item['value'] . '</li>';
+                    }
+                    $formattedMinutes .= '</ul></div></div></div>';
+                }
+                $formattedMinutes .= '</div>';
+                return $formattedMinutes;
+            }
+            return $minutes; // return as is if JSON decoding fails
+        });
 
         return $grid;
     }
