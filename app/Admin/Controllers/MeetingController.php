@@ -91,29 +91,27 @@ class MeetingController extends AdminController
             return $user ? ucwords(strtolower($user->name)) : '';
         });
 
-    $grid->column('members', __('Attendance'))->display(function ($members) {
-        $memberIds = json_decode($members, true);
-        dd($memberIds);
-        if (json_last_error() === JSON_ERROR_NONE && is_array($memberIds) && !empty($memberIds)) {
-            // Filter out any non-numeric IDs
-            $validMemberIds = array_filter($memberIds, function ($id) {
-                return is_numeric($id);
-            });
+        $grid->column('members', __('Attendance'))->display(function ($members) {
+            $memberData = json_decode($members, true);
+            // dd($memberData); // Dump and die to inspect the members data
+            if (json_last_error() === JSON_ERROR_NONE && is_array($memberData) && !empty($memberData)) {
+                if (isset($memberData['presentMembersIds']) && is_array($memberData['presentMembersIds'])) {
+                    $memberNames = array_map(function ($member) {
+                        return $member['name'];
+                    }, $memberData['presentMembersIds']);
 
-            if (!empty($validMemberIds)) {
-                $memberNames = User::whereIn('id', $validMemberIds)->get()->pluck('name')->toArray();
-                $formattedMembers = '<div class="card-deck">';
-                foreach ($memberNames as $name) {
-                    $formattedMembers .= '<div class="card text-white bg-info mb-3" style="max-width: 18rem;">';
-                    $formattedMembers .= '<div class="card-body"><h5 class="card-title">' . $name . '</h5></div>';
+                    $formattedMembers = '<div class="card-deck">';
+                    foreach ($memberNames as $name) {
+                        $formattedMembers .= '<div class="card text-white bg-info mb-3" style="max-width: 18rem;">';
+                        $formattedMembers .= '<div class="card-body"><h5 class="card-title">' . $name . '</h5></div>';
+                        $formattedMembers .= '</div>';
+                    }
                     $formattedMembers .= '</div>';
+                    return $formattedMembers;
                 }
-                $formattedMembers .= '</div>';
-                return $formattedMembers;
             }
-        }
-        return 'No attendance recorded';
-    });
+            return 'No attendance recorded';
+        });
 
     // Update the 'minutes' column
     $grid->column('minutes', __('Minutes'))->display(function ($minutes) {
