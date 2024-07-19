@@ -46,14 +46,26 @@ class GroupAccountController extends AdminController
                 $orgId = $orgAllocation->vsla_organisation_id;
                 $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
                 $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
-                $grid->model()->whereIn('sacco_id', $saccoIds)->orderBy('created_at', $sortOrder);
+                $grid->model()
+                ->whereIn('sacco_id', $saccoIds)
+                ->whereHas('sacco', function ($query) {
+                    $query->whereNotIn('status', ['deleted', 'inactive']);
+                })
+                    ->orderBy('created_at', $sortOrder);
+                // $grid->model()->whereIn('sacco_id', $saccoIds)->orderBy('created_at', $sortOrder);
                 $grid->disableCreateButton();
                 $grid->actions(function (Grid\Displayers\Actions $actions) {
                     $actions->disableDelete();
                 });
             }
         } else {
-            $grid->model()->where('user_type', 'Admin')->orderBy('created_at', $sortOrder);
+            $grid->model()
+            ->whereHas('sacco', function ($query) {
+                $query->whereNotIn('status', ['deleted', 'inactive']);
+            })
+            ->where('user_type', 'Admin')->orderBy('created_at', $sortOrder)
+            ->orderBy('created_at', $sortOrder);
+            // $grid->model()->where('user_type', 'Admin')->orderBy('created_at', $sortOrder);
         }
 
         // Wrap fetching data in a try-catch block
