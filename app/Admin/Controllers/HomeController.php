@@ -240,7 +240,9 @@ class HomeController extends Controller
                 $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
             })->whereNotNull('phone_number')
                 ->whereNotNull('name');
-        })->count();
+        })
+        ->whereNotIn('status', ['deleted', 'inactive'])
+        ->count();
 
         $totalOrgAdmins = User::where('user_type', '5')->count();
 
@@ -299,6 +301,8 @@ class HomeController extends Controller
 
             $totalAccounts = User::where('user_type', 'Admin')
                 ->whereIn('sacco_id', $saccoIdsWithPositions)
+
+        ->whereNotIn('status', ['deleted', 'inactive'])
                 ->count();
 
             $totalPwdMembers = $filteredUsers->whereIn('sacco_id', $saccoIds)->where('pwd', 'yes')->count();
