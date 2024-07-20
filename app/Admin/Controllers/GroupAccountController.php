@@ -47,12 +47,17 @@ class GroupAccountController extends AdminController
                 $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
                 $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
                 $grid->model()
-                ->whereIn('sacco_id', $saccoIds)
+                ->whereIn('sacco_id',
+                    $saccoIds
+                )
                 ->whereHas('sacco', function ($query) {
                     $query->whereNotIn('status', ['deleted', 'inactive']);
                 })
+                ->whereHas('sacco.users', function ($query) {
+                    $query->whereIn('position', ['Chairperson', 'Secretary', 'Treasurer']);
+                })
                 ->where('user_type', 'Admin')->orderBy('created_at', $sortOrder)
-                ->orderBy('created_at', $sortOrder);
+                ->orderBy('created_at', $sortOrder);;
                 // $grid->model()->whereIn('sacco_id', $saccoIds)->orderBy('created_at', $sortOrder);
                 $grid->disableCreateButton();
                 $grid->actions(function (Grid\Displayers\Actions $actions) {
@@ -61,11 +66,14 @@ class GroupAccountController extends AdminController
             }
         } else {
             $grid->model()
-            ->whereHas('sacco', function ($query) {
-                $query->whereNotIn('status', ['deleted', 'inactive']);
-            })
-            ->where('user_type', 'Admin')->orderBy('created_at', $sortOrder)
-            ->orderBy('created_at', $sortOrder);
+                ->whereHas('sacco', function ($query) {
+                    $query->whereNotIn('status', ['deleted', 'inactive']);
+                })
+                ->whereHas('position', function ($query) {
+                    $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+                })
+                ->where('user_type', 'Admin')
+                ->orderBy('created_at', $sortOrder);
         }
 
         // Wrap fetching data in a try-catch block
