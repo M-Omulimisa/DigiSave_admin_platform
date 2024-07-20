@@ -54,7 +54,11 @@ class GroupAccountController extends AdminController
                     $query->whereNotIn('status', ['deleted', 'inactive']);
                 })
                 ->whereHas('sacco.users', function ($query) {
-                    $query->whereIn('position', ['Chairperson', 'Secretary', 'Treasurer']);
+                    $query->whereIn('position_id', function ($subQuery) {
+                        $subQuery->select('id')
+                                 ->from('positions')
+                                 ->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+                    });
                 })
                 ->where('user_type', 'Admin')->orderBy('created_at', $sortOrder)
                 ->orderBy('created_at', $sortOrder);;
@@ -69,8 +73,12 @@ class GroupAccountController extends AdminController
                 ->whereHas('sacco', function ($query) {
                     $query->whereNotIn('status', ['deleted', 'inactive']);
                 })
-                ->whereHas('position', function ($query) {
-                    $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+                ->whereHas('sacco.users', function ($query) {
+                    $query->whereIn('position_id', function ($subQuery) {
+                        $subQuery->select('id')
+                                 ->from('positions')
+                                 ->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+                    });
                 })
                 ->where('user_type', 'Admin')
                 ->orderBy('created_at', $sortOrder);
