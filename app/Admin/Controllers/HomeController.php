@@ -235,14 +235,14 @@ class HomeController extends Controller
         $adminId = $admin->id;
         $userName = $admin->first_name;
 
-        $totalAccounts = Sacco::whereHas('users', function ($query) {
-            $query->whereHas('position', function ($query) {
-                $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
-            })->whereNotNull('phone_number')
-                ->whereNotNull('name');
-        })
-        ->whereNotIn('status', ['deleted', 'inactive'])
-        ->count();
+        // $totalAccounts = Sacco::whereHas('users', function ($query) {
+        //     $query->whereHas('position', function ($query) {
+        //         $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+        //     })->whereNotNull('phone_number')
+        //         ->whereNotNull('name');
+        // })
+        // ->whereNotIn('status', ['deleted', 'inactive'])
+        // ->count();
 
         $totalOrgAdmins = User::where('user_type', '5')->count();
 
@@ -292,6 +292,9 @@ class HomeController extends Controller
             $totalMembers = $filteredUsers->whereIn('sacco_id', $saccoIds)->count();
 
             $saccoIdsWithPositions = User::whereIn('sacco_id', $saccoIds)
+            ->whereHas('sacco', function ($query) {
+                $query->whereNotIn('status', ['deleted', 'inactive']);
+            })
                 ->whereHas('position', function ($query) {
                     $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
                 })
@@ -301,8 +304,6 @@ class HomeController extends Controller
 
             $totalAccounts = User::where('user_type', 'Admin')
                 ->whereIn('sacco_id', $saccoIdsWithPositions)
-
-        ->whereNotIn('status', ['deleted', 'inactive'])
                 ->count();
 
             $totalPwdMembers = $filteredUsers->whereIn('sacco_id', $saccoIds)->where('pwd', 'yes')->count();
@@ -553,6 +554,20 @@ class HomeController extends Controller
             });
 
             // die($formattedBalances);
+
+            $saccoIdsWithPositions = User::whereHas('sacco', function ($query) {
+                $query->whereNotIn('status', ['deleted', 'inactive']);
+            })
+                ->whereHas('position', function ($query) {
+                    $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+                })
+                ->pluck('sacco_id')
+                ->unique()
+                ->toArray();
+
+            $totalAccounts = User::where('user_type', 'Admin')
+                ->whereIn('sacco_id', $saccoIdsWithPositions)
+                ->count();
 
             $pwdTotalBalance = Transaction::where('type', 'SHARE')
                 ->whereIn('user_id', $pwdUserIds)
