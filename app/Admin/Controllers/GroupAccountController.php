@@ -51,7 +51,8 @@ class GroupAccountController extends AdminController
                 ->whereHas('sacco', function ($query) {
                     $query->whereNotIn('status', ['deleted', 'inactive']);
                 })
-                    ->orderBy('created_at', $sortOrder);
+                ->where('user_type', 'Admin')->orderBy('created_at', $sortOrder)
+                ->orderBy('created_at', $sortOrder);
                 // $grid->model()->whereIn('sacco_id', $saccoIds)->orderBy('created_at', $sortOrder);
                 $grid->disableCreateButton();
                 $grid->actions(function (Grid\Displayers\Actions $actions) {
@@ -65,7 +66,6 @@ class GroupAccountController extends AdminController
             })
             ->where('user_type', 'Admin')->orderBy('created_at', $sortOrder)
             ->orderBy('created_at', $sortOrder);
-            // $grid->model()->where('user_type', 'Admin')->orderBy('created_at', $sortOrder);
         }
 
         // Wrap fetching data in a try-catch block
