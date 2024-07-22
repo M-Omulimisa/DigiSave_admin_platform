@@ -1650,7 +1650,7 @@ class ApiResurceController extends Controller
                 $transaction_sacco->type = 'FINE';
                 $transaction_sacco->source_type = 'FINE';
                 $transaction_sacco->amount = $amount;
-                $transaction_user->details = $r->description;
+                // $transaction_user->details = $r->description;
                 $transaction_sacco->description = "Fine of UGX " . number_format($amount) . " from {$u->phone_number} - $u->name. Reason: {$r->description}.";
                 try {
                     $transaction_sacco->save();
