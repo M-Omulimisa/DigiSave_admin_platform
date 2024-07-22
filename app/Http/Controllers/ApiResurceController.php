@@ -1666,7 +1666,7 @@ class ApiResurceController extends Controller
                 }
 
                 DB::commit();
-                return $this->success(null, "Fine of UGX " . number_format($amount) . " was successfully applied.", 200);
+                return $this->success($transaction_sacco, "Fine of UGX " . number_format($amount) . " was successfully applied.", 200);
             } catch (\Exception $e) {
                 DB::rollback();
                 // something went wrong
