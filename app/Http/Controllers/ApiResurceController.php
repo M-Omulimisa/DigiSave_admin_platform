@@ -179,9 +179,9 @@ class ApiResurceController extends Controller
 
         $saccoId = $user->sacco_id;
 
-        $loans = Transaction::where('sacco_id', $saccoId)->get();
+        $transaction = Transaction::where('sacco_id', $saccoId)->get();
 
-        return $this->success($loans, $message = "Successfully fetched loans");
+        return $this->success($transaction, $message = "Successfully fetched transaction");
     }
 
     public function fetchUserLoans()
