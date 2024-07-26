@@ -15,6 +15,11 @@ class Cycle extends Model
         return $this->hasMany(Transaction::class);
     }
 
+    public function sacco()
+    {
+        return $this->belongsTo(Sacco::class, 'sacco_id');
+    }
+
     // Boot method to apply the cascading delete
     protected static function boot()
     {

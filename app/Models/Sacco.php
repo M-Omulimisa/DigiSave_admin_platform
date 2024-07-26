@@ -11,6 +11,13 @@ class Sacco extends Model
 {
     use HasFactory;
 
+
+    // Define the relationship with Cycle if necessary
+    public function cycles()
+    {
+        return $this->hasMany(Cycle::class, 'sacco_id');
+    }
+
     public static function boot()
     {
         parent::boot();
