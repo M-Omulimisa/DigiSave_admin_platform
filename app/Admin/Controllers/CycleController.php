@@ -3,6 +3,7 @@
 namespace App\Admin\Controllers;
 
 use App\Models\Cycle;
+use App\Models\OrgAllocation;
 use App\Models\Sacco;
 use Encore\Admin\Controllers\AdminController;
 use Encore\Admin\Facades\Admin;
@@ -26,17 +27,36 @@ class CycleController extends AdminController
             $sortOrder = 'desc';
         }
 
+        // Restrict access for non-admin users
         if (!$admin->isRole('admin')) {
-            $grid->disableCreateButton();
-            $grid->actions(function (Grid\Displayers\Actions $actions) {
-                $actions->disableDelete();
-            });
+            $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+            if ($orgAllocation) {
+                $orgId = $orgAllocation->vsla_organisation_id;
+                $organizationAssignments = Sacco::where('vsla_organisation_id', $orgId)->whereNotIn('status', ['deleted', 'inactive'])->get();
+                $saccoIds = $organizationAssignments->pluck('id')->toArray();
+
+                $grid->model()
+                    ->whereHas('sacco', function ($query) use ($saccoIds) {
+                        $query->whereIn('id', $saccoIds)
+                              ->whereNotIn('status', ['deleted', 'inactive']);
+                    })
+                    ->orderBy('created_at', $sortOrder);
+
+                $grid->disableCreateButton();
+                $grid->actions(function (Grid\Displayers\Actions $actions) {
+                    $actions->disableDelete();
+                });
+            }
+        } else {
+            $grid->model()
+                ->whereHas('sacco', function ($query) {
+                    $query->whereNotIn('status', ['deleted', 'inactive']);
+                })
+                ->orderBy('created_at', $sortOrder);
         }
 
         $grid->disableBatchActions();
         $grid->disableExport();
-
-        $grid->model()->orderBy('created_at', $sortOrder);
 
         // Add Sacco name column
         $grid->column('sacco.name', __('Group'))->sortable();
@@ -44,12 +64,10 @@ class CycleController extends AdminController
         // Add suggestive search for group name
         $grid->filter(function ($filter) {
             $filter->disableIdFilter();
-
             $filter->like('sacco_id', 'Group')->select(Sacco::all()->pluck('name', 'id'));
         });
 
         $grid->column('name', __('Cycle Name'))->sortable();
-        $grid->column('description', __('Description'))->hide();
         $grid->column('start_date', __('Start Date'))
             ->display(function ($date) {
                 return date('d M, Y', strtotime($date));
@@ -97,16 +115,19 @@ class CycleController extends AdminController
 
         $admin = Admin::user();
         if (!$admin->isRole('admin')) {
-            $form->hidden('sacco_id')->value($admin->sacco_id);
+            $orgAllocation = OrgAllocation::where('user_id', $admin->id)->first();
+            if ($orgAllocation) {
+                $saccoOptions = Sacco::where('vsla_organisation_id', $orgAllocation->vsla_organisation_id)
+                                    ->pluck('name', 'id');
+                $form->select('sacco_id', __('Select Group'))->options($saccoOptions)->rules('required');
+            }
         } else {
             $form->select('sacco_id', __('Select Group'))->options(Sacco::all()->pluck('name', 'id'))->rules('required');
         }
 
         $form->text('name', __('Cycle Name'))->rules('required');
-        $form->date('start_date', __('Start date'))->default(date('Y-m-d'))
-            ->rules('required');
-        $form->date('end_date', __('End date'))->default(date('Y-m-d'))
-            ->rules('required');
+        $form->date('start_date', __('Start date'))->default(date('Y-m-d'))->rules('required');
+        $form->date('end_date', __('End date'))->default(date('Y-m-d'))->rules('required');
 
         // Date range validation for start and end date
         $form->saving(function (Form $form) {
@@ -128,3 +149,4 @@ class CycleController extends AdminController
         return $form;
     }
 }
+?>
