@@ -25,22 +25,26 @@ class OrganizationAllocationController extends AdminController
 
         // Default sort order
         $sortOrder = request()->get('_sort', 'desc');
-
-        if (!is_string($sortOrder)) {
+        if (!in_array($sortOrder, ['asc', 'desc'])) {
             $sortOrder = 'desc';
         }
 
+        // Restrict access for non-admin users
         if (!$admin->isRole('admin')) {
             $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
             if ($orgAllocation) {
                 $orgId = $orgAllocation->vsla_organisation_id;
 
                 $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
-
-                $OrgAdmins = OrgAllocation::where('vsla_organisation_id', $orgId)->pluck('user_id')->toArray();
-
                 $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
-                $grid->model()->where('vsla_organisation_id', $orgId)->orderBy('created_at', $sortOrder);
+
+                $grid->model()
+                    ->whereIn('sacco_id', $saccoIds)
+                    ->whereHas('sacco', function ($query) {
+                        $query->whereNotIn('status', ['deleted', 'inactive']);
+                    })
+                    ->orderBy('created_at', $sortOrder);
+
                 $grid->disableCreateButton();
                 $grid->actions(function (Grid\Displayers\Actions $actions) {
                     $actions->disableDelete();
@@ -48,7 +52,21 @@ class OrganizationAllocationController extends AdminController
             }
         } else {
             // For admins, display all records ordered by created_at
-            $grid->model()->orderBy('created_at', $sortOrder);
+            $grid->model()
+                ->whereHas('sacco', function ($query) {
+                    $query->whereNotIn('status', ['deleted', 'inactive']);
+                })
+                ->orderBy('created_at', $sortOrder);
+        }
+
+        // Wrap fetching data in a try-catch block
+        try {
+            $grid->model()->paginate(10);
+        } catch (\Exception $e) {
+            // Log the error or handle it as needed
+            Log::error('Error fetching data: ' . $e->getMessage());
+            // Continue without the problematic data
+            $grid->model()->whereNotNull('id')->paginate(10);
         }
 
         $grid->column('id', 'ID')->sortable();
@@ -56,6 +74,7 @@ class OrganizationAllocationController extends AdminController
         $grid->column('sacco.name', 'Vsla Group')->sortable()->display(function ($name) {
             return ucwords(strtolower($name));
         });
+
         $grid->column('chairperson_name', __('Chairperson Name'))
             ->display(function () {
                 $chairperson = \App\Models\User::where('sacco_id', $this->sacco_id)
@@ -66,6 +85,7 @@ class OrganizationAllocationController extends AdminController
 
                 return $chairperson ? ucwords(strtolower($chairperson->name)) : '';
             });
+
         $grid->column('phone_number', __('Phone Number'))
             ->display(function () {
                 $chairperson = \App\Models\User::where('sacco_id', $this->sacco_id)
@@ -76,33 +96,29 @@ class OrganizationAllocationController extends AdminController
 
                 return $chairperson ? $chairperson->phone_number : '';
             });
-        $grid->column('created_at', __('Updated At'))
+
+        $grid->column('created_at', __('Created At'))
             ->display(function ($date) {
                 return date('d M Y', strtotime($date));
             })->sortable();
 
         // Adding search filters
         $grid->filter(function ($filter) {
-            // Remove the default ID filter
             $filter->disableIdFilter();
-
-            // Add filter for organization name
             $filter->like('organization.name', 'Organization');
-
-            // Add filter for VSLA group name
             $filter->like('sacco.name', 'Vsla Group');
         });
 
         // Adding custom dropdown for sorting
         $grid->tools(function ($tools) {
             $tools->append('
-                <div class="btn-group pull-right" style="margin-right: 10px">
+                <div class="btn-group pull-right" style="margin-right: 10px; margin-left: 10px;">
                     <button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown">
-                        Sort by Established <span class="caret"></span>
+                        Sort by Created Date <span class="caret"></span>
                     </button>
                     <ul class="dropdown-menu" role="menu">
-                        <li><a href="'.url()->current().'?_sort=asc">Ascending</a></li>
-                        <li><a href="'.url()->current().'?_sort=desc">Descending</a></li>
+                        <li><a href="' . url()->current() . '?_sort=asc">Ascending</a></li>
+                        <li><a href="' . url()->current() . '?_sort=desc">Descending</a></li>
                     </ul>
                 </div>
             ');
