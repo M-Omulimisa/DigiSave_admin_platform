@@ -122,55 +122,51 @@ class CycleController extends AdminController
     }
 
     protected function form()
-    {
-        $form = new Form(new Cycle());
+{
+    $form = new Form(new Cycle());
 
-        $admin = Admin::user();
-        if (!$admin->isRole('admin')) {
-            $orgAllocation = OrgAllocation::where('user_id', $admin->id)->first();
-            if ($orgAllocation) {
-                $saccoOptions = Sacco::where('vsla_organisation_id', $orgAllocation->vsla_organisation_id)
-                                    ->pluck('name', 'id');
-                $form->select('sacco_id', __('Select Group'))->options($saccoOptions)->rules('required');
-            }
-        } else {
-            $form->select('sacco_id', __('Select Group'))->options(Sacco::all()->pluck('name', 'id'))->rules('required');
+    $admin = Admin::user();
+    if (!$admin->isRole('admin')) {
+        $orgAllocation = OrgAllocation::where('user_id', $admin->id)->first();
+        if ($orgAllocation) {
+            $saccoOptions = Sacco::where('vsla_organisation_id', $orgAllocation->vsla_organisation_id)
+                                ->whereNotIn('status', ['deleted', 'inactive']) // Add status filtering here
+                                ->pluck('name', 'id');
+            $form->select('sacco_id', __('Select Group'))->options($saccoOptions)->rules('required');
         }
-
-        $form->text('name', __('Cycle Name'))->rules('required');
-        $form->date('start_date', __('Start date'))->default(date('Y-m-d'))->rules('required');
-        $form->date('end_date', __('End date'))->default(date('Y-m-d'))->rules('required');
-
-        // Date range validation for start and end date
-        $form->saving(function (Form $form) {
-            if ($form->start_date > $form->end_date) {
-                admin_error('Start date cannot be greater than end date');
-                return back();
-            }
-        });
-
-        $form->radio('status', __('Status'))
-            ->options(['Active' => 'Active', 'Inactive' => 'Inactive'])
-            ->default('Inactive');
-        $form->text('amount_required_per_meeting', __('Welfare Fund'))->rules('required');
-
-        // Ensure the administrator_id is set based on the selected sacco's administrator_id
-        $form->saved(function (Form $form) {
-            $form->model()->save();
-        });
-
-        // Nested form for meetings
-        $form->hasMany('meetings', function (Form\NestedForm $form) {
-            $form->date('date', __('Date'))->rules('required');
-            $form->text('chairperson_name', __('Chairperson Name'))->rules('required');
-            $form->textarea('attendance', __('Attendance'))->rules('required');
-            $form->quill('minutes', __('Minutes'))->rules('required');
-        });
-
-        // Created_by_id hidden field
-        $form->hidden('created_by_id')->value(Admin::user()->id);
-
-        return $form;
+    } else {
+        $form->select('sacco_id', __('Select Group'))
+             ->options(Sacco::whereNotIn('status', ['deleted', 'inactive'])->pluck('name', 'id')) // Add status filtering here
+             ->rules('required');
     }
+
+    $form->text('name', __('Cycle Name'))->rules('required');
+    $form->date('start_date', __('Start date'))->default(date('Y-m-d'))->rules('required');
+    $form->date('end_date', __('End date'))->default(date('Y-m-d'))->rules('required');
+
+    // Date range validation for start and end date
+    $form->saving(function (Form $form) {
+        if ($form->start_date > $form->end_date) {
+            admin_error('Start date cannot be greater than end date');
+            return back();
+        }
+    });
+
+    $form->radio('status', __('Status'))
+         ->options(['Active' => 'Active', 'Inactive' => 'Inactive'])
+         ->default('Inactive');
+    $form->text('amount_required_per_meeting', __('Welfare Fund'))->rules('required');
+
+    // Ensure the administrator_id is set based on the selected sacco's administrator_id
+    $form->saved(function (Form $form) {
+        $form->model()->save();
+    });
+
+    // Created_by_id hidden field
+    $form->hidden('created_by_id')->value(Admin::user()->id);
+
+    return $form;
+}
+
 }
 ?>
