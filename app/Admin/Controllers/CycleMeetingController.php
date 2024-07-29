@@ -12,13 +12,31 @@ use Encore\Admin\Facades\Admin;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Encore\Admin\Show;
+use Encore\Admin\Layout\Content;
 use Illuminate\Support\Facades\Auth;
 
 class CycleMeetingController extends AdminController
 {
     protected $title = 'Meetings';
 
-    protected function grid()
+    public function index(Content $content)
+    {
+        // Get sacco_id and cycle_id from request
+        $saccoId = request()->get('sacco_id');
+        $cycleId = request()->get('cycle_id');
+
+        // Fetch the cycle and group (Sacco) name
+        $cycle = Cycle::find($cycleId);
+        $groupName = $cycle ? $cycle->sacco->name : 'Unknown Group';
+
+        $title = "{$groupName} - Cycle {$cycle->name} Meetings";
+
+        return $content
+            ->header($title)
+            ->body($this->grid($cycleId, $saccoId));
+    }
+
+    protected function grid($cycleId, $saccoId)
     {
         $grid = new Grid(new Meeting());
 
@@ -59,13 +77,11 @@ class CycleMeetingController extends AdminController
         }
 
         // Apply filters based on request parameters
-        if (request()->has('sacco_id')) {
-            $saccoId = request()->get('sacco_id');
+        if ($saccoId) {
             $grid->model()->where('sacco_id', $saccoId);
         }
 
-        if (request()->has('cycle_id')) {
-            $cycleId = request()->get('cycle_id');
+        if ($cycleId) {
             $grid->model()->where('cycle_id', $cycleId);
         }
 
