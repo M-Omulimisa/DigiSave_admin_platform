@@ -5,15 +5,13 @@ namespace App\Admin\Controllers;
 use App\Models\Cycle;
 use App\Models\Meeting;
 use App\Models\Sacco;
-use App\Models\User;
-use App\Models\OrgAllocation;
 use Encore\Admin\Controllers\AdminController;
 use Encore\Admin\Facades\Admin;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Encore\Admin\Show;
 use Encore\Admin\Layout\Content;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class CycleMeetingController extends AdminController
 {
@@ -39,42 +37,6 @@ class CycleMeetingController extends AdminController
     protected function grid($cycleId, $saccoId)
     {
         $grid = new Grid(new Meeting());
-
-        $u = Auth::user();
-        $adminId = $u->id;
-
-        $admin = Admin::user();
-        $adminId = $admin->id;
-
-        // Default sort order
-        $sortOrder = request()->get('_sort', 'desc');
-        if (!in_array($sortOrder, ['asc', 'desc'])) {
-            $sortOrder = 'desc';
-        }
-
-        if (!$admin->isRole('admin')) {
-            $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
-            if ($orgAllocation) {
-                $orgId = $orgAllocation->vsla_organisation_id;
-                $organizationAssignments = Sacco::where('vsla_organisation_id', $orgId)->whereNotIn('status', ['deleted', 'inactive'])->get();
-                $saccoIds = $organizationAssignments->pluck('id')->toArray();
-
-                $grid->model()
-                    ->whereIn('sacco_id', $saccoIds)
-                    ->whereHas('sacco', function ($query) {
-                        $query->whereNotIn('status', ['deleted', 'inactive']);
-                    })
-                    ->orderBy('created_at', $sortOrder);
-
-                $grid->disableCreateButton();
-            }
-        } else {
-            $grid->model()
-                ->whereHas('sacco', function ($query) {
-                    $query->whereNotIn('status', ['deleted', 'inactive']);
-                })
-                ->orderBy('created_at', $sortOrder);
-        }
 
         // Apply filters based on request parameters
         if ($saccoId) {
@@ -107,35 +69,13 @@ class CycleMeetingController extends AdminController
         });
         $grid->column('name', __('Meeting'))->editable()->sortable();
         $grid->column('date', __('Date'));
-        $grid->column('chairperson_name', __('Chairperson Name'))
-            ->sortable()
-            ->display(function () {
-                $user = User::where('sacco_id', $this->sacco_id)
-                    ->whereHas('position', function ($query) {
-                        $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
-                    })
-                    ->first();
-
-                return $user ? ucwords(strtolower($user->name)) : '';
-            });
-
+        $grid->column('chairperson_name', __('Chairperson Name'))->sortable();
         $grid->column('members', __('Attendance'))->display(function ($members) {
             $memberData = json_decode($members, true);
             if (json_last_error() === JSON_ERROR_NONE && is_array($memberData) && !empty($memberData)) {
-                if (isset($memberData['presentMembersIds']) && is_array($memberData['presentMembersIds'])) {
-                    $memberNames = array_map(function ($member) {
-                        return $member['name'];
-                    }, $memberData['presentMembersIds']);
-
-                    $formattedMembers = '<div class="card-deck">';
-                    foreach ($memberNames as $name) {
-                        $formattedMembers .= '<div class="card text-white bg-info mb-3" style="max-width: 18rem;">';
-                        $formattedMembers .= '<div class="card-body"><h5 class="card-title">' . $name . '</h5></div>';
-                        $formattedMembers .= '</div>';
-                    }
-                    $formattedMembers .= '</div>';
-                    return $formattedMembers;
-                }
+                $present = isset($memberData['present']) ? $memberData['present'] : 0;
+                $absent = isset($memberData['absent']) ? $memberData['absent'] : 0;
+                return "Present: $present, Absent: $absent";
             }
             return 'No attendance recorded';
         });
@@ -178,17 +118,11 @@ class CycleMeetingController extends AdminController
         $show->field('sacco.name', __('Group Name'));
         $show->field('administrator.name', __('Administrator Name'));
         $show->field('members', __('Attendance'))->as(function ($members) {
-            $memberIds = json_decode($members, true);
-            if (json_last_error() === JSON_ERROR_NONE && is_array($memberIds) && !empty($memberIds)) {
-                $memberNames = User::whereIn('id', $memberIds)->get()->pluck('name')->toArray();
-                $formattedMembers = '<div class="card-deck">';
-                foreach ($memberNames as $name) {
-                    $formattedMembers .= '<div class="card text-white bg-info mb-3" style="max-width: 18rem;">';
-                    $formattedMembers .= '<div class="card-body"><h5 class="card-title">' . $name . '</h5></div>';
-                    $formattedMembers .= '</div>';
-                }
-                $formattedMembers .= '</div>';
-                return $formattedMembers;
+            $memberData = json_decode($members, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($memberData) && !empty($memberData)) {
+                $present = isset($memberData['present']) ? $memberData['present'] : 0;
+                $absent = isset($memberData['absent']) ? $memberData['absent'] : 0;
+                return "Present: $present, Absent: $absent";
             }
             return 'No attendance recorded';
         });
@@ -217,40 +151,50 @@ class CycleMeetingController extends AdminController
     }
 
     protected function form()
-    {
-        $u = Auth::user();
+{
+    $form = new Form(new Meeting());
 
-        $form = new Form(new Meeting());
+    // Get sacco_id and cycle_id from the request parameters
+    $saccoId = request()->get('sacco_id');
+    $cycleId = request()->get('cycle_id');
 
-        $sacco_id = $u->sacco_id;
+    $form->hidden('sacco_id')->default($saccoId);
+    $form->hidden('cycle_id')->default($cycleId);
+    $form->hidden('administrator_id')->default(Admin::user()->id);
 
-        $activeCycle = Cycle::where('sacco_id', $sacco_id)->where('status', 'Active')->first();
+    $form->text('name', __('Meeting Name'))->rules('required');
+    $form->date('date', __('Date'))->default(date('Y-m-d'))->rules('required');
 
-        if ($activeCycle) {
-            $form->hidden('cycle_id')->default($activeCycle->id);
-        } else {
-            $form->hidden('cycle_id')->default(0);
-        }
+    // Add a field for members with a present/absent toggle
+    $form->table('members', __('Members'), function ($table) {
+        $table->text('name', __('Name'))->rules('required');
+        $table->select('status', __('Status'))->options(['present' => 'Present', 'absent' => 'Absent'])->rules('required');
+    });
 
-        $form->hidden('sacco_id')->default($sacco_id);
-        $form->hidden('administrator_id')->default($u->id);
-        $form->text('name', __('Name'))->rules('required');
-        $form->date('date', __('Date'))->default(date('Y-m-d'))->rules('required');
-        $form->text('location', __('Location'))->rules('required');
+    $form->embeds('minutes', __('Minutes'), function ($form) {
+        $form->embeds('opening_summary', __('Opening Summary'), function ($form) {
+            $form->text('total_savings', __('Total Savings'))->rules('required');
+            $form->text('total_loans', __('Total Loans'))->rules('required');
+            $form->text('total_fines', __('Total Fines'))->rules('required');
+            $form->text('total_welfare', __('Total Welfare'))->rules('required');
+            $form->text('number_of_loans_disbursed', __('Number of Loans Disbursed'))->rules('required');
+            $form->text('welfare_disbursed', __('Welfare Disbursed'))->rules('required');
+            $form->text('loan_payments_made', __('Loan Payments Made'))->rules('required');
+        });
 
-        if ($u->isRole('admin')) {
-            $users = User::where('sacco_id', $sacco_id)->get();
-            $form->multipleSelect('members', __('Members'))
-                ->options($users->pluck('name', 'id'))
-                ->rules('required');
-        } else {
-            $form->hidden('members')->default($u->id);
-        }
+        $form->embeds('closing_summary', __('Closing Summary'), function ($form) {
+            $form->text('total_savings', __('Total Savings'))->rules('required');
+            $form->text('total_loans', __('Total Loans'))->rules('required');
+            $form->text('total_fines', __('Total Fines'))->rules('required');
+            $form->text('total_welfare', __('Total Welfare'))->rules('required');
+            $form->text('number_of_loans_disbursed', __('Number of Loans Disbursed'))->rules('required');
+            $form->text('welfare_disbursed', __('Welfare Disbursed'))->rules('required');
+            $form->text('loan_payments_made', __('Loan Payments Made'))->rules('required');
+        });
+    });
 
-        $form->quill('minutes', __('Minutes'));
-        $form->textarea('attendance', __('Attendance'));
+    return $form;
+}
 
-        return $form;
-    }
 }
 ?>
