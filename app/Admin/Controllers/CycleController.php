@@ -86,6 +86,16 @@ class CycleController extends AdminController
                 return date('d M, Y', strtotime($date));
             })->sortable();
 
+        // Add Transactions column with link
+        $grid->column('transactions', __('Transactions'))->display(function () {
+            return '<a href="'.url('/cycle-transactions?cycle_id='.$this->id.'&sacco_id='.$this->sacco_id).'">Manage Transactions</a>';
+        });
+
+        // Add Meetings column with link
+        $grid->column('meetings', __('Meetings'))->display(function () {
+            return '<a href="'.url('/cycle-meetings?cycle_id='.$this->id.'&sacco_id='.$this->sacco_id).'">Manage Meetings</a>';
+        });
+
         return $grid;
     }
 
@@ -141,7 +151,19 @@ class CycleController extends AdminController
             ->options(['Active' => 'Active', 'Inactive' => 'Inactive'])
             ->default('Inactive');
         $form->text('amount_required_per_meeting', __('Welfare Fund'))->rules('required');
-        // $form->textarea('description', __('Description'));
+
+        // Ensure the administrator_id is set based on the selected sacco's administrator_id
+        $form->saved(function (Form $form) {
+            $form->model()->save();
+        });
+
+        // Nested form for meetings
+        $form->hasMany('meetings', function (Form\NestedForm $form) {
+            $form->date('date', __('Date'))->rules('required');
+            $form->text('chairperson_name', __('Chairperson Name'))->rules('required');
+            $form->textarea('attendance', __('Attendance'))->rules('required');
+            $form->quill('minutes', __('Minutes'))->rules('required');
+        });
 
         // Created_by_id hidden field
         $form->hidden('created_by_id')->value(Admin::user()->id);

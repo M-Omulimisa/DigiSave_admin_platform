@@ -20,6 +20,11 @@ class Cycle extends Model
         return $this->belongsTo(Sacco::class, 'sacco_id');
     }
 
+    public function meetings()
+    {
+        return $this->hasMany(Meeting::class);
+    }
+
     // Boot method to apply the cascading delete
     protected static function boot()
     {
