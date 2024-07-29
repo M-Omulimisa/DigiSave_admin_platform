@@ -142,57 +142,112 @@ class OrganizationAllocationController extends AdminController
     }
 
     protected function form()
-    {
-        $form = new Form(new VslaOrganisationSacco());
+{
+    $form = new Form(new VslaOrganisationSacco());
 
-        $u = Admin::user();
+    $admin = Admin::user();
 
-        if (!$u->isRole('admin')) {
-            if ($form->isCreating()) {
-                admin_error("You are not allowed to create new Agent");
-                return back();
-            }
+    if (!$admin->isRole('admin')) {
+        $orgAllocation = OrgAllocation::where('user_id', $admin->id)->first();
+        if ($orgAllocation) {
+            $saccoOptions = Sacco::where('vsla_organisation_id', $orgAllocation->vsla_organisation_id)
+                                ->whereNotIn('status', ['deleted', 'inactive']) // Add status filtering here
+                                ->pluck('name', 'id');
+            $form->select('sacco_id', __('Vsla Group'))->options($saccoOptions)->rules('required');
         }
-
-        $form->display('id', 'ID');
-
-        $form->select('vsla_organisation_id', 'Organization')
-            ->options(VslaOrganisation::pluck('name', 'id'))
-            ->rules('required');
-
-        $form->select('sacco_id', 'Vsla Group')
-            ->options(Sacco::pluck('name', 'id'))
-            ->rules('required');
-
-        $form->display('created_at', 'Created At');
-        $form->display('updated_at', 'Updated At');
-
-        $form->saving(function (Form $form) {
-            $vslaOrganisationId = $form->vsla_organisation_id;
-            $saccoId = $form->sacco_id;
-
-            $existingRecord = VslaOrganisationSacco::where([
-                'vsla_organisation_id' => $vslaOrganisationId,
-                'sacco_id' => $saccoId,
-            ])->first();
-
-            if ($existingRecord) {
-                admin_error('Error', 'The selected VSLA is already assigned to this organization.');
-                return back()->withInput();
-            }
-        });
-
-        $form->saved(function (Form $form) {
-            $vslaOrganisationId = $form->vsla_organisation_id;
-            $saccoId = $form->sacco_id;
-
-            VslaOrganisationSacco::create([
-                'vsla_organisation_id' => $vslaOrganisationId,
-                'sacco_id' => $saccoId,
-            ]);
-        });
-
-        return $form;
+    } else {
+        $form->select('sacco_id', __('Vsla Group'))
+             ->options(Sacco::whereNotIn('status', ['deleted', 'inactive'])->pluck('name', 'id')) // Add status filtering here
+             ->rules('required');
     }
+
+    $form->select('vsla_organisation_id', __('Organization'))
+         ->options(VslaOrganisation::pluck('name', 'id'))
+         ->rules('required');
+
+    $form->display('created_at', __('Created At'));
+    $form->display('updated_at', __('Updated At'));
+
+    $form->saving(function (Form $form) {
+        $vslaOrganisationId = $form->vsla_organisation_id;
+        $saccoId = $form->sacco_id;
+
+        $existingRecord = VslaOrganisationSacco::where([
+            'vsla_organisation_id' => $vslaOrganisationId,
+            'sacco_id' => $saccoId,
+        ])->first();
+
+        if ($existingRecord) {
+            admin_error('Error', 'The selected VSLA is already assigned to this organization.');
+            return back()->withInput();
+        }
+    });
+
+    $form->saved(function (Form $form) {
+        $vslaOrganisationId = $form->vsla_organisation_id;
+        $saccoId = $form->sacco_id;
+
+        VslaOrganisationSacco::create([
+            'vsla_organisation_id' => $vslaOrganisationId,
+            'sacco_id' => $saccoId,
+        ]);
+    });
+
+    return $form;
+}
+
+    // protected function form()
+    // {
+    //     $form = new Form(new VslaOrganisationSacco());
+
+    //     $u = Admin::user();
+
+    //     if (!$u->isRole('admin')) {
+    //         if ($form->isCreating()) {
+    //             admin_error("You are not allowed to create new Agent");
+    //             return back();
+    //         }
+    //     }
+
+    //     $form->display('id', 'ID');
+
+    //     $form->select('vsla_organisation_id', 'Organization')
+    //         ->options(VslaOrganisation::pluck('name', 'id'))
+    //         ->rules('required');
+
+    //     $form->select('sacco_id', 'Vsla Group')
+    //         ->options(Sacco::pluck('name', 'id'))
+    //         ->rules('required');
+
+    //     $form->display('created_at', 'Created At');
+    //     $form->display('updated_at', 'Updated At');
+
+    //     $form->saving(function (Form $form) {
+    //         $vslaOrganisationId = $form->vsla_organisation_id;
+    //         $saccoId = $form->sacco_id;
+
+    //         $existingRecord = VslaOrganisationSacco::where([
+    //             'vsla_organisation_id' => $vslaOrganisationId,
+    //             'sacco_id' => $saccoId,
+    //         ])->first();
+
+    //         if ($existingRecord) {
+    //             admin_error('Error', 'The selected VSLA is already assigned to this organization.');
+    //             return back()->withInput();
+    //         }
+    //     });
+
+    //     $form->saved(function (Form $form) {
+    //         $vslaOrganisationId = $form->vsla_organisation_id;
+    //         $saccoId = $form->sacco_id;
+
+    //         VslaOrganisationSacco::create([
+    //             'vsla_organisation_id' => $vslaOrganisationId,
+    //             'sacco_id' => $saccoId,
+    //         ]);
+    //     });
+
+    //     return $form;
+    // }
 }
 ?>
