@@ -4,6 +4,7 @@ namespace App\Admin\Controllers;
 
 use App\Models\Transaction;
 use App\Models\Cycle;
+use App\Models\User;
 use Encore\Admin\Controllers\AdminController;
 use Encore\Admin\Grid;
 use Encore\Admin\Show;
@@ -96,42 +97,63 @@ class CycleTransactionController extends AdminController
     }
 
     protected function form()
-    {
-        $form = new Form(new Transaction());
+{
+    $saccoId = request()->get('sacco_id');
+    $cycleId = request()->get('cycle_id');
 
-        $form->display('id', __('ID'));
-        $form->select('user_id', __('User'))
-            ->options(\App\Models\User::all()->pluck('name', 'id'))
-            ->rules('required');
-        $form->display('type', __('Type'))->with(function ($value) {
-            return $value === 'REGESTRATION' ? 'Registration' : $value;
-        }); // Make type field non-editable
-        $form->decimal('amount', __('Amount'))->rules('required|numeric|min:0');
-        $form->textarea('description', __('Description'))->rules('required');
-        $form->display('created_at', __('Created At'));
-        $form->display('updated_at', __('Updated At'));
+    $form = new Form(new Transaction());
 
-        // Adding JavaScript to update the description based on the amount
-        $form->html('<script>
-        document.addEventListener("DOMContentLoaded", function() {
-            var amountField = document.querySelector("input[name=\'amount\']");
-            var descriptionField = document.querySelector("textarea[name=\'description\']");
-            var transactionTypeField = document.querySelector("div[data-value=\'type\']").innerText;
+    $form->display('id', __('ID'));
 
-            amountField.addEventListener("input", function() {
-                var userName = document.querySelector("select[name=\'user_id\'] option:checked").text;
-                var amount = amountField.value;
-                descriptionField.value = "Update of UGX " + amount + " on " + transactionTypeField + " for " + userName + " transaction.";
-            });
+    // Filter users by sacco_id
+    $form->select('user_id', __('User'))
+        ->options(User::where('sacco_id', $saccoId)->pluck('name', 'id'))
+        ->rules('required');
+
+    // Allow transaction type selection
+    $form->select('type', __('Type'))
+        ->options(Transaction::select('type')->distinct()->pluck('type', 'type')->toArray())
+        ->rules('required');
+
+    // Allow user to enter the created_at timestamp
+    $form->datetime('created_at', __('Created At'))->default(date('Y-m-d H:i:s'))->rules('required|date');
+
+    $form->decimal('amount', __('Amount'))->rules('required|numeric|min:0');
+    $form->textarea('description', __('Description'));
+
+    // Adding JavaScript to update the description based on the amount
+    $form->html('<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var amountField = document.querySelector("input[name=\'amount\']");
+        var descriptionField = document.querySelector("textarea[name=\'description\']");
+        var transactionTypeField = document.querySelector("select[name=\'type\'] option:checked").text;
+
+        amountField.addEventListener("input", function() {
+            var userName = document.querySelector("select[name=\'user_id\'] option:checked").text;
+            var amount = amountField.value;
+            descriptionField.value = "Update of UGX " + amount + " on " + transactionTypeField + " for " + userName + " transaction.";
         });
-        </script>');
 
-        // Handle the form saving event to update the description server-side
-        $form->saving(function (Form $form) {
-            $user = \App\Models\User::find($form->user_id);
-            $form->description = "Update of UGX {$form->amount} on {$form->model()->type} for {$user->name} transaction.";
+        // Update description on type change
+        document.querySelector("select[name=\'type\']").addEventListener("change", function() {
+            transactionTypeField = this.options[this.selectedIndex].text;
+            var amount = amountField.value;
+            var userName = document.querySelector("select[name=\'user_id\'] option:checked").text;
+            descriptionField.value = "Update of UGX " + amount + " on " + transactionTypeField + " for " + userName + " transaction.";
         });
+    });
+    </script>');
 
-        return $form;
-    }
+    // Handle the form saving event to update the description server-side
+    $form->saving(function (Form $form) use ($saccoId, $cycleId) {
+        $user = User::find($form->user_id);
+        $form->description = "Update of UGX {$form->amount} on {$form->type} for {$user->name} transaction.";
+        $form->model()->sacco_id = $saccoId;
+        $form->model()->cycle_id = $cycleId;
+    });
+
+    return $form;
+}
+
+
 }
