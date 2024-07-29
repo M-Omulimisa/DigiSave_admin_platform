@@ -16,15 +16,59 @@ class CreditScoreController extends AdminController
     {
         $grid = new Grid(new Sacco());
 
+        $admin = Admin::user();
+        $adminId = $admin->id;
+
         // Default sort order
         $sortOrder = request()->get('_sort', 'desc');
         if (!in_array($sortOrder, ['asc', 'desc'])) {
             $sortOrder = 'desc';
         }
 
-        $grid->model()->orderBy('created_at', $sortOrder);
+        if (!$admin->isRole('admin')) {
+            $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+            if ($orgAllocation) {
+                $orgId = $orgAllocation->vsla_organisation_id;
+                $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
+                $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
+                $grid->model()
+                    ->whereIn('id', $saccoIds)
+                    ->whereNotIn('status', ['deleted', 'inactive'])
+                    ->whereHas('users', function ($query) {
+                        $query->whereIn('position_id', function ($subQuery) {
+                            $subQuery->select('id')
+                                     ->from('positions')
+                                     ->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+                        })
+                        ->whereNotNull('phone_number')
+                        ->whereNotNull('name');
+                    })
+                    ->orderBy('created_at', $sortOrder);
+                $grid->disableCreateButton();
+            }
+        } else {
+            // For admins, display all records ordered by created_at
+            $grid->model()
+                ->whereNotIn('status', ['deleted', 'inactive'])
+                ->whereHas('users', function ($query) {
+                    $query->whereIn('position_id', function ($subQuery) {
+                        $subQuery->select('id')
+                                 ->from('positions')
+                                 ->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+                    })
+                    ->whereNotNull('phone_number')
+                    ->whereNotNull('name');
+                })
+                ->orderBy('created_at', $sortOrder);
+        }
 
-        $grid->column('name', __('Group Name'))->sortable();
+        $grid->showExportBtn();
+        $grid->disableBatchActions();
+        $grid->quickSearch('name')->placeholder('Search by name');
+
+        $grid->column('name', __('Name'))->sortable()->display(function ($name) {
+            return ucwords(strtolower($name));
+        });
 
         // Hardcoded values
         $hardcodedValues = [
