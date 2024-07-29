@@ -28,32 +28,32 @@ class CreditScoreController extends AdminController
 
         // Hardcoded values
         $hardcodedValues = [
-            "number_of_loans" => 3,
-            "total_principal" => 15000.0,
-            "total_interest" => 1500.0,
-            "total_principal_paid" => 12000.0,
-            "total_interest_paid" => 1200.0,
-            "number_of_savings_accounts" => 2,
-            "total_savings_balance" => 5000.0,
-            "total_principal_outstanding" => 3000.0,
-            "total_interest_outstanding" => 300.0,
-            "number_of_loans_to_men" => 2,
-            "total_disbursed_to_men" => 10000.0,
-            "total_savings_accounts_for_men" => 1,
-            "number_of_loans_to_women" => 1,
-            "total_disbursed_to_women" => 5000.0,
-            "total_savings_accounts_for_women" => 1,
-            "total_savings_balance_for_women" => 2500.0,
-            "number_of_loans_to_youth" => 1,
-            "total_disbursed_to_youth" => 5000.0,
-            "total_savings_balance_for_youth" => 1000.0
+            "Total Loans" => 3,
+            // "total_principal" => 15000.0,
+            "Interests Gained" => 1500.0,
+            // "total_principal_paid" => 12000.0,
+            // "total_interest_paid" => 1200.0,
+            "Member Count" => 2,
+            "Total Savings" => 5000.0,
+            // "total_principal_outstanding" => 3000.0,
+            // "total_interest_outstanding" => 300.0,
+            // "number_of_loans_to_men" => 2,
+            "Loans Amount to Men" => 10000.0,
+            // "total_savings_accounts_for_men" => 1,
+            // "number_of_loans_to_women" => 1,
+            "Loan Amount to Women" => 5000.0,
+            // "total_savings_accounts_for_women" => 1,
+            // "total_savings_balance_for_women" => 2500.0,
+            // "number_of_loans_to_youth" => 1,
+            "Loan Amount to Youths" => 5000.0,
+            // "total_savings_balance_for_youth" => 1000.0
         ];
 
-        // foreach ($hardcodedValues as $key => $value) {
-        //     $grid->column($key, __(ucwords(str_replace('_', ' ', $key))))->display(function () use ($value) {
-        //         return $value;
-        //     });
-        // }
+        foreach ($hardcodedValues as $key => $value) {
+            $grid->column($key, __(ucwords(str_replace('_', ' ', $key))))->display(function () use ($value) {
+                return $value;
+            });
+        }
 
         // Columns for credit score and description
         $grid->column('credit_score', __('Credit Score'))->display(function () {
