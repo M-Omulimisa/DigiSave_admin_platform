@@ -59,7 +59,9 @@ class CycleController extends AdminController
         $grid->disableExport();
 
         // Add Sacco name column
-        $grid->column('sacco.name', __('Group'))->sortable();
+        $grid->column('sacco.name', __('Group'))->display(function ($name) {
+            return ucwords($name);
+        })->sortable();
 
         // Add suggestive search for group name
         $grid->filter(function ($filter) {
