@@ -177,7 +177,7 @@ class CreditScoreController extends AdminController
                 ->count('users.id');
 
             return $distinctMembers > 0 ? $totalSavings / $distinctMembers : 0;
-        })
+        });
 
         // Columns for credit score and description
         $grid->column('credit_score', __('Credit Score'))->display(function () {
