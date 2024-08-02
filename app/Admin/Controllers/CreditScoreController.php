@@ -81,27 +81,57 @@ class CreditScoreController extends AdminController
 
     // Add dynamic data columns for loans to specific demographics
     $grid->column('loans_to_males', __('Loans to Males'))->display(function () {
-        return $this->loans_to_males;
+        return $this->transactions()
+            ->where('type', 'LOAN')
+            ->whereHas('user', function ($query) {
+                $query->where('sex', 'male');
+            })
+            ->count();
     });
 
     $grid->column('loans_to_females', __('Loans to Females'))->display(function () {
-        return $this->loans_to_females;
+        return $this->transactions()
+            ->where('type', 'LOAN')
+            ->whereHas('user', function ($query) {
+                $query->where('sex', 'female');
+            })
+            ->count();
     });
 
     $grid->column('loans_to_youth', __('Loans to Youth'))->display(function () {
-        return $this->loans_to_youth;
+        return $this->transactions()
+            ->where('type', 'LOAN')
+            ->whereHas('user', function ($query) {
+                $query->whereRaw('TIMESTAMPDIFF(YEAR, dob, CURDATE()) < 30');
+            })
+            ->count();
     });
 
     $grid->column('total_loans', __('Total Loans'))->display(function () {
-        return $this->total_loans;
+        return $this->transactions()
+            ->where('type', 'LOAN')
+            ->whereHas('user', function ($query) {
+                $query->where('user_type', 'admin'); // Only for admin users
+            })
+            ->count();
     });
 
     $grid->column('total_principal', __('Total Principal'))->display(function () {
-        return $this->total_principal;
+        return $this->transactions()
+            ->where('type', 'LOAN')
+            ->whereHas('user', function ($query) {
+                $query->where('user_type', 'admin'); // Only for admin users
+            })
+            ->sum('amount');
     });
 
     $grid->column('total_interest', __('Total Interest'))->display(function () {
-        return $this->total_interest;
+        return $this->transactions()
+            ->where('type', 'LOAN_INTEREST')
+            ->whereHas('user', function ($query) {
+                $query->where('user_type', 'admin'); // Only for admin users
+            })
+            ->sum('amount');
     });
 
     // Columns for credit score and description
@@ -115,6 +145,7 @@ class CreditScoreController extends AdminController
 
     return $grid;
 }
+
 
     protected function detail($id)
     {

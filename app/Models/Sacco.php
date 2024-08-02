@@ -24,53 +24,101 @@ class Sacco extends Model
         return $this->hasMany(Transaction::class);
     }
 
+
      // Calculate the number of loans for male users
      public function getLoansToMalesAttribute()
-     {
-         return $this->transactions()
-             ->where('type', 'LOAN')
-             ->whereHas('user', function ($query) {
-                 $query->where('sex', 'male');
-             })
-             ->count();
-     }
+{
+    return Transaction::where('type', 'LOAN')
+        ->whereHas('user', function ($query) {
+            $query->where('sex', 'male');
+        })
+        ->where('source_user_id', $this->id)
+        ->count();
+}
 
-     // Calculate the number of loans for female users
-     public function getLoansToFemalesAttribute()
-     {
-         return $this->transactions()
-             ->where('type', 'LOAN')
-             ->whereHas('user', function ($query) {
-                 $query->where('sex', 'female');
-             })
-             ->count();
-     }
+public function getLoanSumForMalesAttribute()
+{
+    return Transaction::where('type', 'LOAN')
+        ->whereHas('user', function ($query) {
+            $query->where('sex', 'male');
+        })
+        ->where('source_user_id', $this->id)
+        ->sum('amount');
+}
 
-     // Calculate the number of loans for youth users
-     public function getLoansToYouthAttribute()
-     {
-         return $this->transactions()
-             ->where('type', 'LOAN')
-             ->whereHas('user', function ($query) {
-                 $query->whereRaw('TIMESTAMPDIFF(YEAR, dob, CURDATE()) < 30');
-             })
-             ->count();
-     }
+public function getLoansToFemalesAttribute()
+{
+    return Transaction::where('type', 'LOAN')
+        ->whereHas('user', function ($query) {
+            $query->where('sex', 'female');
+        })
+        ->where('source_user_id', $this->id)
+        ->count();
+}
 
-    public function getTotalLoansAttribute()
-    {
-        return $this->transactions()->where('type', 'LOAN')->count();
-    }
+public function getLoanSumForFemalesAttribute()
+{
+    return Transaction::where('type', 'LOAN')
+        ->whereHas('user', function ($query) {
+            $query->where('sex', 'female');
+        })
+        ->where('source_user_id', $this->id)
+        ->sum('amount');
+}
 
-    public function getTotalPrincipalAttribute()
-    {
-        return $this->transactions()->where('type', 'LOAN')->sum('amount');
-    }
+public function getLoansToYouthAttribute()
+{
+    return Transaction::where('type', 'LOAN')
+        ->whereHas('user', function ($query) {
+            $query->whereRaw('TIMESTAMPDIFF(YEAR, dob, CURDATE()) < 30');
+        })
+        ->where('source_user_id', $this->id) // Ensure the transaction source is the current user
+        ->count();
+}
 
-    public function getTotalInterestAttribute()
-    {
-        return $this->transactions()->where('type', 'LOAN_INTEREST')->sum('amount');
-    }
+public function getLoanSumForYouthAttribute()
+{
+    return Transaction::where('type', 'LOAN')
+        ->whereHas('user', function ($query) {
+            $query->whereRaw('TIMESTAMPDIFF(YEAR, dob, CURDATE()) < 30');
+        })
+        ->where('source_user_id', $this->id) // Ensure the transaction source is the current user
+        ->sum('amount'); // Calculate the sum of the loan amounts
+}
+
+
+public function getTotalLoansAttribute()
+{
+    return $this->transactions()
+        ->where('type', 'LOAN')
+        ->whereHas('user', function ($query) {
+            $query->where('user_type', 'admin'); // Filter for users with user_type 'admin'
+        })
+        ->count();
+}
+
+
+public function getTotalPrincipalAttribute()
+{
+    return $this->transactions()
+        ->where('type', 'LOAN')
+        ->whereHas('user', function ($query) {
+            $query->where('user_type', 'admin'); // Filter for users with user_type 'admin'
+        })
+        ->sum('amount');
+}
+
+
+public function getTotalInterestAttribute()
+{
+    return $this->transactions()
+        ->where('type', 'LOAN_INTEREST')
+        ->whereHas('user', function ($query) {
+            $query->where('user_type', 'admin'); // Filter for users with user_type 'admin'
+        })
+        ->sum('amount');
+}
+
 
     public static function boot()
     {
