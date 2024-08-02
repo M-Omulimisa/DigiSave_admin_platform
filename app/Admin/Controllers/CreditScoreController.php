@@ -20,42 +20,26 @@ class CreditScoreController extends AdminController
     protected $title = 'Credit Scores';
 
     protected function grid()
-    {
-        $grid = new Grid(new Sacco());
+{
+    $grid = new Grid(new Sacco());
 
-        $admin = Admin::user();
-        $adminId = $admin->id;
+    $admin = Admin::user();
+    $adminId = $admin->id;
 
-        // Default sort order
-        $sortOrder = request()->get('_sort', 'desc');
-        if (!in_array($sortOrder, ['asc', 'desc'])) {
-            $sortOrder = 'desc';
-        }
+    // Default sort order
+    $sortOrder = request()->get('_sort', 'desc');
+    if (!in_array($sortOrder, ['asc', 'desc'])) {
+        $sortOrder = 'desc';
+    }
 
-        if (!$admin->isRole('admin')) {
-            $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
-            if ($orgAllocation) {
-                $orgId = $orgAllocation->vsla_organisation_id;
-                $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
-                $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
-                $grid->model()
-                    ->whereIn('id', $saccoIds)
-                    ->whereNotIn('status', ['deleted', 'inactive'])
-                    ->whereHas('users', function ($query) {
-                        $query->whereIn('position_id', function ($subQuery) {
-                            $subQuery->select('id')
-                                     ->from('positions')
-                                     ->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
-                        })
-                        ->whereNotNull('phone_number')
-                        ->whereNotNull('name');
-                    })
-                    ->orderBy('created_at', $sortOrder);
-                $grid->disableCreateButton();
-            }
-        } else {
-            // For admins, display all records ordered by created_at
+    if (!$admin->isRole('admin')) {
+        $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+        if ($orgAllocation) {
+            $orgId = $orgAllocation->vsla_organisation_id;
+            $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
+            $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
             $grid->model()
+                ->whereIn('id', $saccoIds)
                 ->whereNotIn('status', ['deleted', 'inactive'])
                 ->whereHas('users', function ($query) {
                     $query->whereIn('position_id', function ($subQuery) {
@@ -67,62 +51,69 @@ class CreditScoreController extends AdminController
                     ->whereNotNull('name');
                 })
                 ->orderBy('created_at', $sortOrder);
+            $grid->disableCreateButton();
         }
-
-        $grid->showExportBtn();
-        $grid->disableBatchActions();
-        $grid->quickSearch('name')->placeholder('Search by name');
-
-        $grid->column('name', __('Name'))->sortable()->display(function ($name) {
-            return ucwords(strtolower($name));
-        });
-
-        // Hardcoded values
-        $hardcodedValues = [
-            "Total Loans" => 3,
-            "total_principal" => 15000.0,
-            "Interests Gained" => 1500.0,
-            "total_principal_paid" => 12000.0,
-            "total_interest_paid" => 1200.0,
-            "Member Count" => 2,
-            "Total Savings" => 5000.0,
-            "total_principal_outstanding" => 3000.0,
-            "total_interest_outstanding" => 300.0,
-            "number_of_loans_to_men" => 2,
-            "Loans Amount to Men" => 10000.0,
-            "total_savings_accounts_for_men" => 1,
-            "number_of_loans_to_women" => 1,
-            "Loan Amount to Women" => 5000.0,
-            "total_savings_accounts_for_women" => 1,
-            "total_savings_balance_for_women" => 2500.0,
-            "number_of_loans_to_youth" => 1,
-            "Loan Amount to Youths" => 5000.0,
-            "total_savings_balance_for_youth" => 1000.0
-        ];
-
-        $grid->column('total_loans', __('Total Loans'))->display(function () {
-            return $this->total_loans;
-        });
-
-        $grid->column('total_principal', __('Total Principal'))->display(function () {
-            return $this->total_principal;
-        });
-
-        $grid->column('total_interest', __('Total Interest'))->display(function () {
-            return $this->total_interest;
-        });
-
-        // Columns for credit score and description
-        $grid->column('credit_score', __('Credit Score'))->display(function () {
-            return '<span style="color: green;"><i class="fa fa-spinner fa-spin"></i></span>';
-        });
-
-        $grid->column('credit_description', __('Credit Score Description'))->display(function () {
-            return '<span style="color: green;"><i class="fa fa-spinner fa-spin"></i></span>';
-        });
-
-        return $grid;
+    } else {
+        // For admins, display all records ordered by created_at
+        $grid->model()
+            ->whereNotIn('status', ['deleted', 'inactive'])
+            ->whereHas('users', function ($query) {
+                $query->whereIn('position_id', function ($subQuery) {
+                    $subQuery->select('id')
+                             ->from('positions')
+                             ->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+                })
+                ->whereNotNull('phone_number')
+                ->whereNotNull('name');
+            })
+            ->orderBy('created_at', $sortOrder);
     }
+
+    $grid->showExportBtn();
+    $grid->disableBatchActions();
+    $grid->quickSearch('name')->placeholder('Search by name');
+
+    $grid->column('name', __('Name'))->sortable()->display(function ($name) {
+        return ucwords(strtolower($name));
+    });
+
+    // Add dynamic data columns for loans to specific demographics
+    $grid->column('loans_to_males', __('Loans to Males'))->display(function () {
+        return $this->loans_to_males;
+    });
+
+    $grid->column('loans_to_females', __('Loans to Females'))->display(function () {
+        return $this->loans_to_females;
+    });
+
+    $grid->column('loans_to_youth', __('Loans to Youth'))->display(function () {
+        return $this->loans_to_youth;
+    });
+
+    $grid->column('total_loans', __('Total Loans'))->display(function () {
+        return $this->total_loans;
+    });
+
+    $grid->column('total_principal', __('Total Principal'))->display(function () {
+        return $this->total_principal;
+    });
+
+    $grid->column('total_interest', __('Total Interest'))->display(function () {
+        return $this->total_interest;
+    });
+
+    // Columns for credit score and description
+    $grid->column('credit_score', __('Credit Score'))->display(function () {
+        return '<span style="color: green;"><i class="fa fa-spinner fa-spin"></i></span>';
+    });
+
+    $grid->column('credit_description', __('Credit Score Description'))->display(function () {
+        return '<span style="color: green;"><i class="fa fa-spinner fa-spin"></i></span>';
+    });
+
+    return $grid;
+}
+
 
     protected function detail($id)
     {

@@ -24,6 +24,39 @@ class Sacco extends Model
         return $this->hasMany(Transaction::class);
     }
 
+     // Calculate the number of loans for male users
+     public function getLoansToMalesAttribute()
+     {
+         return $this->transactions()
+             ->where('type', 'LOAN')
+             ->whereHas('user', function ($query) {
+                 $query->where('sex', 'male');
+             })
+             ->count();
+     }
+
+     // Calculate the number of loans for female users
+     public function getLoansToFemalesAttribute()
+     {
+         return $this->transactions()
+             ->where('type', 'LOAN')
+             ->whereHas('user', function ($query) {
+                 $query->where('sex', 'female');
+             })
+             ->count();
+     }
+
+     // Calculate the number of loans for youth users
+     public function getLoansToYouthAttribute()
+     {
+         return $this->transactions()
+             ->where('type', 'LOAN')
+             ->whereHas('user', function ($query) {
+                 $query->whereRaw('TIMESTAMPDIFF(YEAR, dob, CURDATE()) < 30');
+             })
+             ->count();
+     }
+
     public function getTotalLoansAttribute()
     {
         return $this->transactions()->where('type', 'LOAN')->count();

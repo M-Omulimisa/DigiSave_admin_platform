@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Dflydev\DotAccessData\Util;
 use Encore\Admin\Form\Field\BelongsToMany;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -27,6 +28,11 @@ class User extends Authenticatable implements JWTSubject
     public function position(): BelongsTo
     {
         return $this->belongsTo(MemberPosition::class);
+    }
+
+    public function isYouth()
+    {
+        return Carbon::parse($this->dob)->age < 30;
     }
 
     //boot
