@@ -2,6 +2,7 @@
 
 namespace App\Admin\Controllers;
 
+use App\Models\Meeting;
 use App\Models\MemberPosition;
 use App\Models\OrgAllocation;
 use App\Models\Transaction;
@@ -80,6 +81,19 @@ class CreditScoreController extends AdminController
             return ucwords(strtolower($name));
         });
 
+        $grid->column('total_meetings', __('Total Meetings'))->display(function () {
+            return Meeting::where('sacco_id', $this->id)->count();
+        });
+
+        $grid->column('total_loans', __('Total Loans'))->display(function () {
+            return $this->transactions()
+                ->where('type', 'LOAN')
+                ->whereHas('user', function ($query) {
+                    $query->where('user_type', 'admin');
+                })
+                ->count();
+        });
+
         // Add dynamic data columns for loans to specific demographics
         $grid->column('loans_to_males', __('Loans to Males'))->display(function () {
             return $this->transactions()
@@ -102,15 +116,6 @@ class CreditScoreController extends AdminController
                 ->join('users', 'transactions.source_user_id', '=', 'users.id')
                 ->where('transactions.type', 'LOAN')
                 ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 30')
-                ->count();
-        });
-
-        $grid->column('total_loans', __('Total Loans'))->display(function () {
-            return $this->transactions()
-                ->where('type', 'LOAN')
-                ->whereHas('user', function ($query) {
-                    $query->where('user_type', 'admin');
-                })
                 ->count();
         });
 
@@ -180,13 +185,13 @@ class CreditScoreController extends AdminController
         });
 
         // Columns for credit score and description
-        $grid->column('credit_score', __('Credit Score'))->display(function () {
-            return '<span style="color: green;"><i class="fa fa-spinner fa-spin"></i></span>';
-        });
+        // $grid->column('credit_score', __('Credit Score'))->display(function () {
+        //     return '<span style="color: green;"><i class="fa fa-spinner fa-spin"></i></span>';
+        // });
 
-        $grid->column('credit_description', __('Credit Score Description'))->display(function () {
-            return '<span style="color: green;"><i class="fa fa-spinner fa-spin"></i></span>';
-        });
+        // $grid->column('credit_description', __('Credit Score Description'))->display(function () {
+        //     return '<span style="color: green;"><i class="fa fa-spinner fa-spin"></i></span>';
+        // });
 
         return $grid;
     }
