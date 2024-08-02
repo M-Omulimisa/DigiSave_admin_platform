@@ -111,7 +111,7 @@ class CreditScoreController extends AdminController
         return $this->transactions()
             ->where('type', 'LOAN')
             ->whereHas('user', function ($query) {
-                $query->where('user_type', 'admin'); // Only for admin users
+                $query->where('user_type', 'admin');
             })
             ->count();
     });
@@ -120,7 +120,7 @@ class CreditScoreController extends AdminController
         return $this->transactions()
             ->where('type', 'LOAN')
             ->whereHas('user', function ($query) {
-                $query->where('user_type', 'admin'); // Only for admin users
+                $query->where('user_type', 'admin');
             })
             ->sum('amount');
     });
@@ -129,7 +129,7 @@ class CreditScoreController extends AdminController
         return $this->transactions()
             ->where('type', 'LOAN_INTEREST')
             ->whereHas('user', function ($query) {
-                $query->where('user_type', 'admin'); // Only for admin users
+                $query->where('user_type', 'admin');
             })
             ->sum('amount');
     });
