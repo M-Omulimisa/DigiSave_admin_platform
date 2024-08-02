@@ -23,6 +23,11 @@ class Transaction extends Model
            return $this->belongsTo(User::class, 'source_user_id');
        }
 
+       public function sacco()
+    {
+        return $this->belongsTo(Sacco::class);
+    }
+
     //boot
     protected static function boot()
     {

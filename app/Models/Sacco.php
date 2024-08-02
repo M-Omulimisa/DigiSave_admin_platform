@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Encore\Admin\Facades\Admin;
+use App\Models\Transaction;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
@@ -16,6 +17,26 @@ class Sacco extends Model
     public function cycles()
     {
         return $this->hasMany(Cycle::class, 'sacco_id');
+    }
+
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class);
+    }
+
+    public function getTotalLoansAttribute()
+    {
+        return $this->transactions()->where('type', 'LOAN')->count();
+    }
+
+    public function getTotalPrincipalAttribute()
+    {
+        return $this->transactions()->where('type', 'LOAN')->sum('amount');
+    }
+
+    public function getTotalInterestAttribute()
+    {
+        return $this->transactions()->where('type', 'LOAN_INTEREST')->sum('amount');
     }
 
     public static function boot()
