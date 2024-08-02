@@ -21,26 +21,43 @@ class CreditScoreController extends AdminController
     protected $title = 'Credit Scores';
 
     protected function grid()
-{
-    $grid = new Grid(new Sacco());
+    {
+        $grid = new Grid(new Sacco());
 
-    $admin = Admin::user();
-    $adminId = $admin->id;
+        $admin = Admin::user();
+        $adminId = $admin->id;
 
-    // Default sort order
-    $sortOrder = request()->get('_sort', 'desc');
-    if (!in_array($sortOrder, ['asc', 'desc'])) {
-        $sortOrder = 'desc';
-    }
+        // Default sort order
+        $sortOrder = request()->get('_sort', 'desc');
+        if (!in_array($sortOrder, ['asc', 'desc'])) {
+            $sortOrder = 'desc';
+        }
 
-    if (!$admin->isRole('admin')) {
-        $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
-        if ($orgAllocation) {
-            $orgId = $orgAllocation->vsla_organisation_id;
-            $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)
-                ->pluck('sacco_id')->toArray();
+        if (!$admin->isRole('admin')) {
+            $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+            if ($orgAllocation) {
+                $orgId = $orgAllocation->vsla_organisation_id;
+                $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)
+                    ->pluck('sacco_id')->toArray();
+                $grid->model()
+                    ->whereIn('id', $saccoIds)
+                    ->whereNotIn('status', ['deleted', 'inactive'])
+                    ->whereHas('users', function ($query) {
+                        $query->whereIn('position_id', function ($subQuery) {
+                            $subQuery->select('id')
+                                     ->from('positions')
+                                     ->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+                        })
+                        ->whereNotNull('phone_number')
+                        ->whereNotNull('name');
+                    })
+                    ->with('users') // Eager loading users
+                    ->orderBy('created_at', $sortOrder);
+                $grid->disableCreateButton();
+            }
+        } else {
+            // For admins, display all records ordered by created_at
             $grid->model()
-                ->whereIn('id', $saccoIds)
                 ->whereNotIn('status', ['deleted', 'inactive'])
                 ->whereHas('users', function ($query) {
                     $query->whereIn('position_id', function ($subQuery) {
@@ -53,93 +70,101 @@ class CreditScoreController extends AdminController
                 })
                 ->with('users') // Eager loading users
                 ->orderBy('created_at', $sortOrder);
-            $grid->disableCreateButton();
         }
-    } else {
-        // For admins, display all records ordered by created_at
-        $grid->model()
-            ->whereNotIn('status', ['deleted', 'inactive'])
-            ->whereHas('users', function ($query) {
-                $query->whereIn('position_id', function ($subQuery) {
-                    $subQuery->select('id')
-                             ->from('positions')
-                             ->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+
+        $grid->showExportBtn();
+        $grid->disableBatchActions();
+        $grid->quickSearch('name')->placeholder('Search by name');
+
+        $grid->column('name', __('Name'))->sortable()->display(function ($name) {
+            return ucwords(strtolower($name));
+        });
+
+        // Add dynamic data columns for loans to specific demographics
+        $grid->column('loans_to_males', __('Loans to Males'))->display(function () {
+            return $this->transactions()
+                ->join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->where('transactions.type', 'LOAN')
+                ->where('users.sex', 'Male')
+                ->count();
+        });
+
+        $grid->column('loans_to_females', __('Loans to Females'))->display(function () {
+            return $this->transactions()
+                ->join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->where('transactions.type', 'LOAN')
+                ->where('users.sex', 'Female')
+                ->count();
+        });
+
+        $grid->column('loans_to_youth', __('Loans to Youth'))->display(function () {
+            return $this->transactions()
+                ->join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->where('transactions.type', 'LOAN')
+                ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 30')
+                ->count();
+        });
+
+        $grid->column('total_loans', __('Total Loans'))->display(function () {
+            return $this->transactions()
+                ->where('type', 'LOAN')
+                ->whereHas('user', function ($query) {
+                    $query->where('user_type', 'admin');
                 })
-                ->whereNotNull('phone_number')
-                ->whereNotNull('name');
-            })
-            ->with('users') // Eager loading users
-            ->orderBy('created_at', $sortOrder);
+                ->count();
+        });
+
+        $grid->column('total_principal', __('Total Principal'))->display(function () {
+            return $this->transactions()
+                ->where('type', 'LOAN')
+                ->whereHas('user', function ($query) {
+                    $query->where('user_type', 'admin');
+                })
+                ->sum('amount');
+        });
+
+        $grid->column('total_interest', __('Total Interest'))->display(function () {
+            return $this->transactions()
+                ->where('type', 'LOAN_INTEREST')
+                ->sum('amount');
+        });
+
+        // Add column for total savings balance
+        $grid->column('total_savings_balance', __('Total Savings Balance'))->display(function () {
+            $maleTotalBalance = $this->transactions()
+                ->join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->where('transactions.type', 'SHARE')
+                ->where('users.sex', 'Male')
+                ->where(function ($query) {
+                    $query->whereNull('users.user_type')
+                          ->orWhere('users.user_type', '<>', 'Admin');
+                })
+                ->sum('transactions.amount');
+
+            $femaleTotalBalance = $this->transactions()
+                ->join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->where('transactions.type', 'SHARE')
+                ->where('users.sex', 'Female')
+                ->where(function ($query) {
+                    $query->whereNull('users.user_type')
+                          ->orWhere('users.user_type', '<>', 'Admin');
+                })
+                ->sum('transactions.amount');
+
+            return $maleTotalBalance + $femaleTotalBalance;
+        });
+
+        // Columns for credit score and description
+        $grid->column('credit_score', __('Credit Score'))->display(function () {
+            return '<span style="color: green;"><i class="fa fa-spinner fa-spin"></i></span>';
+        });
+
+        $grid->column('credit_description', __('Credit Score Description'))->display(function () {
+            return '<span style="color: green;"><i class="fa fa-spinner fa-spin"></i></span>';
+        });
+
+        return $grid;
     }
-
-    $grid->showExportBtn();
-    $grid->disableBatchActions();
-    $grid->quickSearch('name')->placeholder('Search by name');
-
-    $grid->column('name', __('Name'))->sortable()->display(function ($name) {
-        return ucwords(strtolower($name));
-    });
-
-    // Add dynamic data columns for loans to specific demographics
-    $grid->column('loans_to_males', __('Loans to Males'))->display(function () {
-        return $this->transactions()
-            ->join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->where('transactions.type', 'LOAN')
-            ->where('users.sex', 'Male')
-            ->count();
-    });
-
-    $grid->column('loans_to_females', __('Loans to Females'))->display(function () {
-        return $this->transactions()
-            ->join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->where('transactions.type', 'LOAN')
-            ->where('users.sex', 'Female')
-            ->count();
-    });
-
-    $grid->column('loans_to_youth', __('Loans to Youth'))->display(function () {
-        return $this->transactions()
-            ->join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->where('transactions.type', 'LOAN')
-            ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 30')
-            ->count();
-    });
-
-    $grid->column('total_loans', __('Total Loans'))->display(function () {
-        return $this->transactions()
-            ->where('type', 'LOAN')
-            ->whereHas('user', function ($query) {
-                $query->where('user_type', 'admin');
-            })
-            ->count();
-    });
-
-    $grid->column('total_principal', __('Total Principal'))->display(function () {
-        return $this->transactions()
-            ->where('type', 'LOAN')
-            ->whereHas('user', function ($query) {
-                $query->where('user_type', 'admin');
-            })
-            ->sum('amount');
-    });
-
-    $grid->column('total_interest', __('Total Interest'))->display(function () {
-        return $this->transactions()
-            ->where('type', 'LOAN_INTEREST')
-            ->sum('amount');
-    });
-
-    // Columns for credit score and description
-    $grid->column('credit_score', __('Credit Score'))->display(function () {
-        return '<span style="color: green;"><i class="fa fa-spinner fa-spin"></i></span>';
-    });
-
-    $grid->column('credit_description', __('Credit Score Description'))->display(function () {
-        return '<span style="color: green;"><i class="fa fa-spinner fa-spin"></i></span>';
-    });
-
-    return $grid;
-}
 
 public function transactions() {
     return $this->hasMany(Transaction::class);
