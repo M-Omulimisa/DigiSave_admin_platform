@@ -36,8 +36,8 @@ class CreditScoreController extends AdminController
         $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
         if ($orgAllocation) {
             $orgId = $orgAllocation->vsla_organisation_id;
-            $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
-            $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
+            $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)
+                ->pluck('sacco_id')->toArray();
             $grid->model()
                 ->whereIn('id', $saccoIds)
                 ->whereNotIn('status', ['deleted', 'inactive'])
@@ -50,6 +50,7 @@ class CreditScoreController extends AdminController
                     ->whereNotNull('phone_number')
                     ->whereNotNull('name');
                 })
+                ->with('users') // Eager loading users
                 ->orderBy('created_at', $sortOrder);
             $grid->disableCreateButton();
         }
@@ -66,6 +67,7 @@ class CreditScoreController extends AdminController
                 ->whereNotNull('phone_number')
                 ->whereNotNull('name');
             })
+            ->with('users') // Eager loading users
             ->orderBy('created_at', $sortOrder);
     }
 
@@ -113,7 +115,6 @@ class CreditScoreController extends AdminController
 
     return $grid;
 }
-
 
     protected function detail($id)
     {
