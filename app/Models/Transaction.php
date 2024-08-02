@@ -40,35 +40,66 @@ class Transaction extends Model
         });
 
         static::creating(function ($model) {
-            include_once(app_path() . '/Models/Utils.php');
+            if (!$model->cycle_id) {  // Only set cycle_id if it's not already provided
+                include_once(app_path() . '/Models/Utils.php');
 
-            if (!in_array($model->type, TRANSACTION_TYPES)) {
-                throw new Exception("Invalid transaction type.");
-            }
+                if (!in_array($model->type, TRANSACTION_TYPES)) {
+                    throw new Exception("Invalid transaction type.");
+                }
 
-            $user = Administrator::find($model->user_id);
-            if ($user == null) {
-                throw new Exception("User not found");
-            }
+                $user = Administrator::find($model->user_id);
+                if ($user == null) {
+                    throw new Exception("User not found");
+                }
 
-            // Get active cycle
-            $cycle = Cycle::where('sacco_id', $user->sacco_id)
-                ->where('status', 'Active')
-                ->first();
+                // Get active cycle
+                $cycle = Cycle::where('sacco_id', $user->sacco_id)
+                    ->where('status', 'Active')
+                    ->first();
 
-            // Check if an active cycle is found
-            if ($cycle == null) {
-                // You can handle the case where no active cycle is found
-                // Set $model->cycle_id to null or any default value as needed
-                $model->cycle_id = null; // or $model->cycle_id = some_default_value;
-            } else {
-                // If an active cycle is found, set the cycle_id and sacco_id
-                $model->cycle_id = $cycle->id;
-                $model->sacco_id = $user->sacco_id;
+                if ($cycle == null) {
+                    // Handle the case where no active cycle is found
+                    $model->cycle_id = null; // You could set it to a default value or leave it as null
+                } else {
+                    // If an active cycle is found, set the cycle_id and sacco_id
+                    $model->cycle_id = $cycle->id;
+                    $model->sacco_id = $user->sacco_id;
+                }
             }
 
             return $model;
         });
+
+        // static::creating(function ($model) {
+        //     include_once(app_path() . '/Models/Utils.php');
+
+        //     if (!in_array($model->type, TRANSACTION_TYPES)) {
+        //         throw new Exception("Invalid transaction type.");
+        //     }
+
+        //     $user = Administrator::find($model->user_id);
+        //     if ($user == null) {
+        //         throw new Exception("User not found");
+        //     }
+
+        //     // Get active cycle
+        //     $cycle = Cycle::where('sacco_id', $user->sacco_id)
+        //         ->where('status', 'Active')
+        //         ->first();
+
+        //     // Check if an active cycle is found
+        //     if ($cycle == null) {
+        //         // You can handle the case where no active cycle is found
+        //         // Set $model->cycle_id to null or any default value as needed
+        //         $model->cycle_id = null; // or $model->cycle_id = some_default_value;
+        //     } else {
+        //         // If an active cycle is found, set the cycle_id and sacco_id
+        //         $model->cycle_id = $cycle->id;
+        //         $model->sacco_id = $user->sacco_id;
+        //     }
+
+        //     return $model;
+        // });
 
 
         //updating

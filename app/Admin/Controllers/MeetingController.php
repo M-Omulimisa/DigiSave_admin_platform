@@ -63,6 +63,12 @@ class MeetingController extends AdminController
         ->orderBy('created_at', $sortOrder);
     }
 
+    $grid->model()
+         ->whereHas('cycle', function ($query) {
+            $query->where('status', 'active');
+         })
+         ->orderBy('created_at', $sortOrder);
+
     $grid->filter(function ($filter) {
         $filter->disableIdFilter();
 

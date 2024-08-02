@@ -33,49 +33,55 @@ class CycleTransactionController extends AdminController
     }
 
     protected function grid($cycleId, $saccoId)
-    {
-        $grid = new Grid(new Transaction());
+{
+    $grid = new Grid(new Transaction());
 
-        // Filter transactions by cycle_id and sacco_id if provided in the request
-        if ($cycleId && $saccoId) {
-            $grid->model()->where('cycle_id', $cycleId)->where('sacco_id', $saccoId);
+    // Default sort order
+        $sortOrder = request()->get('_sort', 'desc');
+        if (!in_array($sortOrder, ['asc', 'desc'])) {
+            $sortOrder = 'desc';
         }
 
-        $grid->column('id', __('ID'))->sortable();
-        $grid->column('user.name', __('Account'))->sortable();
-        $grid->column('type', __('Type'))->display(function ($type) {
-            return $type === 'REGESTRATION' ? 'REGISTRATION' : $type;
-        })->sortable();
-        $grid->column('amount', __('Amount (UGX)'))->display(function ($amount) {
-            return number_format($amount, 2, '.', ',');
-        })->sortable();
-        $grid->column('description', __('Description'));
-        $grid->column('created_at', __('Created At'))->sortable();
+    // dd($saccoId);
 
-        // Add a column for viewing details
-        $grid->column('details', __('Details'))->display(function () {
-            return '<a href="' . url('admin/transactions/' . $this->id) . '">View Details</a>';
-        });
+    // Filter transactions by cycle_id and sacco_id if provided in the request
+    $grid->model()
+         ->where('sacco_id', $saccoId)
+         ->where('cycle_id', $cycleId)
+         ->orderBy('created_at', $sortOrder);
 
-        // Add a column for editing transactions
-        $grid->column('edit', __('Edit'))->display(function () {
-            if ($this->type === 'SHARE') {
-                return '<a href="' . url('admin/transactions/' . $this->id . '/edit') . '">Edit</a>';
-            } else {
-                return '<span style="color: grey;">Edit</span>';
-            }
-        });
+    $grid->disableCreateButton();
 
-        $grid->filter(function ($filter) {
-            $filter->disableIdFilter();
-            $filter->like('user.name', 'User Name');
-            $filter->equal('type', 'Type')->select(['SHARE' => 'SHARE', 'Send' => 'Send', 'Receive' => 'Receive', 'REGESTRATION' => 'Registration']);
-            $filter->between('amount', 'Amount');
-            $filter->between('created_at', 'Created At')->datetime();
-        });
+    // Custom create button if needed
+    $grid->tools(function ($tools) use ($saccoId, $cycleId) {
+        $url = url('/cycle-transactions/create?sacco_id=' . $saccoId . '&cycle_id=' . $cycleId);
+        $tools->append("<a class='btn btn-sm btn-success' href='{$url}'>Create New Transaction</a>");
+    });
 
-        return $grid;
-    }
+    // Columns setup
+    $grid->column('id', __('ID'))->sortable();
+    $grid->column('user.name', __('Account'))->sortable();
+    $grid->column('type', __('Type'))->display(function ($type) {
+        return $type === 'REGESTRATION' ? 'REGISTRATION' : $type;
+    })->sortable();
+    $grid->column('amount', __('Amount (UGX)'))->display(function ($amount) {
+        return number_format($amount, 2, '.', ',');
+    })->sortable();
+    $grid->column('description', __('Description'));
+    $grid->column('created_at', __('Created At'))->sortable();
+
+    // Filters
+    $grid->filter(function ($filter) {
+        $filter->disableIdFilter();
+        $filter->like('user.name', 'User Name');
+        $filter->equal('type', 'Type')->select(['SHARE' => 'SHARE', 'Send' => 'Send', 'Receive' => 'Receive', 'REGESTRATION' => 'Registration']);
+        $filter->between('amount', 'Amount');
+        $filter->between('created_at', 'Created At')->datetime();
+    });
+
+    return $grid;
+}
+
 
     protected function detail($id)
     {
@@ -97,63 +103,61 @@ class CycleTransactionController extends AdminController
     }
 
     protected function form()
-{
-    $saccoId = request()->get('sacco_id');
-    $cycleId = request()->get('cycle_id');
+    {
+        $form = new Form(new Transaction());
 
-    $form = new Form(new Transaction());
+        // Conditional default values only if it's a new model (i.e., creating)
+        if ($form->isCreating()) {
+            $saccoId = request()->get('sacco_id');
+            $cycleId = request()->get('cycle_id');
+            $adminUserId = User::where('sacco_id', $saccoId)->where('user_type', '=', 'admin')->first()->id ?? null;
 
-    $form->display('id', __('ID'));
+            $form->hidden('user_id')->default($adminUserId);
+            $form->hidden('sacco_id')->default($saccoId);
+            $form->hidden('cycle_id')->default($cycleId);
+        }
 
-    // Filter users by sacco_id
-    $form->select('user_id', __('User'))
-        ->options(User::where('sacco_id', $saccoId)->pluck('name', 'id'))
-        ->rules('required');
+        // Common form fields setup
+        $form->select('source_user_id', __('User'))
+             ->options(function () use ($form) {
+                $saccoId = $form->model()->sacco_id ?? request()->get('sacco_id');
+                return User::where('sacco_id', $saccoId)
+                           ->where(function ($query) {
+                               $query->whereNull('user_type')->orWhere('user_type', '!=', 'Admin');
+                           })
+                           ->pluck('first_name', 'id');
+             })
+             ->rules('required');
 
-    // Allow transaction type selection
-    $form->select('type', __('Type'))
-        ->options(Transaction::select('type')->distinct()->pluck('type', 'type')->toArray())
-        ->rules('required');
+        $form->select('type', __('Type'))
+             ->options(Transaction::select('type')->distinct()->pluck('type', 'type')->toArray())
+             ->rules('required');
 
-    // Allow user to enter the created_at timestamp
-    $form->datetime('created_at', __('Created At'))->default(date('Y-m-d H:i:s'))->rules('required|date');
+        $form->datetime('created_at', __('Created At'))
+             ->default(date('Y-m-d H:i:s'))
+             ->rules('required|date');
 
-    $form->decimal('amount', __('Amount'))->rules('required|numeric|min:0');
-    $form->textarea('description', __('Description'));
+        $form->decimal('amount', __('Amount'))
+             ->rules('required|numeric|min:0');
 
-    // Adding JavaScript to update the description based on the amount
-    $form->html('<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        var amountField = document.querySelector("input[name=\'amount\']");
-        var descriptionField = document.querySelector("textarea[name=\'description\']");
-        var transactionTypeField = document.querySelector("select[name=\'type\'] option:checked").text;
+        $form->textarea('description', __('Description'));
 
-        amountField.addEventListener("input", function() {
-            var userName = document.querySelector("select[name=\'user_id\'] option:checked").text;
-            var amount = amountField.value;
-            descriptionField.value = "Update of UGX " + amount + " on " + transactionTypeField + " for " + userName + " transaction.";
-        });
-
-        // Update description on type change
-        document.querySelector("select[name=\'type\']").addEventListener("change", function() {
-            transactionTypeField = this.options[this.selectedIndex].text;
-            var amount = amountField.value;
-            var userName = document.querySelector("select[name=\'user_id\'] option:checked").text;
-            descriptionField.value = "Update of UGX " + amount + " on " + transactionTypeField + " for " + userName + " transaction.";
-        });
-    });
-    </script>');
-
-    // Handle the form saving event to update the description server-side
-    $form->saving(function (Form $form) use ($saccoId, $cycleId) {
-        $user = User::find($form->user_id);
-        $form->description = "Update of UGX {$form->amount} on {$form->type} for {$user->name} transaction.";
-        $form->model()->sacco_id = $saccoId;
-        $form->model()->cycle_id = $cycleId;
-    });
-
-    return $form;
-}
+        return $form;
+    }
 
 
+
+    public function create(Content $content)
+    {
+        $saccoId = request()->get('sacco_id');
+        $cycleId = request()->get('cycle_id');
+
+        $cycle = Cycle::find($cycleId);
+        $groupName = $cycle ? $cycle->sacco->name : 'Unknown Group';
+        $title = "{$groupName} - Cycle {$cycle->name} Transactions - Create New";
+
+        return $content
+            ->header($title)
+            ->body($this->form());
+    }
 }

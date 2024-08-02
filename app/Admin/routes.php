@@ -50,6 +50,10 @@ Route::group([
 
     /* ========================START OF NEW THINGS===========================*/
 
+    // Inside your routes group
+$router->get('cycle-transactions/create', 'CycleTransactionController@create')->name('cycle-transactions.create');
+$router->post('cycle-transactions', 'CycleTransactionController@store')->name('cycle-transactions.store');
+
     $router->resource('crops', CropController::class);
     $router->resource('crop-protocols', CropProtocolController::class);
     $router->resource('gardens', GardenController::class);

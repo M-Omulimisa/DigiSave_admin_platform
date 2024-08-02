@@ -13,6 +13,12 @@ class Meeting extends Model
         'name', 'date', 'location', 'sacco_id', 'administrator_id', 'members', 'minutes', 'attendance', 'cycle_id'
     ];
 
+    // protected $casts = [
+    //     'members' => 'array',
+    //     'minutes' => 'array',
+    //     'attendance' => 'array',
+    // ];
+
     public function cycle()
     {
         return $this->belongsTo(Cycle::class);

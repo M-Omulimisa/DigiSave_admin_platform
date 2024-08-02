@@ -61,6 +61,14 @@ class CycleMeetingController extends AdminController
             }, 'Cycle Name');
         });
 
+        $grid->disableCreateButton();
+
+    // Custom create button if needed
+    $grid->tools(function ($tools) use ($saccoId, $cycleId) {
+        $url = url('/cycle-meetings/create?sacco_id=' . $saccoId . '&cycle_id=' . $cycleId);
+        $tools->append("<a class='btn btn-sm btn-success' href='{$url}'>Create New Meeting</a>");
+    });
+
         $grid->column('sacco.name', __('Group Name'));
         // Display the cycle name directly using its id
         $grid->column('cycle_id', __('Cycle'))->display(function ($cycleId) {
@@ -69,15 +77,13 @@ class CycleMeetingController extends AdminController
         });
         $grid->column('name', __('Meeting'))->editable()->sortable();
         $grid->column('date', __('Date'));
-        $grid->column('chairperson_name', __('Chairperson Name'))->sortable();
+        // $grid->column('chairperson_name', __('Chairperson Name'))->sortable();
         $grid->column('members', __('Attendance'))->display(function ($members) {
-            $memberData = json_decode($members, true);
-            if (json_last_error() === JSON_ERROR_NONE && is_array($memberData) && !empty($memberData)) {
-                $present = isset($memberData['present']) ? $memberData['present'] : 0;
-                $absent = isset($memberData['absent']) ? $memberData['absent'] : 0;
-                return "Present: $present, Absent: $absent";
-            }
-            return 'No attendance recorded';
+            // Convert each line break in the members string into an HTML <br> tag for proper display
+            $formattedMembers = nl2br(htmlspecialchars($members));
+
+            // Wrap the formatted members in a div for additional styling or structure
+            return "<div class='formatted-members'>{$formattedMembers}</div>";
         });
 
         $grid->column('minutes', __('Minutes'))->display(function ($minutes) {
@@ -117,15 +123,7 @@ class CycleMeetingController extends AdminController
         $show->field('location', __('Location'));
         $show->field('sacco.name', __('Group Name'));
         $show->field('administrator.name', __('Administrator Name'));
-        $show->field('members', __('Attendance'))->as(function ($members) {
-            $memberData = json_decode($members, true);
-            if (json_last_error() === JSON_ERROR_NONE && is_array($memberData) && !empty($memberData)) {
-                $present = isset($memberData['present']) ? $memberData['present'] : 0;
-                $absent = isset($memberData['absent']) ? $memberData['absent'] : 0;
-                return "Present: $present, Absent: $absent";
-            }
-            return 'No attendance recorded';
-        });
+        $show->field('members', __('Attendance'));
         $show->field('minutes', __('Minutes'))->as(function ($minutes) {
             $minutesData = json_decode($minutes, true);
             if (json_last_error() === JSON_ERROR_NONE) {
@@ -151,50 +149,25 @@ class CycleMeetingController extends AdminController
     }
 
     protected function form()
-{
-    $form = new Form(new Meeting());
+    {
 
-    // Get sacco_id and cycle_id from the request parameters
-    $saccoId = request()->get('sacco_id');
-    $cycleId = request()->get('cycle_id');
+        $form = new Form(new Meeting());
 
-    $form->hidden('sacco_id')->default($saccoId);
-    $form->hidden('cycle_id')->default($cycleId);
-    $form->hidden('administrator_id')->default(Admin::user()->id);
+        $sacco_id = request()->get('sacco_id');
+        $cycleId = request()->get('cycle_id');
 
-    $form->text('name', __('Meeting Name'))->rules('required');
-    $form->date('date', __('Date'))->default(date('Y-m-d'))->rules('required');
+        $form->hidden('sacco_id')->default($sacco_id);
+        $form->hidden('cycle_id')->default($cycleId);
+        $form->hidden('administrator_id')->default(Admin::user()->id);
+        $form->text('name', __('Name'))->rules('required');
+        $form->date('date', __('Date'))->default(date('Y-m-d'))->rules('required');
+        $form->text('location', __('Location'))->rules('required');
 
-    // Add a field for members with a present/absent toggle
-    $form->table('members', __('Members'), function ($table) {
-        $table->text('name', __('Name'))->rules('required');
-        $table->select('status', __('Status'))->options(['present' => 'Present', 'absent' => 'Absent'])->rules('required');
-    });
+        $form->quill('minutes', __('Minutes'));
+        $form->textarea('members', __('Attendance'));
 
-    $form->embeds('minutes', __('Minutes'), function ($form) {
-        $form->embeds('opening_summary', __('Opening Summary'), function ($form) {
-            $form->text('total_savings', __('Total Savings'))->rules('required');
-            $form->text('total_loans', __('Total Loans'))->rules('required');
-            $form->text('total_fines', __('Total Fines'))->rules('required');
-            $form->text('total_welfare', __('Total Welfare'))->rules('required');
-            $form->text('number_of_loans_disbursed', __('Number of Loans Disbursed'))->rules('required');
-            $form->text('welfare_disbursed', __('Welfare Disbursed'))->rules('required');
-            $form->text('loan_payments_made', __('Loan Payments Made'))->rules('required');
-        });
-
-        $form->embeds('closing_summary', __('Closing Summary'), function ($form) {
-            $form->text('total_savings', __('Total Savings'))->rules('required');
-            $form->text('total_loans', __('Total Loans'))->rules('required');
-            $form->text('total_fines', __('Total Fines'))->rules('required');
-            $form->text('total_welfare', __('Total Welfare'))->rules('required');
-            $form->text('number_of_loans_disbursed', __('Number of Loans Disbursed'))->rules('required');
-            $form->text('welfare_disbursed', __('Welfare Disbursed'))->rules('required');
-            $form->text('loan_payments_made', __('Loan Payments Made'))->rules('required');
-        });
-    });
-
-    return $form;
-}
+        return $form;
+    }
 
 }
 ?>
