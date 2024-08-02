@@ -154,6 +154,31 @@ class CreditScoreController extends AdminController
             return $maleTotalBalance + $femaleTotalBalance;
         });
 
+        $grid->column('average_savings_per_member', __('Average Savings Per Member'))->display(function () {
+            // Calculate total savings
+            $totalSavings = $this->transactions()
+                ->join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->where('transactions.type', 'SHARE')
+                ->where(function ($query) {
+                    $query->whereNull('users.user_type')
+                          ->orWhere('users.user_type', '<>', 'Admin');
+                })
+                ->sum('transactions.amount');
+
+            // Calculate the number of distinct members with savings
+            $distinctMembers = $this->transactions()
+                ->join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->where('transactions.type', 'SHARE')
+                ->where(function ($query) {
+                    $query->whereNull('users.user_type')
+                          ->orWhere('users.user_type', '<>', 'Admin');
+                })
+                ->distinct('users.id')
+                ->count('users.id');
+
+            return $distinctMembers > 0 ? $totalSavings / $distinctMembers : 0;
+        })
+
         // Columns for credit score and description
         $grid->column('credit_score', __('Credit Score'))->display(function () {
             return '<span style="color: green;"><i class="fa fa-spinner fa-spin"></i></span>';
