@@ -85,6 +85,24 @@ class CreditScoreController extends AdminController
             return Meeting::where('sacco_id', $this->id)->count();
         });
 
+        $grid->column('average_attendance', __('Average Attendance'))->display(function () {
+            $meetings = Meeting::where('sacco_id', $this->id)->get();
+
+            $totalAttendance = 0;
+            $meetingCount = $meetings->count();
+
+            foreach ($meetings as $meeting) {
+                $attendanceData = json_decode($meeting->attendance, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($attendanceData) && !empty($attendanceData)) {
+                    if (isset($attendanceData['presentMembersIds']) && is_array($attendanceData['presentMembersIds'])) {
+                        $totalAttendance += count($attendanceData['presentMembersIds']);
+                    }
+                }
+            }
+
+            return $meetingCount > 0 ? $totalAttendance / $meetingCount : 0;
+        });
+
         $grid->column('total_loans', __('Total Loans'))->display(function () {
             return $this->transactions()
                 ->where('type', 'LOAN')
@@ -183,15 +201,6 @@ class CreditScoreController extends AdminController
 
             return $distinctMembers > 0 ? $totalSavings / $distinctMembers : 0;
         });
-
-        // Columns for credit score and description
-        // $grid->column('credit_score', __('Credit Score'))->display(function () {
-        //     return '<span style="color: green;"><i class="fa fa-spinner fa-spin"></i></span>';
-        // });
-
-        // $grid->column('credit_description', __('Credit Score Description'))->display(function () {
-        //     return '<span style="color: green;"><i class="fa fa-spinner fa-spin"></i></span>';
-        // });
 
         return $grid;
     }
