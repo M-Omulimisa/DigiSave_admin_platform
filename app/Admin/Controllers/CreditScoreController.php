@@ -4,6 +4,7 @@ namespace App\Admin\Controllers;
 
 use App\Models\MemberPosition;
 use App\Models\OrgAllocation;
+use App\Models\Transaction;
 use App\Models\Sacco;
 use App\Models\VslaOrganisationSacco;
 use Encore\Admin\Auth\Database\Administrator;
@@ -82,28 +83,25 @@ class CreditScoreController extends AdminController
     // Add dynamic data columns for loans to specific demographics
     $grid->column('loans_to_males', __('Loans to Males'))->display(function () {
         return $this->transactions()
-            ->where('type', 'LOAN')
-            ->whereHas('user', function ($query) {
-                $query->where('sex', 'male');
-            })
+            ->join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'LOAN')
+            ->where('users.sex', 'Male')
             ->count();
     });
 
     $grid->column('loans_to_females', __('Loans to Females'))->display(function () {
         return $this->transactions()
-            ->where('type', 'LOAN')
-            ->whereHas('user', function ($query) {
-                $query->where('sex', 'female');
-            })
+            ->join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'LOAN')
+            ->where('users.sex', 'Female')
             ->count();
     });
 
     $grid->column('loans_to_youth', __('Loans to Youth'))->display(function () {
         return $this->transactions()
-            ->where('type', 'LOAN')
-            ->whereHas('user', function ($query) {
-                $query->whereRaw('TIMESTAMPDIFF(YEAR, dob, CURDATE()) < 30');
-            })
+            ->join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'LOAN')
+            ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 30')
             ->count();
     });
 
@@ -128,9 +126,6 @@ class CreditScoreController extends AdminController
     $grid->column('total_interest', __('Total Interest'))->display(function () {
         return $this->transactions()
             ->where('type', 'LOAN_INTEREST')
-            ->whereHas('user', function ($query) {
-                $query->where('user_type', 'admin');
-            })
             ->sum('amount');
     });
 
@@ -145,6 +140,11 @@ class CreditScoreController extends AdminController
 
     return $grid;
 }
+
+public function transactions() {
+    return $this->hasMany(Transaction::class);
+}
+
 
 
     protected function detail($id)
