@@ -53,6 +53,11 @@ class ApiResurceController extends Controller
 {
 
     use ApiResponser;
+    public function policy()
+    {
+        return redirect('https://sites.google.com/view/m-omulimisaprivacypolicy?usp=sharing');
+    }
+
     public function reverseTransaction(Request $request)
     {
         $user = auth('api')->user();
