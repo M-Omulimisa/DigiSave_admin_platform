@@ -100,10 +100,10 @@ class HomeController extends Controller
             'maleMembersCount' => $maleUsers->count(),
             'youthMembersCount' => $youthUsers->count(),
             'pwdMembersCount' => $pwdUsers->count(),
-            'femaleTotalBalance' => $this->getTotalBalance($femaleUsers, 'SHARE'),
-            'maleTotalBalance' => $this->getTotalBalance($maleUsers, 'SHARE'),
-            'youthTotalBalance' => $this->getTotalBalance($youthUsers, 'SHARE'),
-            'pwdTotalBalance' => $this->getTotalBalance($pwdUsers, 'SHARE'),
+            'femaleTotalBalance' => $this->getTotalBalance($femaleUsers, 'SHARE', $startDate, $endDate),
+            'maleTotalBalance' => $this->getTotalBalance($maleUsers, 'SHARE', $startDate, $endDate),
+            'youthTotalBalance' => $this->getTotalBalance($youthUsers, 'SHARE', $startDate, $endDate),
+            'pwdTotalBalance' => $this->getTotalBalance($pwdUsers, 'SHARE', $startDate, $endDate),
             'totalLoanAmount' => $this->getTotalLoanAmount($filteredUsers, $startDate, $endDate),
             'loanSumForWomen' => $this->getLoanSumForGender($filteredUsers, 'Female', $startDate, $endDate),
             'loanSumForMen' => $this->getLoanSumForGender($filteredUsers, 'Male', $startDate, $endDate),
@@ -122,7 +122,7 @@ class HomeController extends Controller
 
 
 
-    private function getTotalBalance($users, $type)
+    private function getTotalBalance($users, $type, $startDate, $endDate)
 {
     $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
 
@@ -132,9 +132,9 @@ class HomeController extends Controller
     $totalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
         ->join('saccos as s', 'users.sacco_id', '=', 's.id')
         ->whereIn('users.id', $userIds)  // Use the extracted user IDs
-        // ->where('users.sex', 'Female')
         ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
         ->where('t.type', $type)  // Use the specified transaction type
+        ->whereBetween('t.created_at', [$startDate, $endDate]) // Filter by created_at date range
         ->where(function ($query) {
             $query->whereNull('users.user_type')
                 ->orWhere('users.user_type', '<>', 'Admin');
