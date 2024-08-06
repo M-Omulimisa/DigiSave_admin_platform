@@ -116,29 +116,6 @@ class CreditScoreController extends AdminController
         return count(array_unique($allMemberNames)); // Return the count of unique names
     });
 
-    $grid->column('average_attendance', __('Average Attendance'))->display(function () {
-        $meetings = $this->meetings; // Fetch all meetings for the sacco
-        $allMemberNames = []; // Initialize array to collect all member names across meetings
-
-        foreach ($meetings as $meeting) {
-            $attendanceData = $meeting->members; // Access the array directly
-
-            // Check if 'presentMembersIds' exists and is an array
-            if (isset($attendanceData['presentMembersIds']) && is_array($attendanceData['presentMembersIds'])) {
-                // Iterate over present members and collect their names
-                foreach ($attendanceData['presentMembersIds'] as $member) {
-                    if (isset($member['name'])) {
-                        $allMemberNames[] = $member['name']; // Collect names
-                    }
-                }
-            }
-        }
-
-        // Return the count of unique member names
-        return count(array_unique($allMemberNames));
-    });
-
-
     $grid->column('total_loans', __('Total Loans'))->display(function () {
         return $this->transactions()
             ->where('type', 'LOAN')
