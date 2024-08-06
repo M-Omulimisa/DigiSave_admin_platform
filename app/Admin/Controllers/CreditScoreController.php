@@ -123,8 +123,14 @@ class CreditScoreController extends AdminController
         $meetingCount = count($meetings); // Count the number of meetings
 
         foreach ($meetings as $meeting) {
-            $membersJson = $meeting->members; // Access the JSON string directly
-            $attendanceData = json_decode($membersJson, true); // Decode JSON string as an associative array
+            $membersData = $meeting->members; // Get the members data
+
+            // Check if $membersData is an object and convert it to JSON if necessary
+            if (is_object($membersData)) {
+                $attendanceData = json_decode(json_encode($membersData), true); // Convert object to JSON then to array
+            } else {
+                $attendanceData = json_decode($membersData, true); // Decode JSON string as an associative array
+            }
 
             if (json_last_error() === JSON_ERROR_NONE) {
                 // Check if 'presentMembersIds' exists and is an array
@@ -132,6 +138,9 @@ class CreditScoreController extends AdminController
                     // Count the number of present members and add to total attendance
                     $totalAttendance += count($attendanceData['presentMembersIds']);
                 }
+            } else {
+                // Optional debugging statement
+                dd('JSON decode error: ' . json_last_error_msg(), $membersData);
             }
         }
 
