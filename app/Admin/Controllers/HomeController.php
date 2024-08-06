@@ -120,10 +120,47 @@ class HomeController extends Controller
         // Add your logic here
     }
 
+
+
     private function getTotalBalance($users, $type)
-    {
-        return Transaction::whereIn('source_user_id', $users->pluck('id')->toArray())->where('type', $type)->sum('balance');
-    }
+{
+    $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
+
+    $totalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
+        ->join('saccos as s', 'users.sacco_id', '=', 's.id')
+        ->whereIn('users.id', $users)
+        ->where('users.sex', 'Female')
+        ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+        ->where('t.type', $type)
+        ->where(function ($query) {
+            $query->whereNull('users.user_type')
+                ->orWhere('users.user_type', '<>', 'Admin');
+        })
+        ->select(DB::raw('SUM(t.amount) as total_balance'))
+        ->first()
+        ->total_balance;
+
+    return $totalBalance;
+}
+
+
+    // private function getTotalBalance($users, $type)
+    // {
+    //     User::join('transactions as t', 'users.id', '=', 't.source_user_id')
+    //         ->join('saccos as s', 'users.sacco_id', '=', 's.id')
+    //         ->whereIn('users.sacco_id', $saccoIds)
+    //         ->where('users.sex', 'Female')
+    //         ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+    //         ->where('t.type', 'SHARE')
+    //         ->where(function ($query) {
+    //             $query->whereNull('users.user_type')
+    //             ->orWhere('users.user_type', '<>', 'Admin');
+    //         })
+    //         ->select(DB::raw('SUM(t.amount) as total_balance'))
+    //         ->first()
+    //         ->total_balance
+    //     return Transaction::whereIn('source_user_id', $users->pluck('id')->toArray())->where('type', $type)->sum('balance');
+    // }
 
     private function getTotalLoanAmount($users, $startDate, $endDate)
     {
