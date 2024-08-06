@@ -116,57 +116,29 @@ class CreditScoreController extends AdminController
         return count(array_unique($allMemberNames)); // Return the count of unique names
     });
 
-    // $grid->column('total_member_names', __('Total Member Names'))->display(function () {
-    //     $meetings = $this->meetings; // Fetch all meetings for the sacco
-    //     $allMemberNames = []; // Initialize array to collect all member names across meetings
-
-    //     foreach ($meetings as $meeting) {
-    //         // Access the JSON string directly
-    //         $membersJson = $meeting->members; // Assuming members is the JSON string
-    //         $attendanceData = json_decode($membersJson, true); // Decode JSON string as an associative array
-
-    //         // Use dd() to debug the JSON structure and any issues
-    //         dd($attendanceData); // This will dump and die, allowing you to inspect the data
-
-    //         if (json_last_error() === JSON_ERROR_NONE) {
-    //             if (isset($attendanceData['presentMembersIds']) && is_array($attendanceData['presentMembersIds'])) {
-    //                 foreach ($attendanceData['presentMembersIds'] as $member) {
-    //                     if (isset($member['name'])) {
-    //                         $allMemberNames[] = $member['name']; // Collect names
-    //                     }
-    //                 }
-    //             } else {
-    //                 // Use dd() to debug if 'presentMembersIds' is missing or not an array
-    //                 dd('presentMembersIds is missing or not an array', $attendanceData);
-    //             }
-    //         } else {
-    //             // Use dd() to debug if there's a JSON decode error
-    //             dd('JSON decode error: ' . json_last_error_msg(), $membersJson);
-    //         }
-    //     }
-
-    //     // Use dd() to debug the collection of all member names
-    //     dd($allMemberNames);
-
-    //     return count(array_unique($allMemberNames)); // Return the count of unique names
-    // });
-
     $grid->column('average_attendance', __('Average Attendance'))->display(function () {
-        $meetings = Meeting::where('sacco_id', $this->id)->get();
+        $meetings = $this->meetings; // Fetch all meetings for the sacco
 
-        $totalAttendance = 0;
-        $meetingCount = $meetings->count();
+        $totalAttendance = 0; // Initialize a counter for total attendance
+        $meetingCount = count($meetings); // Count the number of meetings
 
         foreach ($meetings as $meeting) {
-            $attendanceData = json_decode($meeting->attendance, true);
-            if (json_last_error() === JSON_ERROR_NONE && is_array($attendanceData) && !empty($attendanceData)) {
+            $membersJson = $meeting->members; // Access the JSON string directly
+            $attendanceData = json_decode($membersJson, true); // Decode JSON string as an associative array
+
+            if (json_last_error() === JSON_ERROR_NONE) {
+                // Check if 'presentMembersIds' exists and is an array
                 if (isset($attendanceData['presentMembersIds']) && is_array($attendanceData['presentMembersIds'])) {
+                    // Count the number of present members and add to total attendance
                     $totalAttendance += count($attendanceData['presentMembersIds']);
                 }
             }
         }
 
-        return $meetingCount > 0 ? $totalAttendance / $meetingCount : 0;
+        // Calculate the average attendance
+        $averageAttendance = $meetingCount > 0 ? $totalAttendance / $meetingCount : 0;
+
+        return number_format($averageAttendance, 2); // Return the average attendance formatted to 2 decimal places
     });
 
     $grid->column('total_loans', __('Total Loans'))->display(function () {
