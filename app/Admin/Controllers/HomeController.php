@@ -126,12 +126,15 @@ class HomeController extends Controller
 {
     $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
 
+    // Use pluck to extract only the IDs from the $users collection
+    $userIds = $users->pluck('id')->toArray();
+
     $totalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
         ->join('saccos as s', 'users.sacco_id', '=', 's.id')
-        ->whereIn('users.id', $users)
-        // ->where('users.sex', 'Female')
+        ->whereIn('users.id', $userIds)  // Use the extracted user IDs
+        ->where('users.sex', 'Female')
         ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-        ->where('t.type', $type)
+        ->where('t.type', $type)  // Use the specified transaction type
         ->where(function ($query) {
             $query->whereNull('users.user_type')
                 ->orWhere('users.user_type', '<>', 'Admin');
