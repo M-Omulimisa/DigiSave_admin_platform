@@ -332,7 +332,7 @@ private function getLoanSumForYouths($users, $startDate, $endDate)
 // Helper function to format currency values
 private function formatCurrency($amount)
 {
-    return number_format(abs($amount), 2);
+    return 'UGX ' . number_format(abs($amount), 2);
 }
 
     // private function generateCsv($statistics, $startDate, $endDate)
