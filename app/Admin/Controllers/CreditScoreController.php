@@ -96,9 +96,12 @@ class CreditScoreController extends AdminController
         $allMemberNames = []; // Initialize array to collect all member names across meetings
 
         foreach ($meetings as $meeting) {
-            // Assuming the first element is the valid JSON if it's wrapped in an array structure
-            $membersJson = $meeting->members[0] ?? $meeting->members; // Adjust based on actual data structure
-            $attendanceData = json_decode($membersJson, true); // Decode JSON string
+            // Access the JSON string directly
+            $membersJson = $meeting->members; // Assuming members is the JSON string
+            $attendanceData = json_decode($membersJson, true); // Decode JSON string as an associative array
+
+            // Use dd() to debug the JSON structure and any issues
+            dd($attendanceData); // This will dump and die, allowing you to inspect the data
 
             if (json_last_error() === JSON_ERROR_NONE) {
                 if (isset($attendanceData['presentMembersIds']) && is_array($attendanceData['presentMembersIds'])) {
@@ -108,17 +111,19 @@ class CreditScoreController extends AdminController
                         }
                     }
                 } else {
-                    // Debugging line if 'presentMembersIds' is missing or not formatted as expected
+                    // Use dd() to debug if 'presentMembersIds' is missing or not an array
                     dd('presentMembersIds is missing or not an array', $attendanceData);
                 }
             } else {
-                // Debugging line if there is a JSON decode error
+                // Use dd() to debug if there's a JSON decode error
                 dd('JSON decode error: ' . json_last_error_msg(), $membersJson);
             }
         }
 
-        // Returning the count of unique member names
-        return count(array_unique($allMemberNames));
+        // Use dd() to debug the collection of all member names
+        dd($allMemberNames);
+
+        return count(array_unique($allMemberNames)); // Return the count of unique names
     });
 
     $grid->column('average_attendance', __('Average Attendance'))->display(function () {
