@@ -92,41 +92,33 @@ class CreditScoreController extends AdminController
     });
 
     $grid->column('total_member_names', __('Total Member Names'))->display(function () {
-
         $meetings = $this->meetings; // Fetch all meetings for the sacco
         $allMemberNames = []; // Initialize array to collect all member names across meetings
 
         foreach ($meetings as $meeting) {
-            // Dump out the JSON text to check its format
-            dd($meeting->members);
-        }
+            // Assuming the first element is the valid JSON if it's wrapped in an array structure
+            $membersJson = $meeting->members[0] ?? $meeting->members; // Adjust based on actual data structure
+            $attendanceData = json_decode($membersJson, true); // Decode JSON string
 
-        foreach ($meetings as $meeting) {
-            $attendanceData = json_decode($meeting->attendance, true); // Decode JSON string
-
-            if (json_last_error() === JSON_ERROR_NONE && is_array($attendanceData)) {
+            if (json_last_error() === JSON_ERROR_NONE) {
                 if (isset($attendanceData['presentMembersIds']) && is_array($attendanceData['presentMembersIds'])) {
-                    $memberNames = array_map(function ($member) {
-                        return $member['name']; // Extract and return member name
-                    }, $attendanceData['presentMembersIds']);
-
-                    // Append current meeting's names to the collection of all names
-                    $allMemberNames = array_merge($allMemberNames, $memberNames);
-
-                    // Debug output for the current meeting's names
-                    dd($memberNames); // You can comment this out once you verify the names are correct
+                    foreach ($attendanceData['presentMembersIds'] as $member) {
+                        if (isset($member['name'])) {
+                            $allMemberNames[] = $member['name']; // Collect names
+                        }
+                    }
                 } else {
+                    // Debugging line if 'presentMembersIds' is missing or not formatted as expected
                     dd('presentMembersIds is missing or not an array', $attendanceData);
                 }
             } else {
-                dd('JSON decode error: ' . json_last_error_msg());
+                // Debugging line if there is a JSON decode error
+                dd('JSON decode error: ' . json_last_error_msg(), $membersJson);
             }
         }
 
-        // Uncomment this line to debug all collected names once all `dd()` above are commented out
-        // dd($allMemberNames);
-
-        return count(array_unique($allMemberNames)); // Return the count of unique names
+        // Returning the count of unique member names
+        return count(array_unique($allMemberNames));
     });
 
     $grid->column('average_attendance', __('Average Attendance'))->display(function () {
