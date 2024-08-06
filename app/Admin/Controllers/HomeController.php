@@ -170,6 +170,57 @@ private function getTotalLoanAmount($users, $startDate, $endDate)
     return $totalLoanAmount;
 }
 
+private function getLoanSumForGender($users, $gender, $startDate, $endDate)
+{
+    $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
+
+    // Extract only the IDs from the $users collection
+    $userIds = $users->pluck('id')->toArray();
+
+    $totalLoanAmount = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
+        ->join('saccos as s', 'users.sacco_id', '=', 's.id')
+        ->whereIn('users.id', $userIds)  // Use the extracted user IDs
+        ->where('users.sex', $gender)    // Filter by gender
+        ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+        ->where('t.type', 'LOAN')        // Filter for loans
+        ->whereBetween('t.created_at', [$startDate, $endDate]) // Filter by created_at date range
+        ->where(function ($query) {
+            $query->whereNull('users.user_type')
+                ->orWhere('users.user_type', '<>', 'Admin');
+        })
+        ->select(DB::raw('SUM(t.amount) as total_loan_amount'))
+        ->first()
+        ->total_loan_amount;
+
+    return $totalLoanAmount;
+}
+
+private function getLoanSumForYouths($users, $startDate, $endDate)
+{
+    $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
+
+    // Extract only the IDs from the $users collection
+    $userIds = $users->pluck('id')->toArray();
+
+    $totalLoanAmount = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
+        ->join('saccos as s', 'users.sacco_id', '=', 's.id')
+        ->whereIn('users.id', $userIds)  // Use the extracted user IDs
+        ->whereDate('users.dob', '>', now()->subYears(35)) // Filter for users under 35 years old
+        ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+        ->where('t.type', 'LOAN')        // Filter for loans
+        ->whereBetween('t.created_at', [$startDate, $endDate]) // Filter by created_at date range
+        ->where(function ($query) {
+            $query->whereNull('users.user_type')
+                ->orWhere('users.user_type', '<>', 'Admin');
+        })
+        ->select(DB::raw('SUM(t.amount) as total_loan_amount'))
+        ->first()
+        ->total_loan_amount;
+
+    return $totalLoanAmount;
+}
+
+
 
     // private function getTotalBalance($users, $type)
     // {
@@ -194,23 +245,23 @@ private function getTotalLoanAmount($users, $startDate, $endDate)
     //     return Transaction::where('type', 'LOAN')->whereBetween('created_at', [$startDate, $endDate])->sum('amount');
     // }
 
-    private function getLoanSumForGender($users, $gender, $startDate, $endDate)
-    {
-        return Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->where('transactions.type', 'LOAN')
-            ->where('users.sex', $gender)
-            ->whereBetween('users.created_at', [$startDate, $endDate])
-            ->sum('transactions.amount');
-    }
+    // private function getLoanSumForGender($users, $gender, $startDate, $endDate)
+    // {
+    //     return Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+    //         ->where('transactions.type', 'LOAN')
+    //         ->where('users.sex', $gender)
+    //         ->whereBetween('users.created_at', [$startDate, $endDate])
+    //         ->sum('transactions.amount');
+    // }
 
-    private function getLoanSumForYouths($users, $startDate, $endDate)
-    {
-        return Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->where('transactions.type', 'LOAN')
-            ->whereBetween('users.created_at', [$startDate, $endDate])
-            ->whereDate('users.dob', '>', now()->subYears(35))
-            ->sum('transactions.amount');
-    }
+    // private function getLoanSumForYouths($users, $startDate, $endDate)
+    // {
+    //     return Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+    //         ->where('transactions.type', 'LOAN')
+    //         ->whereBetween('users.created_at', [$startDate, $endDate])
+    //         ->whereDate('users.dob', '>', now()->subYears(35))
+    //         ->sum('transactions.amount');
+    // }
 
     private function getTotalLoanBalance($users, $startDate, $endDate)
     {
