@@ -146,6 +146,30 @@ class HomeController extends Controller
     return $totalBalance;
 }
 
+private function getTotalLoanAmount($users, $startDate, $endDate)
+{
+    $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
+
+    // Use pluck to extract only the IDs from the $users collection
+    $userIds = $users->pluck('id')->toArray();
+
+    $totalLoanAmount = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
+        ->join('saccos as s', 'users.sacco_id', '=', 's.id')
+        ->whereIn('users.id', $userIds)  // Use the extracted user IDs
+        ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+        ->where('t.type', 'LOAN')  // Filter for loans
+        ->whereBetween('t.created_at', [$startDate, $endDate]) // Filter by created_at date range
+        ->where(function ($query) {
+            $query->whereNull('users.user_type')
+                ->orWhere('users.user_type', '<>', 'Admin');
+        })
+        ->select(DB::raw('SUM(t.amount) as total_loan_amount'))
+        ->first()
+        ->total_loan_amount;
+
+    return $totalLoanAmount;
+}
+
 
     // private function getTotalBalance($users, $type)
     // {
@@ -165,10 +189,10 @@ class HomeController extends Controller
     //     return Transaction::whereIn('source_user_id', $users->pluck('id')->toArray())->where('type', $type)->sum('balance');
     // }
 
-    private function getTotalLoanAmount($users, $startDate, $endDate)
-    {
-        return Transaction::where('type', 'LOAN')->whereBetween('created_at', [$startDate, $endDate])->sum('amount');
-    }
+    // private function getTotalLoanAmount($users, $startDate, $endDate)
+    // {
+    //     return Transaction::where('type', 'LOAN')->whereBetween('created_at', [$startDate, $endDate])->sum('amount');
+    // }
 
     private function getLoanSumForGender($users, $gender, $startDate, $endDate)
     {
