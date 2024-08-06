@@ -79,6 +79,7 @@ $router->post('cycle-transactions', 'CycleTransactionController@store')->name('c
     $router->resource('settings', UserController::class);
     $router->resource('participants', ParticipantController::class);
     $router->resource('members', MembersController::class);
+    $router->resource('summaries', SummaryController::class);
     $router->resource('accounts', GroupAccountController::class);
     $router->resource('post-categories', PostCategoryController::class);
     $router->resource('news-posts', NewsPostController::class);
