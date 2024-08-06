@@ -19,6 +19,11 @@ class Sacco extends Model
         return $this->hasMany(Cycle::class, 'sacco_id');
     }
 
+    public function meetings()
+    {
+        return $this->hasMany(Meeting::class);
+    }
+
     public function transactions()
     {
         return $this->hasMany(Transaction::class);
