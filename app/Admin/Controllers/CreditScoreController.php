@@ -93,23 +93,34 @@ class CreditScoreController extends AdminController
 
     $grid->column('total_member_names', __('Total Member Names'))->display(function () {
         $meetings = $this->meetings; // Fetch all meetings for the sacco
-
-        $allMemberNames = []; // Array to collect all member names
+        $allMemberNames = []; // Initialize array to collect all member names across meetings
 
         foreach ($meetings as $meeting) {
             $attendanceData = json_decode($meeting->attendance, true); // Decode JSON string
+
             if (json_last_error() === JSON_ERROR_NONE && is_array($attendanceData)) {
                 if (isset($attendanceData['presentMembersIds']) && is_array($attendanceData['presentMembersIds'])) {
-                    // Extract member names and collect them in array
-                    foreach ($attendanceData['presentMembersIds'] as $member) {
-                        $allMemberNames[] = $member['name'];
-                    }
+                    $memberNames = array_map(function ($member) {
+                        return $member['name']; // Extract and return member name
+                    }, $attendanceData['presentMembersIds']);
+
+                    // Append current meeting's names to the collection of all names
+                    $allMemberNames = array_merge($allMemberNames, $memberNames);
+
+                    // Debug output for the current meeting's names
+                    dd($memberNames); // You can comment this out once you verify the names are correct
+                } else {
+                    dd('presentMembersIds is missing or not an array', $attendanceData);
                 }
+            } else {
+                dd('JSON decode error: ' . json_last_error_msg());
             }
         }
 
-        // Count unique names using array_unique to eliminate duplicates
-        return count(array_unique($allMemberNames));
+        // Uncomment this line to debug all collected names once all `dd()` above are commented out
+        // dd($allMemberNames);
+
+        return count(array_unique($allMemberNames)); // Return the count of unique names
     });
 
     $grid->column('average_attendance', __('Average Attendance'))->display(function () {
