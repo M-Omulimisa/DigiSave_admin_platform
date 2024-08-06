@@ -122,7 +122,7 @@ class HomeController extends Controller
 
     private function getTotalBalance($users, $type)
     {
-        return Transaction::whereIn('user_id', $users->pluck('id')->toArray())->where('type', $type)->sum('balance');
+        return Transaction::whereIn('source_user_id', $users->pluck('id')->toArray())->where('type', $type)->sum('balance');
     }
 
     private function getTotalLoanAmount($users, $startDate, $endDate)
