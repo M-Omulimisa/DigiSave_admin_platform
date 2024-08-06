@@ -273,60 +273,123 @@ private function getLoanSumForYouths($users, $startDate, $endDate)
     }
 
     private function generateCsv($statistics, $startDate, $endDate)
-    {
-        $fileName = 'export_data_' . $startDate . '_to_' . $endDate . '.csv';
-        $filePath = storage_path('exports/' . $fileName);
+{
+    $fileName = 'export_data_' . $startDate . '_to_' . $endDate . '.csv';
+    $filePath = storage_path('exports/' . $fileName);
 
-        if (!file_exists(storage_path('exports'))) {
-            mkdir(storage_path('exports'), 0755, true);
-        }
-
-        try {
-            $file = fopen($filePath, 'w');
-            if ($file === false) {
-                throw new \Exception('File open failed.');
-            }
-
-            fwrite($file, "\xEF\xBB\xBF");
-
-            $data = [
-                ['Metric', 'Value'],
-                ['Total Number of Groups Registered', $statistics['totalAccounts']],
-                ['Total Number of Members', $statistics['totalMembers']],
-                ['Number of Members by Gender', ''],
-                ['  Female', $statistics['femaleMembersCount']],
-                ['  Male', $statistics['maleMembersCount']],
-                ['Number of Youth Members', $statistics['youthMembersCount']],
-                ['Number of PWDs', $statistics['pwdMembersCount']],
-                ['Savings by Gender', ''],
-                ['  Female', $statistics['femaleTotalBalance']],
-                ['  Male', $statistics['maleTotalBalance']],
-                ['Savings by Youth', $statistics['youthTotalBalance']],
-                ['Savings by PWDs', $statistics['pwdTotalBalance']],
-                ['Total Loans', $statistics['totalLoanAmount']],
-                ['Loans by Gender', ''],
-                ['  Female', $statistics['loanSumForWomen']],
-                ['  Male', $statistics['loanSumForMen']],
-                ['Loans by Youth', $statistics['loanSumForYouths']],
-                ['Loans by PWDs', $statistics['pwdTotalLoanBalance']],
-            ];
-
-            foreach ($data as $row) {
-                if (fputcsv($file, array_map('strval', $row)) === false) {
-                    throw new \Exception('CSV write failed.');
-                }
-            }
-
-            fclose($file);
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Error writing to CSV: ' . $e->getMessage()], 500);
-        }
-
-        return response()->download($filePath, $fileName, [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
-        ])->deleteFileAfterSend(true);
+    if (!file_exists(storage_path('exports'))) {
+        mkdir(storage_path('exports'), 0755, true);
     }
+
+    try {
+        $file = fopen($filePath, 'w');
+        if ($file === false) {
+            throw new \Exception('File open failed.');
+        }
+
+        // Write BOM for UTF-8 encoding
+        fwrite($file, "\xEF\xBB\xBF");
+
+        $data = [
+            ['Metric', 'Value (UGX)'],
+            ['Total Number of Groups Registered', $statistics['totalAccounts']],
+            ['Total Number of Members', $statistics['totalMembers']],
+            ['Number of Members by Gender', ''],
+            ['  Female', $statistics['femaleMembersCount']],
+            ['  Male', $statistics['maleMembersCount']],
+            ['Number of Youth Members', $statistics['youthMembersCount']],
+            ['Number of PWDs', $statistics['pwdMembersCount']],
+            ['Savings by Gender', ''],
+            ['  Female', $this->formatCurrency($statistics['femaleTotalBalance'])],
+            ['  Male', $this->formatCurrency($statistics['maleTotalBalance'])],
+            ['Savings by Youth', $this->formatCurrency($statistics['youthTotalBalance'])],
+            ['Savings by PWDs', $this->formatCurrency($statistics['pwdTotalBalance'])],
+            ['Total Loans', $this->formatCurrency($statistics['totalLoanAmount'])],
+            ['Loans by Gender', ''],
+            ['  Female', $this->formatCurrency($statistics['loanSumForWomen'])],
+            ['  Male', $this->formatCurrency($statistics['loanSumForMen'])],
+            ['Loans by Youth', $this->formatCurrency($statistics['loanSumForYouths'])],
+            ['Loans by PWDs', $this->formatCurrency($statistics['pwdTotalLoanBalance'])],
+        ];
+
+        foreach ($data as $row) {
+            if (fputcsv($file, array_map('strval', $row)) === false) {
+                throw new \Exception('CSV write failed.');
+            }
+        }
+
+        fclose($file);
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'Error writing to CSV: ' . $e->getMessage()], 500);
+    }
+
+    return response()->download($filePath, $fileName, [
+        'Content-Type' => 'text/csv',
+        'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+    ])->deleteFileAfterSend(true);
+}
+
+// Helper function to format currency values
+private function formatCurrency($amount)
+{
+    return 'UGX ' . number_format(abs($amount), 2);
+}
+
+    // private function generateCsv($statistics, $startDate, $endDate)
+    // {
+    //     $fileName = 'export_data_' . $startDate . '_to_' . $endDate . '.csv';
+    //     $filePath = storage_path('exports/' . $fileName);
+
+    //     if (!file_exists(storage_path('exports'))) {
+    //         mkdir(storage_path('exports'), 0755, true);
+    //     }
+
+    //     try {
+    //         $file = fopen($filePath, 'w');
+    //         if ($file === false) {
+    //             throw new \Exception('File open failed.');
+    //         }
+
+    //         fwrite($file, "\xEF\xBB\xBF");
+
+    //         $data = [
+    //             ['Metric', 'Value'],
+    //             ['Total Number of Groups Registered', $statistics['totalAccounts']],
+    //             ['Total Number of Members', $statistics['totalMembers']],
+    //             ['Number of Members by Gender', ''],
+    //             ['  Female', $statistics['femaleMembersCount']],
+    //             ['  Male', $statistics['maleMembersCount']],
+    //             ['Number of Youth Members', $statistics['youthMembersCount']],
+    //             ['Number of PWDs', $statistics['pwdMembersCount']],
+    //             ['Savings by Gender', ''],
+    //             ['  Female', $statistics['femaleTotalBalance']],
+    //             ['  Male', $statistics['maleTotalBalance']],
+    //             ['Savings by Youth', $statistics['youthTotalBalance']],
+    //             ['Savings by PWDs', $statistics['pwdTotalBalance']],
+    //             ['Total Loans', $statistics['totalLoanAmount']],
+    //             ['Loans by Gender', ''],
+    //             ['  Female', $statistics['loanSumForWomen']],
+    //             ['  Male', $statistics['loanSumForMen']],
+    //             ['Loans by Youth', $statistics['loanSumForYouths']],
+    //             ['Loans by PWDs', $statistics['pwdTotalLoanBalance']],
+    //         ];
+
+    //         foreach ($data as $row) {
+    //             if (fputcsv($file, array_map('strval', $row)) === false) {
+    //                 throw new \Exception('CSV write failed.');
+    //             }
+    //         }
+
+    //         fclose($file);
+    //     } catch (\Exception $e) {
+    //         return response()->json(['error' => 'Error writing to CSV: ' . $e->getMessage()], 500);
+    //     }
+
+    //     return response()->download($filePath, $fileName, [
+    //         'Content-Type' => 'text/csv',
+    //         'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+    //     ])->deleteFileAfterSend(true);
+    // }
 
     public function index(Content $content)
     {
