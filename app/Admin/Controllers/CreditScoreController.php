@@ -91,6 +91,28 @@ class CreditScoreController extends AdminController
         return Meeting::where('sacco_id', $this->id)->count();
     });
 
+    $grid->column('total_member_names', __('Total Member Names'))->display(function () {
+        $meetings = $this->meetings; // Fetch all meetings for the sacco
+
+        $totalMemberNames = 0; // Initialize counter for member names
+
+        foreach ($meetings as $meeting) {
+            $attendanceData = json_decode($meeting->attendance, true); // Decode JSON string
+            if (json_last_error() === JSON_ERROR_NONE && is_array($attendanceData)) {
+                if (isset($attendanceData['presentMembersIds']) && is_array($attendanceData['presentMembersIds'])) {
+                    // Extract member names and count them
+                    $memberNames = array_map(function ($member) {
+                        return $member['name'];
+                    }, $attendanceData['presentMembersIds']);
+
+                    $totalMemberNames += count($memberNames); // Add count of member names to total
+                }
+            }
+        }
+
+        return $totalMemberNames; // Return the total count of member names
+    });
+
     $grid->column('average_attendance', __('Average Attendance'))->display(function () {
         $meetings = Meeting::where('sacco_id', $this->id)->get();
 
