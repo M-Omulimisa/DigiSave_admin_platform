@@ -118,8 +118,7 @@ class CreditScoreController extends AdminController
 
     $grid->column('average_attendance', __('Average Attendance'))->display(function () {
         $meetings = $this->meetings; // Fetch all meetings for the sacco
-
-        $totalAttendance = 0; // Initialize a counter for total attendance
+        $allMemberNames = []; // Initialize array to collect all member names across meetings
         $meetingCount = count($meetings); // Count the number of meetings
 
         foreach ($meetings as $meeting) {
@@ -135,20 +134,25 @@ class CreditScoreController extends AdminController
             if (json_last_error() === JSON_ERROR_NONE) {
                 // Check if 'presentMembersIds' exists and is an array
                 if (isset($attendanceData['presentMembersIds']) && is_array($attendanceData['presentMembersIds'])) {
-                    // Count the number of present members and add to total attendance
-                    $totalAttendance += count($attendanceData['presentMembersIds']);
+                    // Iterate over present members and collect their names
+                    foreach ($attendanceData['presentMembersIds'] as $member) {
+                        if (isset($member['name'])) {
+                            $allMemberNames[] = $member['name']; // Collect names
+                        }
+                    }
                 }
-            } else {
-                // Optional debugging statement
-                dd('JSON decode error: ' . json_last_error_msg(), $membersData);
             }
         }
 
+        // Calculate total unique members
+        $uniqueMembersCount = count(array_unique($allMemberNames));
+
         // Calculate the average attendance
-        $averageAttendance = $meetingCount > 0 ? $totalAttendance / $meetingCount : 0;
+        $averageAttendance = $meetingCount > 0 ? $uniqueMembersCount / $meetingCount : 0;
 
         return number_format($averageAttendance, 2); // Return the average attendance formatted to 2 decimal places
     });
+
 
     $grid->column('total_loans', __('Total Loans'))->display(function () {
         return $this->transactions()
