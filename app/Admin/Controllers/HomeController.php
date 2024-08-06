@@ -132,7 +132,7 @@ class HomeController extends Controller
     $totalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
         ->join('saccos as s', 'users.sacco_id', '=', 's.id')
         ->whereIn('users.id', $userIds)  // Use the extracted user IDs
-        ->where('users.sex', 'Female')
+        // ->where('users.sex', 'Female')
         ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
         ->where('t.type', $type)  // Use the specified transaction type
         ->where(function ($query) {
