@@ -74,8 +74,7 @@
                     }
                 },
                 tooltip: {
-                    pointFormat: '{series.name}: <b>{point.y:.1f}</b>',
-                    valuePrefix: 'UGX ',
+                    pointFormat: '{series.name}: <b>UGX {point.y:,.1f}</b>',
                     shared: true,
                     useHTML: true
                 },
