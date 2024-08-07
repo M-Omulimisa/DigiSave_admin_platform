@@ -576,7 +576,19 @@ private function formatCurrency($amount)
                 ->where('type', 'LOAN')
                 ->sum('balance');
 
-            $transactions = Transaction::whereIn('sacco_id', $saccoIds)->get();
+            $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
+
+            $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
+            ->whereIn('saccos.id', $saccoIds) // Ensure this checks 'saccos.id' rather than 'sacco_id'
+            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+            ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
+            ->where(function ($query) {
+                $query->whereNull('users.user_type')
+                    ->orWhere('users.user_type', '<>', 'Admin');
+            })
+            ->select('transactions.*') // Select all transaction fields
+            ->get();
             $monthYearList = [];
             $totalSavingsList = [];
 
@@ -669,36 +681,32 @@ private function formatCurrency($amount)
             // Fetch total balances for male users across all groups (excluding deleted and inactive Saccos and Admins)
             $maleTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
             ->join('saccos as s', 'users.sacco_id', '=', 's.id')
-            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
             ->whereIn('users.sacco_id', $saccoIds)
             ->where('users.sex', 'Male')
+            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
             ->where('t.type', 'SHARE')
             ->where(function ($query) {
                 $query->whereNull('users.user_type')
-                    ->orWhere('users.user_type', '<>', 'Admin');
+                ->orWhere('users.user_type', '<>', 'Admin');
             })
             ->select(DB::raw('SUM(t.amount) as total_balance'))
             ->first()
             ->total_balance;
 
-    $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
-
-    // Use pluck to extract only the IDs from the $users collection
-    // $userIds = $users->pluck('id')->toArray();
-
-    $femaleTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
-        ->join('saccos as s', 'users.sacco_id', '=', 's.id')
-        ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-        ->whereIn('users.sacco_id', $saccoIds)
-        ->where('users.sex', 'Female')
-        ->where('t.type', 'SHARE')
-        ->where(function ($query) {
-            $query->whereNull('users.user_type')
+            // Fetch total balances for female users across all groups (excluding deleted and inactive Saccos and Admins)
+            $femaleTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
+            ->join('saccos as s', 'users.sacco_id', '=', 's.id')
+            ->whereIn('users.sacco_id', $saccoIds)
+            ->where('users.sex', 'Female')
+            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+            ->where('t.type', 'SHARE')
+            ->where(function ($query) {
+                $query->whereNull('users.user_type')
                 ->orWhere('users.user_type', '<>', 'Admin');
-        })
-        ->select(DB::raw('SUM(t.amounxt) as total_balance'))
-        ->first()
-        ->total_balance;
+            })
+            ->select(DB::raw('SUM(t.amount) as total_balance'))
+            ->first()
+            ->total_balance;
 
             // Display the results
             // dd(['male_total_balance' => $maleTotalBalance, 'female_total_balance' => $femaleTotalBalance]);;
@@ -820,7 +828,18 @@ private function formatCurrency($amount)
             //     ->whereIn('source_user_id', $pwdUserIds)
             //     ->sum('balance');
 
-            $transactions = Transaction::all();
+            $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
+
+            $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
+            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+            ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
+            ->where(function ($query) {
+                $query->whereNull('users.user_type')
+                    ->orWhere('users.user_type', '<>', 'Admin');
+            })
+            ->select('transactions.*') // Select all transaction fields
+            ->get();
             $monthYearList = [];
             $totalSavingsList = [];
 
@@ -909,34 +928,30 @@ private function formatCurrency($amount)
             // Fetch total balances for male users across all groups (excluding deleted and inactive Saccos and Admins)
             $maleTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
             ->join('saccos as s', 'users.sacco_id', '=', 's.id')
-            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
             ->where('users.sex', 'Male')
+            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
             ->where('t.type', 'SHARE')
             ->where(function ($query) {
                 $query->whereNull('users.user_type')
-                    ->orWhere('users.user_type', '<>', 'Admin');
+                ->orWhere('users.user_type', '<>', 'Admin');
             })
             ->select(DB::raw('SUM(t.amount) as total_balance'))
             ->first()
             ->total_balance;
 
-    $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
-
-    // Use pluck to extract only the IDs from the $users collection
-    // $userIds = $users->pluck('id')->toArray();
-
-    $femaleTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
-        ->join('saccos as s', 'users.sacco_id', '=', 's.id')
-        ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-        ->where('users.sex', 'Female')
-        ->where('t.type', 'SHARE')
-        ->where(function ($query) {
-            $query->whereNull('users.user_type')
+            // Fetch total balances for female users across all groups (excluding deleted and inactive Saccos and Admins)
+            $femaleTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
+            ->join('saccos as s', 'users.sacco_id', '=', 's.id')
+            ->where('users.sex', 'Female')
+            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+            ->where('t.type', 'SHARE')
+            ->where(function ($query) {
+                $query->whereNull('users.user_type')
                 ->orWhere('users.user_type', '<>', 'Admin');
-        })
-        ->select(DB::raw('SUM(t.amounxt) as total_balance'))
-        ->first()
-        ->total_balance;
+            })
+            ->select(DB::raw('SUM(t.amount) as total_balance'))
+            ->first()
+            ->total_balance;
         }
             $femaleUsers = $filteredUsersForBalances->where('sex', 'Female');
             $femaleMembersCount = $femaleUsers->count();
