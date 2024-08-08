@@ -37,16 +37,23 @@ class CreditScoreController extends AdminController
         $totalPresent = 0; // Initialize total present counter
 
         foreach ($meetings as $meeting) {
-            $attendanceData = $meeting->members;
+            // Debugging: Check meeting members data
+            $membersJson = $meeting->members;
+            $attendanceData = json_decode($membersJson, true); // Decode JSON string as an associative array
+
+            // Debugging output
             dd($attendanceData);
 
-            // Sum up the 'present' count
-            if (isset($attendanceData['present'])) {
-                $totalPresent += $attendanceData['present'];
-                dd($totalPresent);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                // Sum up the 'present' count
+                if (isset($attendanceData['present'])) {
+                    $totalPresent += $attendanceData['present'];
+                }
             }
-            // dd($attendanceData);
         }
+
+        // Debugging: Check total present count
+        dd($totalPresent);
 
         // Calculate the average attendance per meeting
         $averageAttendance = $totalPresent / $totalMeetings;
