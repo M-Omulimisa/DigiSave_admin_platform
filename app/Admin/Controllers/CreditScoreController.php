@@ -34,24 +34,21 @@ class CreditScoreController extends AdminController
 
         // Fetch all meetings for the sacco
         $meetings = Meeting::where('sacco_id', $saccoId)->get();
-        $totalAttendees = 0; // Initialize a counter for total attendees
+        $totalPresent = 0; // Initialize total present counter
 
         foreach ($meetings as $meeting) {
-            $attendanceData = $meeting->members; // Assume $meeting->members is an array or object
+            $attendanceData = $meeting->members; // Assume $meeting->members is already an array
 
-            // Add the 'present' count to total attendees
-            if (is_array($attendanceData)) {
-                // If attendanceData is an array, convert it to an object
-                $attendanceData = (object) $attendanceData;
+            // Sum up the 'present' count
+            if (isset($attendanceData['present'])) {
+                $totalPresent += $attendanceData['present'];
+                dd($totalPresent);
             }
-
-            if (isset($attendanceData->present)) {
-                $totalAttendees += $attendanceData->present;
-            }
+            // dd($attendanceData);
         }
 
         // Calculate the average attendance per meeting
-        $averageAttendance = $totalAttendees / $totalMeetings;
+        $averageAttendance = $totalPresent / $totalMeetings;
 
         // Return the average attendance, formatted with two decimal places
         return number_format($averageAttendance, 2, '.', ',');
