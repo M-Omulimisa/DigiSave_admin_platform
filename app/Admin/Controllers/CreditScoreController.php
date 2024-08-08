@@ -101,7 +101,7 @@ class CreditScoreController extends AdminController
             return Meeting::where('sacco_id', $this->id)->count();
         });
 
-        $$grid->column('average_attendance_per_meeting', __('Average Attendance Per Meeting'))->display(function () {
+        $grid->column('average_attendance_per_meeting', __('Average Attendance Per Meeting'))->display(function () {
             // Total meetings for the sacco
             $totalMeetings = Meeting::where('sacco_id', $this->id)->count();
 
