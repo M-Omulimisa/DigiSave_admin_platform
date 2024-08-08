@@ -27,8 +27,6 @@ class CreditScoreController extends AdminController
         // Get total meetings for the sacco
         $totalMeetings = Meeting::where('sacco_id', $saccoId)->count();
 
-        // dd($totalMeetings);
-
         // Avoid division by zero
         if ($totalMeetings === 0) {
             return "0.00";
@@ -36,25 +34,21 @@ class CreditScoreController extends AdminController
 
         // Fetch all meetings for the sacco
         $meetings = Meeting::where('sacco_id', $saccoId)->get();
-        // dd($meetings);
-        $allMemberNames = [];
+        $totalAttendees = 0; // Initialize a counter for total attendees
 
         foreach ($meetings as $meeting) {
-            $attendanceData = $meeting->members;
-            dd($attendanceData);
-            // Check if 'presentMembersIds' exists and is an array
-            if (isset($attendanceData['presentMembersIds']) && is_array($attendanceData['presentMembersIds'])) {
-                // Iterate over present members and collect their names
-                foreach ($attendanceData['presentMembersIds'] as $member) {
-                    if (isset($member['name'])) {
-                        $allMemberNames[] = $member['name']; // Collect names
-                    }
-                }
+            $attendanceData = $meeting->members; // Assume $meeting->members is an array or object
+
+            // Add the 'present' count to total attendees
+            if (is_array($attendanceData)) {
+                // If attendanceData is an array, convert it to an object
+                $attendanceData = (object) $attendanceData;
+            }
+
+            if (isset($attendanceData->present)) {
+                $totalAttendees += $attendanceData->present;
             }
         }
-
-        // Count unique member names (total attendees)
-        $totalAttendees = count(array_unique($allMemberNames));
 
         // Calculate the average attendance per meeting
         $averageAttendance = $totalAttendees / $totalMeetings;
@@ -88,11 +82,11 @@ class CreditScoreController extends AdminController
                     ->whereHas('users', function ($query) {
                         $query->whereIn('position_id', function ($subQuery) {
                             $subQuery->select('id')
-                                     ->from('positions')
-                                     ->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+                                ->from('positions')
+                                ->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
                         })
-                        ->whereNotNull('phone_number')
-                        ->whereNotNull('name');
+                            ->whereNotNull('phone_number')
+                            ->whereNotNull('name');
                     })
                     ->whereHas('meetings', function ($query) {
                         $query->havingRaw('COUNT(*) > 0');
@@ -108,11 +102,11 @@ class CreditScoreController extends AdminController
                 ->whereHas('users', function ($query) {
                     $query->whereIn('position_id', function ($subQuery) {
                         $subQuery->select('id')
-                                 ->from('positions')
-                                 ->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+                            ->from('positions')
+                            ->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
                     })
-                    ->whereNotNull('phone_number')
-                    ->whereNotNull('name');
+                        ->whereNotNull('phone_number')
+                        ->whereNotNull('name');
                 })
                 ->whereHas('meetings', function ($query) {
                     $query->havingRaw('COUNT(*) > 0');
@@ -131,11 +125,11 @@ class CreditScoreController extends AdminController
 
         $grid->column('total_group_members', __('Group Members'))->display(function () {
             return User::where('sacco_id', $this->id)
-            ->where(function ($query) {
-                $query->whereNull('user_type')
-                    ->orWhere('user_type', '<>', 'Admin');
-            })
-            ->count();
+                ->where(function ($query) {
+                    $query->whereNull('user_type')
+                        ->orWhere('user_type', '<>', 'Admin');
+                })
+                ->count();
         });
 
         $grid->column('total_meetings', __('Total Meetings'))->display(function () {
@@ -234,7 +228,7 @@ class CreditScoreController extends AdminController
                 ->where('users.sex', 'Male')
                 ->where(function ($query) {
                     $query->whereNull('users.user_type')
-                          ->orWhere('users.user_type', '<>', 'Admin');
+                        ->orWhere('users.user_type', '<>', 'Admin');
                 })
                 ->sum('transactions.amount');
 
@@ -244,7 +238,7 @@ class CreditScoreController extends AdminController
                 ->where('users.sex', 'Female')
                 ->where(function ($query) {
                     $query->whereNull('users.user_type')
-                          ->orWhere('users.user_type', '<>', 'Admin');
+                        ->orWhere('users.user_type', '<>', 'Admin');
                 })
                 ->sum('transactions.amount');
 
@@ -259,7 +253,7 @@ class CreditScoreController extends AdminController
                 ->where('transactions.type', 'SHARE')
                 ->where(function ($query) {
                     $query->whereNull('users.user_type')
-                          ->orWhere('users.user_type', '<>', 'Admin');
+                        ->orWhere('users.user_type', '<>', 'Admin');
                 })
                 ->sum('transactions.amount');
 
@@ -269,7 +263,7 @@ class CreditScoreController extends AdminController
                 ->where('transactions.type', 'SHARE')
                 ->where(function ($query) {
                     $query->whereNull('users.user_type')
-                          ->orWhere('users.user_type', '<>', 'Admin');
+                        ->orWhere('users.user_type', '<>', 'Admin');
                 })
                 ->distinct('users.id')
                 ->count('users.id');
@@ -282,9 +276,10 @@ class CreditScoreController extends AdminController
     }
 
 
-public function transactions() {
-    return $this->hasMany(Transaction::class);
-}
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class);
+    }
 
 
 
