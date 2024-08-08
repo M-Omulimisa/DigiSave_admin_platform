@@ -59,8 +59,9 @@ class GroupTransactionController extends AdminController
             return number_format($amount, 2, '.', ',');
         })->sortable();
         $grid->column('description', __('Description'));
-        $grid->column('created_at', __('Created At'))->sortable();
-
+        $grid->column('created_at', __('Created At'))->display(function ($createdAt) {
+            return \Carbon\Carbon::parse($createdAt)->format('Y-m-d H:i:s');
+        })->sortable();
         // Add a column for viewing details
         $grid->column('details', __('Details'))->display(function () {
             return '<a href="' . url('transactions/' . $this->id) . '">View Details</a>';

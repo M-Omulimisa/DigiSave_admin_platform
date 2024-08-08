@@ -104,8 +104,9 @@ class GroupAccountController extends AdminController
         $grid->column('phone_number', __('Group Code'));
         $grid->column('location_lat', __('Latitude'))->sortable();
         $grid->column('location_long', __('Longitude'))->sortable();
-        $grid->column('created_at', __('Created At'))->sortable();
-
+        $grid->column('created_at', __('Created At'))->display(function ($createdAt) {
+            return \Carbon\Carbon::parse($createdAt)->format('Y-m-d H:i:s');
+        })->sortable();
         // Adding search filters
         $grid->filter(function ($filter) {
             $filter->disableIdFilter();

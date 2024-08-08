@@ -106,7 +106,11 @@ class TransactionAllController extends AdminController
 
         $grid->column('details', __('Details'))->hide();
 
-        $grid->column('created_at', __('Created'))->sortable();
+        $grid->column('created_at', __('Created At'))->display(function ($createdAt) {
+            return \Carbon\Carbon::parse($createdAt)->format('Y-m-d H:i:s');
+        })->sortable();
+
+        // $grid->column('created_at', __('Created'))->sortable();
 
         $grid->disableActions();
         $grid->disableBatchActions();
