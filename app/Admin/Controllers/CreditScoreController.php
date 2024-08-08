@@ -103,10 +103,11 @@ class CreditScoreController extends AdminController
 
         $grid->column('total_member_names', __('Total Member Attendance'))->display(function () {
             $meetings = $this->meetings; // Fetch all meetings for the sacco
-            $allMemberNames = []; // Initialize array to collect all member names across meetings
+            $allMemberNames = [];
 
             foreach ($meetings as $meeting) {
-                $membersJson = $meeting->members; // Access the JSON string directly
+                $membersJson = $meeting->members;
+                dd($membersJson);
                 $attendanceData = json_decode($membersJson, true); // Decode JSON string as an associative array
 
                 if (json_last_error() === JSON_ERROR_NONE) {
