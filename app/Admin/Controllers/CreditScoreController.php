@@ -50,7 +50,7 @@ class CreditScoreController extends AdminController
         // Calculate the average attendance per meeting
         $averageAttendance = $totalPresent / $totalMeetings;
 
-        dd($totalPresent);
+        dd($totalMeetings);
 
         // Return the average attendance, formatted with two decimal places
         return number_format($averageAttendance, 2, '.', ',');
