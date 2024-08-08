@@ -150,7 +150,7 @@ class CreditScoreController extends AdminController
                 ->count();
         });
 
-        $grid->column('total_principal', __('Total Principal'))->display(function () {
+        $grid->column('total_principal', __('Total Loan Amount'))->display(function () {
             $totalPrincipal = $this->transactions()
                 ->where('type', 'LOAN')
                 ->whereHas('user', function ($query) {
