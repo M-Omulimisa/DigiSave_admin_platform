@@ -101,7 +101,7 @@ class CreditScoreController extends AdminController
             return Meeting::where('sacco_id', $this->id)->count();
         });
 
-        $grid->column('average_attendance_per_meeting', __('Average Attendance Per Meeting'))->display(function () {
+        $$grid->column('average_attendance_per_meeting', __('Average Attendance Per Meeting'))->display(function () {
             // Total meetings for the sacco
             $totalMeetings = Meeting::where('sacco_id', $this->id)->count();
 
@@ -110,19 +110,14 @@ class CreditScoreController extends AdminController
             $allMemberNames = []; // Initialize array to collect all member names across meetings
 
             foreach ($meetings as $meeting) {
-                $membersJson = $meeting->members;
-                // dd($membersJson);
-                $attendanceData = json_decode($membersJson, true);
-                // dd($attendanceData);
+                $attendanceData = $meeting->members; // Access members directly if it's already an object
 
-                if (json_last_error() === JSON_ERROR_NONE) {
-                    // Check if 'presentMembersIds' exists and is an array
-                    if (isset($attendanceData['presentMembersIds']) && is_array($attendanceData['presentMembersIds'])) {
-                        // Iterate over present members and collect their names
-                        foreach ($attendanceData['presentMembersIds'] as $member) {
-                            if (isset($member['name'])) {
-                                $allMemberNames[] = $member['name']; // Collect names
-                            }
+                // Check if 'presentMembersIds' exists and is an array
+                if (isset($attendanceData->presentMembersIds) && is_array($attendanceData->presentMembersIds)) {
+                    // Iterate over present members and collect their names
+                    foreach ($attendanceData->presentMembersIds as $member) {
+                        if (isset($member->name)) {
+                            $allMemberNames[] = $member->name; // Collect names
                         }
                     }
                 }
