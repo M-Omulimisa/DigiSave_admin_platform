@@ -36,12 +36,12 @@ class CreditScoreController extends AdminController
 
         // Fetch all meetings for the sacco
         $meetings = Meeting::where('sacco_id', $saccoId)->get();
-        dd($meetings);
+        // dd($meetings);
         $allMemberNames = [];
 
         foreach ($meetings as $meeting) {
-            $attendanceData = $meeting->members; // Assume $meeting->members is already an array
-
+            $attendanceData = $meeting->members;
+            dd($attendanceData);
             // Check if 'presentMembersIds' exists and is an array
             if (isset($attendanceData['presentMembersIds']) && is_array($attendanceData['presentMembersIds'])) {
                 // Iterate over present members and collect their names
