@@ -48,7 +48,7 @@ class CreditScoreController extends AdminController
 
             // Debugging: Display the present count for this meeting
             if (isset($attendanceData['present'])) {
-                dd('Present Count for Meeting:', $attendanceData['present']);
+                // dd('Present Count for Meeting:', $attendanceData['present']);
                 $totalPresent += $attendanceData['present'];
             }
         }
