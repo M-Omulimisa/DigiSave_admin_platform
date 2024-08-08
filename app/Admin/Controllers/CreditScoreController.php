@@ -113,7 +113,7 @@ class CreditScoreController extends AdminController
                 $membersJson = $meeting->members;
                 // dd($membersJson);
                 $attendanceData = json_decode($membersJson, true);
-                dd($attendanceData);
+                // dd($attendanceData);
 
                 if (json_last_error() === JSON_ERROR_NONE) {
                     // Check if 'presentMembersIds' exists and is an array
