@@ -111,7 +111,7 @@ class CreditScoreController extends AdminController
 
             foreach ($meetings as $meeting) {
                 $membersJson = $meeting->members;
-                dd($membersJson);
+                // dd($membersJson);
                 $attendanceData = json_decode($membersJson, true);
                 dd($attendanceData);
 
