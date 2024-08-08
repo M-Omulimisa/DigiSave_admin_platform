@@ -37,7 +37,8 @@ class CreditScoreController extends AdminController
         $totalPresent = 0; // Initialize total present counter
 
         foreach ($meetings as $meeting) {
-            $attendanceData = $meeting->members; // Assume $meeting->members is already an array
+            $attendanceData = $meeting->members;
+            dd($attendanceData);
 
             // Sum up the 'present' count
             if (isset($attendanceData['present'])) {
