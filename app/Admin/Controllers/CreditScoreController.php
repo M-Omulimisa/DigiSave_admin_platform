@@ -27,7 +27,7 @@ class CreditScoreController extends AdminController
         // Get total meetings for the sacco
         $totalMeetings = Meeting::where('sacco_id', $saccoId)->count();
 
-        dd($totalMeetings);
+        // dd($totalMeetings);
 
         // Avoid division by zero
         if ($totalMeetings === 0) {
@@ -36,7 +36,8 @@ class CreditScoreController extends AdminController
 
         // Fetch all meetings for the sacco
         $meetings = Meeting::where('sacco_id', $saccoId)->get();
-        $allMemberNames = []; // Initialize array to collect all member names across meetings
+        dd($meetings);
+        $allMemberNames = [];
 
         foreach ($meetings as $meeting) {
             $attendanceData = $meeting->members; // Assume $meeting->members is already an array
