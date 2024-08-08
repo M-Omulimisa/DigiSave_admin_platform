@@ -144,10 +144,10 @@ class CreditScoreController extends AdminController
             return Meeting::where('sacco_id', $this->id)->count();
         });
 
-        $grid->column('average_attendance_per_meeting', __('Average Attendance Per Meeting'))->display(function () {
-            // Call the calculateAverageAttendance method within the closure using 'use' to bring in the context of the controller
-            return app(CreditScoreController::class)->calculateAverageAttendance($this->id);
-        });
+        // $grid->column('average_attendance_per_meeting', __('Average Attendance Per Meeting'))->display(function () {
+        //     // Call the calculateAverageAttendance method within the closure using 'use' to bring in the context of the controller
+        //     return app(CreditScoreController::class)->calculateAverageAttendance($this->id);
+        // });
 
         $grid->column('total_member_names', __('Total Member Attendance'))->display(function () {
             $meetings = $this->meetings; // Fetch all meetings for the sacco
