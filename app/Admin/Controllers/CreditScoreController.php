@@ -54,12 +54,12 @@ class CreditScoreController extends AdminController
         }
 
         // Debugging: Check total present count after loop
-        dd('Total Present:', $totalPresent);
+        // dd('Total Present:', $totalPresent);
 
         // Calculate the average attendance per meeting
         $averageAttendance = $totalPresent / $totalMeetings;
 
-        dd($totalMeetings);
+        // dd($totalMeetings);
 
         // Return the average attendance, formatted with two decimal places
         return number_format($averageAttendance, 2, '.', ',');
