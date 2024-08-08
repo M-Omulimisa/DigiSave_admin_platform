@@ -27,6 +27,8 @@ class CreditScoreController extends AdminController
         // Get total meetings for the sacco
         $totalMeetings = Meeting::where('sacco_id', $saccoId)->count();
 
+        dd($totalMeetings);
+
         // Avoid division by zero
         if ($totalMeetings === 0) {
             return "0.00";
