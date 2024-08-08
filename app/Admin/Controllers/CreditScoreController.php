@@ -7,6 +7,7 @@ use App\Models\MemberPosition;
 use App\Models\OrgAllocation;
 use App\Models\Transaction;
 use App\Models\Sacco;
+use App\Models\User;
 use App\Models\VslaOrganisationSacco;
 use Encore\Admin\Auth\Database\Administrator;
 use Encore\Admin\Controllers\AdminController;
@@ -85,6 +86,15 @@ class CreditScoreController extends AdminController
 
         $grid->column('name', __('Name'))->sortable()->display(function ($name) {
             return ucwords(strtolower($name));
+        });
+
+        $grid->column('total_group_members', __('Group Members'))->display(function () {
+            return User::where('sacco_id', $this->id)
+            ->where(function ($query) {
+                $query->whereNull('user_type')
+                    ->orWhere('user_type', '<>', 'Admin');
+            })
+            ->count();
         });
 
         $grid->column('total_meetings', __('Total Meetings'))->display(function () {
