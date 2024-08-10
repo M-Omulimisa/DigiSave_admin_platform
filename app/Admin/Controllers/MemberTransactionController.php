@@ -90,10 +90,12 @@ class MemberTransactionController extends AdminController
 
             // Source User filter
             $sourceUsers = User::where('sacco_id', $user->sacco_id)->get();
-            $filter->equal('source_user_id', 'Source User')->select($sourceUsers->pluck('full_name', 'id'));
+            $filter->equal('source_user_id', 'Source User')->select($sourceUsers->mapWithKeys(function ($user) {
+                return [$user->id => $user->first_name . ' ' . $user->last_name];
+            }));
 
-            // Group (Sacco) filter
-            $saccos = Sacco::all();
+            // Group (Sacco) filter excluding deleted and inactive
+            $saccos = Sacco::whereNotIn('status', ['deleted', 'inactive'])->get();
             $filter->equal('sacco_id', 'Group')->select($saccos->pluck('name', 'id'));
 
             // Amount in range
