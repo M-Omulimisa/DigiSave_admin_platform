@@ -40,9 +40,9 @@ class MemberTransactionController extends AdminController
         }
 
         // Filter transactions based on the sacco_id of the current admin user
-        $grid->model()->whereHas('user', function ($query) use ($user) {
-            $query->where('sacco_id', $user->sacco_id);
-        });
+        // $grid->model()->whereHas('user', function ($query) use ($user) {
+        //     $query->where('sacco_id', $user->sacco_id);
+        // });
 
         $grid->disableCreateButton();
 
