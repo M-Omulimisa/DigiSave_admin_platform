@@ -108,6 +108,8 @@ class MemberTransactionController extends AdminController
             $filter->between('created_at', 'Created')->date();
         });
 
+        $grid->quickSearch('sacco.name')->placeholder('Search by group name');
+
         $grid->column('sacco_id', __('Group'))
             ->display(function ($saccoId) {
                 $sacco = Sacco::find($saccoId);
