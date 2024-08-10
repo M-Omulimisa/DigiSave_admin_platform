@@ -139,13 +139,13 @@ class CreditScoreController extends AdminController
             return ucwords(strtolower($name));
         });
 
-        $grid->column('village', __('Village'))->sortable()->display(function ($name) {
-            return ucwords(strtolower($name));
-        });
+        // $grid->column('village', __('Village'))->sortable()->display(function ($name) {
+        //     return ucwords(strtolower($name));
+        // });
 
-        $grid->column('district', __('District'))->sortable()->display(function ($name) {
-            return ucwords(strtolower($name));
-        });
+        // $grid->column('district', __('District'))->sortable()->display(function ($name) {
+        //     return ucwords(strtolower($name));
+        // });
 
         $grid->column('total_group_members', __('Group Members'))->display(function () {
             return User::where('sacco_id', $this->id)
