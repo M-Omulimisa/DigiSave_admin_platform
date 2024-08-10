@@ -31,19 +31,6 @@ class MemberTransactionController extends AdminController
 
         $user = Admin::user();
 
-        // if (!$user->isRole('admin')) {
-        //     $grid->disableCreateButton();
-        //     $grid->actions(function (Grid\Displayers\Actions $actions) {
-        //         $actions->disableDelete();
-        //     });
-        //     $grid->disableFilter();
-        // }
-
-        // Filter transactions based on the sacco_id of the current admin user
-        // $grid->model()->whereHas('user', function ($query) use ($user) {
-        //     $query->where('sacco_id', $user->sacco_id);
-        // });
-
         $grid->disableCreateButton();
 
         // Create a filter
@@ -138,30 +125,33 @@ class MemberTransactionController extends AdminController
         $saccos = Sacco::pluck('name', 'id');
 
         // SACCO selection
-        $form->select('sacco_id', __('Select SACCO'))->options($saccos)->rules('required');
+        $form->display('sacco_id', __('Group'))->with(function ($saccoId) {
+            $sacco = Sacco::find($saccoId);
+            return $sacco ? $sacco->name : 'Unknown';
+        });
 
-        // User selection based on SACCO
-        $form->select('user_id', __('Select Account'))->options(function ($saccoId) {
-            return User::where('sacco_id', $saccoId)->pluck('name', 'id');
-        })->rules('required');
+        // User selection
+        $form->display('user_id', __('User Name'))->with(function ($userId) {
+            $user = User::find($userId);
+            return $user ? $user->first_name . ' ' . $user->last_name : 'Unknown';
+        });
 
-        // Source user selection based on SACCO
-        $form->select('source_user_id', __('Select Source Account'))->options(function ($saccoId) {
-            return User::where('sacco_id', $saccoId)->pluck('name', 'id');
-        })->rules('required');
+        // Source user selection
+        $form->display('source_user_id', __('Source User'))->with(function ($sourceUserId) {
+            $user = User::find($sourceUserId);
+            return $user ? $user->first_name . ' ' . $user->last_name : 'Unknown';
+        });
 
         // Transaction type selection
-        $form->radio('type', __('Transaction Type'))
-            ->options([
-                'Send' => 'Send',
-                'Receive' => 'Receive',
-            ])->rules('required');
+        $form->display('type', __('Transaction Type'))->with(function ($type) {
+            return ucwords(strtolower($type));
+        });
 
-        // Amount input
+        // Amount input (editable)
         $form->decimal('amount', __('Amount'))->rules('required');
 
-        // Details input
-        $form->textarea('details', __('Details'))->rules('required');
+        // Details input (optional for edit)
+        $form->textarea('details', __('Details'))->rules('nullable');
 
         return $form;
     }
