@@ -70,7 +70,7 @@ class MemberAccountController extends AdminController
             ->sortable();
 
         // Disable create button as this grid is for viewing purposes
-        $grid->disableCreateButton();
+        // $grid->disableCreateButton();
 
         return $grid;
     }
@@ -108,42 +108,54 @@ class MemberAccountController extends AdminController
     {
         $form = new Form(new Transaction());
 
-        // SACCO selection (non-editable display)
-        $form->display('sacco_id', __('Group'))->with(function ($saccoId) {
-            $sacco = Sacco::find($saccoId);
-            return $sacco ? $sacco->name : 'Unknown';
-        });
+        // SACCO selection or display based on action (create/edit)
+        if ($form->isCreating()) {
+            $form->select('sacco_id', __('Group'))
+                ->options(Sacco::all()->pluck('name', 'id'))
+                ->load('source_user_id', '/api/users') // Assuming an endpoint that filters users by sacco_id
+                ->rules('required');
+        } else {
+            $form->display('sacco_id', __('Group'))->with(function ($saccoId) {
+                $sacco = Sacco::find($saccoId);
+                return $sacco ? $sacco->name : 'Unknown';
+            });
+        }
 
-        // Source user selection (non-editable display)
-        $form->display('source_user_id', __('Source User'))->with(function ($sourceUserId) {
-            $user = User::find($sourceUserId);
-            return $user ? $user->first_name . ' ' . $user->last_name : 'Unknown';
-        });
+        // Source user selection or display based on action (create/edit)
+        if ($form->isCreating()) {
+            $form->select('source_user_id', __('Source User'))
+                ->options(function ($id) {
+                    $user = User::find($id);
+                    if ($user) {
+                        return [$user->id => $user->first_name . ' ' . $user->last_name];
+                    }
+                })
+                ->rules('required');
+        } else {
+            $form->display('source_user_id', __('Source User'))->with(function ($sourceUserId) {
+                $user = User::find($sourceUserId);
+                return $user ? $user->first_name . ' ' . $user->last_name : 'Unknown';
+            });
+        }
 
-        // Total share amount (editable)
-        $form->decimal('new_share_amount', __('New Total Share Amount'))
+        // Transaction amount with add/deduct option
+        $form->radio('amount_type', __('Amount Type'))
+            ->options(['add' => 'Add', 'deduct' => 'Deduct'])
+            ->default('add')
+            ->rules('required');
+
+        $form->decimal('amount', __('Transaction Amount'))
             ->rules('required|numeric|min:0')
-            ->help('Specify the new total share amount. A negative transaction will be created to adjust the current amount.');
+            ->help('Specify the amount to add or deduct. Choosing deduct will create a negative transaction.');
 
-        $form->saved(function (Form $form) {
-            $transaction = $form->model();
-            $currentTotalShare = $form->model()->total_share;
-            $newTotalShare = $form->new_share_amount;
-            $difference = $newTotalShare - $currentTotalShare;
+        // Display transaction type as SHAVING but store as SHARE
+        $form->hidden('type')->default('SHARE');
+        $form->display('transaction_type', __('Transaction Type'))->default('SAVING');
 
-            if ($difference < 0) {
-                DB::transaction(function () use ($transaction, $difference) {
-                    // Create a new negative transaction to deduct the amount
-                    Transaction::create([
-                        'sacco_id' => $transaction->sacco_id,
-                        'source_user_id' => $transaction->source_user_id,
-                        'user_id' => $transaction->source_user_id,
-                        'type' => 'Share',
-                        'amount' => $difference, // negative value to deduct
-                        'description' => 'Adjustment of total share amount',
-                        'details' => 'Automated adjustment to update share balance',
-                    ]);
-                });
+        // Handle form saving
+        $form->saving(function (Form $form) {
+            if ($form->amount_type == 'deduct') {
+                $form->amount = -abs($form->amount); // Make the amount negative if deducting
             }
         });
 
