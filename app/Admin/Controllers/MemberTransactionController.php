@@ -31,13 +31,13 @@ class MemberTransactionController extends AdminController
 
         $user = Admin::user();
 
-        if (!$user->isRole('admin')) {
-            $grid->disableCreateButton();
-            $grid->actions(function (Grid\Displayers\Actions $actions) {
-                $actions->disableDelete();
-            });
-            $grid->disableFilter();
-        }
+        // if (!$user->isRole('admin')) {
+        //     $grid->disableCreateButton();
+        //     $grid->actions(function (Grid\Displayers\Actions $actions) {
+        //         $actions->disableDelete();
+        //     });
+        //     $grid->disableFilter();
+        // }
 
         // Filter transactions based on the sacco_id of the current admin user
         // $grid->model()->whereHas('user', function ($query) use ($user) {
@@ -96,8 +96,8 @@ class MemberTransactionController extends AdminController
                 return "<strong>Total: " . number_format($amount) . "</strong>";
             });
 
-        $grid->disableActions();
-        $grid->disableBatchActions();
+        // $grid->disableActions();
+        // $grid->disableBatchActions();
 
         return $grid;
     }
