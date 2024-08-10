@@ -255,6 +255,31 @@ class CreditScoreController extends AdminController
             return number_format(abs($totalInterest), 2, '.', ',');
         });
 
+        $grid->column('total_savings_made', __('Savings Made'))->display(function () {
+            $maleTotalCount = $this->transactions()
+                ->join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->where('transactions.type', 'SHARE')
+                ->where('users.sex', 'Male')
+                ->where(function ($query) {
+                    $query->whereNull('users.user_type')
+                        ->orWhere('users.user_type', '<>', 'Admin');
+                })
+                ->count(); // Ensure count() is called here
+
+            $femaleTotalCount = $this->transactions()
+                ->join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->where('transactions.type', 'SHARE')
+                ->where('users.sex', 'Female')
+                ->where(function ($query) {
+                    $query->whereNull('users.user_type')
+                        ->orWhere('users.user_type', '<>', 'Admin');
+                })
+                ->count(); // Ensure count() is called here
+
+            $totalCount = $maleTotalCount + $femaleTotalCount; // This should now be a valid integer addition
+            return number_format(abs($totalCount), 2, '.', ',');
+        });
+
         // Add column for total savings balance
         $grid->column('total_savings_balance', __('Total Savings Balance'))->display(function () {
             $maleTotalBalance = $this->transactions()
