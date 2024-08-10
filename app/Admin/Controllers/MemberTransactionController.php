@@ -82,9 +82,9 @@ class MemberTransactionController extends AdminController
                 ->orderBy('created_at', $sortOrder);
         }
 
-        $grid->model()->whereHas('sourceUser', function ($query) {
-            $query->where('user_type', '!=', 'Admin');
-        });
+        // $grid->model()->whereHas('sourceUser', function ($query) {
+        //     $query->where('user_type', '!=', 'Admin');
+        // });
 
         $grid->disableCreateButton();
 
