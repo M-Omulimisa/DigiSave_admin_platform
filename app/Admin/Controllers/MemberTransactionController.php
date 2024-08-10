@@ -90,7 +90,7 @@ class MemberTransactionController extends AdminController
 
             // Source User filter
             $sourceUsers = User::where('sacco_id', $user->sacco_id)->get();
-            $filter->equal('source_user_id', 'Source User')->select($sourceUsers->mapWithKeys(function ($user) {
+            $filter->equal('user_id', 'Source User')->select($sourceUsers->mapWithKeys(function ($user) {
                 return [$user->id => $user->first_name . ' ' . $user->last_name];
             }));
 
