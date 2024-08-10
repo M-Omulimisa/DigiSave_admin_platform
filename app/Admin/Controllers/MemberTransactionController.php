@@ -2,9 +2,11 @@
 
 namespace App\Admin\Controllers;
 
+use App\Models\OrgAllocation;
 use App\Models\Sacco;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Models\VslaOrganisationSacco;
 use Encore\Admin\Controllers\AdminController;
 use Encore\Admin\Facades\Admin;
 use Encore\Admin\Form;
@@ -28,8 +30,57 @@ class MemberTransactionController extends AdminController
     protected function grid()
     {
         $grid = new Grid(new Transaction());
-
+        $admin = Admin::user();
+        $adminId = $admin->id;
         $user = Admin::user();
+
+        // Default sort order
+        $sortOrder = request()->get('_sort', 'desc');
+        if (!in_array($sortOrder, ['asc', 'desc'])) {
+            $sortOrder = 'desc';
+        };
+
+        if (!$admin->isRole('admin')) {
+            $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+            if ($orgAllocation) {
+                $orgId = $orgAllocation->vsla_organisation_id;
+                $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
+                $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
+                $grid->model()
+                ->whereIn('sacco_id',
+                    $saccoIds
+                )
+                ->whereHas('sacco', function ($query) {
+                    $query->whereNotIn('status', ['deleted', 'inactive']);
+                })
+                ->whereHas('sacco.users', function ($query) {
+                    $query->whereIn('position_id', function ($subQuery) {
+                        $subQuery->select('id')
+                                 ->from('positions')
+                                 ->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+                    });
+                })
+                ->orderBy('created_at', $sortOrder);;
+                // $grid->model()->whereIn('sacco_id', $saccoIds)->orderBy('created_at', $sortOrder);
+                $grid->disableCreateButton();
+                $grid->actions(function (Grid\Displayers\Actions $actions) {
+                    $actions->disableDelete();
+                });
+            }
+        } else {
+            $grid->model()
+                ->whereHas('sacco', function ($query) {
+                    $query->whereNotIn('status', ['deleted', 'inactive']);
+                })
+                ->whereHas('sacco.users', function ($query) {
+                    $query->whereIn('position_id', function ($subQuery) {
+                        $subQuery->select('id')
+                                 ->from('positions')
+                                 ->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+                    });
+                })
+                ->orderBy('created_at', $sortOrder);
+        }
 
         $grid->disableCreateButton();
 
