@@ -88,9 +88,13 @@ class MemberTransactionController extends AdminController
         $grid->filter(function ($filter) use ($user) {
             $filter->disableIdFilter();
 
-            // Sacco members for select
-            $saccoMembers = User::where('sacco_id', $user->sacco_id)->get();
-            $filter->equal('user_id', 'Account')->select($saccoMembers->pluck('full_name', 'id'));
+            // Source User filter
+            $sourceUsers = User::where('sacco_id', $user->sacco_id)->get();
+            $filter->equal('source_user_id', 'Source User')->select($sourceUsers->pluck('full_name', 'id'));
+
+            // Group (Sacco) filter
+            $saccos = Sacco::all();
+            $filter->equal('sacco_id', 'Group')->select($saccos->pluck('name', 'id'));
 
             // Amount in range
             $filter->between('amount', 'Amount (UGX)');
