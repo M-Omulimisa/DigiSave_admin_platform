@@ -108,7 +108,11 @@ class MemberTransactionController extends AdminController
             $filter->between('created_at', 'Created')->date();
         });
 
-        $grid->quickSearch('sacco.name')->placeholder('Search by group name');
+        $grid->model()->leftJoin('saccos', 'transactions.sacco_id', '=', 'saccos.id')
+                      ->select('transactions.*', 'saccos.name as sacco_name');
+
+        // Quick search by group name (Sacco name)
+        $grid->quickSearch('saccos.name')->placeholder('Search by group name');
 
         $grid->column('sacco_id', __('Group'))
             ->display(function ($saccoId) {
