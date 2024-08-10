@@ -138,8 +138,9 @@ class MemberTransactionController extends AdminController
                 return "<strong>Total: " . number_format($amount) . "</strong>";
             });
 
-        // $grid->disableActions();
-        // $grid->disableBatchActions();
+            $grid->column('created_at', __('Created At'))->sortable()->display(function ($date) {
+                return date('d M Y', strtotime($date));
+            });
 
         return $grid;
     }
