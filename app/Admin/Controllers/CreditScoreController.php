@@ -127,7 +127,23 @@ class CreditScoreController extends AdminController
         $grid->disableBatchActions();
         $grid->quickSearch('name')->placeholder('Search by name');
 
-        $grid->column('name', __('Name'))->sortable()->display(function ($name) {
+        $grid->column('id', __('Id'))->sortable()->display(function ($name) {
+            return ucwords(strtolower($name));
+        });
+
+        $grid->column('created_at', __('Created At'))->sortable()->display(function ($date) {
+            return date('d M Y', strtotime($date));
+        });
+
+        $grid->column('name', __('Group'))->sortable()->display(function ($name) {
+            return ucwords(strtolower($name));
+        });
+
+        $grid->column('village', __('Village'))->sortable()->display(function ($name) {
+            return ucwords(strtolower($name));
+        });
+
+        $grid->column('district', __('District'))->sortable()->display(function ($name) {
             return ucwords(strtolower($name));
         });
 
@@ -212,6 +228,17 @@ class CreditScoreController extends AdminController
         $grid->column('total_principal', __('Total Loan Amount'))->display(function () {
             $totalPrincipal = $this->transactions()
                 ->where('type', 'LOAN')
+                ->whereHas('user', function ($query) {
+                    $query->where('user_type', 'admin');
+                })
+                ->sum('amount');
+
+            return number_format(abs($totalPrincipal), 2, '.', ',');
+        });
+
+        $grid->column('total_loan_repayments', __('Total Loans Paid'))->display(function () {
+            $totalPrincipal = $this->transactions()
+                ->where('type', 'LOAN_REPAYMENT')
                 ->whereHas('user', function ($query) {
                     $query->where('user_type', 'admin');
                 })
