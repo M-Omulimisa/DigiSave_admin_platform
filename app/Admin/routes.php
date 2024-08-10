@@ -88,7 +88,7 @@ $router->post('cycle-transactions', 'CycleTransactionController@store')->name('c
     $router->resource('products', ProductController::class);
     $router->resource('product-orders', ProductOrderController::class);
     $router->resource('transactions', GroupTransactionController::class);
-    $router->resource('member-transactions', MemberTransaction::class);
+    $router->resource('member-transactions', MemberTransactionController::class);
     $router->resource('cycle-transactions', CycleTransactionController::class);
     $router->resource('cycle-meetings', CycleMeetingController::class);
     $router->resource('credit-scores', CreditScoreController::class);
