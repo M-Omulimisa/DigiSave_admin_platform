@@ -54,6 +54,8 @@ Route::group([
 $router->get('cycle-transactions/create', 'CycleTransactionController@create')->name('cycle-transactions.create');
 $router->post('cycle-transactions', 'CycleTransactionController@store')->name('cycle-transactions.store');
 
+// $router->post('admin/get-users', [MemberAccountController::class, 'fetchUsers']);
+
     $router->resource('crops', CropController::class);
     $router->resource('crop-protocols', CropProtocolController::class);
     $router->resource('gardens', GardenController::class);
@@ -95,4 +97,6 @@ $router->post('cycle-transactions', 'CycleTransactionController@store')->name('c
     $router->resource('credit-scores', CreditScoreController::class);
     $router->resource('transactions-all', TransactionAllController::class);
     $router->resource('users', MemberController::class);
+    // Route::post('admin/get-users', [MemberAccountController::class, 'fetchUsers']);
+
 });

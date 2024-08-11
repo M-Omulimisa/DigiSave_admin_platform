@@ -99,66 +99,60 @@ class MemberAccountController extends AdminController
         return $show;
     }
 
-    /**
-     * Make a form builder.
-     *
-     * @return Form
-     */
     protected function form()
-    {
-        $form = new Form(new Transaction());
+{
+    $form = new Form(new Transaction());
 
-        // SACCO selection or display based on action (create/edit)
-        if ($form->isCreating()) {
-            $form->select('sacco_id', __('Group'))
-                ->options(Sacco::all()->pluck('name', 'id'))
-                ->load('source_user_id', '/api/users') // Assuming an endpoint that filters users by sacco_id
-                ->rules('required');
-        } else {
-            $form->display('sacco_id', __('Group'))->with(function ($saccoId) {
-                $sacco = Sacco::find($saccoId);
-                return $sacco ? $sacco->name : 'Unknown';
-            });
-        }
+    // Group selection
+    $form->select('sacco_id', __('Group'))
+        ->options(
+            Sacco::whereNotIn('status', ['deleted', 'inactive'])
+                ->pluck('name', 'id')
+        )
+        ->rules('required');
 
-        // Source user selection or display based on action (create/edit)
-        if ($form->isCreating()) {
-            $form->select('source_user_id', __('Source User'))
-                ->options(function ($id) {
-                    $user = User::find($id);
-                    if ($user) {
-                        return [$user->id => $user->first_name . ' ' . $user->last_name];
-                    }
+    $form->select('source_user_id', __('Source User'))
+        ->options(
+            User::select('id', 'first_name', 'last_name')
+                ->get()
+                ->mapWithKeys(function ($user) {
+                    return [$user->id => "{$user->first_name} {$user->last_name}"];
                 })
-                ->rules('required');
-        } else {
-            $form->display('source_user_id', __('Source User'))->with(function ($sourceUserId) {
-                $user = User::find($sourceUserId);
-                return $user ? $user->first_name . ' ' . $user->last_name : 'Unknown';
-            });
-        }
+        )
+        ->rules('required');
 
-        // Transaction amount with add/deduct option
-        $form->radio('amount_type', __('Amount Type'))
-            ->options(['add' => 'Add', 'deduct' => 'Deduct'])
-            ->default('add')
-            ->rules('required');
+    // Admin user selection
+    $form->select('user_id', __('User'))
+        ->options(
+            User::where('user_type', 'Admin')
+                ->select('id', 'first_name', 'last_name')
+                ->get()
+                ->mapWithKeys(function ($user) {
+                    return [$user->id => "{$user->first_name} {$user->last_name}"];
+                })
+        )
+        ->rules('required');
 
-        $form->decimal('amount', __('Transaction Amount'))
-            ->rules('required|numeric|min:0')
-            ->help('Specify the amount to add or deduct. Choosing deduct will create a negative transaction.');
+    // Amount entry
+    $form->decimal('amount', __('Transaction Amount'))
+        ->rules('required|numeric|not_in:0')
+        ->help('Enter a positive amount to add or a negative amount to subtract.');
 
-        // Display transaction type as SHAVING but store as SHARE
-        $form->hidden('type')->default('SHARE');
-        $form->display('transaction_type', __('Transaction Type'))->default('SAVING');
+    // Display transaction type as SAVING but store as SHARE
+    $form->hidden('type')->default('SHARE');
+    $form->display('transaction_type', __('Transaction Type'))->default('SAVING');
 
-        // Handle form saving
-        $form->saving(function (Form $form) {
-            if ($form->amount_type == 'deduct') {
-                $form->amount = -abs($form->amount); // Make the amount negative if deducting
-            }
-        });
+    return $form;
+}
 
-        return $form;
+    /**
+     * Additional methods for fetching users based on the sacco
+     */
+    public function fetchSaccoUsers($saccoId)
+    {
+        return User::where('sacco_id', $saccoId)
+                   ->where('user_type', '<>', 'Admin')
+                   ->get(['id', 'first_name'])
+                   ->pluck('first_name', 'id');
     }
 }
