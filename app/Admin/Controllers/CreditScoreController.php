@@ -190,7 +190,7 @@ class CreditScoreController extends AdminController
         //     return app(CreditScoreController::class)->calculateAverageAttendance($this->id);
         // });
 
-        $grid->column('total_member_names', __('Total Member Attendance'))->display(function () {
+        $grid->column('total_member_names', __('Average Attendance'))->display(function () {
             $meetings = $this->meetings; // Fetch all meetings for the sacco
             $allMemberNames = [];
 
@@ -212,8 +212,21 @@ class CreditScoreController extends AdminController
                 }
             }
 
+            $meetingCount = count($meetings);
+            $totalPresent = count(array_unique($allMemberNames));
+
+
+            // Calculate the average attendance
+$averageAttendance = $meetingCount > 0 ? $totalPresent / $meetingCount : 0;
+
+// Use dd() to output both the meeting count and the average attendance
+// dd(['meeting_count' => $meetingCount, 'member_count' => count(array_unique($allMemberNames)), 'average_attendance' => $averageAttendance]);
+
+            // dd(['meeting_count' => $meetingCount, 'member_count' => count(array_unique($allMemberNames))]);
+
+            // dd(count(array_unique($allMemberNames)));
             // Return the count of unique member names
-            return count(array_unique($allMemberNames)); // Return the count of unique names
+            return $averageAttendance; // Return the count of unique names
         });
 
         $grid->column('total_loans', __('Total Loans'))->display(function () {
