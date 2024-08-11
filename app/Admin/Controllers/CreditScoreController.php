@@ -139,14 +139,6 @@ class CreditScoreController extends AdminController
             return ucwords(strtolower($name));
         });
 
-        // $grid->column('village', __('Village'))->sortable()->display(function ($name) {
-        //     return ucwords(strtolower($name));
-        // });
-
-        // $grid->column('district', __('District'))->sortable()->display(function ($name) {
-        //     return ucwords(strtolower($name));
-        // });
-
         $grid->column('total_group_members', __('Group Members'))->display(function () {
             return User::where('sacco_id', $this->id)
                 ->where(function ($query) {
@@ -155,6 +147,39 @@ class CreditScoreController extends AdminController
                 })
                 ->count();
         });
+
+        // Column for the number of male members
+    $grid->column('num_men', __('Number of Men'))->display(function () {
+        return User::where('sacco_id', $this->id)
+            ->where('sex', 'Male')
+            ->where(function ($query) {
+                $query->whereNull('user_type')
+                    ->orWhere('user_type', '<>', 'Admin');
+            })
+            ->count();
+    });
+
+    // Column for the number of female members
+    $grid->column('num_women', __('Number of Women'))->display(function () {
+        return User::where('sacco_id', $this->id)
+            ->where('sex', 'Female')
+            ->where(function ($query) {
+                $query->whereNull('user_type')
+                    ->orWhere('user_type', '<>', 'Admin');
+            })
+            ->count();
+    });
+
+    // Column for the number of youth members
+    $grid->column('num_youth', __('Number of Youths'))->display(function () {
+        return User::where('sacco_id', $this->id)
+            ->whereRaw('TIMESTAMPDIFF(YEAR, dob, CURDATE()) < 35')
+            ->where(function ($query) {
+                $query->whereNull('user_type')
+                    ->orWhere('user_type', '<>', 'Admin');
+            })
+            ->count();
+    });
 
         $grid->column('total_meetings', __('Total Meetings'))->display(function () {
             return Meeting::where('sacco_id', $this->id)->count();
