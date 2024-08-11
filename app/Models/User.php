@@ -95,18 +95,23 @@ class User extends Authenticatable implements JWTSubject
 
     //getter for balance
     public function getBalanceAttribute()
-    {
-        $sacco = Sacco::find($this->sacco_id);
-        if ($sacco == null) {
-            return 0;
-        }
-        if ($sacco->active_cycle == null) {
-            return 0;
-        }
-        return Transaction::where('user_id', $this->id)
-            ->where('cycle_id',  $sacco->active_cycle->id)
-            ->sum('amount');
+{
+    // Find the Sacco associated with this member
+    $sacco = Sacco::find($this->sacco_id);
+
+    // If no Sacco is found or if there's no active cycle, return 0
+    if ($sacco == null || $sacco->active_cycle == null) {
+        return 0;
     }
+
+    // Calculate the total SHARE amount for this member within the active cycle
+    $totalShare = Transaction::where('source_user_id', $this->id) // Ensure the correct field is used here
+        ->where('cycle_id', $sacco->active_cycle->id)
+        ->where('type', 'SHARE')
+        ->sum('amount'); // Sum the 'amount' for the type 'SHARE'
+
+    return $totalShare;
+}
 
     public function getFINESAttribute()
     {

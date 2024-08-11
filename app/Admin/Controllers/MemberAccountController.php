@@ -63,7 +63,7 @@ class MemberAccountController extends AdminController
             })->sortable();
 
         // Display the sum of share amount
-        $grid->column('total_share', __('Total Share Amount'))
+        $grid->column('total_share', __('Total Savings Amount'))
             ->display(function ($value) {
                 return number_format($value);
             })
