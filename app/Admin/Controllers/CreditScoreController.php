@@ -259,12 +259,14 @@ $averageAttendanceRounded = round($averageAttendance);
 
         // Add dynamic data columns for loans to specific demographics
         $grid->column('loans_amount_to_males', __('Loans Amount to Males'))->display(function () {
-            return $this->transactions()
+            // Calculate the total loan amount to males
+            $totalPrincipal = $this->transactions()
                 ->join('users', 'transactions.source_user_id', '=', 'users.id')
                 ->where('transactions.type', 'LOAN')
                 ->where('users.sex', 'Male')
-                ->sum('amount');
+                ->sum('transactions.amount');
 
+            // Format the total principal as a positive number with commas
             return number_format(abs($totalPrincipal), 2, '.', ',');
         });
 
@@ -277,13 +279,15 @@ $averageAttendanceRounded = round($averageAttendance);
         });
 
         // Add dynamic data columns for loans to specific demographics
-        $grid->column('loans_to_amount_females', __('Loans Amount to Females'))->display(function () {
-            return $this->transactions()
+        $grid->column('loans_amount_to_females', __('Loans Amount to Females'))->display(function () {
+            // Calculate the total loan amount to females
+            $totalPrincipal = $this->transactions()
                 ->join('users', 'transactions.source_user_id', '=', 'users.id')
                 ->where('transactions.type', 'LOAN')
                 ->where('users.sex', 'Female')
-                ->sum('amount');
+                ->sum('transactions.amount');
 
+            // Format the total principal as a positive number with commas
             return number_format(abs($totalPrincipal), 2, '.', ',');
         });
 
@@ -296,12 +300,14 @@ $averageAttendanceRounded = round($averageAttendance);
         });
 
         $grid->column('loans_amount_to_youth', __('Loans Amount to Youth'))->display(function () {
-            return $this->transactions()
+            // Calculate the total loan amount to youth
+            $totalPrincipal = $this->transactions()
                 ->join('users', 'transactions.source_user_id', '=', 'users.id')
                 ->where('transactions.type', 'LOAN')
                 ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
-                ->sum('amount');
+                ->sum('transactions.amount');
 
+            // Format the total principal as a positive number with commas
             return number_format(abs($totalPrincipal), 2, '.', ',');
         });
 
