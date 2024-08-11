@@ -225,6 +225,17 @@ class CreditScoreController extends AdminController
                 ->count();
         });
 
+        $grid->column('total_loans', __('Total Loan Amount'))->display(function () {
+            return $this->transactions()
+                ->where('type', 'LOAN')
+                ->whereHas('user', function ($query) {
+                    $query->where('user_type', 'admin');
+                })
+                ->sum('amount');
+
+            return number_format(abs($totalPrincipal), 2, '.', ',');
+        });
+
         // Add dynamic data columns for loans to specific demographics
         $grid->column('loans_to_males', __('Loans to Males'))->display(function () {
             return $this->transactions()
