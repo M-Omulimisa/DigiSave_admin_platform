@@ -185,11 +185,6 @@ class CreditScoreController extends AdminController
             return Meeting::where('sacco_id', $this->id)->count();
         });
 
-        // $grid->column('average_attendance_per_meeting', __('Average Attendance Per Meeting'))->display(function () {
-        //     // Call the calculateAverageAttendance method within the closure using 'use' to bring in the context of the controller
-        //     return app(CreditScoreController::class)->calculateAverageAttendance($this->id);
-        // });
-
         $grid->column('total_member_names', __('Average Attendance'))->display(function () {
             $meetings = $this->meetings; // Fetch all meetings for the sacco
             $allMemberNames = [];
@@ -219,6 +214,8 @@ class CreditScoreController extends AdminController
             // Calculate the average attendance
 $averageAttendance = $meetingCount > 0 ? $totalPresent / $meetingCount : 0;
 
+$averageAttendanceRounded = round($averageAttendance);
+
 // Use dd() to output both the meeting count and the average attendance
 // dd(['meeting_count' => $meetingCount, 'member_count' => count(array_unique($allMemberNames)), 'average_attendance' => $averageAttendance]);
 
@@ -226,7 +223,7 @@ $averageAttendance = $meetingCount > 0 ? $totalPresent / $meetingCount : 0;
 
             // dd(count(array_unique($allMemberNames)));
             // Return the count of unique member names
-            return $averageAttendance; // Return the count of unique names
+            return $averageAttendanceRounded; // Return the count of unique names
         });
 
         $grid->column('total_loans', __('Total Loans'))->display(function () {
@@ -239,13 +236,15 @@ $averageAttendance = $meetingCount > 0 ? $totalPresent / $meetingCount : 0;
         });
 
         $grid->column('total_loan_amount', __('Total Loan Amount'))->display(function () {
-            return $this->transactions()
+            // Calculate the total principal for loans
+            $totalPrincipal = $this->transactions()
                 ->where('type', 'LOAN')
                 ->whereHas('user', function ($query) {
                     $query->where('user_type', 'admin');
                 })
                 ->sum('amount');
 
+            // Format the total principal as a positive number with commas
             return number_format(abs($totalPrincipal), 2, '.', ',');
         });
 
