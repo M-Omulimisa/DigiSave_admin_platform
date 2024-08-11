@@ -374,6 +374,63 @@ class CreditScoreController extends AdminController
             return number_format(abs($totalBalance), 2, '.', ',');
         });
 
+        // Add dynamic data columns for loans to specific demographics
+        $grid->column('Savings_to_males', __('Savings to Males'))->display(function () {
+            return $this->transactions()
+                ->join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->where('transactions.type', 'SHARE')
+                ->where('users.sex', 'Male')
+                ->count();
+        });
+
+        // Add dynamic data columns for loans to specific demographics
+        $grid->column('Savings_amount_to_males', __('Savings Amount to Males'))->display(function () {
+            return $this->transactions()
+                ->join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->where('transactions.type', 'SHARE')
+                ->where('users.sex', 'Male')
+                ->sum('amount');
+
+            return number_format(abs($totalPrincipal), 2, '.', ',');
+        });
+
+        $grid->column('Savings_to_females', __('Savings to Females'))->display(function () {
+            return $this->transactions()
+                ->join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->where('transactions.type', 'SHARE')
+                ->where('users.sex', 'Female')
+                ->count();
+        });
+
+        // Add dynamic data columns for loans to specific demographics
+        $grid->column('Savings_to_amount_females', __('Savings Amount to Females'))->display(function () {
+            return $this->transactions()
+                ->join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->where('transactions.type', 'SHARE')
+                ->where('users.sex', 'Female')
+                ->sum('amount');
+
+            return number_format(abs($totalPrincipal), 2, '.', ',');
+        });
+
+        $grid->column('Savings_to_youth', __('Savings to Youth'))->display(function () {
+            return $this->transactions()
+                ->join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->where('transactions.type', 'SHARE')
+                ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
+                ->count();
+        });
+
+        $grid->column('Savings_amount_to_youth', __('Savings Amount to Youth'))->display(function () {
+            return $this->transactions()
+                ->join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->where('transactions.type', 'SHARE')
+                ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
+                ->sum('amount');
+
+            return number_format(abs($totalPrincipal), 2, '.', ',');
+        });
+
         $grid->column('average_savings_per_member', __('Average Savings Per Member'))->display(function () {
             // Calculate total savings
             $totalSavings = $this->transactions()
