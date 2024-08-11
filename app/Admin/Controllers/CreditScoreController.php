@@ -234,6 +234,17 @@ class CreditScoreController extends AdminController
                 ->count();
         });
 
+        // Add dynamic data columns for loans to specific demographics
+        $grid->column('loans_to_males', __('Loans Amount to Males'))->display(function () {
+            return $this->transactions()
+                ->join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->where('transactions.type', 'LOAN')
+                ->where('users.sex', 'Male')
+                ->sum('amount');
+
+            return number_format(abs($totalPrincipal), 2, '.', ',');
+        });
+
         $grid->column('loans_to_females', __('Loans to Females'))->display(function () {
             return $this->transactions()
                 ->join('users', 'transactions.source_user_id', '=', 'users.id')
@@ -242,12 +253,33 @@ class CreditScoreController extends AdminController
                 ->count();
         });
 
+        // Add dynamic data columns for loans to specific demographics
+        $grid->column('loans_to_males', __('Loans Amount to Females'))->display(function () {
+            return $this->transactions()
+                ->join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->where('transactions.type', 'LOAN')
+                ->where('users.sex', 'Female')
+                ->sum('amount');
+
+            return number_format(abs($totalPrincipal), 2, '.', ',');
+        });
+
         $grid->column('loans_to_youth', __('Loans to Youth'))->display(function () {
             return $this->transactions()
                 ->join('users', 'transactions.source_user_id', '=', 'users.id')
                 ->where('transactions.type', 'LOAN')
-                ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 30')
+                ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
                 ->count();
+        });
+
+        $grid->column('loans_to_youth', __('Loans Amount to Youth'))->display(function () {
+            return $this->transactions()
+                ->join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->where('transactions.type', 'LOAN')
+                ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
+                ->sum('amount');
+
+            return number_format(abs($totalPrincipal), 2, '.', ',');
         });
 
         $grid->column('total_principal', __('Total Loan Amount'))->display(function () {
