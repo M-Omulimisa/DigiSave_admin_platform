@@ -225,7 +225,7 @@ class CreditScoreController extends AdminController
                 ->count();
         });
 
-        $grid->column('total_loans', __('Total Loan Amount'))->display(function () {
+        $grid->column('total_loan_amount', __('Total Loan Amount'))->display(function () {
             return $this->transactions()
                 ->where('type', 'LOAN')
                 ->whereHas('user', function ($query) {
@@ -246,7 +246,7 @@ class CreditScoreController extends AdminController
         });
 
         // Add dynamic data columns for loans to specific demographics
-        $grid->column('loans_to_males', __('Loans Amount to Males'))->display(function () {
+        $grid->column('loans_amount_to_males', __('Loans Amount to Males'))->display(function () {
             return $this->transactions()
                 ->join('users', 'transactions.source_user_id', '=', 'users.id')
                 ->where('transactions.type', 'LOAN')
@@ -265,7 +265,7 @@ class CreditScoreController extends AdminController
         });
 
         // Add dynamic data columns for loans to specific demographics
-        $grid->column('loans_to_males', __('Loans Amount to Females'))->display(function () {
+        $grid->column('loans_to_amount_females', __('Loans Amount to Females'))->display(function () {
             return $this->transactions()
                 ->join('users', 'transactions.source_user_id', '=', 'users.id')
                 ->where('transactions.type', 'LOAN')
@@ -283,7 +283,7 @@ class CreditScoreController extends AdminController
                 ->count();
         });
 
-        $grid->column('loans_to_youth', __('Loans Amount to Youth'))->display(function () {
+        $grid->column('loans_amount_to_youth', __('Loans Amount to Youth'))->display(function () {
             return $this->transactions()
                 ->join('users', 'transactions.source_user_id', '=', 'users.id')
                 ->where('transactions.type', 'LOAN')
