@@ -994,7 +994,7 @@ private function formatCurrency($amount)
 
 
 
-        $cliff_group = Sacco::where('name', 'Cliffhenry Savings')->get();
+        $cliff_group = User::where('first_name', 'Cliffhenry')->get();
 dd($cliff_group);
 
         return $content
