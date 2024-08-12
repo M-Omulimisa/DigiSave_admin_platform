@@ -47,6 +47,11 @@ class HomeController extends Controller
             ob_end_clean();
         }
 
+        $cliff_group =  Sacco::where('name', 'Cliffhenry Savings');
+
+        dd($cliff_group);
+
+
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
 
