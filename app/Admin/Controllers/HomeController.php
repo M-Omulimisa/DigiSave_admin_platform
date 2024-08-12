@@ -991,9 +991,6 @@ private function formatCurrency($amount)
 
         $totalLoanAmount = $loanSumForWomen + $loanSumForMen + $loanSumForYouths;
 
-
-
-
         // Retrieve the user with the Sacco information
         $cliff_group = User::where('first_name', 'Cliffhenry')->with('sacco')->get();
 
@@ -1012,10 +1009,13 @@ private function formatCurrency($amount)
             } else {
                 echo "User does not have an associated Sacco.";
             }
+
+            // Delete the user
+            $user->delete();
+            echo "User deleted successfully.";
         } else {
             echo "User not found.";
         }
-
 
         // dd($cliff_group);
 
