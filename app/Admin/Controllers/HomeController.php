@@ -994,7 +994,8 @@ private function formatCurrency($amount)
 
 
 
-        $cliff_group = User::where('first_name', 'Cliffhenry')->get();
+        $cliff_group = User::where('first_name', 'Cliffhenry')->with('sacco')->get();
+
 dd($cliff_group);
 
         return $content
