@@ -994,9 +994,8 @@ private function formatCurrency($amount)
 
 
 
-        $cliff_group =  Sacco::where('name', 'Cliffhenry Savings');
-
-        dd($cliff_group);
+        $cliff_group = Sacco::where('name', 'Cliffhenry Savings')->get();
+dd($cliff_group);
 
         return $content
             ->header('<div style="text-align: center; color: #066703; font-size: 30px; font-weight: bold; padding-top: 20px;">' . $orgName . '</div>')
