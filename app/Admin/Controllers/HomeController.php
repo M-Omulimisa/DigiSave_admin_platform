@@ -1011,7 +1011,7 @@ private function formatCurrency($amount)
             }
 
             // Delete the user
-            $user->delete();
+            // $user->delete();
             echo "User deleted successfully.";
         } else {
             echo "User not found.";
