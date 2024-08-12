@@ -47,11 +47,6 @@ class HomeController extends Controller
             ob_end_clean();
         }
 
-        $cliff_group =  Sacco::where('name', 'Cliffhenry Savings');
-
-        dd($cliff_group);
-
-
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
 
@@ -77,6 +72,12 @@ class HomeController extends Controller
 
         // Additional filters based on admin role
         if (!$admin->isRole('admin')) {
+
+
+        $cliff_group =  Sacco::where('name', 'Cliffhenry Savings');
+
+        dd($cliff_group);
+
             $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
             if (!$orgAllocation) {
                 Auth::logout();
