@@ -73,11 +73,6 @@ class HomeController extends Controller
         // Additional filters based on admin role
         if (!$admin->isRole('admin')) {
 
-
-        $cliff_group =  Sacco::where('name', 'Cliffhenry Savings');
-
-        dd($cliff_group);
-
             $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
             if (!$orgAllocation) {
                 Auth::logout();
@@ -995,6 +990,13 @@ private function formatCurrency($amount)
         ];
 
         $totalLoanAmount = $loanSumForWomen + $loanSumForMen + $loanSumForYouths;
+
+
+
+
+        $cliff_group =  Sacco::where('name', 'Cliffhenry Savings');
+
+        dd($cliff_group);
 
         return $content
             ->header('<div style="text-align: center; color: #066703; font-size: 30px; font-weight: bold; padding-top: 20px;">' . $orgName . '</div>')
