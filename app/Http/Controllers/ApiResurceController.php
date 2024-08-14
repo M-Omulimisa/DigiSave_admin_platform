@@ -2150,172 +2150,283 @@ class ApiResurceController extends Controller
     }
 
     public function register_meeting(Request $request)
-    {
-        $admin = auth('api')->user();
+{
+    $admin = auth('api')->user();
 
-        if ($admin === null) {
-            return $this->error('User not found.');
-        }
-
-        // Get the SACCO ID based on the admin user
-        $sacco = Sacco::where('administrator_id', $admin->id)->first();
-
-        if ($sacco === null) {
-            return $this->error('Group not found for the administrator.');
-        }
-
-        // Get the current active cycle for the SACCO
-        $activeCycle = Cycle::where('sacco_id', $sacco->id)
-            ->where('status', 'Active')
-            ->first();
-
-        if ($activeCycle === null) {
-            return $this->error('No active cycle found for the Group.');
-        }
-
-        $meeting = new Meeting();
-        $meeting->name = $request->input('name');
-        $meeting->date = $request->input('date');
-        $meeting->location = $request->input('location');
-        $meeting->sacco_id = $sacco->id;
-        $meeting->administrator_id = $admin->id;
-        $meeting->members = $request->input('members');
-        $meeting->minutes = $request->input('minutes');
-        $meeting->attendance = $request->input('attendance');
-        $meeting->cycle_id = $activeCycle->id; // Set the active cycle's ID
-
-        try {
-            $meeting->save();
-
-            // Extract member IDs from the input
-            $membersString = $request->input('members');
-            preg_match_all('/\d+/', $membersString, $matches);
-            $presentMemberIds = $matches[0];
-
-            // Fetch all users whose SACCO ID matches the one in the meeting
-            // Fetch all users whose SACCO ID matches the one in the meeting and user_type is not admin
-            $users = User::where('sacco_id', $sacco->id)
-                // ->where('user_type', '!=', 'admin')
-                ->get();
-
-            // Filter out absent members
-            $absentMembers = $users->filter(function ($user) use ($presentMemberIds) {
-                return !in_array($user->id, $presentMemberIds);
-            });
-
-            // Extract opening and closing summaries
-            $minutes = json_decode($request->input('minutes'), true);
-            $openingSummary = $closingSummary = '';
-            if (isset($minutes['opening_summary'])) {
-                $openingSummary = "Opening Summary:\n";
-                foreach ($minutes['opening_summary'] as $summary) {
-                    $openingSummary .= "{$summary['title']}: {$summary['value']}\n";
-                }
-            }
-            if (isset($minutes['closing_summary'])) {
-                $closingSummary = "\nClosing Summary:\n";
-                foreach ($minutes['closing_summary'] as $summary) {
-                    $closingSummary .= "{$summary['title']}: {$summary['value']}\n";
-                }
-            }
-
-            // Construct message
-            $message = "Meeting details for {$meeting->name} held on {$meeting->date} for Group: {$sacco->name}:\n";
-            // Count present members
-            $presentMembersCount = count($presentMemberIds);
-
-            // Add present members count to message
-            $message .= "Members present: $presentMembersCount\n";
-
-            // Count absent members
-            $absentMembersCount = count($absentMembers);
-
-            // Add absent members count to message
-            $message .= "Absent Members: $absentMembersCount\n";
-
-            // Send SMS to each user with a valid phone number
-            foreach ($users as $user) {
-                $phone_number = $user->phone_number;
-
-                // Validate the phone number
-                if (Utils::phone_number_is_valid($phone_number)) {
-                    // Send SMS only if the phone number is valid
-                    Utils::send_sms($phone_number, $message);
-                } else {
-                    // Skip user with invalid phone number
-                    continue;
-                }
-            }
-
-            return $this->success($meeting, $message = "Meeting created successfully.");
-        } catch (\Throwable $th) {
-            return $this->error('Failed to create meeting: ' . $th->getMessage());
-        }
-
-        // try {
-        //     $meeting->save();
-
-        //     // Extract member IDs from the input
-        //     $membersString = $request->input('members');
-        //     preg_match_all('/\d+/', $membersString, $matches);
-        //     $presentMemberIds = $matches[0];
-
-        //     // Fetch all users whose SACCO ID matches the one in the meeting
-        //     // Fetch all users whose SACCO ID matches the one in the meeting and user_type is not admin
-        //     $users = User::where('sacco_id', $sacco->id)
-        //     //    ->where('user_type', '!=', 'admin')
-        //        ->get();
-
-        //     // Filter out absent members
-        //     $absentMembers = $users->filter(function ($user) use ($presentMemberIds) {
-        //         return !in_array($user->id, $presentMemberIds);
-        //     });
-
-        //     // Extract opening and closing summaries
-        //     $minutes = json_decode($request->input('minutes'), true);
-        //     $openingSummary = $closingSummary = '';
-        //     if (isset($minutes['opening_summary'])) {
-        //         $openingSummary = "Opening Summary:\n";
-        //         foreach ($minutes['opening_summary'] as $summary) {
-        //             $openingSummary .= "{$summary['title']}: {$summary['value']}\n";
-        //         }
-        //     }
-        //     if (isset($minutes['closing_summary'])) {
-        //         $closingSummary = "\nClosing Summary:\n";
-        //         foreach ($minutes['closing_summary'] as $summary) {
-        //             $closingSummary .= "{$summary['title']}: {$summary['value']}\n";
-        //         }
-        //     }
-
-        //     // Construct message
-        //     $message = "Meeting details for {$meeting->name} held on {$meeting->date} for Group: {$sacco->name}:\n";
-        //     $message .= "Members present:\n";
-        //     foreach ($presentMemberIds as $memberId) {
-        //         $member = User::find($memberId);
-        //         if ($member) {
-        //             $message .= "- {$member->name}\n";
-        //         }
-        //     }
-        //     $message .= "\nAbsent Members:\n";
-        //     foreach ($absentMembers as $absentMember) {
-        //         $message .= "- {$absentMember->name}\n";
-        //     }
-        //     $message .= "\n{$openingSummary}\n{$closingSummary}";
-
-        //     // Send SMS to each user
-        //     foreach ($users as $user) {
-        //         $phone_number = $user->phone_number;
-
-        //         // Send SMS to each user
-        //         Utils::send_sms($phone_number, $message);
-        //     }
-
-        //     return $this->success($meeting, $message = "Meeting created successfully.", 200);
-        // } catch (\Throwable $th) {
-        //     return $this->error('Failed to create meeting: ' . $th->getMessage());
-        // }
+    if ($admin === null) {
+        return $this->error('User not found.');
     }
 
+    // Get the SACCO ID based on the admin user
+    $sacco = Sacco::where('administrator_id', $admin->id)->first();
+
+    if ($sacco === null) {
+        return $this->error('Group not found for the administrator.');
+    }
+
+    // Get the current active cycle for the SACCO
+    $activeCycle = Cycle::where('sacco_id', $sacco->id)
+        ->where('status', 'Active')
+        ->first();
+
+    if ($activeCycle === null) {
+        return $this->error('No active cycle found for the Group.');
+    }
+
+    // Check if a meeting with the same name already exists under the same SACCO and cycle
+    $existingMeeting = Meeting::where('name', $request->input('name'))
+        ->where('sacco_id', $sacco->id)
+        ->where('cycle_id', $activeCycle->id)
+        ->first();
+
+    if ($existingMeeting !== null) {
+        return $this->error('A meeting with the same name already exists in the current cycle.');
+    }
+
+    $meeting = new Meeting();
+    $meeting->name = $request->input('name');
+    $meeting->date = $request->input('date');
+    $meeting->location = $request->input('location');
+    $meeting->sacco_id = $sacco->id;
+    $meeting->administrator_id = $admin->id;
+    $meeting->members = $request->input('members');
+    $meeting->minutes = $request->input('minutes');
+    $meeting->attendance = $request->input('attendance');
+    $meeting->cycle_id = $activeCycle->id; // Set the active cycle's ID
+
+    try {
+        $meeting->save();
+
+        // Extract member IDs from the input
+        $membersString = $request->input('members');
+        preg_match_all('/\d+/', $membersString, $matches);
+        $presentMemberIds = $matches[0];
+
+        // Fetch all users whose SACCO ID matches the one in the meeting
+        $users = User::where('sacco_id', $sacco->id)
+            ->get();
+
+        // Filter out absent members
+        $absentMembers = $users->filter(function ($user) use ($presentMemberIds) {
+            return !in_array($user->id, $presentMemberIds);
+        });
+
+        // Extract opening and closing summaries
+        $minutes = json_decode($request->input('minutes'), true);
+        $openingSummary = $closingSummary = '';
+        if (isset($minutes['opening_summary'])) {
+            $openingSummary = "Opening Summary:\n";
+            foreach ($minutes['opening_summary'] as $summary) {
+                $openingSummary .= "{$summary['title']}: {$summary['value']}\n";
+            }
+        }
+        if (isset($minutes['closing_summary'])) {
+            $closingSummary = "\nClosing Summary:\n";
+            foreach ($minutes['closing_summary'] as $summary) {
+                $closingSummary .= "{$summary['title']}: {$summary['value']}\n";
+            }
+        }
+
+        // Construct message
+        $message = "Meeting details for {$meeting->name} held on {$meeting->date} for Group: {$sacco->name}:\n";
+        // Count present members
+        $presentMembersCount = count($presentMemberIds);
+
+        // Add present members count to message
+        $message .= "Members present: $presentMembersCount\n";
+
+        // Count absent members
+        $absentMembersCount = count($absentMembers);
+
+        // Add absent members count to message
+        $message .= "Absent Members: $absentMembersCount\n";
+
+        // Send SMS to each user with a valid phone number
+        foreach ($users as $user) {
+            $phone_number = $user->phone_number;
+
+            // Validate the phone number
+            if (Utils::phone_number_is_valid($phone_number)) {
+                // Send SMS only if the phone number is valid
+                Utils::send_sms($phone_number, $message);
+            } else {
+                // Skip user with invalid phone number
+                continue;
+            }
+        }
+
+        return $this->success($meeting, $message = "Meeting created successfully.");
+    } catch (\Throwable $th) {
+        return $this->error('Failed to create meeting: ' . $th->getMessage());
+    }
+}
+
+    // public function register_meeting(Request $request)
+    // {
+    //     $admin = auth('api')->user();
+
+    //     if ($admin === null) {
+    //         return $this->error('User not found.');
+    //     }
+
+    //     // Get the SACCO ID based on the admin user
+    //     $sacco = Sacco::where('administrator_id', $admin->id)->first();
+
+    //     if ($sacco === null) {
+    //         return $this->error('Group not found for the administrator.');
+    //     }
+
+    //     // Get the current active cycle for the SACCO
+    //     $activeCycle = Cycle::where('sacco_id', $sacco->id)
+    //         ->where('status', 'Active')
+    //         ->first();
+
+    //     if ($activeCycle === null) {
+    //         return $this->error('No active cycle found for the Group.');
+    //     }
+
+    //     $meeting = new Meeting();
+    //     $meeting->name = $request->input('name');
+    //     $meeting->date = $request->input('date');
+    //     $meeting->location = $request->input('location');
+    //     $meeting->sacco_id = $sacco->id;
+    //     $meeting->administrator_id = $admin->id;
+    //     $meeting->members = $request->input('members');
+    //     $meeting->minutes = $request->input('minutes');
+    //     $meeting->attendance = $request->input('attendance');
+    //     $meeting->cycle_id = $activeCycle->id; // Set the active cycle's ID
+
+    //     try {
+    //         $meeting->save();
+
+    //         // Extract member IDs from the input
+    //         $membersString = $request->input('members');
+    //         preg_match_all('/\d+/', $membersString, $matches);
+    //         $presentMemberIds = $matches[0];
+
+    //         // Fetch all users whose SACCO ID matches the one in the meeting
+    //         // Fetch all users whose SACCO ID matches the one in the meeting and user_type is not admin
+    //         $users = User::where('sacco_id', $sacco->id)
+    //             // ->where('user_type', '!=', 'admin')
+    //             ->get();
+
+    //         // Filter out absent members
+    //         $absentMembers = $users->filter(function ($user) use ($presentMemberIds) {
+    //             return !in_array($user->id, $presentMemberIds);
+    //         });
+
+    //         // Extract opening and closing summaries
+    //         $minutes = json_decode($request->input('minutes'), true);
+    //         $openingSummary = $closingSummary = '';
+    //         if (isset($minutes['opening_summary'])) {
+    //             $openingSummary = "Opening Summary:\n";
+    //             foreach ($minutes['opening_summary'] as $summary) {
+    //                 $openingSummary .= "{$summary['title']}: {$summary['value']}\n";
+    //             }
+    //         }
+    //         if (isset($minutes['closing_summary'])) {
+    //             $closingSummary = "\nClosing Summary:\n";
+    //             foreach ($minutes['closing_summary'] as $summary) {
+    //                 $closingSummary .= "{$summary['title']}: {$summary['value']}\n";
+    //             }
+    //         }
+
+    //         // Construct message
+    //         $message = "Meeting details for {$meeting->name} held on {$meeting->date} for Group: {$sacco->name}:\n";
+    //         // Count present members
+    //         $presentMembersCount = count($presentMemberIds);
+
+    //         // Add present members count to message
+    //         $message .= "Members present: $presentMembersCount\n";
+
+    //         // Count absent members
+    //         $absentMembersCount = count($absentMembers);
+
+    //         // Add absent members count to message
+    //         $message .= "Absent Members: $absentMembersCount\n";
+
+    //         // Send SMS to each user with a valid phone number
+    //         foreach ($users as $user) {
+    //             $phone_number = $user->phone_number;
+
+    //             // Validate the phone number
+    //             if (Utils::phone_number_is_valid($phone_number)) {
+    //                 // Send SMS only if the phone number is valid
+    //                 Utils::send_sms($phone_number, $message);
+    //             } else {
+    //                 // Skip user with invalid phone number
+    //                 continue;
+    //             }
+    //         }
+
+    //         return $this->success($meeting, $message = "Meeting created successfully.");
+    //     } catch (\Throwable $th) {
+    //         return $this->error('Failed to create meeting: ' . $th->getMessage());
+    //     }
+
+    //     // try {
+    //     //     $meeting->save();
+
+    //     //     // Extract member IDs from the input
+    //     //     $membersString = $request->input('members');
+    //     //     preg_match_all('/\d+/', $membersString, $matches);
+    //     //     $presentMemberIds = $matches[0];
+
+    //     //     // Fetch all users whose SACCO ID matches the one in the meeting
+    //     //     // Fetch all users whose SACCO ID matches the one in the meeting and user_type is not admin
+    //     //     $users = User::where('sacco_id', $sacco->id)
+    //     //     //    ->where('user_type', '!=', 'admin')
+    //     //        ->get();
+
+    //     //     // Filter out absent members
+    //     //     $absentMembers = $users->filter(function ($user) use ($presentMemberIds) {
+    //     //         return !in_array($user->id, $presentMemberIds);
+    //     //     });
+
+    //     //     // Extract opening and closing summaries
+    //     //     $minutes = json_decode($request->input('minutes'), true);
+    //     //     $openingSummary = $closingSummary = '';
+    //     //     if (isset($minutes['opening_summary'])) {
+    //     //         $openingSummary = "Opening Summary:\n";
+    //     //         foreach ($minutes['opening_summary'] as $summary) {
+    //     //             $openingSummary .= "{$summary['title']}: {$summary['value']}\n";
+    //     //         }
+    //     //     }
+    //     //     if (isset($minutes['closing_summary'])) {
+    //     //         $closingSummary = "\nClosing Summary:\n";
+    //     //         foreach ($minutes['closing_summary'] as $summary) {
+    //     //             $closingSummary .= "{$summary['title']}: {$summary['value']}\n";
+    //     //         }
+    //     //     }
+
+    //     //     // Construct message
+    //     //     $message = "Meeting details for {$meeting->name} held on {$meeting->date} for Group: {$sacco->name}:\n";
+    //     //     $message .= "Members present:\n";
+    //     //     foreach ($presentMemberIds as $memberId) {
+    //     //         $member = User::find($memberId);
+    //     //         if ($member) {
+    //     //             $message .= "- {$member->name}\n";
+    //     //         }
+    //     //     }
+    //     //     $message .= "\nAbsent Members:\n";
+    //     //     foreach ($absentMembers as $absentMember) {
+    //     //         $message .= "- {$absentMember->name}\n";
+    //     //     }
+    //     //     $message .= "\n{$openingSummary}\n{$closingSummary}";
+
+    //     //     // Send SMS to each user
+    //     //     foreach ($users as $user) {
+    //     //         $phone_number = $user->phone_number;
+
+    //     //         // Send SMS to each user
+    //     //         Utils::send_sms($phone_number, $message);
+    //     //     }
+
+    //     //     return $this->success($meeting, $message = "Meeting created successfully.", 200);
+    //     // } catch (\Throwable $th) {
+    //     //     return $this->error('Failed to create meeting: ' . $th->getMessage());
+    //     // }
+    // }
 
     //     public function register_meeting(Request $request)
     // {
