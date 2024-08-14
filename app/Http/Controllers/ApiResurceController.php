@@ -2173,18 +2173,33 @@ class ApiResurceController extends Controller
         return $this->error('No active cycle found for the Group.');
     }
 
-    // Check if a meeting with the same name already exists under the same SACCO and cycle
-    $existingMeeting = Meeting::where('name', $request->input('name'))
+    // Extract the base name from the meeting name (e.g., "Meeting")
+    $baseName = $request->input('name');
+
+    // Fetch all existing meetings with names like "Meeting X" under the same SACCO and cycle
+    $existingMeetings = Meeting::where('name', 'LIKE', "$baseName%")
         ->where('sacco_id', $sacco->id)
         ->where('cycle_id', $activeCycle->id)
-        ->first();
+        ->get();
 
-    if ($existingMeeting !== null) {
-        return $this->error('A meeting with the same name already exists in the current cycle.');
+    // Determine the highest meeting number
+    $highestNumber = 0;
+    foreach ($existingMeetings as $existingMeeting) {
+        preg_match('/(\d+)$/', $existingMeeting->name, $matches);
+        if ($matches) {
+            $number = (int)$matches[1];
+            if ($number > $highestNumber) {
+                $highestNumber = $number;
+            }
+        }
     }
 
+    // Set the new meeting name to "Meeting Y", where Y is the next number after the highest found
+    $newMeetingName = $baseName . ' ' . ($highestNumber + 1);
+
+    // Proceed with meeting creation using the updated name
     $meeting = new Meeting();
-    $meeting->name = $request->input('name');
+    $meeting->name = $newMeetingName;
     $meeting->date = $request->input('date');
     $meeting->location = $request->input('location');
     $meeting->sacco_id = $sacco->id;
@@ -2203,8 +2218,7 @@ class ApiResurceController extends Controller
         $presentMemberIds = $matches[0];
 
         // Fetch all users whose SACCO ID matches the one in the meeting
-        $users = User::where('sacco_id', $sacco->id)
-            ->get();
+        $users = User::where('sacco_id', $sacco->id)->get();
 
         // Filter out absent members
         $absentMembers = $users->filter(function ($user) use ($presentMemberIds) {
@@ -2229,16 +2243,9 @@ class ApiResurceController extends Controller
 
         // Construct message
         $message = "Meeting details for {$meeting->name} held on {$meeting->date} for Group: {$sacco->name}:\n";
-        // Count present members
         $presentMembersCount = count($presentMemberIds);
-
-        // Add present members count to message
         $message .= "Members present: $presentMembersCount\n";
-
-        // Count absent members
         $absentMembersCount = count($absentMembers);
-
-        // Add absent members count to message
         $message .= "Absent Members: $absentMembersCount\n";
 
         // Send SMS to each user with a valid phone number
@@ -2247,11 +2254,9 @@ class ApiResurceController extends Controller
 
             // Validate the phone number
             if (Utils::phone_number_is_valid($phone_number)) {
-                // Send SMS only if the phone number is valid
                 Utils::send_sms($phone_number, $message);
             } else {
-                // Skip user with invalid phone number
-                continue;
+                continue; // Skip user with invalid phone number
             }
         }
 
