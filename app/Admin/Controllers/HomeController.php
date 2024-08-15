@@ -997,7 +997,7 @@ private function formatCurrency($amount)
         // ->with('sacco')
         // ->get();
 
-        $group = Sacco::where('name', 'rwamahega youth twimukye')->get();
+        $group = Sacco::where('name', 'rwamahega')->get();
 
         // // // Check if the collection is not empty
         // if ($cliff_group->isNotEmpty()) {
