@@ -97,6 +97,8 @@ class GroupAccountController extends AdminController
         $grid->disableBatchActions();
         $grid->quickSearch('first_name', 'last_name', 'email', 'phone_number')->placeholder('Search by name, email, or phone number');
 
+        $grid->column('sacco.name', __('Group Name'))->sortable();
+
         $grid->column('name', __('Account Name'))->display(function () {
             return ucwords(strtolower($this->first_name . ' ' . $this->last_name));
         });
