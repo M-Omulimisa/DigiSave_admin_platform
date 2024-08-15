@@ -997,6 +997,8 @@ private function formatCurrency($amount)
         // ->with('sacco')
         // ->get();
 
+        $group = Sacco::where('name', 'rwamahega youth twimukye')->get();
+
         // // // Check if the collection is not empty
         // if ($cliff_group->isNotEmpty()) {
         //     // Get the first user from the collection
@@ -1020,7 +1022,7 @@ private function formatCurrency($amount)
         //     echo "User not found.";
         // }
 
-        // dd($cliff_group);
+        dd($group);
 
         return $content
             ->header('<div style="text-align: center; color: #066703; font-size: 30px; font-weight: bold; padding-top: 20px;">' . $orgName . '</div>')
