@@ -127,19 +127,19 @@ class CreditScoreController extends AdminController
         $grid->disableBatchActions();
         $grid->quickSearch('name')->placeholder('Search by name');
 
-        $grid->column('id', __('Id'))->sortable()->display(function ($name) {
+        $grid->column('id', __('id'))->sortable()->display(function ($name) {
             return ucwords(strtolower($name));
         });
 
-        $grid->column('created_at', __('Created At'))->sortable()->display(function ($date) {
+        $grid->column('created_at', __('created_at'))->sortable()->display(function ($date) {
             return date('d M Y', strtotime($date));
         });
 
-        $grid->column('name', __('Group'))->sortable()->display(function ($name) {
+        $grid->column('name', __('name'))->sortable()->display(function ($name) {
             return ucwords(strtolower($name));
         });
 
-        $grid->column('total_group_members', __('Group Members'))->display(function () {
+        $grid->column('total_group_members', __('number_of_members'))->display(function () {
             return User::where('sacco_id', $this->id)
                 ->where(function ($query) {
                     $query->whereNull('user_type')
@@ -149,7 +149,7 @@ class CreditScoreController extends AdminController
         });
 
         // Column for the number of male members
-    $grid->column('num_men', __('Number of Men'))->display(function () {
+    $grid->column('num_men', __('number_of_men'))->display(function () {
         return User::where('sacco_id', $this->id)
             ->where('sex', 'Male')
             ->where(function ($query) {
@@ -160,7 +160,7 @@ class CreditScoreController extends AdminController
     });
 
     // Column for the number of female members
-    $grid->column('num_women', __('Number of Women'))->display(function () {
+    $grid->column('num_women', __('number_of_women'))->display(function () {
         return User::where('sacco_id', $this->id)
             ->where('sex', 'Female')
             ->where(function ($query) {
@@ -171,7 +171,7 @@ class CreditScoreController extends AdminController
     });
 
     // Column for the number of youth members
-    $grid->column('num_youth', __('Number of Youths'))->display(function () {
+    $grid->column('num_youth', __('number_of_youths'))->display(function () {
         return User::where('sacco_id', $this->id)
             ->whereRaw('TIMESTAMPDIFF(YEAR, dob, CURDATE()) < 35')
             ->where(function ($query) {
@@ -181,11 +181,11 @@ class CreditScoreController extends AdminController
             ->count();
     });
 
-        $grid->column('total_meetings', __('Total Meetings'))->display(function () {
+        $grid->column('total_meetings', __('total_meetings'))->display(function () {
             return Meeting::where('sacco_id', $this->id)->count();
         });
 
-        $grid->column('total_member_names', __('Average Attendance'))->display(function () {
+        $grid->column('total_member_names', __('average_meeting_attendance'))->display(function () {
             $meetings = $this->meetings; // Fetch all meetings for the sacco
             $allMemberNames = [];
 
@@ -226,7 +226,7 @@ $averageAttendanceRounded = round($averageAttendance);
             return $averageAttendanceRounded; // Return the count of unique names
         });
 
-        $grid->column('total_loans', __('Total Loans'))->display(function () {
+        $grid->column('total_loans', __('number_of_loans'))->display(function () {
             return $this->transactions()
                 ->where('type', 'LOAN')
                 ->whereHas('user', function ($query) {
@@ -235,7 +235,7 @@ $averageAttendanceRounded = round($averageAttendance);
                 ->count();
         });
 
-        $grid->column('total_loan_amount', __('Total Loan Amount'))->display(function () {
+        $grid->column('total_loan_amount', __('total_principal'))->display(function () {
             // Calculate the total principal for loans
             $totalPrincipal = $this->transactions()
                 ->where('type', 'LOAN')
@@ -249,7 +249,7 @@ $averageAttendanceRounded = round($averageAttendance);
         });
 
         // Add dynamic data columns for loans to specific demographics
-        $grid->column('loans_to_males', __('Loans to Males'))->display(function () {
+        $grid->column('loans_to_males', __('number_of_loans_to_men'))->display(function () {
             return $this->transactions()
                 ->join('users', 'transactions.source_user_id', '=', 'users.id')
                 ->where('transactions.type', 'LOAN')
@@ -258,7 +258,7 @@ $averageAttendanceRounded = round($averageAttendance);
         });
 
         // Add dynamic data columns for loans to specific demographics
-        $grid->column('loans_amount_to_males', __('Loans Amount to Males'))->display(function () {
+        $grid->column('loans_amount_to_males', __('total_loans_disbursed_to_men'))->display(function () {
             // Calculate the total loan amount to males
             $totalPrincipal = $this->transactions()
                 ->join('users', 'transactions.source_user_id', '=', 'users.id')
@@ -270,7 +270,7 @@ $averageAttendanceRounded = round($averageAttendance);
             return number_format(abs($totalPrincipal), 2, '.', ',');
         });
 
-        $grid->column('loans_to_females', __('Loans to Females'))->display(function () {
+        $grid->column('loans_to_females', __('number_of_loans_to_female'))->display(function () {
             return $this->transactions()
                 ->join('users', 'transactions.source_user_id', '=', 'users.id')
                 ->where('transactions.type', 'LOAN')
@@ -279,7 +279,7 @@ $averageAttendanceRounded = round($averageAttendance);
         });
 
         // Add dynamic data columns for loans to specific demographics
-        $grid->column('loans_amount_to_females', __('Loans Amount to Females'))->display(function () {
+        $grid->column('loans_amount_to_females', __('total_loans_disbursed_to_females'))->display(function () {
             // Calculate the total loan amount to females
             $totalPrincipal = $this->transactions()
                 ->join('users', 'transactions.source_user_id', '=', 'users.id')
@@ -291,7 +291,7 @@ $averageAttendanceRounded = round($averageAttendance);
             return number_format(abs($totalPrincipal), 2, '.', ',');
         });
 
-        $grid->column('loans_to_youth', __('Loans to Youth'))->display(function () {
+        $grid->column('loans_to_youth', __('number_of_loans_to_youth'))->display(function () {
             return $this->transactions()
                 ->join('users', 'transactions.source_user_id', '=', 'users.id')
                 ->where('transactions.type', 'LOAN')
@@ -299,7 +299,7 @@ $averageAttendanceRounded = round($averageAttendance);
                 ->count();
         });
 
-        $grid->column('loans_amount_to_youth', __('Loans Amount to Youth'))->display(function () {
+        $grid->column('loans_amount_to_youth', __('total_loans_disbursed_to_youth'))->display(function () {
             // Calculate the total loan amount to youth
             $totalPrincipal = $this->transactions()
                 ->join('users', 'transactions.source_user_id', '=', 'users.id')
@@ -311,7 +311,7 @@ $averageAttendanceRounded = round($averageAttendance);
             return number_format(abs($totalPrincipal), 2, '.', ',');
         });
 
-        $grid->column('total_principal', __('Total Loan Amount'))->display(function () {
+        $grid->column('total_principal', __('total_principal'))->display(function () {
             $totalPrincipal = $this->transactions()
                 ->where('type', 'LOAN')
                 ->whereHas('user', function ($query) {
@@ -322,7 +322,7 @@ $averageAttendanceRounded = round($averageAttendance);
             return number_format(abs($totalPrincipal), 2, '.', ',');
         });
 
-        $grid->column('total_loan_repayments', __('Total Loans Paid'))->display(function () {
+        $grid->column('total_loan_repayments', __("total_lamount_loans Paid"))->display(function () {
             $totalPrincipal = $this->transactions()
                 ->where('type', 'LOAN_REPAYMENT')
                 ->whereHas('user', function ($query) {
@@ -333,7 +333,7 @@ $averageAttendanceRounded = round($averageAttendance);
             return number_format(abs($totalPrincipal), 2, '.', ',');
         });
 
-        $grid->column('total_interest', __('Total Interest'))->display(function () {
+        $grid->column('total_interest', __('total_interest'))->display(function () {
             $totalInterest = $this->transactions()
                 ->where('type', 'LOAN_INTEREST')
                 ->sum('amount');
@@ -341,7 +341,7 @@ $averageAttendanceRounded = round($averageAttendance);
             return number_format(abs($totalInterest), 2, '.', ',');
         });
 
-        $grid->column('total_savings_made', __('Savings Made'))->display(function () {
+        $grid->column('total_savings_made', __('total_savings_accounts'))->display(function () {
             $maleTotalCount = $this->transactions()
                 ->join('users', 'transactions.source_user_id', '=', 'users.id')
                 ->where('transactions.type', 'SHARE')
@@ -367,7 +367,7 @@ $averageAttendanceRounded = round($averageAttendance);
         });
 
         // Add column for total savings balance
-        $grid->column('total_savings_balance', __('Total Savings Balance'))->display(function () {
+        $grid->column('total_savings_balance', __('total_savings_balance'))->display(function () {
             $maleTotalBalance = $this->transactions()
                 ->join('users', 'transactions.source_user_id', '=', 'users.id')
                 ->where('transactions.type', 'SHARE')
@@ -393,7 +393,7 @@ $averageAttendanceRounded = round($averageAttendance);
         });
 
         // Add dynamic data columns for loans to specific demographics
-        $grid->column('Savings_to_males', __('Savings to Males'))->display(function () {
+        $grid->column('Savings_to_males', __('total_savings_accounts_for_men'))->display(function () {
             return $this->transactions()
                 ->join('users', 'transactions.source_user_id', '=', 'users.id')
                 ->where('transactions.type', 'SHARE')
@@ -402,7 +402,7 @@ $averageAttendanceRounded = round($averageAttendance);
         });
 
         // Add dynamic data columns for loans to specific demographics
-        $grid->column('Savings_amount_to_males', __('Savings Amount to Males'))->display(function () {
+        $grid->column('Savings_amount_to_males', __('total_savings_balance_for_men'))->display(function () {
             return $this->transactions()
                 ->join('users', 'transactions.source_user_id', '=', 'users.id')
                 ->where('transactions.type', 'SHARE')
@@ -412,7 +412,7 @@ $averageAttendanceRounded = round($averageAttendance);
             return number_format(abs($totalPrincipal), 2, '.', ',');
         });
 
-        $grid->column('Savings_to_females', __('Savings to Females'))->display(function () {
+        $grid->column('Savings_to_females', __('total_savings_accounts_for_women'))->display(function () {
             return $this->transactions()
                 ->join('users', 'transactions.source_user_id', '=', 'users.id')
                 ->where('transactions.type', 'SHARE')
@@ -421,7 +421,7 @@ $averageAttendanceRounded = round($averageAttendance);
         });
 
         // Add dynamic data columns for loans to specific demographics
-        $grid->column('Savings_to_amount_females', __('Savings Amount to Females'))->display(function () {
+        $grid->column('Savings_to_amount_females', __('total_savings_balance_for_females'))->display(function () {
             return $this->transactions()
                 ->join('users', 'transactions.source_user_id', '=', 'users.id')
                 ->where('transactions.type', 'SHARE')
@@ -431,7 +431,7 @@ $averageAttendanceRounded = round($averageAttendance);
             return number_format(abs($totalPrincipal), 2, '.', ',');
         });
 
-        $grid->column('Savings_to_youth', __('Savings to Youth'))->display(function () {
+        $grid->column('Savings_to_youth', __('total_savings_accounts_for_youth'))->display(function () {
             return $this->transactions()
                 ->join('users', 'transactions.source_user_id', '=', 'users.id')
                 ->where('transactions.type', 'SHARE')
@@ -439,7 +439,7 @@ $averageAttendanceRounded = round($averageAttendance);
                 ->count();
         });
 
-        $grid->column('Savings_amount_to_youth', __('Savings Amount to Youth'))->display(function () {
+        $grid->column('Savings_amount_to_youth', __('total_savings_balance_for_youth'))->display(function () {
             return $this->transactions()
                 ->join('users', 'transactions.source_user_id', '=', 'users.id')
                 ->where('transactions.type', 'SHARE')
@@ -449,7 +449,7 @@ $averageAttendanceRounded = round($averageAttendance);
             return number_format(abs($totalPrincipal), 2, '.', ',');
         });
 
-        $grid->column('average_savings_per_member', __('Average Savings Per Member'))->display(function () {
+        $grid->column('average_savings_per_member', __('average_savings'))->display(function () {
             // Calculate total savings
             $totalSavings = $this->transactions()
                 ->join('users', 'transactions.source_user_id', '=', 'users.id')
