@@ -262,7 +262,7 @@
         <div class="info-box">
             <img src="https://iirr.org/wp-content/uploads/2021/09/IIRR-PING-logo-1-2.png" alt="Logo">
             <h2>DigiSave VSLA Platform</h2>
-            <p>Join our community today..</p>
+            <p>Join our community today</p>
             <small>(c) 2024</small>
         </div>
     </div>
