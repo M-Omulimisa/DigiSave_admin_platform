@@ -992,7 +992,10 @@ private function formatCurrency($amount)
         $totalLoanAmount = $loanSumForWomen + $loanSumForMen + $loanSumForYouths;
 
         // Retrieve the user with the Sacco information
-        $cliff_group = User::where('last_name', 'Twesiime', 'first_name', 'Richard')->with('sacco')->get();
+        $cliff_group = User::where('last_name', 'Twesiime')
+        ->where('first_name', 'Richard')
+        ->with('sacco')
+        ->get();
 
         // // Check if the collection is not empty
         // if ($cliff_group->isNotEmpty()) {
