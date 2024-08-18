@@ -174,20 +174,38 @@ class ApiResurceController extends Controller
     }
 
     public function transactions()
-    {
+{
+    $user = auth('api')->user();
 
-        $user = auth('api')->user();
-
-        if ($user == null) {
-            return $this->error('User not found.');
-        }
-
-        $saccoId = $user->sacco_id;
-
-        $transaction = Transaction::where('sacco_id', $saccoId)->get();
-
-        return $this->success($transaction, $message = "Successfully fetched transaction");
+    if ($user == null) {
+        return $this->error('User not found.');
     }
+
+    $saccoId = $user->sacco_id;
+
+    // Fetch the transactions and hide the payment_date field
+    $transaction = Transaction::where('sacco_id', $saccoId)
+                               ->get()
+                               ->makeHidden(['payment_date']);
+
+    return $this->success($transaction, $message = "Successfully fetched transaction");
+}
+
+    // public function transactions()
+    // {
+
+    //     $user = auth('api')->user();
+
+    //     if ($user == null) {
+    //         return $this->error('User not found.');
+    //     }
+
+    //     $saccoId = $user->sacco_id;
+
+    //     $transaction = Transaction::where('sacco_id', $saccoId)->get();
+
+    //     return $this->success($transaction, $message = "Successfully fetched transaction");
+    // }
 
     public function fetchUserLoans()
     {
