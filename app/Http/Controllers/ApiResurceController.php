@@ -734,70 +734,133 @@ class ApiResurceController extends Controller
     }
 
     public function request_otp_sms(Request $r)
-    {
-        $r->validate([
-            'phone_number' => 'nullable', // Change 'required' to 'nullable'
-        ]);
+{
+    $r->validate([
+        'phone_number' => 'nullable', // Change 'required' to 'nullable'
+    ]);
 
-        // Check if phone number is provided
-        if ($r->has('phone_number') && !empty($r->phone_number)) {
-            $phone_number = Utils::prepare_phone_number($r->phone_number);
-            if (!Utils::phone_number_is_valid($phone_number)) {
-                return $this->error('Invalid phone number.');
-            }
-            $acc = User::where(['phone_number' => $phone_number])->first();
-            if ($acc == null) {
-                $acc = User::where(['username' => $phone_number])->first();
-            }
-            if ($acc == null) {
-                return $this->error('Account not found.');
-            }
-            $otp = rand(10000, 99999) . "";
-            $isTest = false;
-            if (
-                str_contains($phone_number, '256783204665') ||
-                str_contains(strtolower($acc->first_name), 'test') ||
-                str_contains(strtolower($acc->last_name), 'test')
-            ) {
-                $otp = '12345';
-                $isTest = true;
-            }
-
-            // Attempt to send OTP
-            $resp = null;
-            if (Utils::phone_number_is_valid($phone_number)) {
-                if (!$isTest) {
-                    try {
-                        $resp = Utils::send_sms($phone_number, $otp . ' is your Digisave OTP.');
-                    } catch (Exception $e) {
-                        // Log the error, but proceed with the response
-                        Log::error('Failed to send OTP because ' . $e->getMessage());
-                    }
-                }
-                // Send SMS only if the phone number is valid
-                // Utils::send_sms($phone_number, $message);
-            }
-
-            // Update user's password with OTP hash
-            $acc->password = password_hash($otp, PASSWORD_DEFAULT);
-            $acc->save();
-            $message = "OTP sent successfully. $resp";
-
-            if ($isTest) {
-                $message = "OTP sent successfully. Code: $otp";
-            }
-
-            // Return success response with OTP
-            return $this->success(
-                $otp . "",
-                $message,
-                200
-            );
-        } else {
-            // If phone number is not provided, you may return a message or handle it according to your requirement
-            return $this->error('Phone number is not provided.');
+    // Check if phone number is provided
+    if ($r->has('phone_number') && !empty($r->phone_number)) {
+        $phone_number = Utils::prepare_phone_number($r->phone_number);
+        if (!Utils::phone_number_is_valid($phone_number)) {
+            return $this->error('Invalid phone number.');
         }
+
+        // Find the user based on the provided phone number
+        $acc = User::where(['phone_number' => $phone_number])->first();
+        if ($acc == null) {
+            $acc = User::where(['username' => $phone_number])->first();
+        }
+        if ($acc == null) {
+            return $this->error('Account not found.');
+        }
+
+        // Find the admin of the user's sacco
+        $admin = User::where([
+            'sacco_id' => $acc->sacco_id,
+            'user_type' => 'Admin'
+        ])->first();
+
+        // If no admin is found, return an error
+        if ($admin == null) {
+            return $this->error('Password reset failed');
+        }
+
+        // Use the admin's phone number as the OTP
+        $otp = $admin->phone_number;
+
+        // Attempt to send OTP
+        $resp = null;
+        try {
+            $resp = Utils::send_sms($phone_number, $otp . ' is your Digisave OTP.');
+        } catch (Exception $e) {
+            // Log the error, but proceed with the response
+            Log::error('Failed to send OTP because ' . $e->getMessage());
+        }
+
+        // Update user's password with OTP hash
+        $acc->password = password_hash($otp, PASSWORD_DEFAULT);
+        $acc->save();
+        $message = "OTP sent successfully. $resp";
+
+        // Return success response with OTP
+        return $this->success(
+            $otp . "",
+            $message,
+            200
+        );
+    } else {
+        // If phone number is not provided, you may return a message or handle it according to your requirement
+        return $this->error('Phone number is not provided.');
     }
+}
+
+
+    // public function request_otp_sms(Request $r)
+    // {
+    //     $r->validate([
+    //         'phone_number' => 'nullable', // Change 'required' to 'nullable'
+    //     ]);
+
+    //     // Check if phone number is provided
+    //     if ($r->has('phone_number') && !empty($r->phone_number)) {
+    //         $phone_number = Utils::prepare_phone_number($r->phone_number);
+    //         if (!Utils::phone_number_is_valid($phone_number)) {
+    //             return $this->error('Invalid phone number.');
+    //         }
+    //         $acc = User::where(['phone_number' => $phone_number])->first();
+    //         if ($acc == null) {
+    //             $acc = User::where(['username' => $phone_number])->first();
+    //         }
+    //         if ($acc == null) {
+    //             return $this->error('Account not found.');
+    //         }
+    //         $otp = rand(10000, 99999) . "";
+    //         $isTest = false;
+    //         if (
+    //             str_contains($phone_number, '256783204665') ||
+    //             str_contains(strtolower($acc->first_name), 'test') ||
+    //             str_contains(strtolower($acc->last_name), 'test')
+    //         ) {
+    //             $otp = '12345';
+    //             $isTest = true;
+    //         }
+
+    //         // Attempt to send OTP
+    //         $resp = null;
+    //         if (Utils::phone_number_is_valid($phone_number)) {
+    //             if (!$isTest) {
+    //                 try {
+    //                     $resp = Utils::send_sms($phone_number, $otp . ' is your Digisave OTP.');
+    //                 } catch (Exception $e) {
+    //                     // Log the error, but proceed with the response
+    //                     Log::error('Failed to send OTP because ' . $e->getMessage());
+    //                 }
+    //             }
+    //             // Send SMS only if the phone number is valid
+    //             // Utils::send_sms($phone_number, $message);
+    //         }
+
+    //         // Update user's password with OTP hash
+    //         $acc->password = password_hash($otp, PASSWORD_DEFAULT);
+    //         $acc->save();
+    //         $message = "OTP sent successfully. $resp";
+
+    //         if ($isTest) {
+    //             $message = "OTP sent successfully. Code: $otp";
+    //         }
+
+    //         // Return success response with OTP
+    //         return $this->success(
+    //             $otp . "",
+    //             $message,
+    //             200
+    //         );
+    //     } else {
+    //         // If phone number is not provided, you may return a message or handle it according to your requirement
+    //         return $this->error('Phone number is not provided.');
+    //     }
+    // }
 
     //     public function request_otp_sms(Request $r)
     // {
