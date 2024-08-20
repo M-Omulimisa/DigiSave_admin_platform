@@ -1792,8 +1792,8 @@ class ApiAuthController extends Controller
         $lon = $r->longitude;
 
         // Generate 8-digit code combining phone number digits, current year, and random letters
-        // $code = date('Y') . strtoupper(Str::random(2));
-            $code = mt_rand(10000000, 99999999);
+        $code = date('Y') . strtoupper(Str::random(3));
+            // $code = mt_rand(10000000, 99999999);
         $user->username = $code;
 
         $user->phone_number = $code;
