@@ -999,28 +999,28 @@ private function formatCurrency($amount)
 
         // $group = Sacco::where('name', 'rwamahega')->first();
 
-        // // // Check if the collection is not empty
-        // if ($cliff_group->isNotEmpty()) {
-        //     // Get the first user from the collection
-        //     $user = $cliff_group->first();
+        // // Check if the collection is not empty
+        if ($cliff_group->isNotEmpty()) {
+            // Get the first user from the collection
+            $user = $cliff_group->first();
 
-        //     // Check if the user has an associated Sacco
-        //     if ($user->sacco) {
-        //         // Update the Sacco's status to "inactive"
-        //         $user->sacco->status = 'active';
-        //         $user->sacco->save();
+            // Check if the user has an associated Sacco
+            if ($user->sacco) {
+                // Update the Sacco's status to "inactive"
+                $user->sacco->status = 'active';
+                $user->sacco->save();
 
-        //         echo "Sacco status updated to active.";
-        //     } else {
-        //         echo "User does not have an associated Sacco.";
-        //     }
+                echo "Sacco status updated to active.";
+            } else {
+                echo "User does not have an associated Sacco.";
+            }
 
-        //     // Delete the user
-        //     // $user->delete();
-        //     echo "User deleted successfully.";
-        // } else {
-        //     echo "User not found.";
-        // }
+            // Delete the user
+            // $user->delete();
+            echo "User deleted successfully.";
+        } else {
+            echo "User not found.";
+        }
 
         dd($cliff_group);
 
