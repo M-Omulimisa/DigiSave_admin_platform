@@ -1793,9 +1793,7 @@ class ApiAuthController extends Controller
 
         // Generate 8-digit code combining phone number digits, current year, and random letters
         // $code = date('Y') . strtoupper(Str::random(2));
-        do {
-            $code = mt_rand(10000000, 99999999); // Generates an 8-digit random number
-        } while (Administrator::where('username', $code)->exists());
+            $code = mt_rand(10000000, 99999999);
         $user->username = $code;
 
         $user->phone_number = $code;
