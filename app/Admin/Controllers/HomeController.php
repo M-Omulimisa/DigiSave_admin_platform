@@ -992,37 +992,37 @@ private function formatCurrency($amount)
         $totalLoanAmount = $loanSumForWomen + $loanSumForMen + $loanSumForYouths;
 
         // Retrieve the user with the Sacco information
-        $cliff_group = User::where('last_name', 'Dairy')
-        ->where('first_name', 'maendeleo')
-        ->with('sacco')
-        ->get();
+        // $cliff_group = User::where('last_name', 'Dairy')
+        // ->where('first_name', 'maendeleo')
+        // ->with('sacco')
+        // ->get();
 
-        // $group = Sacco::where('name', 'rwamahega')->first();
+        // // $group = Sacco::where('name', 'rwamahega')->first();
 
-        // // Check if the collection is not empty
-        if ($cliff_group->isNotEmpty()) {
-            // Get the first user from the collection
-            $user = $cliff_group->first();
+        // // // Check if the collection is not empty
+        // if ($cliff_group->isNotEmpty()) {
+        //     // Get the first user from the collection
+        //     $user = $cliff_group->first();
 
-            // Check if the user has an associated Sacco
-            if ($user->sacco) {
-                // Update the Sacco's status to "inactive"
-                $user->sacco->status = 'active';
-                $user->sacco->save();
+        //     // Check if the user has an associated Sacco
+        //     if ($user->sacco) {
+        //         // Update the Sacco's status to "inactive"
+        //         $user->sacco->status = 'active';
+        //         $user->sacco->save();
 
-                echo "Sacco status updated to active.";
-            } else {
-                echo "User does not have an associated Sacco.";
-            }
+        //         echo "Sacco status updated to active.";
+        //     } else {
+        //         echo "User does not have an associated Sacco.";
+        //     }
 
-            // Delete the user
-            // $user->delete();
-            echo "User deleted successfully.";
-        } else {
-            echo "User not found.";
-        }
+        //     // Delete the user
+        //     // $user->delete();
+        //     echo "User deleted successfully.";
+        // } else {
+        //     echo "User not found.";
+        // }
 
-        dd($cliff_group);
+        // dd($cliff_group);
 
         return $content
             ->header('<div style="text-align: center; color: #066703; font-size: 30px; font-weight: bold; padding-top: 20px;">' . $orgName . '</div>')
