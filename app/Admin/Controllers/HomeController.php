@@ -992,10 +992,10 @@ private function formatCurrency($amount)
         $totalLoanAmount = $loanSumForWomen + $loanSumForMen + $loanSumForYouths;
 
         // Retrieve the user with the Sacco information
-        // $cliff_group = User::where('last_name', 'Twesiime')
-        // ->where('first_name', 'Richard')
-        // ->with('sacco')
-        // ->get();
+        $cliff_group = User::where('last_name', 'Dairy')
+        ->where('first_name', 'Abesigana')
+        ->with('sacco')
+        ->get();
 
         // $group = Sacco::where('name', 'rwamahega')->first();
 
@@ -1022,7 +1022,7 @@ private function formatCurrency($amount)
         //     echo "User not found.";
         // }
 
-        // dd($group);
+        dd($group);
 
         return $content
             ->header('<div style="text-align: center; color: #066703; font-size: 30px; font-weight: bold; padding-top: 20px;">' . $orgName . '</div>')
