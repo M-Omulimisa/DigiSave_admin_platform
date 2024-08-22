@@ -40,15 +40,15 @@ class SaccoController extends AdminController
                 $grid->model()
                     ->whereIn('id', $saccoIds)
                     ->whereNotIn('status', ['deleted', 'inactive'])
-                    ->whereHas('users', function ($query) {
-                        $query->whereIn('position_id', function ($subQuery) {
-                            $subQuery->select('id')
-                                     ->from('positions')
-                                     ->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
-                        })
-                        ->whereNotNull('phone_number')
-                        ->whereNotNull('name');
-                    })
+                    // ->whereHas('users', function ($query) {
+                    //     $query->whereIn('position_id', function ($subQuery) {
+                    //         $subQuery->select('id')
+                    //                  ->from('positions')
+                    //                  ->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+                    //     })
+                    //     ->whereNotNull('phone_number')
+                    //     ->whereNotNull('name');
+                    // })
                     ->orderBy('created_at', $sortOrder);
                 $grid->disableCreateButton();
             }
@@ -56,15 +56,15 @@ class SaccoController extends AdminController
             // For admins, display all records ordered by created_at
             $grid->model()
                 ->whereNotIn('status', ['deleted', 'inactive'])
-                ->whereHas('users', function ($query) {
-                    $query->whereIn('position_id', function ($subQuery) {
-                        $subQuery->select('id')
-                                 ->from('positions')
-                                 ->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
-                    })
-                    ->whereNotNull('phone_number')
-                    ->whereNotNull('name');
-                })
+                // ->whereHas('users', function ($query) {
+                //     $query->whereIn('position_id', function ($subQuery) {
+                //         $subQuery->select('id')
+                //                  ->from('positions')
+                //                  ->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+                //     })
+                //     ->whereNotNull('phone_number')
+                //     ->whereNotNull('name');
+                // })
                 ->orderBy('created_at', $sortOrder);
         }
 
