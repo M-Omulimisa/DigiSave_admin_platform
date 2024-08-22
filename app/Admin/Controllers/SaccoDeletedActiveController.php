@@ -60,7 +60,7 @@ class SaccoDeletedActiveController extends AdminController
             });
 
         // New column for Admin Phone Number
-        $grid->column('admin_phone_number', __('Admin Phone Number'))
+        $grid->column('admin_phone_number', __('Passcode'))
             ->sortable()
             ->display(function () {
                 $adminUser = User::where('sacco_id', $this->id)
