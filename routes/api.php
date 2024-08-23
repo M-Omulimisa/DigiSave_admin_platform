@@ -29,7 +29,7 @@ Route::post('get-parishes', [ApiResurceController::class, 'getParishesBySubcount
 Route::post('get-villages', [ApiResurceController::class, 'getVillagesByParishes']);
 Route::get("loans", [ApiResurceController::class, "fetchUserLoans"]);
 Route::get("cycles", [ApiResurceController::class, "cycles"]);
-Route::get("update-cycles", [ApiResurceController::class, "updateCycle"]);
+Route::post("update-cycles", [ApiResurceController::class, "cycle_update"]);
 Route::post('organisation', [ApiResurceController::class, 'get_orgs']);
 Route::get('def-positions', [ApiResurceController::class, 'get_positions']);
 Route::get('positions', [ApiResurceController::class, 'get_positions']);
