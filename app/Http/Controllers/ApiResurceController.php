@@ -988,6 +988,39 @@ class ApiResurceController extends Controller
         }
     }
 
+    public function updateCycle(Request $r, $id)
+{
+    $u = auth('api')->user();
+    if ($u == null) {
+        return $this->error('User not found.');
+    }
+
+    // Find the cycle by ID and ensure it belongs to the user's Sacco
+    $cycle = Cycle::where('id', $id)
+                  ->where('sacco_id', $u->sacco_id)
+                  ->first();
+
+    if ($cycle == null) {
+        return $this->error('Cycle not found or you do not have permission to update it.');
+    }
+
+    // Validate the incoming request data with all fields
+    $validatedData = $r->validate([
+        'name' => 'required|string|max:255',
+        'start_date' => 'required|date',
+        'end_date' => 'nullable|date|after_or_equal:start_date',
+        'amount_required_per_meeting' => 'nullable|numeric|min:0',
+        'min_share_price' => 'nullable|numeric|min:0',
+        'max_share_price' => 'nullable|numeric|min:0',
+        'status' => 'required|string|max:255',
+        // Add any additional fields relevant to your Cycle model
+    ]);
+
+    // Update the cycle with the validated data
+    $cycle->update($validatedData);
+
+    return $this->success($cycle, $message = "Cycle updated successfully.", 200);
+}
 
     public function cycles(Request $r)
     {
