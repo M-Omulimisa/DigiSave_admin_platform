@@ -988,15 +988,19 @@ class ApiResurceController extends Controller
         }
     }
 
-    public function cycle_update(Request $r, $id)
+    public function cycle_update(Request $r)
     {
         $u = auth('api')->user();
         if ($u == null) {
             return $this->error('User not found.');
         }
 
+        $sacco = Sacco::find($u->sacco_id);
+
+        $cycle_id = $sacco->cycle_id;
+
         // Find the cycle by ID and ensure it belongs to the user's Sacco
-        $cycle = Cycle::where('id', $id)
+        $cycle = Cycle::where('id', $cycle_id)
             ->where('sacco_id', $u->sacco_id)
             ->first();
 
