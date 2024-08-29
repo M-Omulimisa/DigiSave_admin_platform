@@ -503,11 +503,13 @@ private function formatCurrency($amount)
             $pwdTotalBalance = number_format($pwdTotalBalance, 2);
 
             $loansDisbursedToWomen = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->whereIn('sacco_id', $saccoIds)
                 ->where('transactions.type', 'LOAN')
                 ->where('users.sex', 'Female')
                 ->count();
 
             $loansDisbursedToMen = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->whereIn('sacco_id', $saccoIds)
                 ->where('transactions.type', 'LOAN')
                 ->where('users.sex', 'Male')
                 ->count();
@@ -534,16 +536,19 @@ private function formatCurrency($amount)
                 ->count();
 
             $loanSumForWomen = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->whereIn('sacco_id', $saccoIds)
                 ->where('transactions.type', 'LOAN')
                 ->where('users.sex', 'Female')
                 ->sum('transactions.amount');
 
             $loanSumForMen = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->whereIn('sacco_id', $saccoIds)
                 ->where('transactions.type', 'LOAN')
                 ->where('users.sex', 'Male')
                 ->sum('transactions.amount');
 
             $pwdTotalLoanBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->whereIn('sacco_id', $saccoIds)
                 ->where('transactions.type', 'LOAN')
                 ->where('users.pwd', 'yes')
                 ->sum('transactions.amount');
