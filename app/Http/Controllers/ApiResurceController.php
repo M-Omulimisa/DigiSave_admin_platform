@@ -1188,7 +1188,7 @@ class ApiResurceController extends Controller
             $query->whereNull('user_type')
                 ->orWhere('user_type', '<>', 'Admin');
         })
-        ->where('cycle_id', $activeCycle->id)
+        // ->where('cycle_id', $activeCycle->id)
         ->count();
 
     // Number of Male Members
@@ -1198,7 +1198,7 @@ class ApiResurceController extends Controller
             $query->whereNull('user_type')
                 ->orWhere('user_type', '<>', 'Admin');
         })
-        ->where('cycle_id', $activeCycle->id)
+        // ->where('cycle_id', $activeCycle->id)
         ->count();
 
     // Number of Female Members
@@ -1208,7 +1208,7 @@ class ApiResurceController extends Controller
             $query->whereNull('user_type')
                 ->orWhere('user_type', '<>', 'Admin');
         })
-        ->where('cycle_id', $activeCycle->id)
+        // ->where('cycle_id', $activeCycle->id)
         ->count();
 
     // Number of Youth Members
@@ -1218,7 +1218,7 @@ class ApiResurceController extends Controller
             $query->whereNull('user_type')
                 ->orWhere('user_type', '<>', 'Admin');
         })
-        ->where('cycle_id', $activeCycle->id)
+        // ->where('cycle_id', $activeCycle->id)
         ->count();
 
     // Total Meetings
