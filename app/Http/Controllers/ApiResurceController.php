@@ -1290,6 +1290,7 @@ class ApiResurceController extends Controller
     // Return the data as a JSON response
     return $this->success(
         $saccoDetails,
+        $message = "Success"
     );
 }
 
