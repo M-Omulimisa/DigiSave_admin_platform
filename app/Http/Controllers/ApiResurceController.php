@@ -1176,6 +1176,103 @@ class ApiResurceController extends Controller
         }
     }
 
+    public function getSaccoDetailsForUser()
+{
+    // Get the authenticated user
+    $u = auth('api')->user();
+    if ($u == null) {
+        return $this->error('User not found.');
+    }
+
+    // Find the Sacco associated with the user
+    $sacco = Sacco::find($u->sacco_id);
+    if ($sacco == null) {
+        return $this->error('Group not found.');
+    }
+
+    // Gather all necessary data for the Sacco
+    $numberOfLoans = $this->transactions()->where('type', 'LOAN')->count();
+    $totalPrincipal = $this->transactions()->where('type', 'LOAN')->sum('amount');
+    $totalInterest = $this->transactions()->where('type', 'LOAN_INTEREST')->sum('amount');
+    $totalPrincipalPaid = $this->transactions()->where('type', 'LOAN_REPAYMENT')->sum('amount');
+    $totalInterestPaid = $this->transactions()->where('type', 'LOAN_INTEREST')->sum('amount');
+    $numberOfSavingsAccounts = $this->transactions()->where('type', 'SHARE')->count();
+    $totalSavingsBalance = $this->transactions()->where('type', 'SHARE')->sum('amount');
+    $totalPrincipalOutstanding = $totalPrincipal - $totalPrincipalPaid;
+    $totalInterestOutstanding = $totalInterest - $totalInterestPaid;
+    $numberOfLoansToMen = $this->transactions()->join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.type', 'LOAN')
+        ->where('users.sex', 'Male')
+        ->count();
+    $totalDisbursedToMen = $this->transactions()->join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.type', 'LOAN')
+        ->where('users.sex', 'Male')
+        ->sum('transactions.amount');
+    $totalSavingsAccountsForMen = $this->transactions()->join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.type', 'SHARE')
+        ->where('users.sex', 'Male')
+        ->count();
+    $numberOfLoansToWomen = $this->transactions()->join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.type', 'LOAN')
+        ->where('users.sex', 'Female')
+        ->count();
+    $totalDisbursedToWomen = $this->transactions()->join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.type', 'LOAN')
+        ->where('users.sex', 'Female')
+        ->sum('transactions.amount');
+    $totalSavingsAccountsForWomen = $this->transactions()->join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.type', 'SHARE')
+        ->where('users.sex', 'Female')
+        ->count();
+    $totalSavingsBalanceForWomen = $this->transactions()->join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.type', 'SHARE')
+        ->where('users.sex', 'Female')
+        ->sum('transactions.amount');
+    $numberOfLoansToYouth = $this->transactions()->join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.type', 'LOAN')
+        ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
+        ->count();
+    $totalDisbursedToYouth = $this->transactions()->join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.type', 'LOAN')
+        ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
+        ->sum('transactions.amount');
+    $totalSavingsBalanceForYouth = $this->transactions()->join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.type', 'SHARE')
+        ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
+        ->sum('transactions.amount');
+    $averageSavingsPerMember = $this->transactions()->where('type', 'SHARE')->avg('amount');
+
+    // Structure the data into an array
+    $saccoDetails = [
+        "number_of_loans" => $numberOfLoans,
+        "total_principal" => $totalPrincipal,
+        "total_interest" => $totalInterest,
+        "total_principal_paid" => $totalPrincipalPaid,
+        "total_interest_paid" => $totalInterestPaid,
+        "number_of_savings_accounts" => $numberOfSavingsAccounts,
+        "total_savings_balance" => $totalSavingsBalance,
+        "total_principal_outstanding" => $totalPrincipalOutstanding,
+        "total_interest_outstanding" => $totalInterestOutstanding,
+        "number_of_loans_to_men" => $numberOfLoansToMen,
+        "total_disbursed_to_men" => $totalDisbursedToMen,
+        "total_savings_accounts_for_men" => $totalSavingsAccountsForMen,
+        "number_of_loans_to_women" => $numberOfLoansToWomen,
+        "total_disbursed_to_women" => $totalDisbursedToWomen,
+        "total_savings_accounts_for_women" => $totalSavingsAccountsForWomen,
+        "total_savings_balance_for_women" => $totalSavingsBalanceForWomen,
+        "number_of_loans_to_youth" => $numberOfLoansToYouth,
+        "total_disbursed_to_youth" => $totalDisbursedToYouth,
+        "total_savings_balance_for_youth" => $totalSavingsBalanceForYouth,
+        "average_savings_per_member" => $averageSavingsPerMember,
+    ];
+
+    // Return the data as a JSON response
+    return $this->success(
+        $saccoDetails,
+    );
+}
+
+
     public function get_positions()
 {
     $u = auth('api')->user();
