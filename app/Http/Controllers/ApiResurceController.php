@@ -1310,11 +1310,21 @@ class ApiResurceController extends Controller
         ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
         ->sum('transactions.amount');
 
-    // Number of Savings Accounts
-    $numberOfSavingsAccounts = $sacco->savingsAccounts()->count();
+    // Number of Savings Accounts (Count of Users)
+    $numberOfSavingsAccounts = User::where('sacco_id', $sacco->id)
+        ->where(function ($query) {
+            $query->whereNull('user_type')
+                ->orWhere('user_type', '<>', 'Admin');
+        })
+        ->count();
 
-    // Total Savings Balance
-    $totalSavingsBalance = $sacco->savingsAccounts()->sum('balance');
+    // Total Savings Balance (Assuming balance is stored per user in a `savings_balance` column)
+    $totalSavingsBalance = User::where('sacco_id', $sacco->id)
+        ->where(function ($query) {
+            $query->whereNull('user_type')
+                ->orWhere('user_type', '<>', 'Admin');
+        })
+        ->sum('savings_balance');
 
     // Average Savings per Member
     $averageSavingsPerMember = $numberOfMembers > 0 ? $totalSavingsBalance / $numberOfMembers : 0;
