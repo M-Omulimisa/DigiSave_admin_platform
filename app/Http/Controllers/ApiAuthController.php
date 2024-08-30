@@ -46,8 +46,63 @@ class ApiAuthController extends Controller
      */
     public function __construct()
     {
-        //$this->middleware('auth:api', ['except' => ['login', 'resetPassword', 'register', 'agent_login', 'registerGroup', 'update_admin', 'new_position', 'updateUser', 'registerRole']]);
+        $this->middleware('auth:api', ['except' => ['get_positions', 'login', 'resetPassword', 'register', 'agent_login', 'registerGroup', 'update_admin', 'new_position', 'updateUser', 'registerRole']]);
     }
+
+    public function get_positions()
+{
+    $u = auth('api')->user();
+    if ($u == null) {
+        return $this->error('User not found.');
+    }
+
+    $sacco = Sacco::find($u->sacco_id);
+    if ($sacco == null) {
+        return $this->error('Group not found.');
+    }
+
+    // Get positions associated with the Sacco
+    $positions = MemberPosition::where('sacco_id', $sacco->id)->get();
+
+    // Check and create the necessary positions if they don't exist
+    $requiredPositions = ['Chairperson', 'Secretary', 'Treasurer', 'Member'];
+    foreach ($requiredPositions as $positionName) {
+        if (!$positions->contains('name', $positionName)) {
+            MemberPosition::create([
+                'sacco_id' => $sacco->id,
+                'name' => $positionName,
+            ]);
+        }
+    }
+
+    // Re-fetch positions after potentially adding missing ones, including "Member"
+    $positions = MemberPosition::where('sacco_id', $sacco->id)
+        ->where('name', '!=', 'Member')
+        ->orWhere(function ($query) use ($sacco) {
+            $query->where('sacco_id', $sacco->id)
+                  ->where('name', 'Member');
+        })
+        ->get();
+
+    // If "Member" position still doesn't exist, create one
+    if (!$positions->contains('name', 'Member')) {
+        MemberPosition::create([
+            'sacco_id' => $sacco->id,
+            'name' => 'Member',
+        ]);
+
+        // Re-fetch positions again to include the newly created "Member"
+        $positions = MemberPosition::where('sacco_id', $sacco->id)
+            ->get();
+    }
+
+    // Return success response with positions
+    return $this->success(
+        $positions,
+        $message = "Success",
+        $statusCode = 200
+    );
+}
 
     public function getOrganisationsForUser()
     {
