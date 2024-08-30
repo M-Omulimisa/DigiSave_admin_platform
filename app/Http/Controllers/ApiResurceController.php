@@ -1177,41 +1177,82 @@ class ApiResurceController extends Controller
     }
 
     public function get_positions()
-    {
-        $u = auth('api')->user();
-        if ($u == null) {
-            return $this->error('User not found.');
-        }
-        $sacco = Sacco::find($u->sacco_id);
-        if ($sacco == null) {
-            return $this->error('Group not found.',);
-        }
-        // Get positions associated with the Sacco
-        $positions = MemberPosition::where('sacco_id', $sacco->id)->get();
-
-        // Check and create the necessary positions if they don't exist
-        $requiredPositions = ['Chairperson', 'Secretary', 'Treasurer', 'Member'];
-        foreach ($requiredPositions as $positionName) {
-            if (!$positions->contains('name', $positionName)) {
-                MemberPosition::create([
-                    'sacco_id' => $sacco->id,
-                    'name' => $positionName,
-                ]);
-            }
-        }
-
-        // Re-fetch positions after potentially adding missing ones
-        $positions = MemberPosition::where('sacco_id', $sacco->id)
-            ->where('name', '!=', 'Member')
-            ->get();
-
-        // Return success response with positions
-        return $this->success(
-            $positions,
-            $message = "Success",
-            $statusCode = 200
-        );
+{
+    $u = auth('api')->user();
+    if ($u == null) {
+        return $this->error('User not found.');
     }
+
+    $sacco = Sacco::find($u->sacco_id);
+    if ($sacco == null) {
+        return $this->error('Group not found.');
+    }
+
+    // Get positions associated with the Sacco and fetch the "Member" position regardless of sacco_id
+    $positions = MemberPosition::where('sacco_id', $sacco->id)
+        ->orWhere('name', 'Member')
+        ->get();
+
+    // Check and create the necessary positions if they don't exist
+    $requiredPositions = ['Chairperson', 'Secretary', 'Treasurer', 'Member'];
+    foreach ($requiredPositions as $positionName) {
+        if (!$positions->contains('name', $positionName)) {
+            MemberPosition::create([
+                'sacco_id' => $sacco->id,
+                'name' => $positionName,
+            ]);
+        }
+    }
+
+    // Re-fetch positions associated with the Sacco and include the "Member" position globally
+    $positions = MemberPosition::where('sacco_id', $sacco->id)
+        ->orWhere('name', 'Member')
+        ->get();
+
+    // Return success response with positions
+    return $this->success(
+        $positions,
+        $message = "Success",
+        $statusCode = 200
+    );
+}
+
+    // public function get_positions()
+    // {
+    //     $u = auth('api')->user();
+    //     if ($u == null) {
+    //         return $this->error('User not found.');
+    //     }
+    //     $sacco = Sacco::find($u->sacco_id);
+    //     if ($sacco == null) {
+    //         return $this->error('Group not found.',);
+    //     }
+    //     // Get positions associated with the Sacco
+    //     $positions = MemberPosition::where('sacco_id', $sacco->id)->get();
+
+    //     // Check and create the necessary positions if they don't exist
+    //     $requiredPositions = ['Chairperson', 'Secretary', 'Treasurer', 'Member'];
+    //     foreach ($requiredPositions as $positionName) {
+    //         if (!$positions->contains('name', $positionName)) {
+    //             MemberPosition::create([
+    //                 'sacco_id' => $sacco->id,
+    //                 'name' => $positionName,
+    //             ]);
+    //         }
+    //     }
+
+    //     // Re-fetch positions after potentially adding missing ones
+    //     $positions = MemberPosition::where('sacco_id', $sacco->id)
+    //         ->where('name', '!=', 'Member')
+    //         ->get();
+
+    //     // Return success response with positions
+    //     return $this->success(
+    //         $positions,
+    //         $message = "Success",
+    //         $statusCode = 200
+    //     );
+    // }
 
     // public function get_positions(Request $request = null)
     // {
