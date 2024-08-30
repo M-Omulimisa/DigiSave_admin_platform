@@ -1176,16 +1176,23 @@ class ApiResurceController extends Controller
         }
     }
 
-    public function getSaccoDetailsForUser($saccoId)
+    public function getSaccoDetailsForUser()
 {
-    $sacco = Sacco::find($saccoId);
 
-    if (!$sacco) {
-        return $this->error("Sacco not found");
+    // Get the authenticated user
+    $u = auth('api')->user();
+    if ($u == null) {
+        return $this->error('User not found.');
+    }
+
+    // Find the Sacco associated with the user
+    $sacco = Sacco::find($u->sacco_id);
+    if ($sacco == null) {
+        return $this->error('Group not found.');
     }
 
     // Total Group Members
-    $numberOfMembers = User::where('sacco_id', $saccoId)
+    $numberOfMembers = User::where('sacco_id', $sacco->id)
         ->where(function ($query) {
             $query->whereNull('user_type')
                 ->orWhere('user_type', '<>', 'Admin');
@@ -1193,7 +1200,7 @@ class ApiResurceController extends Controller
         ->count();
 
     // Number of Male Members
-    $numberOfMen = User::where('sacco_id', $saccoId)
+    $numberOfMen = User::where('sacco_id', $sacco->id)
         ->where('sex', 'Male')
         ->where(function ($query) {
             $query->whereNull('user_type')
@@ -1202,7 +1209,7 @@ class ApiResurceController extends Controller
         ->count();
 
     // Number of Female Members
-    $numberOfWomen = User::where('sacco_id', $saccoId)
+    $numberOfWomen = User::where('sacco_id', $sacco->id)
         ->where('sex', 'Female')
         ->where(function ($query) {
             $query->whereNull('user_type')
@@ -1211,7 +1218,7 @@ class ApiResurceController extends Controller
         ->count();
 
     // Number of Youth Members
-    $numberOfYouth = User::where('sacco_id', $saccoId)
+    $numberOfYouth = User::where('sacco_id', $sacco->id)
         ->whereRaw('TIMESTAMPDIFF(YEAR, dob, CURDATE()) < 35')
         ->where(function ($query) {
             $query->whereNull('user_type')
@@ -1220,7 +1227,7 @@ class ApiResurceController extends Controller
         ->count();
 
     // Total Meetings
-    $totalMeetings = Meeting::where('sacco_id', $saccoId)->count();
+    $totalMeetings = Meeting::where('sacco_id',$sacco->id)->count();
 
     // Total Member Names (Average Meeting Attendance)
     $meetings = $sacco->meetings;
