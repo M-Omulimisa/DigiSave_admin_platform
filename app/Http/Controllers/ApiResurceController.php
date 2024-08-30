@@ -1322,7 +1322,7 @@ class ApiResurceController extends Controller
             $query->whereNull('user_type')
                 ->orWhere('user_type', '<>', 'Admin');
         })
-        ->where('cycle_id', $activeCycle->id)
+        // ->where('cycle_id', $activeCycle->id)
         ->count();
 
     // Total Savings Balance
