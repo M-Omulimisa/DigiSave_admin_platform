@@ -1178,7 +1178,6 @@ class ApiResurceController extends Controller
 
     public function getSaccoDetailsForUser()
 {
-
     // Get the authenticated user
     $u = auth('api')->user();
     if ($u == null) {
@@ -1227,7 +1226,7 @@ class ApiResurceController extends Controller
         ->count();
 
     // Total Meetings
-    $totalMeetings = Meeting::where('sacco_id',$sacco->id)->count();
+    $totalMeetings = Meeting::where('sacco_id', $sacco->id)->count();
 
     // Total Member Names (Average Meeting Attendance)
     $meetings = $sacco->meetings;
@@ -1283,8 +1282,42 @@ class ApiResurceController extends Controller
         ->where('users.sex', 'Male')
         ->sum('transactions.amount');
 
-    // Repeat similar calculations for loans and savings for females and youth
-    // ...
+    // Loans to Females
+    $numberOfLoansToWomen = $sacco->transactions()
+        ->join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.type', 'LOAN')
+        ->where('users.sex', 'Female')
+        ->count();
+
+    // Total Loans Disbursed to Females
+    $totalDisbursedToWomen = $sacco->transactions()
+        ->join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.type', 'LOAN')
+        ->where('users.sex', 'Female')
+        ->sum('transactions.amount');
+
+    // Loans to Youth
+    $numberOfLoansToYouth = $sacco->transactions()
+        ->join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.type', 'LOAN')
+        ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
+        ->count();
+
+    // Total Loans Disbursed to Youth
+    $totalDisbursedToYouth = $sacco->transactions()
+        ->join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.type', 'LOAN')
+        ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
+        ->sum('transactions.amount');
+
+    // Number of Savings Accounts
+    $numberOfSavingsAccounts = $sacco->savingsAccounts()->count();
+
+    // Total Savings Balance
+    $totalSavingsBalance = $sacco->savingsAccounts()->sum('balance');
+
+    // Average Savings per Member
+    $averageSavingsPerMember = $numberOfMembers > 0 ? $totalSavingsBalance / $numberOfMembers : 0;
 
     $saccoDetails = [
         "number_of_loans" => $numberOfLoans,
@@ -1297,11 +1330,18 @@ class ApiResurceController extends Controller
         "average_meeting_attendance" => $averageAttendanceRounded,
         "number_of_loans_to_men" => $numberOfLoansToMen,
         "total_disbursed_to_men" => number_format(abs($totalDisbursedToMen), 2, '.', ','),
-        // Include other details as necessary
+        "number_of_loans_to_women" => $numberOfLoansToWomen,
+        "total_disbursed_to_women" => number_format(abs($totalDisbursedToWomen), 2, '.', ','),
+        "number_of_loans_to_youth" => $numberOfLoansToYouth,
+        "total_disbursed_to_youth" => number_format(abs($totalDisbursedToYouth), 2, '.', ','),
+        "number_of_savings_accounts" => $numberOfSavingsAccounts,
+        "total_savings_balance" => number_format(abs($totalSavingsBalance), 2, '.', ','),
+        "average_savings_per_member" => number_format(abs($averageSavingsPerMember), 2, '.', ','),
     ];
 
     return $this->success($saccoDetails, "Success");
 }
+
 
 
     public function get_positions()
