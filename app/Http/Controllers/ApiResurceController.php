@@ -1203,55 +1203,34 @@ class ApiResurceController extends Controller
     $activeCycleId = $activeCycle->id;
 
     // Gather all necessary data for the Sacco
-    $numberOfLoans = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-        ->where('transactions.sacco_id', $sacco->id)
-        ->where('transactions.cycle_id', $activeCycleId)
-        ->where('transactions.type', 'LOAN')
-        ->where('users.user_type', '!=', 'Admin')
+    $numberOfLoans = Transaction::where('sacco_id', $sacco->id)
+        ->where('cycle_id', $activeCycleId)
+        ->where('type', 'LOAN')
         ->count();
-
-    $totalPrincipal = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-        ->where('transactions.sacco_id', $sacco->id)
-        ->where('transactions.cycle_id', $activeCycleId)
-        ->where('transactions.type', 'LOAN')
-        ->where('users.user_type', '!=', 'Admin')
-        ->sum('transactions.amount');
-
-    $totalInterest = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-        ->where('transactions.sacco_id', $sacco->id)
-        ->where('transactions.cycle_id', $activeCycleId)
-        ->where('transactions.type', 'LOAN_INTEREST')
-        ->where('users.user_type', '!=', 'Admin')
-        ->sum('transactions.amount');
-
-    $totalPrincipalPaid = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-        ->where('transactions.sacco_id', $sacco->id)
-        ->where('transactions.cycle_id', $activeCycleId)
-        ->where('transactions.type', 'LOAN_REPAYMENT')
-        ->where('users.user_type', '!=', 'Admin')
-        ->sum('transactions.amount');
-
-    $totalInterestPaid = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-        ->where('transactions.sacco_id', $sacco->id)
-        ->where('transactions.cycle_id', $activeCycleId)
-        ->where('transactions.type', 'LOAN_INTEREST')
-        ->where('users.user_type', '!=', 'Admin')
-        ->sum('transactions.amount');
-
-    $numberOfSavingsAccounts = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-        ->where('transactions.sacco_id', $sacco->id)
-        ->where('transactions.cycle_id', $activeCycleId)
-        ->where('transactions.type', 'SHARE')
-        ->where('users.user_type', '!=', 'Admin')
+    $totalPrincipal = Transaction::where('sacco_id', $sacco->id)
+        ->where('cycle_id', $activeCycleId)
+        ->where('type', 'LOAN')
+        ->sum('amount');
+    $totalInterest = Transaction::where('sacco_id', $sacco->id)
+        ->where('cycle_id', $activeCycleId)
+        ->where('type', 'LOAN_INTEREST')
+        ->sum('amount');
+    $totalPrincipalPaid = Transaction::where('sacco_id', $sacco->id)
+        ->where('cycle_id', $activeCycleId)
+        ->where('type', 'LOAN_REPAYMENT')
+        ->sum('amount');
+    $totalInterestPaid = Transaction::where('sacco_id', $sacco->id)
+        ->where('cycle_id', $activeCycleId)
+        ->where('type', 'LOAN_INTEREST')
+        ->sum('amount');
+    $numberOfSavingsAccounts = Transaction::where('sacco_id', $sacco->id)
+        ->where('cycle_id', $activeCycleId)
+        ->where('type', 'SHARE')
         ->count();
-
-    $totalSavingsBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-        ->where('transactions.sacco_id', $sacco->id)
-        ->where('transactions.cycle_id', $activeCycleId)
-        ->where('transactions.type', 'SHARE')
-        ->where('users.user_type', '!=', 'Admin')
-        ->sum('transactions.amount');
-
+    $totalSavingsBalance = Transaction::where('sacco_id', $sacco->id)
+        ->where('cycle_id', $activeCycleId)
+        ->where('type', 'SHARE')
+        ->sum('amount');
     $totalPrincipalOutstanding = $totalPrincipal - $totalPrincipalPaid;
     $totalInterestOutstanding = $totalInterest - $totalInterestPaid;
 
@@ -1259,7 +1238,6 @@ class ApiResurceController extends Controller
         ->where('transactions.sacco_id', $sacco->id)
         ->where('transactions.cycle_id', $activeCycleId)
         ->where('transactions.type', 'LOAN')
-        ->where('users.user_type', '!=', 'Admin')
         ->where('users.sex', 'Male')
         ->count();
 
@@ -1267,7 +1245,6 @@ class ApiResurceController extends Controller
         ->where('transactions.sacco_id', $sacco->id)
         ->where('transactions.cycle_id', $activeCycleId)
         ->where('transactions.type', 'LOAN')
-        ->where('users.user_type', '!=', 'Admin')
         ->where('users.sex', 'Male')
         ->sum('transactions.amount');
 
@@ -1275,7 +1252,6 @@ class ApiResurceController extends Controller
         ->where('transactions.sacco_id', $sacco->id)
         ->where('transactions.cycle_id', $activeCycleId)
         ->where('transactions.type', 'SHARE')
-        ->where('users.user_type', '!=', 'Admin')
         ->where('users.sex', 'Male')
         ->count();
 
@@ -1283,7 +1259,6 @@ class ApiResurceController extends Controller
         ->where('transactions.sacco_id', $sacco->id)
         ->where('transactions.cycle_id', $activeCycleId)
         ->where('transactions.type', 'LOAN')
-        ->where('users.user_type', '!=', 'Admin')
         ->where('users.sex', 'Female')
         ->count();
 
@@ -1291,7 +1266,6 @@ class ApiResurceController extends Controller
         ->where('transactions.sacco_id', $sacco->id)
         ->where('transactions.cycle_id', $activeCycleId)
         ->where('transactions.type', 'LOAN')
-        ->where('users.user_type', '!=', 'Admin')
         ->where('users.sex', 'Female')
         ->sum('transactions.amount');
 
@@ -1299,7 +1273,6 @@ class ApiResurceController extends Controller
         ->where('transactions.sacco_id', $sacco->id)
         ->where('transactions.cycle_id', $activeCycleId)
         ->where('transactions.type', 'SHARE')
-        ->where('users.user_type', '!=', 'Admin')
         ->where('users.sex', 'Female')
         ->count();
 
@@ -1307,7 +1280,6 @@ class ApiResurceController extends Controller
         ->where('transactions.sacco_id', $sacco->id)
         ->where('transactions.cycle_id', $activeCycleId)
         ->where('transactions.type', 'SHARE')
-        ->where('users.user_type', '!=', 'Admin')
         ->where('users.sex', 'Female')
         ->sum('transactions.amount');
 
@@ -1315,7 +1287,6 @@ class ApiResurceController extends Controller
         ->where('transactions.sacco_id', $sacco->id)
         ->where('transactions.cycle_id', $activeCycleId)
         ->where('transactions.type', 'LOAN')
-        ->where('users.user_type', '!=', 'Admin')
         ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
         ->count();
 
@@ -1323,7 +1294,6 @@ class ApiResurceController extends Controller
         ->where('transactions.sacco_id', $sacco->id)
         ->where('transactions.cycle_id', $activeCycleId)
         ->where('transactions.type', 'LOAN')
-        ->where('users.user_type', '!=', 'Admin')
         ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
         ->sum('transactions.amount');
 
@@ -1331,16 +1301,13 @@ class ApiResurceController extends Controller
         ->where('transactions.sacco_id', $sacco->id)
         ->where('transactions.cycle_id', $activeCycleId)
         ->where('transactions.type', 'SHARE')
-        ->where('users.user_type', '!=', 'Admin')
         ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
         ->sum('transactions.amount');
 
-    $averageSavingsPerMember = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-        ->where('transactions.sacco_id', $sacco->id)
-        ->where('transactions.cycle_id', $activeCycleId)
-        ->where('transactions.type', 'SHARE')
-        ->where('users.user_type', '!=', 'Admin')
-        ->avg('transactions.amount');
+    $averageSavingsPerMember = Transaction::where('sacco_id', $sacco->id)
+        ->where('cycle_id', $activeCycleId)
+        ->where('type', 'SHARE')
+        ->avg('amount');
 
     // Structure the data into an array
     $saccoDetails = [
