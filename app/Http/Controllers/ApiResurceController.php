@@ -1173,11 +1173,11 @@ class ApiResurceController extends Controller
     // Find the Sacco associated with the user
     $sacco = Sacco::find($u->sacco_id);
     if ($sacco == null) {
-        return $this->error('Group not found.');
+        return $this->error('Sacco not found.');
     }
 
-    // Fetch the active cycle
-    $activeCycle = Cycle::where('status', 'active')->first();
+    // Fetch the active cycle associated with the Sacco
+    $activeCycle = $sacco->activeCycle; // Assuming you have a relationship or method to get the active cycle
     if ($activeCycle == null) {
         return $this->error('No active cycle found.');
     }
@@ -1188,7 +1188,6 @@ class ApiResurceController extends Controller
             $query->whereNull('user_type')
                 ->orWhere('user_type', '<>', 'Admin');
         })
-        // ->where('cycle_id', $activeCycle->id)
         ->count();
 
     // Number of Male Members
@@ -1198,7 +1197,6 @@ class ApiResurceController extends Controller
             $query->whereNull('user_type')
                 ->orWhere('user_type', '<>', 'Admin');
         })
-        // ->where('cycle_id', $activeCycle->id)
         ->count();
 
     // Number of Female Members
@@ -1208,7 +1206,6 @@ class ApiResurceController extends Controller
             $query->whereNull('user_type')
                 ->orWhere('user_type', '<>', 'Admin');
         })
-        // ->where('cycle_id', $activeCycle->id)
         ->count();
 
     // Number of Youth Members
@@ -1218,10 +1215,9 @@ class ApiResurceController extends Controller
             $query->whereNull('user_type')
                 ->orWhere('user_type', '<>', 'Admin');
         })
-        // ->where('cycle_id', $activeCycle->id)
         ->count();
 
-    // Total Meetings
+    // Total Meetings for Active Cycle
     $totalMeetings = Meeting::where('sacco_id', $sacco->id)
         ->where('cycle_id', $activeCycle->id)
         ->count();
@@ -1250,22 +1246,16 @@ class ApiResurceController extends Controller
     $averageAttendance = $meetingCount > 0 ? $totalPresent / $meetingCount : 0;
     $averageAttendanceRounded = round($averageAttendance);
 
-    // Total Loans
+    // Total Loans for Active Cycle
     $numberOfLoans = $sacco->transactions()
         ->where('type', 'LOAN')
         ->where('cycle_id', $activeCycle->id)
-        ->whereHas('user', function ($query) {
-            $query->where('user_type', 'admin');
-        })
         ->count();
 
     // Total Loan Amount
     $totalPrincipal = $sacco->transactions()
         ->where('type', 'LOAN')
         ->where('cycle_id', $activeCycle->id)
-        ->whereHas('user', function ($query) {
-            $query->where('user_type', 'admin');
-        })
         ->sum('amount');
 
     // Loans to Males
@@ -1316,23 +1306,19 @@ class ApiResurceController extends Controller
         ->where('transactions.cycle_id', $activeCycle->id)
         ->sum('transactions.amount');
 
-    // Number of Savings Accounts (Count of Users)
+    // Number of Savings Accounts
     $numberOfSavingsAccounts = User::where('sacco_id', $sacco->id)
         ->where(function ($query) {
             $query->whereNull('user_type')
                 ->orWhere('user_type', '<>', 'Admin');
         })
-        // ->where('cycle_id', $activeCycle->id)
+        ->where('cycle_id', $activeCycle->id)
         ->count();
 
     // Total Savings Balance
     $totalSavingsBalance = $sacco->transactions()
         ->join('users', 'transactions.source_user_id', '=', 'users.id')
         ->where('transactions.type', 'SHARE')
-        ->where(function ($query) {
-            $query->whereNull('users.user_type')
-                ->orWhere('users.user_type', '<>', 'Admin');
-        })
         ->where('transactions.cycle_id', $activeCycle->id)
         ->sum('transactions.amount');
 
@@ -1361,6 +1347,7 @@ class ApiResurceController extends Controller
 
     return $this->success($saccoDetails, "Success");
 }
+
 
 
 
