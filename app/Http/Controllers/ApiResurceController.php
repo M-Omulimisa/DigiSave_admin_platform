@@ -1188,10 +1188,8 @@ class ApiResurceController extends Controller
         return $this->error('Group not found.');
     }
 
-    // Get positions associated with the Sacco and fetch the "Member" position regardless of sacco_id
-    $positions = MemberPosition::where('sacco_id', $sacco->id)
-        ->orWhere('name', 'Member')
-        ->get();
+    // Get positions associated with the Sacco
+    $positions = MemberPosition::where('sacco_id', $sacco->id)->get();
 
     // Check and create the necessary positions if they don't exist
     $requiredPositions = ['Chairperson', 'Secretary', 'Treasurer', 'Member'];
@@ -1204,10 +1202,26 @@ class ApiResurceController extends Controller
         }
     }
 
-    // Re-fetch positions associated with the Sacco and include the "Member" position globally
+    // Re-fetch positions after potentially adding missing ones, including "Member"
     $positions = MemberPosition::where('sacco_id', $sacco->id)
-        ->orWhere('name', 'Member')
+        ->where('name', '!=', 'Member')
+        ->orWhere(function ($query) use ($sacco) {
+            $query->where('sacco_id', $sacco->id)
+                  ->where('name', 'Member');
+        })
         ->get();
+
+    // If "Member" position still doesn't exist, create one
+    if (!$positions->contains('name', 'Member')) {
+        MemberPosition::create([
+            'sacco_id' => $sacco->id,
+            'name' => 'Member',
+        ]);
+
+        // Re-fetch positions again to include the newly created "Member"
+        $positions = MemberPosition::where('sacco_id', $sacco->id)
+            ->get();
+    }
 
     // Return success response with positions
     return $this->success(
