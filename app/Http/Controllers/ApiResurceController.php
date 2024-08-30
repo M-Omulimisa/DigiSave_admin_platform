@@ -1217,13 +1217,11 @@ class ApiResurceController extends Controller
         })
         ->count();
 
-    // Total Meetings for Active Cycle
-    $totalMeetings = Meeting::where('sacco_id', $sacco->id)
-        ->where('cycle_id', $activeCycle->id)
-        ->count();
+    // Total Meetings
+    $totalMeetings = Meeting::where('sacco_id', $sacco->id)->count();
 
     // Total Member Names (Average Meeting Attendance)
-    $meetings = $sacco->meetings()->where('cycle_id', $activeCycle->id)->get();
+    $meetings = $sacco->meetings;
     $allMemberNames = [];
 
     foreach ($meetings as $meeting) {
@@ -1246,16 +1244,14 @@ class ApiResurceController extends Controller
     $averageAttendance = $meetingCount > 0 ? $totalPresent / $meetingCount : 0;
     $averageAttendanceRounded = round($averageAttendance);
 
-    // Total Loans for Active Cycle
+    // Total Loans
     $numberOfLoans = $sacco->transactions()
         ->where('type', 'LOAN')
-        ->where('cycle_id', $activeCycle->id)
         ->count();
 
     // Total Loan Amount
     $totalPrincipal = $sacco->transactions()
         ->where('type', 'LOAN')
-        ->where('cycle_id', $activeCycle->id)
         ->sum('amount');
 
     // Loans to Males
@@ -1263,7 +1259,6 @@ class ApiResurceController extends Controller
         ->join('users', 'transactions.source_user_id', '=', 'users.id')
         ->where('transactions.type', 'LOAN')
         ->where('users.sex', 'Male')
-        ->where('transactions.cycle_id', $activeCycle->id)
         ->count();
 
     // Total Loans Disbursed to Males
@@ -1271,7 +1266,6 @@ class ApiResurceController extends Controller
         ->join('users', 'transactions.source_user_id', '=', 'users.id')
         ->where('transactions.type', 'LOAN')
         ->where('users.sex', 'Male')
-        ->where('transactions.cycle_id', $activeCycle->id)
         ->sum('transactions.amount');
 
     // Loans to Females
@@ -1279,7 +1273,6 @@ class ApiResurceController extends Controller
         ->join('users', 'transactions.source_user_id', '=', 'users.id')
         ->where('transactions.type', 'LOAN')
         ->where('users.sex', 'Female')
-        ->where('transactions.cycle_id', $activeCycle->id)
         ->count();
 
     // Total Loans Disbursed to Females
@@ -1287,7 +1280,6 @@ class ApiResurceController extends Controller
         ->join('users', 'transactions.source_user_id', '=', 'users.id')
         ->where('transactions.type', 'LOAN')
         ->where('users.sex', 'Female')
-        ->where('transactions.cycle_id', $activeCycle->id)
         ->sum('transactions.amount');
 
     // Loans to Youth
@@ -1295,7 +1287,6 @@ class ApiResurceController extends Controller
         ->join('users', 'transactions.source_user_id', '=', 'users.id')
         ->where('transactions.type', 'LOAN')
         ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
-        ->where('transactions.cycle_id', $activeCycle->id)
         ->count();
 
     // Total Loans Disbursed to Youth
@@ -1303,23 +1294,20 @@ class ApiResurceController extends Controller
         ->join('users', 'transactions.source_user_id', '=', 'users.id')
         ->where('transactions.type', 'LOAN')
         ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
-        ->where('transactions.cycle_id', $activeCycle->id)
         ->sum('transactions.amount');
 
-    // Number of Savings Accounts
+    // Number of Savings Accounts (Only relevant for the Sacco)
     $numberOfSavingsAccounts = User::where('sacco_id', $sacco->id)
         ->where(function ($query) {
             $query->whereNull('user_type')
                 ->orWhere('user_type', '<>', 'Admin');
         })
-        ->where('cycle_id', $activeCycle->id)
         ->count();
 
     // Total Savings Balance
     $totalSavingsBalance = $sacco->transactions()
         ->join('users', 'transactions.source_user_id', '=', 'users.id')
         ->where('transactions.type', 'SHARE')
-        ->where('transactions.cycle_id', $activeCycle->id)
         ->sum('transactions.amount');
 
     // Average Savings per Member
@@ -1347,9 +1335,6 @@ class ApiResurceController extends Controller
 
     return $this->success($saccoDetails, "Success");
 }
-
-
-
 
     public function get_positions()
 {
