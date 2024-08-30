@@ -1179,132 +1179,166 @@ class ApiResurceController extends Controller
     public function getSaccoDetailsForUser()
 {
     // Get the authenticated user
-    $user = auth('api')->user();
-    if ($user == null) {
+    $u = auth('api')->user();
+    if ($u == null) {
         return $this->error('User not found.');
     }
 
     // Find the Sacco associated with the user
-    $sacco = Sacco::find($user->sacco_id);
+    $sacco = Sacco::find($u->sacco_id);
     if ($sacco == null) {
-        return $this->error('Sacco not found.');
+        return $this->error('Group not found.');
     }
 
-    // Get the active cycle for the Sacco
-    $cycle = Cycle::where('sacco_id', $sacco->id)
+    // Get active cycle for the Sacco
+    $activeCycle = Cycle::where('sacco_id', $sacco->id)
         ->where('status', 'Active')
         ->first();
 
-    if ($cycle == null) {
+    if ($activeCycle == null) {
         return $this->error('No active cycle found for the Sacco.');
     }
 
-    // Gather all necessary data for the Sacco within the active cycle
+    // Use the active cycle ID for filtering transactions
+    $activeCycleId = $activeCycle->id;
+
+    // Gather all necessary data for the Sacco
     $numberOfLoans = Transaction::where('sacco_id', $sacco->id)
-        ->where('cycle_id', $cycle->id)
+        ->where('cycle_id', $activeCycleId)
         ->where('type', 'LOAN')
         ->count();
-
     $totalPrincipal = Transaction::where('sacco_id', $sacco->id)
-        ->where('cycle_id', $cycle->id)
+        ->where('cycle_id', $activeCycleId)
         ->where('type', 'LOAN')
         ->sum('amount');
-
     $totalInterest = Transaction::where('sacco_id', $sacco->id)
-        ->where('cycle_id', $cycle->id)
-        ->where('type', 'INTEREST')
+        ->where('cycle_id', $activeCycleId)
+        ->where('type', 'LOAN_INTEREST')
         ->sum('amount');
-
     $totalPrincipalPaid = Transaction::where('sacco_id', $sacco->id)
-        ->where('cycle_id', $cycle->id)
-        ->where('type', 'LOAN_PAYMENT')
+        ->where('cycle_id', $activeCycleId)
+        ->where('type', 'LOAN_REPAYMENT')
         ->sum('amount');
-
     $totalInterestPaid = Transaction::where('sacco_id', $sacco->id)
-        ->where('cycle_id', $cycle->id)
-        ->where('type', 'INTEREST_PAYMENT')
+        ->where('cycle_id', $activeCycleId)
+        ->where('type', 'LOAN_INTEREST')
         ->sum('amount');
-
-    $numberOfSavingsAccounts = DB::table('savings_accounts')
-        ->where('sacco_id', $sacco->id)
+    $numberOfSavingsAccounts = Transaction::where('sacco_id', $sacco->id)
+        ->where('cycle_id', $activeCycleId)
+        ->where('type', 'SHARE')
         ->count();
-
-    $totalSavingsBalance = DB::table('savings_accounts')
-        ->where('sacco_id', $sacco->id)
-        ->sum('balance');
-
+    $totalSavingsBalance = Transaction::where('sacco_id', $sacco->id)
+        ->where('cycle_id', $activeCycleId)
+        ->where('type', 'SHARE')
+        ->sum('amount');
     $totalPrincipalOutstanding = $totalPrincipal - $totalPrincipalPaid;
+    $totalInterestOutstanding = $totalInterest - $totalInterestPaid;
 
-    // Get statistics for loans and savings based on gender and age group
-    $numberOfLoansToMen = Transaction::where('sacco_id', $sacco->id)
-        ->where('cycle_id', $cycle->id)
-        ->where('type', 'LOAN')
-        ->whereHas('user', function ($query) {
-            $query->where('gender', 'Male');
-        })
+    $numberOfLoansToMen = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.sacco_id', $sacco->id)
+        ->where('transactions.cycle_id', $activeCycleId)
+        ->where('transactions.type', 'LOAN')
+        ->where('users.sex', 'Male')
         ->count();
 
-    $totalDisbursedToMen = Transaction::where('sacco_id', $sacco->id)
-        ->where('cycle_id', $cycle->id)
-        ->where('type', 'LOAN')
-        ->whereHas('user', function ($query) {
-            $query->where('gender', 'Male');
-        })
-        ->sum('amount');
+    $totalDisbursedToMen = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.sacco_id', $sacco->id)
+        ->where('transactions.cycle_id', $activeCycleId)
+        ->where('transactions.type', 'LOAN')
+        ->where('users.sex', 'Male')
+        ->sum('transactions.amount');
 
-    $numberOfLoansToWomen = Transaction::where('sacco_id', $sacco->id)
-        ->where('cycle_id', $cycle->id)
-        ->where('type', 'LOAN')
-        ->whereHas('user', function ($query) {
-            $query->where('gender', 'Female');
-        })
+    $totalSavingsAccountsForMen = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.sacco_id', $sacco->id)
+        ->where('transactions.cycle_id', $activeCycleId)
+        ->where('transactions.type', 'SHARE')
+        ->where('users.sex', 'Male')
         ->count();
 
-    $totalDisbursedToWomen = Transaction::where('sacco_id', $sacco->id)
-        ->where('cycle_id', $cycle->id)
-        ->where('type', 'LOAN')
-        ->whereHas('user', function ($query) {
-            $query->where('gender', 'Female');
-        })
-        ->sum('amount');
-
-    $numberOfLoansToYouth = Transaction::where('sacco_id', $sacco->id)
-        ->where('cycle_id', $cycle->id)
-        ->where('type', 'LOAN')
-        ->whereHas('user', function ($query) {
-            $query->where('age', '<', 30);
-        })
+    $numberOfLoansToWomen = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.sacco_id', $sacco->id)
+        ->where('transactions.cycle_id', $activeCycleId)
+        ->where('transactions.type', 'LOAN')
+        ->where('users.sex', 'Female')
         ->count();
 
-    $totalDisbursedToYouth = Transaction::where('sacco_id', $sacco->id)
-        ->where('cycle_id', $cycle->id)
-        ->where('type', 'LOAN')
-        ->whereHas('user', function ($query) {
-            $query->where('age', '<', 30);
-        })
-        ->sum('amount');
+    $totalDisbursedToWomen = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.sacco_id', $sacco->id)
+        ->where('transactions.cycle_id', $activeCycleId)
+        ->where('transactions.type', 'LOAN')
+        ->where('users.sex', 'Female')
+        ->sum('transactions.amount');
 
-    // Construct the response with gathered data
-    return [
-        'number_of_loans' => $numberOfLoans,
-        'total_principal' => $totalPrincipal,
-        'total_interest' => $totalInterest,
-        'total_principal_paid' => $totalPrincipalPaid,
-        'total_interest_paid' => $totalInterestPaid,
-        'number_of_savings_accounts' => $numberOfSavingsAccounts,
-        'total_savings_balance' => $totalSavingsBalance,
-        'total_principal_outstanding' => $totalPrincipalOutstanding,
-        'number_of_loans_to_men' => $numberOfLoansToMen,
-        'total_disbursed_to_men' => $totalDisbursedToMen,
-        'number_of_loans_to_women' => $numberOfLoansToWomen,
-        'total_disbursed_to_women' => $totalDisbursedToWomen,
-        'number_of_loans_to_youth' => $numberOfLoansToYouth,
-        'total_disbursed_to_youth' => $totalDisbursedToYouth,
-        'average_savings_per_member' => $totalSavingsBalance / max($numberOfSavingsAccounts, 1) // Avoid division by zero
+    $totalSavingsAccountsForWomen = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.sacco_id', $sacco->id)
+        ->where('transactions.cycle_id', $activeCycleId)
+        ->where('transactions.type', 'SHARE')
+        ->where('users.sex', 'Female')
+        ->count();
+
+    $totalSavingsBalanceForWomen = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.sacco_id', $sacco->id)
+        ->where('transactions.cycle_id', $activeCycleId)
+        ->where('transactions.type', 'SHARE')
+        ->where('users.sex', 'Female')
+        ->sum('transactions.amount');
+
+    $numberOfLoansToYouth = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.sacco_id', $sacco->id)
+        ->where('transactions.cycle_id', $activeCycleId)
+        ->where('transactions.type', 'LOAN')
+        ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
+        ->count();
+
+    $totalDisbursedToYouth = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.sacco_id', $sacco->id)
+        ->where('transactions.cycle_id', $activeCycleId)
+        ->where('transactions.type', 'LOAN')
+        ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
+        ->sum('transactions.amount');
+
+    $totalSavingsBalanceForYouth = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.sacco_id', $sacco->id)
+        ->where('transactions.cycle_id', $activeCycleId)
+        ->where('transactions.type', 'SHARE')
+        ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
+        ->sum('transactions.amount');
+
+    $averageSavingsPerMember = Transaction::where('sacco_id', $sacco->id)
+        ->where('cycle_id', $activeCycleId)
+        ->where('type', 'SHARE')
+        ->avg('amount');
+
+    // Structure the data into an array
+    $saccoDetails = [
+        "number_of_loans" => $numberOfLoans,
+        "total_principal" => $totalPrincipal,
+        "total_interest" => $totalInterest,
+        "total_principal_paid" => $totalPrincipalPaid,
+        "total_interest_paid" => $totalInterestPaid,
+        "number_of_savings_accounts" => $numberOfSavingsAccounts,
+        "total_savings_balance" => $totalSavingsBalance,
+        "total_principal_outstanding" => $totalPrincipalOutstanding,
+        "total_interest_outstanding" => $totalInterestOutstanding,
+        "number_of_loans_to_men" => $numberOfLoansToMen,
+        "total_disbursed_to_men" => $totalDisbursedToMen,
+        "total_savings_accounts_for_men" => $totalSavingsAccountsForMen,
+        "number_of_loans_to_women" => $numberOfLoansToWomen,
+        "total_disbursed_to_women" => $totalDisbursedToWomen,
+        "total_savings_accounts_for_women" => $totalSavingsAccountsForWomen,
+        "total_savings_balance_for_women" => $totalSavingsBalanceForWomen,
+        "number_of_loans_to_youth" => $numberOfLoansToYouth,
+        "total_disbursed_to_youth" => $totalDisbursedToYouth,
+        "total_savings_balance_for_youth" => $totalSavingsBalanceForYouth,
+        "average_savings_per_member" => $averageSavingsPerMember,
     ];
+
+    // Return the data as a JSON response
+    return $this->success(
+        $saccoDetails,
+        $message = "Success"
+    );
 }
-
-
 
     public function get_positions()
 {
