@@ -1319,12 +1319,15 @@ class ApiResurceController extends Controller
         ->count();
 
     // Total Savings Balance (Assuming balance is stored per user in a `savings_balance` column)
-    $totalSavingsBalance = User::where('sacco_id', $sacco->id)
-        ->where(function ($query) {
-            $query->whereNull('user_type')
-                ->orWhere('user_type', '<>', 'Admin');
-        })
-        ->sum('savings_balance');
+    $totalSavingsBalance = $sacco->transactions()
+    ->join('users', 'transactions.source_user_id', '=', 'users.id')
+    ->where('transactions.type', 'SHARE')
+    ->where('users.sex', 'Male')
+    ->where(function ($query) {
+        $query->whereNull('users.user_type')
+            ->orWhere('users.user_type', '<>', 'Admin');
+    })
+    ->sum('transactions.amount');
 
     // Average Savings per Member
     $averageSavingsPerMember = $numberOfMembers > 0 ? $totalSavingsBalance / $numberOfMembers : 0;
