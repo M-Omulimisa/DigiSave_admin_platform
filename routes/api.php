@@ -34,7 +34,7 @@ Route::post('organisation', [ApiResurceController::class, 'get_orgs']);
 Route::get('def-positions', [ApiResurceController::class, 'get_positions']);
 Route::get('positions', [ApiResurceController::class, 'get_positions']);
 Route::get('credit', [ApiResurceController::class, 'getSaccoDetailsForUser']);
-Route::post('get_positions', [ApiResurceController::class, 'getPositionsBySaccoId']);
+Route::post('get_positions', [ApiResurceController::class, 'leader_positions']);
 Route::get("share-records", [ApiResurceController::class, "share_records"]);
 Route::post("share-records", [ApiResurceController::class, "share_record_create"]);
 Route::get("social-funds", [ApiResurceController::class, "socialFundRecords"]);

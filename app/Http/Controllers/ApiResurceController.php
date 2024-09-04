@@ -1391,42 +1391,38 @@ class ApiResurceController extends Controller
     );
 }
 
-    // public function get_positions()
-    // {
-    //     $u = auth('api')->user();
-    //     if ($u == null) {
-    //         return $this->error('User not found.');
-    //     }
-    //     $sacco = Sacco::find($u->sacco_id);
-    //     if ($sacco == null) {
-    //         return $this->error('Group not found.',);
-    //     }
-    //     // Get positions associated with the Sacco
-    //     $positions = MemberPosition::where('sacco_id', $sacco->id)->get();
+    public function leader_positions(Request $r)
+    {
+        $sacco = Sacco::find($r->sacco_id);
+        if ($sacco == null) {
+            return $this->error('Group not found.',);
+        }
+        // Get positions associated with the Sacco
+        $positions = MemberPosition::where('sacco_id', $sacco->id)->get();
 
-    //     // Check and create the necessary positions if they don't exist
-    //     $requiredPositions = ['Chairperson', 'Secretary', 'Treasurer', 'Member'];
-    //     foreach ($requiredPositions as $positionName) {
-    //         if (!$positions->contains('name', $positionName)) {
-    //             MemberPosition::create([
-    //                 'sacco_id' => $sacco->id,
-    //                 'name' => $positionName,
-    //             ]);
-    //         }
-    //     }
+        // Check and create the necessary positions if they don't exist
+        $requiredPositions = ['Chairperson', 'Secretary', 'Treasurer', 'Member'];
+        foreach ($requiredPositions as $positionName) {
+            if (!$positions->contains('name', $positionName)) {
+                MemberPosition::create([
+                    'sacco_id' => $sacco->id,
+                    'name' => $positionName,
+                ]);
+            }
+        }
 
-    //     // Re-fetch positions after potentially adding missing ones
-    //     $positions = MemberPosition::where('sacco_id', $sacco->id)
-    //         ->where('name', '!=', 'Member')
-    //         ->get();
+        // Re-fetch positions after potentially adding missing ones
+        $positions = MemberPosition::where('sacco_id', $sacco->id)
+            ->where('name', '!=', 'Member')
+            ->get();
 
-    //     // Return success response with positions
-    //     return $this->success(
-    //         $positions,
-    //         $message = "Success",
-    //         $statusCode = 200
-    //     );
-    // }
+        // Return success response with positions
+        return $this->success(
+            $positions,
+            $message = "Success",
+            $statusCode = 200
+        );
+    }
 
     // public function get_positions(Request $request = null)
     // {
