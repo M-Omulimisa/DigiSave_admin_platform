@@ -1190,213 +1190,218 @@ class ApiResurceController extends Controller
         })
         ->count();
 
-    // Number of Male Members
-    $numberOfMen = User::where('sacco_id', $sacco->id)
-        ->where('sex', 'Male')
-        ->where(function ($query) {
-            $query->whereNull('user_type')
-                ->orWhere('user_type', '<>', 'Admin');
-        })
-        ->count();
+        // Number of Male Members
+        $numberOfMen = User::where('sacco_id', $sacco->id)
+            ->where('sex', 'Male')
+            ->where(function ($query) {
+                $query->whereNull('user_type')
+                    ->orWhere('user_type', '<>', 'Admin');
+            })
+            ->count();
 
-    // Number of Female Members
-    $numberOfWomen = User::where('sacco_id', $sacco->id)
-        ->where('sex', 'Female')
-        ->where(function ($query) {
-            $query->whereNull('user_type')
-                ->orWhere('user_type', '<>', 'Admin');
-        })
-        ->count();
+        // Number of Female Members
+        $numberOfWomen = User::where('sacco_id', $sacco->id)
+            ->where('sex', 'Female')
+            ->where(function ($query) {
+                $query->whereNull('user_type')
+                    ->orWhere('user_type', '<>', 'Admin');
+            })
+            ->count();
 
-    // Number of Youth Members
-    $numberOfYouth = User::where('sacco_id', $sacco->id)
-        ->whereRaw('TIMESTAMPDIFF(YEAR, dob, CURDATE()) < 35')
-        ->where(function ($query) {
-            $query->whereNull('user_type')
-                ->orWhere('user_type', '<>', 'Admin');
-        })
-        ->count();
+        // Number of Youth Members
+        $numberOfYouth = User::where('sacco_id', $sacco->id)
+            ->whereRaw('TIMESTAMPDIFF(YEAR, dob, CURDATE()) < 35')
+            ->where(function ($query) {
+                $query->whereNull('user_type')
+                    ->orWhere('user_type', '<>', 'Admin');
+            })
+            ->count();
 
-    // Total Meetings
-    $totalMeetings = Meeting::where('sacco_id', $sacco->id)->count();
+        // Total Meetings
+        $totalMeetings = Meeting::where('sacco_id', $sacco->id)->count();
 
-    // Total Member Names (Average Meeting Attendance)
-    $meetings = $sacco->meetings;
-    $allMemberNames = [];
-    foreach ($meetings as $meeting) {
-        $membersJson = $meeting->members;
-        $attendanceData = json_decode($membersJson, true);
+        // Total Member Names (Average Meeting Attendance)
+        $meetings = $sacco->meetings;
+        $allMemberNames = [];
+        foreach ($meetings as $meeting) {
+            $membersJson = $meeting->members;
+            $attendanceData = json_decode($membersJson, true);
 
-        if (json_last_error() === JSON_ERROR_NONE) {
-            if (isset($attendanceData['presentMembersIds']) && is_array($attendanceData['presentMembersIds'])) {
-                foreach ($attendanceData['presentMembersIds'] as $member) {
-                    if (isset($member['name'])) {
-                        $allMemberNames[] = $member['name'];
+            if (json_last_error() === JSON_ERROR_NONE) {
+                if (isset($attendanceData['presentMembersIds']) && is_array($attendanceData['presentMembersIds'])) {
+                    foreach ($attendanceData['presentMembersIds'] as $member) {
+                        if (isset($member['name'])) {
+                            $allMemberNames[] = $member['name'];
+                        }
                     }
                 }
             }
         }
+
+        $meetingCount = count($meetings);
+        $totalPresent = count(array_unique($allMemberNames));
+        $averageAttendance = $meetingCount > 0 ? $totalPresent / $meetingCount : 0;
+        $averageAttendanceRounded = round($averageAttendance);
+
+        // Total Loans
+        $numberOfLoans = $sacco->transactions()
+            ->where('type', 'LOAN')
+            ->count();
+
+        // Total Loan Amount (Principal)
+        $totalPrincipal = $sacco->transactions()
+            ->where('type', 'LOAN')
+            ->sum('amount');
+
+        // Total Interest
+        $totalInterest = $sacco->transactions()
+            ->where('type', 'LOAN_INTEREST')
+            ->sum('amount');
+
+        // Total Loan Repayments
+        $totalLoanRepayments = $sacco->transactions()
+            ->where('type', 'LOAN_REPAYMENT')
+            ->sum('amount');
+
+        // Loans to Males
+        $numberOfLoansToMen = $sacco->transactions()
+            ->join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'LOAN')
+            ->where('users.sex', 'Male')
+            ->count();
+
+        // Total Loans Disbursed to Males
+        $totalDisbursedToMen = $sacco->transactions()
+            ->join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'LOAN')
+            ->where('users.sex', 'Male')
+            ->sum('transactions.amount');
+
+        // Loans to Females
+        $numberOfLoansToWomen = $sacco->transactions()
+            ->join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'LOAN')
+            ->where('users.sex', 'Female')
+            ->count();
+
+        // Total Loans Disbursed to Females
+        $totalDisbursedToWomen = $sacco->transactions()
+            ->join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'LOAN')
+            ->where('users.sex', 'Female')
+            ->sum('transactions.amount');
+
+        // Loans to Youth
+        $numberOfLoansToYouth = $sacco->transactions()
+            ->join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'LOAN')
+            ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
+            ->count();
+
+        // Total Loans Disbursed to Youth
+        $totalDisbursedToYouth = $sacco->transactions()
+            ->join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'LOAN')
+            ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
+            ->sum('transactions.amount');
+
+        // Number of Savings Accounts (Only relevant for the Sacco)
+        $numberOfSavingsAccounts = User::where('sacco_id', $sacco->id)
+            ->where(function ($query) {
+                $query->whereNull('user_type')
+                    ->orWhere('user_type', '<>', 'Admin');
+            })
+            ->count();
+
+        // Total Savings Balance
+        $totalSavingsBalance = $sacco->transactions()
+            ->join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'SHARE')
+            ->sum('transactions.amount');
+
+        // Savings to Males
+        $savingsAccountsForMen = $sacco->transactions()
+            ->join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'SHARE')
+            ->where('users.sex', 'Male')
+            ->count();
+
+        // Total Savings Balance for Males
+        $totalSavingsBalanceForMen = $sacco->transactions()
+            ->join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'SHARE')
+            ->where('users.sex', 'Male')
+            ->sum('transactions.amount');
+
+        // Savings to Females
+        $savingsAccountsForWomen = $sacco->transactions()
+            ->join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'SHARE')
+            ->where('users.sex', 'Female')
+            ->count();
+
+        // Total Savings Balance for Females
+        $totalSavingsBalanceForWomen = $sacco->transactions()
+            ->join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'SHARE')
+            ->where('users.sex', 'Female')
+            ->sum('transactions.amount');
+
+        // Savings to Youth
+        $savingsAccountsForYouth = $sacco->transactions()
+            ->join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'SHARE')
+            ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
+            ->count();
+
+        // Total Savings Balance for Youth
+        $totalSavingsBalanceForYouth = $sacco->transactions()
+            ->join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'SHARE')
+            ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
+            ->sum('transactions.amount');
+
+        // Average Savings per Member
+        $averageSavingsPerMember = $numberOfMembers > 0 ? $totalSavingsBalance / $numberOfMembers : 0;
+
+        $saccoDetails = [
+            "number_of_loans" => $numberOfLoans,
+            "total_principal" => number_format(abs($totalPrincipal), 2, '.', ','),
+            "total_interest" => number_format(abs($totalInterest), 2, '.', ','),
+            "total_loan_repayments" => number_format(abs($totalLoanRepayments), 2, '.', ','),
+            "number_of_members" => $numberOfMembers,
+            "number_of_men" => $numberOfMen,
+            "number_of_women" => $numberOfWomen,
+            "number_of_youth" => $numberOfYouth,
+            "total_meetings" => $totalMeetings,
+            "average_meeting_attendance" => $averageAttendanceRounded,
+            "number_of_loans_to_men" => $numberOfLoansToMen,
+            "total_disbursed_to_men" => number_format(abs($totalDisbursedToMen), 2, '.', ','),
+            "number_of_loans_to_women" => $numberOfLoansToWomen,
+            "total_disbursed_to_women" => number_format(abs($totalDisbursedToWomen), 2, '.', ','),
+            "number_of_loans_to_youth" => $numberOfLoansToYouth,
+            "total_disbursed_to_youth" => number_format(abs($totalDisbursedToYouth), 2, '.', ','),
+            "number_of_savings_accounts" => $numberOfSavingsAccounts,
+            "total_savings_balance" => number_format(abs($totalSavingsBalance), 2, '.', ','),
+            "savings_accounts_for_men" => $savingsAccountsForMen,
+            "total_savings_balance_for_men" => number_format(abs($totalSavingsBalanceForMen), 2, '.', ','),
+            "savings_accounts_for_women" => $savingsAccountsForWomen,
+            "total_savings_balance_for_women" => number_format(abs($totalSavingsBalanceForWomen), 2, '.', ','),
+            "savings_accounts_for_youth" => $savingsAccountsForYouth,
+            "total_savings_balance_for_youth" => number_format(abs($totalSavingsBalanceForYouth), 2, '.', ','),
+            "average_savings_per_member" => number_format(abs($averageSavingsPerMember), 2, '.', ','),
+            "youth_support_rate" => "0.2",
+            "savings_credit_mobilization" => "0.5",
+            "fund_savings_credit_status" => "1",
+            "total_principal_paid" => "12000.0",
+            "total_interest_paid" => "1200.0",
+            "total_principal_outstanding" => "3000.0",
+            "total_interest_outstanding" => "300.0",
+            "savings_per_member" => "2000.0"
+        ];
+
+        return $this->success($saccoDetails, "Success");
     }
-
-    $meetingCount = count($meetings);
-    $totalPresent = count(array_unique($allMemberNames));
-    $averageAttendance = $meetingCount > 0 ? $totalPresent / $meetingCount : 0;
-    $averageAttendanceRounded = round($averageAttendance);
-
-    // Total Loans
-    $numberOfLoans = $sacco->transactions()
-        ->where('type', 'LOAN')
-        ->count();
-
-    // Total Loan Amount (Principal)
-    $totalPrincipal = $sacco->transactions()
-        ->where('type', 'LOAN')
-        ->sum('amount');
-
-    // Total Interest
-    $totalInterest = $sacco->transactions()
-        ->where('type', 'LOAN_INTEREST')
-        ->sum('amount');
-
-    // Total Loan Repayments
-    $totalLoanRepayments = $sacco->transactions()
-        ->where('type', 'LOAN_REPAYMENT')
-        ->sum('amount');
-
-    // Loans to Males
-    $numberOfLoansToMen = $sacco->transactions()
-        ->join('users', 'transactions.source_user_id', '=', 'users.id')
-        ->where('transactions.type', 'LOAN')
-        ->where('users.sex', 'Male')
-        ->count();
-
-    // Total Loans Disbursed to Males
-    $totalDisbursedToMen = $sacco->transactions()
-        ->join('users', 'transactions.source_user_id', '=', 'users.id')
-        ->where('transactions.type', 'LOAN')
-        ->where('users.sex', 'Male')
-        ->sum('transactions.amount');
-
-    // Loans to Females
-    $numberOfLoansToWomen = $sacco->transactions()
-        ->join('users', 'transactions.source_user_id', '=', 'users.id')
-        ->where('transactions.type', 'LOAN')
-        ->where('users.sex', 'Female')
-        ->count();
-
-    // Total Loans Disbursed to Females
-    $totalDisbursedToWomen = $sacco->transactions()
-        ->join('users', 'transactions.source_user_id', '=', 'users.id')
-        ->where('transactions.type', 'LOAN')
-        ->where('users.sex', 'Female')
-        ->sum('transactions.amount');
-
-    // Loans to Youth
-    $numberOfLoansToYouth = $sacco->transactions()
-        ->join('users', 'transactions.source_user_id', '=', 'users.id')
-        ->where('transactions.type', 'LOAN')
-        ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
-        ->count();
-
-    // Total Loans Disbursed to Youth
-    $totalDisbursedToYouth = $sacco->transactions()
-        ->join('users', 'transactions.source_user_id', '=', 'users.id')
-        ->where('transactions.type', 'LOAN')
-        ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
-        ->sum('transactions.amount');
-
-    // Number of Savings Accounts (Only relevant for the Sacco)
-    $numberOfSavingsAccounts = User::where('sacco_id', $sacco->id)
-        ->where(function ($query) {
-            $query->whereNull('user_type')
-                ->orWhere('user_type', '<>', 'Admin');
-        })
-        ->count();
-
-    // Total Savings Balance
-    $totalSavingsBalance = $sacco->transactions()
-        ->join('users', 'transactions.source_user_id', '=', 'users.id')
-        ->where('transactions.type', 'SHARE')
-        ->sum('transactions.amount');
-
-    // Savings to Males
-    $savingsAccountsForMen = $sacco->transactions()
-        ->join('users', 'transactions.source_user_id', '=', 'users.id')
-        ->where('transactions.type', 'SHARE')
-        ->where('users.sex', 'Male')
-        ->count();
-
-    // Total Savings Balance for Males
-    $totalSavingsBalanceForMen = $sacco->transactions()
-        ->join('users', 'transactions.source_user_id', '=', 'users.id')
-        ->where('transactions.type', 'SHARE')
-        ->where('users.sex', 'Male')
-        ->sum('transactions.amount');
-
-    // Savings to Females
-    $savingsAccountsForWomen = $sacco->transactions()
-        ->join('users', 'transactions.source_user_id', '=', 'users.id')
-        ->where('transactions.type', 'SHARE')
-        ->where('users.sex', 'Female')
-        ->count();
-
-    // Total Savings Balance for Females
-    $totalSavingsBalanceForWomen = $sacco->transactions()
-        ->join('users', 'transactions.source_user_id', '=', 'users.id')
-        ->where('transactions.type', 'SHARE')
-        ->where('users.sex', 'Female')
-        ->sum('transactions.amount');
-
-    // Savings to Youth
-    $savingsAccountsForYouth = $sacco->transactions()
-        ->join('users', 'transactions.source_user_id', '=', 'users.id')
-        ->where('transactions.type', 'SHARE')
-        ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
-        ->count();
-
-    // Total Savings Balance for Youth
-    $totalSavingsBalanceForYouth = $sacco->transactions()
-        ->join('users', 'transactions.source_user_id', '=', 'users.id')
-        ->where('transactions.type', 'SHARE')
-        ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
-        ->sum('transactions.amount');
-
-    // Average Savings per Member
-    $averageSavingsPerMember = $numberOfMembers > 0 ? $totalSavingsBalance / $numberOfMembers : 0;
-
-    $saccoDetails = [
-        "number_of_loans" => $numberOfLoans,
-        "total_principal" => number_format(abs($totalPrincipal), 2, '.', ','),
-        "total_interest" => number_format(abs($totalInterest), 2, '.', ','),
-        "total_loan_repayments" => number_format(abs($totalLoanRepayments), 2, '.', ','),
-        "number_of_members" => $numberOfMembers,
-        "number_of_men" => $numberOfMen,
-        "number_of_women" => $numberOfWomen,
-        "number_of_youth" => $numberOfYouth,
-        "total_meetings" => $totalMeetings,
-        "average_meeting_attendance" => $averageAttendanceRounded,
-        "number_of_loans_to_men" => $numberOfLoansToMen,
-        "total_disbursed_to_men" => number_format(abs($totalDisbursedToMen), 2, '.', ','),
-        "number_of_loans_to_women" => $numberOfLoansToWomen,
-        "total_disbursed_to_women" => number_format(abs($totalDisbursedToWomen), 2, '.', ','),
-        "number_of_loans_to_youth" => $numberOfLoansToYouth,
-        "total_disbursed_to_youth" => number_format(abs($totalDisbursedToYouth), 2, '.', ','),
-        "number_of_savings_accounts" => $numberOfSavingsAccounts,
-        "total_savings_balance" => number_format(abs($totalSavingsBalance), 2, '.', ','),
-        "savings_accounts_for_men" => $savingsAccountsForMen,
-        "total_savings_balance_for_men" => number_format(abs($totalSavingsBalanceForMen), 2, '.', ','),
-        "savings_accounts_for_women" => $savingsAccountsForWomen,
-        "total_savings_balance_for_women" => number_format(abs($totalSavingsBalanceForWomen), 2, '.', ','),
-        "savings_accounts_for_youth" => $savingsAccountsForYouth,
-        "total_savings_balance_for_youth" => number_format(abs($totalSavingsBalanceForYouth), 2, '.', ','),
-        "average_savings_per_member" => number_format(abs($averageSavingsPerMember), 2, '.', ','),
-        "youth_support_rate"=> "0.2",
-        "savings_credit_mobilization"=> "0.5",
-        "fund_savings_credit_status"=> "1"
-    ];
-
-    return $this->success($saccoDetails, "Success");
-}
 
 //     public function getSaccoDetailsForUser()
 // {
