@@ -1390,9 +1390,9 @@ class ApiResurceController extends Controller
         "savings_accounts_for_youth" => $savingsAccountsForYouth,
         "total_savings_balance_for_youth" => number_format(abs($totalSavingsBalanceForYouth), 2, '.', ','),
         "average_savings_per_member" => number_format(abs($averageSavingsPerMember), 2, '.', ','),
-        "youth_support_rate"=> 0.2,
-        "savings_credit_mobilization"=> 0.5,
-        "fund_savings_credit_status"=> 1
+        "youth_support_rate"=> "0.2",
+        "savings_credit_mobilization"=> "0.5",
+        "fund_savings_credit_status"=> "1"
     ];
 
     return $this->success($saccoDetails, "Success");
