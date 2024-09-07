@@ -159,6 +159,7 @@ class User extends Authenticatable implements JWTSubject
         'name',
         'user_text',
         'SAVING',
+        'BORROW',
         'FINES',
         'SHARE_COUNT',
         'SHARE',
@@ -519,7 +520,7 @@ class User extends Authenticatable implements JWTSubject
 
 
     //getter for LOAN
-    public function getLOAN_BALANCEAttribute()
+    public function getBORROWAttribute()
 {
     // Find the SACCO that the user is associated with
     $sacco = Sacco::find($this->sacco_id);
