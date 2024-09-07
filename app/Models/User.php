@@ -359,12 +359,10 @@ class User extends Authenticatable implements JWTSubject
         if ($sacco->active_cycle == null) {
             return 0;
         }
-
-        return Transaction::where([
-            'user_id' => $this->id,
-            'type' => 'FINE',
-            'cycle_id' => $sacco->active_cycle->id
-        ])
+        return Transaction::where('sacco_id', $sacco->id)
+            ->where('source_user_id', $this->id)
+            ->where('cycle_id',  $sacco->active_cycle->id)
+            ->where('type',  'FINE')
             ->sum('amount');
     }
 
