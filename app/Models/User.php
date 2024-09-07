@@ -479,6 +479,23 @@ class User extends Authenticatable implements JWTSubject
             ->sum('amount');
     }
 
+    public function getBORROWAttribute()
+{
+    $sacco = Sacco::find($this->sacco_id);
+    if ($sacco == null) {
+        return 0;
+    }
+    if ($sacco->active_cycle == null) {
+        return 0;
+    }
+
+    return Transaction::where([
+        'source_user_id' => $this->id,
+        'type' => 'LOAN',
+        'cycle_id' => $sacco->active_cycle->id
+    ])->sum('amount');
+}
+
     //getter for REGESTRATION
     public function getREGISTERAttribute()
     {
@@ -516,32 +533,6 @@ class User extends Authenticatable implements JWTSubject
         ])
             ->sum('amount');
     }
-
-
-
-    //getter for LOAN
-    public function getBORROWAttribute()
-{
-    // Find the SACCO that the user is associated with
-    $sacco = Sacco::find($this->sacco_id);
-
-    // Return 0 if no SACCO is found
-    if ($sacco == null) {
-        return 0;
-    }
-
-    // Return 0 if there is no active cycle in the SACCO
-    if ($sacco->active_cycle == null) {
-        return 0;
-    }
-
-    // Sum the amount of all loan transactions for the user in the active cycle
-    return Transaction::where([
-        'user_id' => $this->id,
-        'type' => 'LOAN',
-        'cycle_id' => $sacco->active_cycle->id
-    ])->sum('amount');
-}
 
     //LOAN_BALANCE
     public function getLOANBALANCEAttribute()
