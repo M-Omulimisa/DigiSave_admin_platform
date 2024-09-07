@@ -489,9 +489,9 @@ class User extends Authenticatable implements JWTSubject
         return 0;
     }
 
-    return Transaction::where([
-        'source_user_id' => $this->id,
-        'type' => 'LOAN',
+    return Loan::where([
+        'user_id' => $this->id,
+        // 'type' => 'LOAN',
         'cycle_id' => $sacco->active_cycle->id
     ])->sum('amount');
 }
