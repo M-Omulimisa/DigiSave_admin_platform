@@ -92,6 +92,7 @@ class MemberAdminController extends AdminController
         $form->text('first_name', __('First Name'))->rules('required');
         $form->text('last_name', __('Last Name'))->rules('required');
         $form->text('phone_number', __('Phone Number'))->rules('required');
+        $form->email('email', __('Email'))->rules('required|email|unique:users,email,{{id}}');
 
         // Password will be generated automatically, so remove the field for manual input
         $form->hidden('password', __('Password'));
