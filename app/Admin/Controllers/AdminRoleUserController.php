@@ -29,10 +29,7 @@ class AdminRoleUserController extends AdminController
         $grid = new Grid(new AdminRoleUser());
 
         // Default sort order
-        $sortOrder = request()->get('_sort', 'desc');
-        if (!in_array($sortOrder, ['asc', 'desc'])) {
-            $sortOrder = 'desc';
-        }
+        $grid->model()->orderBy('created_at', 'desc');
 
         // Display Role and User details
         $grid->column('role.name', __('Role'))->sortable();
