@@ -25,6 +25,12 @@ class User extends Authenticatable implements JWTSubject
         'position_id'
     ];
 
+    // In User model
+public function roles()
+{
+    return $this->belongsToMany(AdminRole::class, 'admin_role_users', 'user_id', 'role_id');
+}
+
     public function position(): BelongsTo
     {
         return $this->belongsTo(MemberPosition::class);

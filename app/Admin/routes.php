@@ -95,6 +95,9 @@ $router->post('cycle-transactions', 'CycleTransactionController@store')->name('c
     $router->resource('member-account', MemberAccountController::class);
     $router->resource('cycle-transactions', CycleTransactionController::class);
     $router->resource('cycle-meetings', CycleMeetingController::class);
+    $router->resource('logs', AuditLogController::class);
+    $router->resource('admins', MemberAdminController::class);
+    $router->resource('user-roles', AdminRoleUserController::class);
     $router->resource('credit-scores', CreditScoreController::class);
     $router->resource('transactions-all', TransactionAllController::class);
     $router->resource('users', MemberController::class);

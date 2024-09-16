@@ -197,21 +197,20 @@ class AssignOrganisationAdminController extends AdminController
 
                 // Sending SMS
                 $resp = null;
-                $resp = Utils::send_sms($adminUser->phone_number, $message);
-                // try {
-                //     info('Send mail');
-                //     Mail::to($adminUser->email)->send(new SendMail($email_info));
-                //     info('After Send mail');
+                try {
+                    info('Send mail');
+                    Mail::to($adminUser->email)->send(new SendMail($email_info));
+                    info('After Send mail');
 
-                //     // Log a success message
-                //     admin_toastr("Email sent successfully to {$adminUser->email}");
+                    // Log a success message
+                    admin_toastr("Email sent successfully to {$adminUser->email}");
 
-                //     $resp = Utils::send_sms($adminUser->phone_number, $message);
-                // } catch (Exception $e) {
-                //     info($e->getMessage());
-                //     admin_error('Failed to send email because ' . $e->getMessage());
-                //     throw new Exception('Failed to send email because ' . $e->getMessage());
-                // }
+                    $resp = Utils::send_sms($adminUser->phone_number, $message);
+                } catch (Exception $e) {
+                    info($e->getMessage());
+                    admin_error('Failed to send email because ' . $e->getMessage());
+                    throw new Exception('Failed to send email because ' . $e->getMessage());
+                }
             }
         });
 
