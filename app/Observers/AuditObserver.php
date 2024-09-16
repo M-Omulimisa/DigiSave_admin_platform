@@ -3,31 +3,59 @@
 namespace App\Observers;
 
 use App\Models\AuditLog;
-use App\Models\User;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;  // To log the user details
+use Illuminate\Support\Facades\Log;
 
 class AuditObserver
 {
     protected static $isDeleting = false;
 
     /**
+     * Extract admin details (name, first name, last name) and log them.
+     */
+    protected function extractAdminDetails()
+    {
+        $admin = Auth::user();
+
+        if ($admin) {
+            $fullName = $admin->name;
+            $nameParts = explode(' ', $fullName, 2);
+            $firstName = $nameParts[0] ?? null;
+            $lastName = $nameParts[1] ?? null;
+
+            Log::info('Admin details:', ['first_name' => $firstName, 'last_name' => $lastName]);
+
+            return [
+                'admin' => $admin,
+                'first_name' => $firstName,
+                'last_name' => $lastName,
+            ];
+        }
+
+        Log::warning('No authenticated admin found.');
+        return null;
+    }
+
+    /**
      * Handle the "created" event.
      */
     public function created($model)
     {
-        $user = Auth::user();
-        Log::info('User details for created:', ['user' => $user]);
+        $adminDetails = $this->extractAdminDetails();
 
-        AuditLog::create([
-            'user_id' => $user->id,
-            'first_name' => $user->first_name,
-            'last_name' => $user->last_name,
-            'action' => 'Created',
-            'model' => get_class($model),
-            'model_id' => $model->id,
-            'changes' => json_encode($model->getAttributes()),
-        ]);
+        if ($adminDetails) {
+            $attributes = $model->getAttributes();
+
+            AuditLog::create([
+                'user_id' => $adminDetails['admin']->id,
+                'first_name' => $adminDetails['first_name'],
+                'last_name' => $adminDetails['last_name'],
+                'action' => 'Created',
+                'model' => get_class($model),
+                'model_id' => $model->id,
+                'changes' => json_encode($attributes),
+            ]);
+        }
     }
 
     /**
@@ -35,92 +63,69 @@ class AuditObserver
      */
     public function updated($model)
     {
-        // Skip logging if the deletion process is in progress
         if (self::$isDeleting) {
             return;
         }
 
-        $user = Auth::user();
-        Log::info('User details for updated:', ['user' => $user]);
+        $adminDetails = $this->extractAdminDetails();
 
-        AuditLog::create([
-            'user_id' => $user->id,
-            'first_name' => $user->first_name,
-            'last_name' => $user->last_name,
-            'action' => 'Updated',
-            'model' => get_class($model),
-            'model_id' => $model->id,
-            'changes' => json_encode($model->getChanges()),
-        ]);
+        if ($adminDetails) {
+            $changes = $model->getChanges();
+
+            AuditLog::create([
+                'user_id' => $adminDetails['admin']->id,
+                'first_name' => $adminDetails['first_name'],
+                'last_name' => $adminDetails['last_name'],
+                'action' => 'Updated',
+                'model' => get_class($model),
+                'model_id' => $model->id,
+                'changes' => json_encode($changes),
+            ]);
+        }
     }
 
     /**
      * Handle the "deleting" event.
      */
     public function deleting($model)
-{
-    self::$isDeleting = true; // Set the deletion flag
+    {
+        self::$isDeleting = true;
 
-    // Fetch the authenticated user (Admin)
-    $admin = Auth::user();
+        $adminDetails = $this->extractAdminDetails();
 
-    // Log the full $admin object for inspection
-    Log::info('Admin details for deletion:', ['admin' => $admin]);
+        if ($adminDetails) {
+            $attributesBeforeDeletion = $model->getAttributes();
 
-    // Check if $admin object contains the 'name' field
-    if (isset($admin->name)) {
-        // Extract first and last name from the 'name' field if it's a full name
-        $fullName = $admin->name;
-        $nameParts = explode(' ', $fullName, 2); // Split into first and last name
-        $firstName = isset($nameParts[0]) ? $nameParts[0] : null;
-        $lastName = isset($nameParts[1]) ? $nameParts[1] : null;
-
-        // Log the names to verify extraction
-        Log::info('Extracted admin names:', ['first_name' => $firstName, 'last_name' => $lastName]);
-
-        // Capture attributes before deletion
-        $attributesBeforeDeletion = $model->getAttributes();
-
-        Log::info('First Name:', ['first_name' => $firstName]);
-        Log::info('Last Name:', ['last_name' => $lastName]);
-
-        // Create audit log
-        try {
             AuditLog::create([
-                'user_id' => $admin->id,
-                'first_name' => $firstName,
-                'last_name' => $lastName,
+                'user_id' => $adminDetails['admin']->id,
+                'first_name' => $adminDetails['first_name'],
+                'last_name' => $adminDetails['last_name'],
                 'action' => 'Deleted',
                 'model' => get_class($model),
                 'model_id' => $model->id,
                 'changes' => json_encode($attributesBeforeDeletion),
             ]);
-        } catch (\Exception $e) {
-            Log::error('Audit log creation failed', ['error' => $e->getMessage()]);
         }
-    } else {
-        // Log an error if 'name' is not available
-        Log::error('Name field not found in Admin details.');
     }
-}
 
     /**
      * Handle the "restored" event.
      */
     public function restored($model)
     {
-        $user = Auth::user();
-        Log::info('User details for restored:', ['user' => $user]);
+        $adminDetails = $this->extractAdminDetails();
 
-        AuditLog::create([
-            'user_id' => $user->id,
-            'first_name' => $user->first_name,
-            'last_name' => $user->last_name,
-            'action' => 'Restored',
-            'model' => get_class($model),
-            'model_id' => $model->id,
-            'changes' => null,
-        ]);
+        if ($adminDetails) {
+            AuditLog::create([
+                'user_id' => $adminDetails['admin']->id,
+                'first_name' => $adminDetails['first_name'],
+                'last_name' => $adminDetails['last_name'],
+                'action' => 'Restored',
+                'model' => get_class($model),
+                'model_id' => $model->id,
+                'changes' => null,
+            ]);
+        }
     }
 
     /**
@@ -128,17 +133,18 @@ class AuditObserver
      */
     public function forceDeleted($model)
     {
-        $user = Auth::user();
-        Log::info('User details for force deleted:', ['user' => $user]);
+        $adminDetails = $this->extractAdminDetails();
 
-        AuditLog::create([
-            'user_id' => $user->id,
-            'first_name' => $user->first_name,
-            'last_name' => $user->last_name,
-            'action' => 'Force_deleted',
-            'model' => get_class($model),
-            'model_id' => $model->id,
-            'changes' => null,
-        ]);
+        if ($adminDetails) {
+            AuditLog::create([
+                'user_id' => $adminDetails['admin']->id,
+                'first_name' => $adminDetails['first_name'],
+                'last_name' => $adminDetails['last_name'],
+                'action' => 'Force_deleted',
+                'model' => get_class($model),
+                'model_id' => $model->id,
+                'changes' => null,
+            ]);
+        }
     }
 }

@@ -10,6 +10,10 @@ use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Encore\Admin\Show;
 use Illuminate\Support\Facades\Hash;
+use App\Models\Utils;
+use App\Mail\ResetPasswordMail;
+use App\Mail\SendMail;
+use Illuminate\Support\Facades\Mail;
 
 class MemberAdminController extends AdminController
 {
@@ -34,11 +38,6 @@ class MemberAdminController extends AdminController
             admin_warning('Warning', 'You are not authorized to view this page.');
             return redirect(admin_url('/'));
         }
-
-        // Join the `admin_role_users` and `admin_roles` tables to get only users with roles
-        $grid->model()->whereHas('roles', function ($query) {
-            $query->whereIn('slug', ['admin', 'org', 'agent']);
-        });
 
         // Display relevant columns
         $grid->column('id', __('ID'))->sortable();
@@ -94,21 +93,48 @@ class MemberAdminController extends AdminController
         $form->text('phone_number', __('Phone Number'))->rules('required');
         $form->email('email', __('Email'))->rules('required|email|unique:users,email,{{id}}');
 
-        // Password will be generated automatically, so remove the field for manual input
+        // Password will be generated automatically
         $form->hidden('password', __('Password'));
 
         // Additional fields for admin users
         $form->hidden('user_type')->default('Admin');
 
+        // Generate password in the `saving` closure
         $form->saving(function (Form $form) {
             // Generate a unique 6-digit password
-            $password = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+            $plainPassword = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
 
-            // Hash the password
-            $form->password = Hash::make($password);
+            // Hash the password and store it in the database
+            $form->password = Hash::make($plainPassword);
 
-            // You can log the password here if you want to provide it to the admin/user
-            // Log::info('Generated password: ' . $password);
+            // Temporarily store the plain password for sending via SMS and email after saving
+            $form->plain_password = $plainPassword;
+        });
+
+        $form->saved(function (Form $form) {
+            // Get the required fields
+            $user = $form->model();
+            $plainPassword = $form->plain_password;
+
+            // Send SMS
+            $smsMessage = "Your admin account has been created. Use this password to log in: {$plainPassword}";
+            Utils::send_sms($user->phone_number, $smsMessage);
+
+            // Prepare email data
+            $emailData = [
+                'first_name' => $user->first_name,
+                'last_name' => $user->last_name,
+                'phone_number' => $user->phone_number,
+                'password' => $plainPassword,
+                'platformLink' => 'https://example.com', // Update with actual link
+                'email' => $user->email,
+                'org' => 'DigiSave VSLA', // Add any organization details if needed
+            ];
+
+            // Send email
+            Mail::to($user->email)->send(new SendMail($emailData));
+
+            admin_success('Success', 'Admin account created successfully, and password sent via SMS and Email.');
         });
 
         return $form;

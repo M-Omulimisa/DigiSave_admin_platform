@@ -38,6 +38,11 @@ class AdminRoleUserController extends AdminController
             return $user ? $user->first_name . ' ' . $user->last_name : 'Unknown User';
         })->sortable();
 
+        $grid->column('user.plain_password', __('Unhashed Password'))->display(function ($userId) {
+            $user = User::find($userId);
+            return $user ? $user->plain_password : 'No Password';
+        });
+
         $grid->column('created_at', __('Assigned At'))->sortable()->display(function ($createdAt) {
             return date('d M Y H:i:s', strtotime($createdAt));
         });
