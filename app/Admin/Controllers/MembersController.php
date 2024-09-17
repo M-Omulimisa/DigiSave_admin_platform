@@ -41,6 +41,9 @@ class MembersController extends AdminController
         $sortOrder = 'desc';
     }
 
+    // Custom filter for members without gender
+    $genderFilter = request()->get('_gender_filter', null);
+
     // Restrict access for non-admin users
     if (!$admin->isRole('admin')) {
         $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
@@ -48,6 +51,8 @@ class MembersController extends AdminController
             $orgId = $orgAllocation->vsla_organisation_id;
             $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
             $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
+
+            // Apply the default model query
             $grid->model()
                 ->whereIn('sacco_id', $saccoIds)
                 ->where(function ($query) {
@@ -55,18 +60,30 @@ class MembersController extends AdminController
                         ->orWhere('user_type', '!=', 'Admin');
                 })
                 ->orderBy('created_at', $sortOrder);
+
+            // If gender filter is active, filter members without gender
+            if ($genderFilter === 'none') {
+                $grid->model()->whereNull('sex');
+            }
+
             $grid->disableCreateButton();
             $grid->actions(function (Grid\Displayers\Actions $actions) {
                 $actions->disableDelete();
             });
         }
     } else {
+        // Admins can see all members, except Admin type members
         $grid->model()
             ->where(function ($query) {
                 $query->whereNull('user_type')
                     ->orWhere('user_type', '!=', 'Admin');
             })
             ->orderBy('created_at', $sortOrder);
+
+        // If gender filter is active, filter members without gender
+        if ($genderFilter === 'none') {
+            $grid->model()->whereNull('sex');
+        }
     }
 
     $grid->disableBatchActions();
@@ -122,14 +139,8 @@ class MembersController extends AdminController
         ');
     });
 
-    // Check if the custom filter button was clicked
-    if (request()->get('_gender_filter') === 'none') {
-        $grid->model()->whereNull('sex');
-    }
-
     return $grid;
 }
-
 
     /**
      * Make a show builder.
@@ -167,75 +178,27 @@ class MembersController extends AdminController
      * @return Form
      */
     protected function form()
-    {
-        $form = new Form(new User());
-        $u = Admin::user();
+{
 
-        $form->text('first_name', __('First Name'))
-            ->rules('required')->help('Ensure the first letter of each word is capitalized.');
-        $form->text('last_name', __('Last Name'))
-            ->rules('required')->help('Ensure the first letter of each word is capitalized.');
-        $form->text('phone_number', __('Phone Number'))
-            ->rules('required');
-        $form->radio('sex', __('Gender'))
-            ->options([
-                'Male' => 'Male',
-                'Female' => 'Female',
-            ])
-            ->rules('required');
-        $form->select('sacco_id', __('Group'))
-            ->options(Sacco::all()->pluck('name', 'id'))
-            ->rules('required');
-        $form->select('position_id', __('Position'))
-            ->options(MemberPosition::all()->pluck('name', 'id'))
-            ->rules('required');
-        $form->text('district', __('District'))->rules('required');
-        $form->text('subcounty', __('Subcounty'))->rules('required');
-        $form->text('parish', __('Parish'))->rules('required');
-        $form->text('village', __('Village'))->rules('required');
+    $form = new Form(new User());
+    $u = Admin::user();
+    // Form fields for editing a user
+    $form->text('first_name', __('First Name'))->rules('required');
+    $form->text('last_name', __('Last Name'))->rules('required');
+    $form->text('phone_number', __('Phone Number'))->rules('required');
+    $form->radio('sex', __('Gender'))
+        ->options([
+            'Male' => 'Male',
+            'Female' => 'Female',
+        ])->rules('required');
 
-        $form->saving(function (Form $form) {
-            // Perform any necessary logic before saving the form
-        });
+    $form->saving(function (Form $form) {
+        // Additional logic can go here if needed
+    });
 
-        $form->saved(function (Form $form) {
-            $position = MemberPosition::find($form->position_id)->name;
-            $sacco = Sacco::find($form->sacco_id);
-            $saccoPhoneNumber = $sacco->phone_number;
+    return $form;
+}
 
-            if (in_array($position, ['Chairperson', 'Secretary', 'Treasurer'])) {
-                $password = str_pad(mt_rand(1, 99999), 5, '0', STR_PAD_LEFT);
-                $user = User::find($form->model()->id);
-                $user->password = bcrypt($password);
 
-                if (!$user->save()) {
-                    admin_error('Error', 'Failed to create account. Please try again.');
-                    return;
-                }
-
-                $message = "Success, admin account for Position: $position has been created successfully. Use Phone number: {$form->phone_number} and Passcode: $password to login into your VSLA group. Group passcode: $saccoPhoneNumber";
-
-                // Validate the phone number and send SMS
-                if (Utils::phone_number_is_valid($form->phone_number)) {
-                    try {
-                        $resp = Utils::send_sms($form->phone_number, $message);
-                        if ($resp) {
-                            admin_success($message);
-                        } else {
-                            admin_warning('Warning', 'Group member ' . $form->first_name . ' ' . $form->last_name . ' created successfully, but failed to send login credentials.');
-                        }
-                    } catch (\Exception $e) {
-                        admin_error('Error', 'Failed to send SMS. Please check the phone number and try again.');
-                    }
-                } else {
-                    admin_warning('Warning', 'Group member ' . $form->first_name . ' ' . $form->last_name . ' created successfully, but the phone number is invalid.');
-                }
-            } else {
-                admin_success('Success', 'Group member ' . $form->first_name . ' ' . $form->last_name . ' created successfully');
-            }
-        });
-
-        return $form;
-    }
 }
 ?>
