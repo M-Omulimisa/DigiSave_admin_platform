@@ -29,111 +29,31 @@ class Sacco extends Model
         return $this->hasMany(Transaction::class);
     }
 
-
-     // Calculate the number of loans for male users
-//      public function getLoansToMalesAttribute()
-// {
-//     return Transaction::where('type', 'LOAN')
-//         ->whereHas('user', function ($query) {
-//             $query->where('sex', 'male');
-//         })
-//         ->where('source_user_id', $this->id)
-//         ->count();
-// }
-
-// public function getLoanSumForMalesAttribute()
-// {
-//     return Transaction::where('type', 'LOAN')
-//         ->whereHas('user', function ($query) {
-//             $query->where('sex', 'male');
-//         })
-//         ->where('source_user_id', $this->id)
-//         ->sum('amount');
-// }
-
-// public function getLoansToFemalesAttribute()
-// {
-//     return Transaction::where('type', 'LOAN')
-//         ->whereHas('user', function ($query) {
-//             $query->where('sex', 'female');
-//         })
-//         ->where('source_user_id', $this->id)
-//         ->count();
-// }
-
-// public function getLoanSumForFemalesAttribute()
-// {
-//     return Transaction::where('type', 'LOAN')
-//         ->whereHas('user', function ($query) {
-//             $query->where('sex', 'female');
-//         })
-//         ->where('source_user_id', $this->id)
-//         ->sum('amount');
-// }
-
-// public function getLoansToYouthAttribute()
-// {
-//     return Transaction::where('type', 'LOAN')
-//         ->whereHas('user', function ($query) {
-//             $query->whereRaw('TIMESTAMPDIFF(YEAR, dob, CURDATE()) < 30');
-//         })
-//         ->where('source_user_id', $this->id) // Ensure the transaction source is the current user
-//         ->count();
-// }
-
-// public function getLoanSumForYouthAttribute()
-// {
-//     return Transaction::where('type', 'LOAN')
-//         ->whereHas('user', function ($query) {
-//             $query->whereRaw('TIMESTAMPDIFF(YEAR, dob, CURDATE()) < 30');
-//         })
-//         ->where('source_user_id', $this->id) // Ensure the transaction source is the current user
-//         ->sum('amount'); // Calculate the sum of the loan amounts
-// }
-
-
-// public function getTotalLoansAttribute()
-// {
-//     return $this->transactions()
-//         ->where('type', 'LOAN')
-//         ->whereHas('user', function ($query) {
-//             $query->where('user_type', 'admin'); // Filter for users with user_type 'admin'
-//         })
-//         ->count();
-// }
-
-
-// public function getTotalPrincipalAttribute()
-// {
-//     return $this->transactions()
-//         ->where('type', 'LOAN')
-//         ->whereHas('user', function ($query) {
-//             $query->where('user_type', 'admin'); // Filter for users with user_type 'admin'
-//         })
-//         ->sum('amount');
-// }
-
-
-// public function getTotalInterestAttribute()
-// {
-//     return $this->transactions()
-//         ->where('type', 'LOAN_INTEREST')
-//         ->whereHas('user', function ($query) {
-//             $query->where('user_type', 'admin'); // Filter for users with user_type 'admin'
-//         })
-//         ->sum('amount');
-// }
-
-
     public static function boot()
     {
         parent::boot();
 
         self::deleting(function ($model) {
+            // Check if there are users associated with this Sacco
+            $users = User::where('sacco_id', $model->id)->get();
+
+            if ($users->isNotEmpty()) {
+                // If there are users associated with the Sacco, prevent deletion
+                throw new \Exception("Cannot delete Group as there are associated members. Please remove or reassign members first.");
+            }
+
+            // Soft delete any related cycles, transactions, etc.
             $model->status = 'deleted';
             $model->save();
+
             return false; // Prevent actual deletion
         });
+
+        // self::deleting(function ($model) {
+        //     $model->status = 'deleted';
+        //     $model->save();
+        //     return false; // Prevent actual deletion
+        // });
 
         self::created(function ($m) {
             $u = User::find($m->administrator_id);
