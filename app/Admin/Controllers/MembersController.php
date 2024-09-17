@@ -47,13 +47,7 @@ class MembersController extends AdminController
     // Start building the model query
     $grid->model()->orderBy('created_at', $sortOrder);
 
-    // Exclude Admin type users
-    $grid->model()->where(function ($query) {
-        $query->whereNull('user_type')
-            ->orWhere('user_type', '!=', 'Admin');
-    });
-
-    // Apply sacco_id condition for non-admin users
+    // Apply filters for non-admin users
     if (!$admin->isRole('admin')) {
         $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
         if ($orgAllocation) {
@@ -61,6 +55,7 @@ class MembersController extends AdminController
             $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
             $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
 
+            // Restrict to specific sacco_ids
             $grid->model()->whereIn('sacco_id', $saccoIds);
 
             $grid->disableCreateButton();
@@ -70,12 +65,22 @@ class MembersController extends AdminController
         }
     }
 
-    // Apply gender filter if active
+    // Exclude Admin type users (this will apply regardless of role or gender filter)
+    $grid->model()->where(function ($query) {
+        $query->whereNull('user_type')
+              ->orWhere('user_type', '!=', 'Admin');
+    });
+
+    // If gender filter is active, filter members without gender (and exclude Admin members)
     if ($genderFilter === 'none') {
-        $grid->model()->whereNull('sex');
+        $grid->model()->whereNull('sex')
+            ->where(function ($query) {
+                $query->whereNull('user_type')
+                      ->orWhere('user_type', '!=', 'Admin');
+            });
     }
 
-    // Rest of your grid columns
+    // Grid configuration
     $grid->disableBatchActions();
     $grid->quickSearch('first_name', 'last_name', 'email', 'phone_number')->placeholder('Search by name, email or phone number');
 
@@ -87,6 +92,7 @@ class MembersController extends AdminController
     });
     $grid->column('sex', __('Gender'))->sortable();
     $grid->column('phone_number', __('Phone Number'))->display(function ($phoneNumber) {
+        // Check if the phone number is valid (Ugandan phone number format example)
         $isValidPhoneNumber = preg_match('/^(\+256|0)?[3-9][0-9]{8}$/', $phoneNumber);
         return $isValidPhoneNumber ? $phoneNumber : '';
     });
@@ -98,14 +104,13 @@ class MembersController extends AdminController
     // Adding search filters
     $grid->filter(function ($filter) {
         $filter->disableIdFilter();
-
         $filter->like('first_name', 'First Name');
         $filter->like('last_name', 'Last Name');
         $filter->like('email', 'Email');
         $filter->like('phone_number', 'Phone Number');
     });
 
-    // Adding custom tools
+    // Adding a custom button for filtering members without a gender
     $grid->tools(function ($tools) {
         // Add a custom button to filter members with no gender
         $tools->append('
@@ -130,8 +135,6 @@ class MembersController extends AdminController
 
     return $grid;
 }
-
-
 
     /**
      * Make a show builder.
