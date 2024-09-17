@@ -52,7 +52,7 @@ class MembersController extends AdminController
             $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
             $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
 
-            // Apply the default model query
+            // Apply the default model query for non-admin users
             $grid->model()
                 ->whereIn('sacco_id', $saccoIds)
                 ->where(function ($query) {
@@ -61,7 +61,7 @@ class MembersController extends AdminController
                 })
                 ->orderBy('created_at', $sortOrder);
 
-            // If gender filter is active, filter members without gender
+            // Apply gender filter
             if ($genderFilter === 'none') {
                 $grid->model()->whereNull('sex');
             }
@@ -80,7 +80,7 @@ class MembersController extends AdminController
             })
             ->orderBy('created_at', $sortOrder);
 
-        // If gender filter is active, filter members without gender
+        // Apply gender filter for admin users
         if ($genderFilter === 'none') {
             $grid->model()->whereNull('sex');
         }
@@ -141,6 +141,7 @@ class MembersController extends AdminController
 
     return $grid;
 }
+
 
     /**
      * Make a show builder.
