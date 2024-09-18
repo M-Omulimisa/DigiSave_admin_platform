@@ -17,8 +17,6 @@ class AdminRoleUser extends Model
         'updated_at'
     ];
 
-    // Define any relationships here (assuming there are role and user models)
-    
     /**
      * Get the role associated with the AdminRoleUser
      */
