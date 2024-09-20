@@ -51,7 +51,7 @@
         <p>We are excited to welcome you to DigiSave, your new platform for managing and digitizing your savings and loan group transactions!</p>
         <p>Here are your account credentials:</p>
         <ul>
-            <li><strong>Email:</strong> {{$data['phone_number']}}</li>
+            <li><strong>Username/Email:</strong> {{$data['phone_number']}}</li>
             <li><strong>Password:</strong> {{$data['password']}}</li>
         </ul>
         <p>To get started, please follow these steps:</p>
@@ -62,7 +62,7 @@
         </ol>
         <p>If you have any questions or need assistance, please don't hesitate to reach out to our support team at <a href="mailto:info@m-omulimisa.com">info@m-omulimisa.com</a> or call us at 0200 904415.</p>
         <p>We are here to support you as you use DigiSave to manage your financial records more efficiently!</p>
-        <a href="{{$data['platformLink']}}" class="button">Access DigiSave</a>
+        <a href="{{$data['platformLink']}}" class="button" style="color: #ffffff !important;">Access DigiSave</a>
         <p>Best regards,<br>The DigiSave Team</p>
     </div>
     <div class="footer">
