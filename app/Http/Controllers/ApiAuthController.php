@@ -1104,6 +1104,7 @@ class ApiAuthController extends Controller
         $acc->location_lat = $request->location_lat;
         $acc->location_long = $request->location_long;
         $acc->position_id = $request->position_id;
+        $acc->refugee_status = $request->refugee_status;
         $acc->district_id = $request->district_id;
         $acc->parish_id = $request->parish_id;
         $acc->village_id = $request->village_id;

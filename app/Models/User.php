@@ -22,7 +22,8 @@ class User extends Authenticatable implements JWTSubject
 
     protected $fillable = [
         'sacco_id',
-        'position_id'
+        'position_id',
+        'refugee_status'
     ];
 
     // In User model
