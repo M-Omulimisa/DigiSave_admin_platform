@@ -188,7 +188,7 @@ class AssignOrganisationAdminController extends AdminController
                 $email_info = [
                     "first_name" => $adminUser->first_name,
                     "last_name" => $adminUser->last_name,
-                    "phone_number" => $adminUser->phone_number,
+                    "phone_number" => $adminUser->email,
                     "password" => $password,
                     "platformLink" => $platformLink,
                     "org" => $org->name,

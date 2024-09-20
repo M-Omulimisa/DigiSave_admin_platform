@@ -3,150 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <title>Assignment Confirmation</title>
+    <title>Welcome to DigiSave – Your Account is Ready!</title>
     <style>
-        /* Reset CSS */
-        body, h1, h2, h3, h4, h5, h6, p, ul, ol, li, dl, dt, dd, div, a, button {
-            margin: 0;
-            padding: 0;
-            border: 0;
-        }
-
-        /* Styles for overall layout */
         body {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            font-size: 16px;
+            font-family: Arial, sans-serif;
             line-height: 1.6;
-            background: #f9f9f9;
-            margin: 0;
-            padding: 0;
-        }
-
-        .container {
+            color: #333;
             max-width: 600px;
             margin: 0 auto;
             padding: 20px;
         }
-
         .header {
+            background-color: #4CAF50;
+            color: white;
             text-align: center;
-            margin-bottom: 30px;
+            padding: 20px;
+            border-radius: 5px 5px 0 0;
         }
-
-        .logo {
-            max-width: 100px;
-            height: auto;
-        }
-
         .content {
-            background-color: #ffffff;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            margin-bottom: 30px;
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 0 0 5px 5px;
         }
-
-        .content h2 {
-            font-size: 24px;
-            margin-bottom: 20px;
-            color: #333;
-            text-align: center;
-        }
-
-        .content p {
-            margin-bottom: 20px;
-            color: #666;
-            text-align: justify;
-        }
-
-        .content ul {
-            margin-bottom: 20px;
-            color: #666;
-            text-align: left;
-            padding-left: 20px;
-        }
-
-        .content ul li {
-            list-style: none;
-            margin-bottom: 10px;
-        }
-
-        .content a {
-            color: #0DFF00;
-            text-decoration: none;
-        }
-
-        .content a:hover {
-            text-decoration: underline;
-        }
-
-        .footer {
-            text-align: center;
-            color: #666;
-            font-size: 14px;
-        }
-
-        /* Button Styles */
         .button {
             display: inline-block;
-            background-color: #0DC603;
-            border: none;
-            border-radius: 3px;
-            color: #ffffff;
-            cursor: pointer;
-            font-size: 15px;
-            font-weight: bold;
-            padding: 15px 25px;
-            text-align: center;
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
             text-decoration: none;
-            text-transform: none;
-            transition: background-color 0.3s ease;
+            border-radius: 5px;
+            margin-top: 20px;
         }
-
-        .button:hover {
-            background-color: #0ac600;
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.8em;
+            color: #777;
         }
-
-        .btn.btn-primary {
-    background-color: darkgreen;
-    color: white;
-    text-decoration: none; /* Remove underline */
-}
-
-.btn.btn-primary:hover {
-    text-decoration: none; /* Remove underline on hover */
-}
-
-
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="content">
-            <div class="header">
-                <img class="logo" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQzovy9F3InvItaWs_LOY1xux47vk6FPs8sSEs6yq772A&s" alt="Logo">
-            </div>
-            <h2>DigiSave VSLA</h2>
-            <p>Hello {{$data['first_name']}} {{$data['last_name']}}!</p>
-            <p>You have successfully been registered as an administrator for {{$data['org']}} on DigiSave VSLA administrator platform. You can now log in to our platform and start exploring.</p>
-            <p>Your login credentials are:</p>
-            <ul>
-                <li><strong>Username:</strong> {{$data['phone_number']}}</li>
-                <li><strong>Password:</strong> {{$data['password']}}</li>
-            </ul>
-            <p>Click here to access the platform.</p>
-            <a type="button" href="{{$data['platformLink']}}" class="btn btn-primary">Login to Your Account</a>
-            {{-- <div class="btn" href="{{$data['platformLink']}}">Login to Your Account</div> --}}
-            <div style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;line-height:20px;text-align:left;color:#525252;">
-                Best regards,<br>M-Omulimisa Support Team<br>
-            </div>
-            <p><i>This is an automated email. Please do not reply to this email.</i></p>
-        </div>
-        <div class="footer">
-            <p>If you have any questions, please do not hesitate to contact us through direct message in the App or email to <a href="mailto:{{$data['email']}}">{{$data['email']}}</a>.</p>
-            <p>© DigiSave VSLA</p>
-        </div>
+    <div class="header">
+        <h1>Welcome to DigiSave!</h1>
+    </div>
+    <div class="content">
+        <p>Dear {{$data['first_name']}} {{$data['last_name']}},</p>
+        <p>We are excited to welcome you to DigiSave, your new platform for managing and digitizing your savings and loan group transactions!</p>
+        <p>Here are your account credentials:</p>
+        <ul>
+            <li><strong>Email:</strong> {{$data['phone_number']}}</li>
+            <li><strong>Password:</strong> {{$data['password']}}</li>
+        </ul>
+        <p>To get started, please follow these steps:</p>
+        <ol>
+            <li><strong>Log In:</strong> Visit <a href="{{$data['platformLink']}}">{{$data['platformLink']}}</a></li>
+            <li><strong>Enter Your Credentials:</strong> Use the provided username and password to log in.</li>
+            <li><strong>Explore DigiSave:</strong> Once you're logged in, you can start managing your VSLA groups, view reports, and monitor group activities with ease.</li>
+        </ol>
+        <p>If you have any questions or need assistance, please don't hesitate to reach out to our support team at <a href="mailto:info@m-omulimisa.com">info@m-omulimisa.com</a> or call us at 0200 904415.</p>
+        <p>We are here to support you as you use DigiSave to manage your financial records more efficiently!</p>
+        <a href="{{$data['platformLink']}}" class="button">Access DigiSave</a>
+        <p>Best regards,<br>The DigiSave Team</p>
+    </div>
+    <div class="footer">
+        <p>Plot 709, Kisaasi-Kyanja Road<br>
+        <a href="http://www.m-omulimisa.com">www.m-omulimisa.com</a></p>
     </div>
 </body>
 </html>
