@@ -1361,14 +1361,38 @@ class ApiResurceController extends Controller
             ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
             ->sum('transactions.amount');
 
+        // Average Monthly Savings by Admin Members
+$adminSavings = $sacco->transactions()
+->join('users', 'transactions.source_user_id', '=', 'users.id')
+->where('transactions.type', 'SHARE') // Only consider savings transactions
+->where('users.user_type', 'Admin') // Only for Admin users
+->selectRaw('SUM(transactions.amount) as total_savings, MONTH(transactions.created_at) as month, YEAR(transactions.created_at) as year')
+->groupBy('month', 'year') // Group by month and year to get monthly savings
+->get();
+
+// Calculate the total number of months where savings were made
+$numberOfMonths = $adminSavings->count();
+
+// Calculate total savings made by admin members
+$totalSavingsByAdmin = $adminSavings->sum('total_savings');
+
+// Calculate the average monthly savings for admin members
+$averageMonthlySavingsByAdmin = $numberOfMonths > 0 ? $totalSavingsByAdmin / $numberOfMonths : 0;
+
+// Format the average monthly savings
+$average_monthly_savings = number_format(abs($averageMonthlySavingsByAdmin), 2, '.', ',');
+
+
         // Average Savings per Member
         $averageSavingsPerMember = $numberOfMembers > 0 ? $totalSavingsBalance / $numberOfMembers : 0;
+
 
         $saccoDetails = [
             "number_of_loans" => $numberOfLoans,
             "total_principal" => number_format(abs($totalPrincipal), 2, '.', ','),
             "total_interest" => number_format(abs($totalInterest), 2, '.', ','),
             "total_loan_repayments" => number_format(abs($totalLoanRepayments), 2, '.', ','),
+            "average_monthly_savings" => $average_monthly_savings,
             "number_of_members" => $numberOfMembers,
             "number_of_men" => $numberOfMen,
             "number_of_women" => $numberOfWomen,
@@ -1403,8 +1427,10 @@ class ApiResurceController extends Controller
         return $this->success($saccoDetails, "Success");
     }
 
-//     public function getSaccoDetailsForUser()
-// {
+
+    //     public function getSaccoDetailsForUser()
+
+    // {
 //     // Get the authenticated user
 //     $u = auth('api')->user();
 //     if ($u == null) {
