@@ -1388,7 +1388,8 @@ class ApiResurceController extends Controller
         $averageSavingsPerMember = $numberOfMembers > 0 ? $totalSavingsBalance / $numberOfMembers : 0;
 
         // Prepare the request data
-$requestData = [
+
+        $requestData = [
     "number_of_loans" => $numberOfLoans,
     "total_principal" => number_format(abs($totalPrincipal), 2, '.', ','),
     "total_interest" => number_format(abs($totalInterest), 2, '.', ','),
@@ -1419,6 +1420,22 @@ $predictionResponse = Http::withHeaders([
     'Content-Type' => 'application/json'
 ])->post('https://vsla-credit-scoring-bde4afgbgyesgheu.canadacentral-01.azurewebsites.net/predict', $requestData);
 
+// Check if the prediction API call was successful
+if ($predictionResponse->successful()) {
+    // Extract the prediction data from the response
+    $predictionData = $predictionResponse->json();
+} else {
+    // Capture the error details
+    $statusCode = $predictionResponse->status();
+    $errorMessage = $predictionResponse->body(); // This will capture the error message or response body
+
+    // Log the error if needed for debugging
+    \Log::error("Prediction API error: Status Code: $statusCode, Message: $errorMessage");
+
+    // Handle the error if the prediction call failed
+    return $this->error("Prediction API call failed. Status Code: $statusCode, Message: $errorMessage");
+};
+
         $saccoDetails = [
             "number_of_loans" => $numberOfLoans,
             "total_principal" => number_format(abs($totalPrincipal), 2, '.', ','),
@@ -1430,7 +1447,7 @@ $predictionResponse = Http::withHeaders([
             "number_of_women" => $numberOfWomen,
             "number_of_youth" => $numberOfYouth,
             "total_meetings" => $totalMeetings,
-            "predictionResponse" => $predictionResponse,
+            "prediction_response" => $predictionData,
             "average_meeting_attendance" => $averageAttendanceRounded,
             "number_of_loans_to_men" => $numberOfLoansToMen,
             "total_disbursed_to_men" => number_format(abs($totalDisbursedToMen), 2, '.', ','),
