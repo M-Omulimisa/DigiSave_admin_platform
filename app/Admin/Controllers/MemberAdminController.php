@@ -44,6 +44,7 @@ class MemberAdminController extends AdminController
         $grid->column('first_name', __('First Name'))->sortable();
         $grid->column('last_name', __('Last Name'))->sortable();
         $grid->column('phone_number', __('Phone Number'))->sortable();
+        $grid->column('email', __('Email Address'))->sortable();
         $grid->column('created_at', __('Created At'))->sortable();
 
         // Add filtering capabilities
