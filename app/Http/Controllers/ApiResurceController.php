@@ -1387,34 +1387,37 @@ class ApiResurceController extends Controller
         // Average Savings per Member
         $averageSavingsPerMember = $numberOfMembers > 0 ? $totalSavingsBalance / $numberOfMembers : 0;
 
-        $requestData = [
-            "number_of_loans" => $numberOfLoans,
-            "total_principal" => number_format(abs($totalPrincipal), 2, '.', ','),
-            "total_interest" => number_format(abs($totalInterest), 2, '.', ','),
-            "total_principal_paid" => "12000",
-            "total_interest_paid" => '1200',
-            "number_of_savings_accounts" => $numberOfSavingsAccounts,
-            "total_savings_balance" => number_format(abs($totalSavingsBalance), 2, '.', ','),
-            "total_principal_outstanding" => "3000.0",
-            "total_interest_outstanding" => "300",
-            "number_of_loans_to_men" => $numberOfLoansToMen,
-            "total_disbursed_to_men" => number_format(abs($totalDisbursedToMen), 2, '.', ','),
-            "total_savings_accounts_for_men" => $savingsAccountsForMen,
-            "number_of_loans_to_women" => $numberOfLoansToWomen,
-            "total_disbursed_to_women" => number_format(abs($totalSavingsBalanceForWomen), 2, '.', ','),
-            "total_savings_accounts_for_women" => $savingsAccountsForWomen,
-            "total_savings_balance_for_women" => number_format(abs($totalSavingsBalanceForWomen), 2, '.', ','),
-            "number_of_loans_to_youth" => $numberOfLoansToYouth,
-            "total_disbursed_to_youth" => number_format(abs($totalDisbursedToYouth), 2, '.', ','),
-            "total_savings_balance_for_youth" =>number_format(abs($totalSavingsBalanceForYouth), 2, '.', ','),
-            "savings_per_member" => number_format(abs($averageSavingsPerMember), 2, '.', ','),
-            "youth_support_rate" => "0.5",
-            "savings_credit_mobilization" => "0.5",
-            "fund_savings_credit_status" => "1"
-            ];
+        // Prepare the request data
+$requestData = [
+    "number_of_loans" => $numberOfLoans,
+    "total_principal" => number_format(abs($totalPrincipal), 2, '.', ','),
+    "total_interest" => number_format(abs($totalInterest), 2, '.', ','),
+    "total_principal_paid" => "12000",
+    "total_interest_paid" => '1200',
+    "number_of_savings_accounts" => $numberOfSavingsAccounts,
+    "total_savings_balance" => number_format(abs($totalSavingsBalance), 2, '.', ','),
+    "total_principal_outstanding" => "3000.0",
+    "total_interest_outstanding" => "300",
+    "number_of_loans_to_men" => $numberOfLoansToMen,
+    "total_disbursed_to_men" => number_format(abs($totalDisbursedToMen), 2, '.', ','),
+    "total_savings_accounts_for_men" => $savingsAccountsForMen,
+    "number_of_loans_to_women" => $numberOfLoansToWomen,
+    "total_disbursed_to_women" => number_format(abs($totalSavingsBalanceForWomen), 2, '.', ','),
+    "total_savings_accounts_for_women" => $savingsAccountsForWomen,
+    "total_savings_balance_for_women" => number_format(abs($totalSavingsBalanceForWomen), 2, '.', ','),
+    "number_of_loans_to_youth" => $numberOfLoansToYouth,
+    "total_disbursed_to_youth" => number_format(abs($totalDisbursedToYouth), 2, '.', ','),
+    "total_savings_balance_for_youth" => number_format(abs($totalSavingsBalanceForYouth), 2, '.', ','),
+    "savings_per_member" => number_format(abs($averageSavingsPerMember), 2, '.', ','),
+    "youth_support_rate" => "0.5",
+    "savings_credit_mobilization" => "0.5",
+    "fund_savings_credit_status" => "1"
+];
 
-        // Make the prediction API call
-        $predictionResponse = Http::post('https://vsla-credit-scoring-bde4afgbgyesgheu.canadacentral-01.azurewebsites.net/predict', $requestData);
+// Make the prediction API call
+$predictionResponse = Http::withHeaders([
+    'Content-Type' => 'application/json'
+])->post('https://vsla-credit-scoring-bde4afgbgyesgheu.canadacentral-01.azurewebsites.net/predict', $requestData);
 
         $saccoDetails = [
             "number_of_loans" => $numberOfLoans,
