@@ -1457,9 +1457,7 @@ $predictionResponse = Http::withHeaders([
             "savings_per_member" => "2000.0"
         ];
 
-        return $this->success($predictionResponse = Http::withHeaders([
-            'Content-Type' => 'application/json'
-        ])->post('https://vsla-credit-scoring-bde4afgbgyesgheu.canadacentral-01.azurewebsites.net/predict', $requestData), "Success");
+        return $this->success($saccoDetails, "Success");
     }
 
 
