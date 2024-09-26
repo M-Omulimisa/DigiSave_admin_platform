@@ -1387,32 +1387,54 @@ class ApiResurceController extends Controller
         // Average Savings per Member
         $averageSavingsPerMember = $numberOfMembers > 0 ? $totalSavingsBalance / $numberOfMembers : 0;
 
+        $maxLoanAmountResponse = Http::withHeaders([
+            'Content-Type' => 'application/json'
+        ])->post('https://vsla-credit-scoring-bde4afgbgyesgheu.canadacentral-01.azurewebsites.net/max_loan_amount', [
+            "Multiplier" => 6,
+            "Average Monthly Savings" => $average_monthly_savings
+        ]);
+
+        if ($maxLoanAmountResponse->successful()) {
+            $maxLoanAmountData = $maxLoanAmountResponse->json();
+            $maxLoanAmount = $maxLoanAmountData['max_loan_amount'];
+        } else {
+            // Capture the error details
+            $statusCode = $maxLoanAmountResponse->status();
+            $errorMessage = $maxLoanAmountResponse->body(); // This will capture the error message or response body
+
+            // Log the error if needed for debugging
+            \Log::error("Max Loan Amount API error: Status Code: $statusCode, Message: $errorMessage");
+
+            // Handle the error if the max loan amount call failed
+            return $this->error("Max Loan Amount API call failed. Status Code: $statusCode, Message: $errorMessage");
+        };
+
         // Prepare the request data
 
         $requestData = [
             "number_of_loans" => $numberOfLoans,
-            "total_principal" => abs($totalPrincipal), // Remove number_format
-            "total_interest" => abs($totalInterest),   // Remove number_format
-            "total_principal_paid" => 12000,           // Keep as a plain number
-            "total_interest_paid" => 1200,             // Keep as a plain number
+            "total_principal" => abs($totalPrincipal),
+            "total_interest" => abs($totalInterest),
+            "total_principal_paid" => 12000,
+            "total_interest_paid" => 1200,
             "number_of_savings_accounts" => $numberOfSavingsAccounts,
-            "total_savings_balance" => abs($totalSavingsBalance), // Remove number_format
-            "total_principal_outstanding" => 3000.0,   // Keep as a plain number
-            "total_interest_outstanding" => 300,       // Keep as a plain number
+            "total_savings_balance" => abs($totalSavingsBalance),
+            "total_principal_outstanding" => 3000.0,
+            "total_interest_outstanding" => 300,
             "number_of_loans_to_men" => $numberOfLoansToMen,
-            "total_disbursed_to_men" => abs($totalDisbursedToMen), // Remove number_format
+            "total_disbursed_to_men" => abs($totalDisbursedToMen),
             "total_savings_accounts_for_men" => $savingsAccountsForMen,
             "number_of_loans_to_women" => $numberOfLoansToWomen,
-            "total_disbursed_to_women" => abs($totalDisbursedToWomen), // Remove number_format
+            "total_disbursed_to_women" => abs($totalDisbursedToWomen),
             "total_savings_accounts_for_women" => $savingsAccountsForWomen,
-            "total_savings_balance_for_women" => abs($totalSavingsBalanceForWomen), // Remove number_format
+            "total_savings_balance_for_women" => abs($totalSavingsBalanceForWomen),
             "number_of_loans_to_youth" => $numberOfLoansToYouth,
-            "total_disbursed_to_youth" => abs($totalDisbursedToYouth), // Remove number_format
-            "total_savings_balance_for_youth" => abs($totalSavingsBalanceForYouth), // Remove number_format
-            "savings_per_member" => abs($averageSavingsPerMember), // Remove number_format
-            "youth_support_rate" => 0.5,                          // Use numeric value
-            "savings_credit_mobilization" => 0.5,                 // Use numeric value
-            "fund_savings_credit_status" => 1                     // Use numeric value
+            "total_disbursed_to_youth" => abs($totalDisbursedToYouth),
+            "total_savings_balance_for_youth" => abs($totalSavingsBalanceForYouth),
+            "savings_per_member" => abs($averageSavingsPerMember),
+            "youth_support_rate" => 0.5,
+            "savings_credit_mobilization" => 0.5,
+            "fund_savings_credit_status" => 1
         ];
 
 // Make the prediction API call
@@ -1447,6 +1469,7 @@ if ($predictionResponse->successful()) {
             "number_of_women" => $numberOfWomen,
             "number_of_youth" => $numberOfYouth,
             "total_meetings" => $totalMeetings,
+            "max_loan_amount" => $maxLoanAmount,
             "prediction_response" => $predictionData,
             "average_meeting_attendance" => $averageAttendanceRounded,
             "number_of_loans_to_men" => $numberOfLoansToMen,
