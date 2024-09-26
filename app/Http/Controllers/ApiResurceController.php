@@ -1390,30 +1390,30 @@ class ApiResurceController extends Controller
         // Prepare the request data
 
         $requestData = [
-    "number_of_loans" => $numberOfLoans,
-    "total_principal" => number_format(abs($totalPrincipal), 2, '.', ','),
-    "total_interest" => number_format(abs($totalInterest), 2, '.', ','),
-    "total_principal_paid" => "12000",
-    "total_interest_paid" => '1200',
-    "number_of_savings_accounts" => $numberOfSavingsAccounts,
-    "total_savings_balance" => number_format(abs($totalSavingsBalance), 2, '.', ','),
-    "total_principal_outstanding" => "3000.0",
-    "total_interest_outstanding" => "300",
-    "number_of_loans_to_men" => $numberOfLoansToMen,
-    "total_disbursed_to_men" => number_format(abs($totalDisbursedToMen), 2, '.', ','),
-    "total_savings_accounts_for_men" => $savingsAccountsForMen,
-    "number_of_loans_to_women" => $numberOfLoansToWomen,
-    "total_disbursed_to_women" => number_format(abs($totalSavingsBalanceForWomen), 2, '.', ','),
-    "total_savings_accounts_for_women" => $savingsAccountsForWomen,
-    "total_savings_balance_for_women" => number_format(abs($totalSavingsBalanceForWomen), 2, '.', ','),
-    "number_of_loans_to_youth" => $numberOfLoansToYouth,
-    "total_disbursed_to_youth" => number_format(abs($totalDisbursedToYouth), 2, '.', ','),
-    "total_savings_balance_for_youth" => number_format(abs($totalSavingsBalanceForYouth), 2, '.', ','),
-    "savings_per_member" => number_format(abs($averageSavingsPerMember), 2, '.', ','),
-    "youth_support_rate" => "0.5",
-    "savings_credit_mobilization" => "0.5",
-    "fund_savings_credit_status" => "1"
-];
+            "number_of_loans" => $numberOfLoans,
+            "total_principal" => abs($totalPrincipal), // Remove number_format
+            "total_interest" => abs($totalInterest),   // Remove number_format
+            "total_principal_paid" => 12000,           // Keep as a plain number
+            "total_interest_paid" => 1200,             // Keep as a plain number
+            "number_of_savings_accounts" => $numberOfSavingsAccounts,
+            "total_savings_balance" => abs($totalSavingsBalance), // Remove number_format
+            "total_principal_outstanding" => 3000.0,   // Keep as a plain number
+            "total_interest_outstanding" => 300,       // Keep as a plain number
+            "number_of_loans_to_men" => $numberOfLoansToMen,
+            "total_disbursed_to_men" => abs($totalDisbursedToMen), // Remove number_format
+            "total_savings_accounts_for_men" => $savingsAccountsForMen,
+            "number_of_loans_to_women" => $numberOfLoansToWomen,
+            "total_disbursed_to_women" => abs($totalDisbursedToWomen), // Remove number_format
+            "total_savings_accounts_for_women" => $savingsAccountsForWomen,
+            "total_savings_balance_for_women" => abs($totalSavingsBalanceForWomen), // Remove number_format
+            "number_of_loans_to_youth" => $numberOfLoansToYouth,
+            "total_disbursed_to_youth" => abs($totalDisbursedToYouth), // Remove number_format
+            "total_savings_balance_for_youth" => abs($totalSavingsBalanceForYouth), // Remove number_format
+            "savings_per_member" => abs($averageSavingsPerMember), // Remove number_format
+            "youth_support_rate" => 0.5,                          // Use numeric value
+            "savings_credit_mobilization" => 0.5,                 // Use numeric value
+            "fund_savings_credit_status" => 1                     // Use numeric value
+        ];
 
 // Make the prediction API call
 $predictionResponse = Http::withHeaders([
