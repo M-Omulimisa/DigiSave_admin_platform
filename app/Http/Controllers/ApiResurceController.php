@@ -1381,33 +1381,38 @@ class ApiResurceController extends Controller
         $averageMonthlySavingsByAdmin = $numberOfMonths > 0 ? $totalSavingsByAdmin / $numberOfMonths : 0;
 
         // Format the average monthly savings
-        $average_monthly_savings = number_format(abs($averageMonthlySavingsByAdmin), 2, '.', ',');
+        // $average_monthly_savings = number_format(abs($averageMonthlySavingsByAdmin), 2, '.', ',');
 
 
         // Average Savings per Member
         $averageSavingsPerMember = $numberOfMembers > 0 ? $totalSavingsBalance / $numberOfMembers : 0;
 
-        $maxLoanAmountResponse = Http::withHeaders([
-            'Content-Type' => 'application/json'
-        ])->post('https://vsla-credit-scoring-bde4afgbgyesgheu.canadacentral-01.azurewebsites.net/max_loan_amount', [
-            "Multiplier" => 6,
-            "Average Monthly Savings" => $average_monthly_savings
-        ]);
+        // Ensure that average_monthly_savings is a numeric value without formatting
+$average_monthly_savings = abs($averageMonthlySavingsByAdmin); // No number_format here
 
-        if ($maxLoanAmountResponse->successful()) {
-            $maxLoanAmountData = $maxLoanAmountResponse->json();
-            $maxLoanAmount = $maxLoanAmountData['max_loan_amount'];
-        } else {
-            // Capture the error details
-            $statusCode = $maxLoanAmountResponse->status();
-            $errorMessage = $maxLoanAmountResponse->body(); // This will capture the error message or response body
+// Fetch the max loan amount based on average monthly savings
+$maxLoanAmountResponse = Http::withHeaders([
+    'Content-Type' => 'application/json'
+])->post('https://vsla-credit-scoring-bde4afgbgyesgheu.canadacentral-01.azurewebsites.net/max_loan_amount', [
+    "Multiplier" => 6,
+    "Average Monthly Savings" => $average_monthly_savings // Pass the plain numeric value
+]);
 
-            // Log the error if needed for debugging
-            \Log::error("Max Loan Amount API error: Status Code: $statusCode, Message: $errorMessage");
+if ($maxLoanAmountResponse->successful()) {
+    $maxLoanAmountData = $maxLoanAmountResponse->json();
+    $maxLoanAmount = $maxLoanAmountData['max_loan_amount'];
+} else {
+    // Capture the error details
+    $statusCode = $maxLoanAmountResponse->status();
+    $errorMessage = $maxLoanAmountResponse->body();
 
-            // Handle the error if the max loan amount call failed
-            return $this->error("Max Loan Amount API call failed. Status Code: $statusCode, Message: $errorMessage");
-        };
+    // Log the error if needed for debugging
+    \Log::error("Max Loan Amount API error: Status Code: $statusCode, Message: $errorMessage");
+
+    // Handle the error if the max loan amount call failed
+    return $this->error("Max Loan Amount API call failed. Status Code: $statusCode, Message: $errorMessage");
+}
+;
 
         // Prepare the request data
 
