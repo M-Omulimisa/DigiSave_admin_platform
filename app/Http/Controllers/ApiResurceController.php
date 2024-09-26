@@ -31,6 +31,7 @@ use App\Models\MemberPosition;
 use App\Models\Organization;
 use App\Models\Parish;
 use App\Models\ServiceProvider;
+use Illuminate\Support\Facades\Http;
 use App\Models\Shareout;
 use App\Models\ShareRecord;
 use App\Models\SocialFund;
@@ -734,66 +735,66 @@ class ApiResurceController extends Controller
     }
 
     public function request_otp_sms(Request $r)
-{
-    $r->validate([
-        'phone_number' => 'nullable', // Change 'required' to 'nullable'
-    ]);
+    {
+        $r->validate([
+            'phone_number' => 'nullable', // Change 'required' to 'nullable'
+        ]);
 
-    // Check if phone number is provided
-    if ($r->has('phone_number') && !empty($r->phone_number)) {
-        $phone_number = Utils::prepare_phone_number($r->phone_number);
-        if (!Utils::phone_number_is_valid($phone_number)) {
-            return $this->error('Invalid phone number.');
+        // Check if phone number is provided
+        if ($r->has('phone_number') && !empty($r->phone_number)) {
+            $phone_number = Utils::prepare_phone_number($r->phone_number);
+            if (!Utils::phone_number_is_valid($phone_number)) {
+                return $this->error('Invalid phone number.');
+            }
+
+            // Find the user based on the provided phone number
+            $acc = User::where(['phone_number' => $phone_number])->first();
+            if ($acc == null) {
+                $acc = User::where(['username' => $phone_number])->first();
+            }
+            if ($acc == null) {
+                return $this->error('Account not found.');
+            }
+
+            // Find the admin of the user's sacco
+            $admin = User::where([
+                'sacco_id' => $acc->sacco_id,
+                'user_type' => 'Admin'
+            ])->first();
+
+            // If no admin is found, return an error
+            if ($admin == null) {
+                return $this->error('Password reset failed');
+            }
+
+            // Use the admin's phone number as the OTP
+            $otp = $admin->phone_number;
+
+            // Attempt to send OTP
+            $resp = null;
+            try {
+                $resp = Utils::send_sms($phone_number, $otp . ' is your Digisave OTP.');
+            } catch (Exception $e) {
+                // Log the error, but proceed with the response
+                Log::error('Failed to send OTP because ' . $e->getMessage());
+            }
+
+            // Update user's password with OTP hash
+            $acc->password = password_hash($otp, PASSWORD_DEFAULT);
+            $acc->save();
+            $message = "OTP sent successfully. $resp";
+
+            // Return success response with OTP
+            return $this->success(
+                $otp . "",
+                $message,
+                200
+            );
+        } else {
+            // If phone number is not provided, you may return a message or handle it according to your requirement
+            return $this->error('Phone number is not provided.');
         }
-
-        // Find the user based on the provided phone number
-        $acc = User::where(['phone_number' => $phone_number])->first();
-        if ($acc == null) {
-            $acc = User::where(['username' => $phone_number])->first();
-        }
-        if ($acc == null) {
-            return $this->error('Account not found.');
-        }
-
-        // Find the admin of the user's sacco
-        $admin = User::where([
-            'sacco_id' => $acc->sacco_id,
-            'user_type' => 'Admin'
-        ])->first();
-
-        // If no admin is found, return an error
-        if ($admin == null) {
-            return $this->error('Password reset failed');
-        }
-
-        // Use the admin's phone number as the OTP
-        $otp = $admin->phone_number;
-
-        // Attempt to send OTP
-        $resp = null;
-        try {
-            $resp = Utils::send_sms($phone_number, $otp . ' is your Digisave OTP.');
-        } catch (Exception $e) {
-            // Log the error, but proceed with the response
-            Log::error('Failed to send OTP because ' . $e->getMessage());
-        }
-
-        // Update user's password with OTP hash
-        $acc->password = password_hash($otp, PASSWORD_DEFAULT);
-        $acc->save();
-        $message = "OTP sent successfully. $resp";
-
-        // Return success response with OTP
-        return $this->success(
-            $otp . "",
-            $message,
-            200
-        );
-    } else {
-        // If phone number is not provided, you may return a message or handle it according to your requirement
-        return $this->error('Phone number is not provided.');
     }
-}
 
 
     // public function request_otp_sms(Request $r)
@@ -1163,32 +1164,32 @@ class ApiResurceController extends Controller
     }
 
     public function getSaccoDetailsForUser()
-{
-    // Get the authenticated user
-    $u = auth('api')->user();
-    if ($u == null) {
-        return $this->error('User not found.');
-    }
+    {
+        // Get the authenticated user
+        $u = auth('api')->user();
+        if ($u == null) {
+            return $this->error('User not found.');
+        }
 
-    // Find the Sacco associated with the user
-    $sacco = Sacco::find($u->sacco_id);
-    if ($sacco == null) {
-        return $this->error('Sacco not found.');
-    }
+        // Find the Sacco associated with the user
+        $sacco = Sacco::find($u->sacco_id);
+        if ($sacco == null) {
+            return $this->error('Sacco not found.');
+        }
 
-    // Fetch the active cycle associated with the Sacco
-    $activeCycle = $sacco->activeCycle;
-    if ($activeCycle == null) {
-        return $this->error('No active cycle found.');
-    }
+        // Fetch the active cycle associated with the Sacco
+        $activeCycle = $sacco->activeCycle;
+        if ($activeCycle == null) {
+            return $this->error('No active cycle found.');
+        }
 
-    // Total Group Members
-    $numberOfMembers = User::where('sacco_id', $sacco->id)
-        ->where(function ($query) {
-            $query->whereNull('user_type')
-                ->orWhere('user_type', '<>', 'Admin');
-        })
-        ->count();
+        // Total Group Members
+        $numberOfMembers = User::where('sacco_id', $sacco->id)
+            ->where(function ($query) {
+                $query->whereNull('user_type')
+                    ->orWhere('user_type', '<>', 'Admin');
+            })
+            ->count();
 
         // Number of Male Members
         $numberOfMen = User::where('sacco_id', $sacco->id)
@@ -1362,30 +1363,58 @@ class ApiResurceController extends Controller
             ->sum('transactions.amount');
 
         // Average Monthly Savings by Admin Members
-$adminSavings = $sacco->transactions()
-->join('users', 'transactions.source_user_id', '=', 'users.id')
-->where('transactions.type', 'SHARE') // Only consider savings transactions
-->where('users.user_type', 'Admin') // Only for Admin users
-->selectRaw('SUM(transactions.amount) as total_savings, MONTH(transactions.created_at) as month, YEAR(transactions.created_at) as year')
-->groupBy('month', 'year') // Group by month and year to get monthly savings
-->get();
+        $adminSavings = $sacco->transactions()
+            ->join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'SHARE') // Only consider savings transactions
+            ->where('users.user_type', 'Admin') // Only for Admin users
+            ->selectRaw('SUM(transactions.amount) as total_savings, MONTH(transactions.created_at) as month, YEAR(transactions.created_at) as year')
+            ->groupBy('month', 'year') // Group by month and year to get monthly savings
+            ->get();
 
-// Calculate the total number of months where savings were made
-$numberOfMonths = $adminSavings->count();
+        // Calculate the total number of months where savings were made
+        $numberOfMonths = $adminSavings->count();
 
-// Calculate total savings made by admin members
-$totalSavingsByAdmin = $adminSavings->sum('total_savings');
+        // Calculate total savings made by admin members
+        $totalSavingsByAdmin = $adminSavings->sum('total_savings');
 
-// Calculate the average monthly savings for admin members
-$averageMonthlySavingsByAdmin = $numberOfMonths > 0 ? $totalSavingsByAdmin / $numberOfMonths : 0;
+        // Calculate the average monthly savings for admin members
+        $averageMonthlySavingsByAdmin = $numberOfMonths > 0 ? $totalSavingsByAdmin / $numberOfMonths : 0;
 
-// Format the average monthly savings
-$average_monthly_savings = number_format(abs($averageMonthlySavingsByAdmin), 2, '.', ',');
+        // Format the average monthly savings
+        $average_monthly_savings = number_format(abs($averageMonthlySavingsByAdmin), 2, '.', ',');
 
 
         // Average Savings per Member
         $averageSavingsPerMember = $numberOfMembers > 0 ? $totalSavingsBalance / $numberOfMembers : 0;
 
+        $requestData = [
+            "number_of_loans" => $numberOfLoans,
+            "total_principal" => number_format(abs($totalPrincipal), 2, '.', ','),
+            "total_interest" => number_format(abs($totalInterest), 2, '.', ','),
+            "total_principal_paid" => "12000",
+            "total_interest_paid" => '1200',
+            "number_of_savings_accounts" => $numberOfSavingsAccounts,
+            "total_savings_balance" => number_format(abs($totalSavingsBalance), 2, '.', ','),
+            "total_principal_outstanding" => "3000.0",
+            "total_interest_outstanding" => "300",
+            "number_of_loans_to_men" => $numberOfLoansToMen,
+            "total_disbursed_to_men" => number_format(abs($totalDisbursedToMen), 2, '.', ','),
+            "total_savings_accounts_for_men" => $savingsAccountsForMen,
+            "number_of_loans_to_women" => $numberOfLoansToWomen,
+            "total_disbursed_to_women" => number_format(abs($totalSavingsBalanceForWomen), 2, '.', ','),
+            "total_savings_accounts_for_women" => $savingsAccountsForWomen,
+            "total_savings_balance_for_women" => number_format(abs($totalSavingsBalanceForWomen), 2, '.', ','),
+            "number_of_loans_to_youth" => $numberOfLoansToYouth,
+            "total_disbursed_to_youth" => number_format(abs($totalDisbursedToYouth), 2, '.', ','),
+            "total_savings_balance_for_youth" =>number_format(abs($totalSavingsBalanceForYouth), 2, '.', ','),
+            "savings_per_member" => number_format(abs($averageSavingsPerMember), 2, '.', ','),
+            "youth_support_rate" => "0.5",
+            "savings_credit_mobilization" => "0.5",
+            "fund_savings_credit_status" => "1"
+            ];
+
+        // Make the prediction API call
+        $predictionResponse = Http::post('https://vsla-credit-scoring-bde4afgbgyesgheu.canadacentral-01.azurewebsites.net/predict', $requestData);
 
         $saccoDetails = [
             "number_of_loans" => $numberOfLoans,
@@ -1398,6 +1427,7 @@ $average_monthly_savings = number_format(abs($averageMonthlySavingsByAdmin), 2, 
             "number_of_women" => $numberOfWomen,
             "number_of_youth" => $numberOfYouth,
             "total_meetings" => $totalMeetings,
+            "predictionResponse" => $predictionResponse,
             "average_meeting_attendance" => $averageAttendanceRounded,
             "number_of_loans_to_men" => $numberOfLoansToMen,
             "total_disbursed_to_men" => number_format(abs($totalDisbursedToMen), 2, '.', ','),
@@ -1431,232 +1461,232 @@ $average_monthly_savings = number_format(abs($averageMonthlySavingsByAdmin), 2, 
     //     public function getSaccoDetailsForUser()
 
     // {
-//     // Get the authenticated user
-//     $u = auth('api')->user();
-//     if ($u == null) {
-//         return $this->error('User not found.');
-//     }
+    //     // Get the authenticated user
+    //     $u = auth('api')->user();
+    //     if ($u == null) {
+    //         return $this->error('User not found.');
+    //     }
 
-//     // Find the Sacco associated with the user
-//     $sacco = Sacco::find($u->sacco_id);
-//     if ($sacco == null) {
-//         return $this->error('Sacco not found.');
-//     }
+    //     // Find the Sacco associated with the user
+    //     $sacco = Sacco::find($u->sacco_id);
+    //     if ($sacco == null) {
+    //         return $this->error('Sacco not found.');
+    //     }
 
-//     // Fetch the active cycle associated with the Sacco
-//     $activeCycle = $sacco->activeCycle; // Assuming you have a relationship or method to get the active cycle
-//     if ($activeCycle == null) {
-//         return $this->error('No active cycle found.');
-//     }
+    //     // Fetch the active cycle associated with the Sacco
+    //     $activeCycle = $sacco->activeCycle; // Assuming you have a relationship or method to get the active cycle
+    //     if ($activeCycle == null) {
+    //         return $this->error('No active cycle found.');
+    //     }
 
-//     // Total Group Members
-//     $numberOfMembers = User::where('sacco_id', $sacco->id)
-//         ->where(function ($query) {
-//             $query->whereNull('user_type')
-//                 ->orWhere('user_type', '<>', 'Admin');
-//         })
-//         ->count();
+    //     // Total Group Members
+    //     $numberOfMembers = User::where('sacco_id', $sacco->id)
+    //         ->where(function ($query) {
+    //             $query->whereNull('user_type')
+    //                 ->orWhere('user_type', '<>', 'Admin');
+    //         })
+    //         ->count();
 
-//     // Number of Male Members
-//     $numberOfMen = User::where('sacco_id', $sacco->id)
-//         ->where('sex', 'Male')
-//         ->where(function ($query) {
-//             $query->whereNull('user_type')
-//                 ->orWhere('user_type', '<>', 'Admin');
-//         })
-//         ->count();
+    //     // Number of Male Members
+    //     $numberOfMen = User::where('sacco_id', $sacco->id)
+    //         ->where('sex', 'Male')
+    //         ->where(function ($query) {
+    //             $query->whereNull('user_type')
+    //                 ->orWhere('user_type', '<>', 'Admin');
+    //         })
+    //         ->count();
 
-//     // Number of Female Members
-//     $numberOfWomen = User::where('sacco_id', $sacco->id)
-//         ->where('sex', 'Female')
-//         ->where(function ($query) {
-//             $query->whereNull('user_type')
-//                 ->orWhere('user_type', '<>', 'Admin');
-//         })
-//         ->count();
+    //     // Number of Female Members
+    //     $numberOfWomen = User::where('sacco_id', $sacco->id)
+    //         ->where('sex', 'Female')
+    //         ->where(function ($query) {
+    //             $query->whereNull('user_type')
+    //                 ->orWhere('user_type', '<>', 'Admin');
+    //         })
+    //         ->count();
 
-//     // Number of Youth Members
-//     $numberOfYouth = User::where('sacco_id', $sacco->id)
-//         ->whereRaw('TIMESTAMPDIFF(YEAR, dob, CURDATE()) < 35')
-//         ->where(function ($query) {
-//             $query->whereNull('user_type')
-//                 ->orWhere('user_type', '<>', 'Admin');
-//         })
-//         ->count();
+    //     // Number of Youth Members
+    //     $numberOfYouth = User::where('sacco_id', $sacco->id)
+    //         ->whereRaw('TIMESTAMPDIFF(YEAR, dob, CURDATE()) < 35')
+    //         ->where(function ($query) {
+    //             $query->whereNull('user_type')
+    //                 ->orWhere('user_type', '<>', 'Admin');
+    //         })
+    //         ->count();
 
-//     // Total Meetings
-//     $totalMeetings = Meeting::where('sacco_id', $sacco->id)->count();
+    //     // Total Meetings
+    //     $totalMeetings = Meeting::where('sacco_id', $sacco->id)->count();
 
-//     // Total Member Names (Average Meeting Attendance)
-//     $meetings = $sacco->meetings;
-//     $allMemberNames = [];
+    //     // Total Member Names (Average Meeting Attendance)
+    //     $meetings = $sacco->meetings;
+    //     $allMemberNames = [];
 
-//     foreach ($meetings as $meeting) {
-//         $membersJson = $meeting->members;
-//         $attendanceData = json_decode($membersJson, true);
+    //     foreach ($meetings as $meeting) {
+    //         $membersJson = $meeting->members;
+    //         $attendanceData = json_decode($membersJson, true);
 
-//         if (json_last_error() === JSON_ERROR_NONE) {
-//             if (isset($attendanceData['presentMembersIds']) && is_array($attendanceData['presentMembersIds'])) {
-//                 foreach ($attendanceData['presentMembersIds'] as $member) {
-//                     if (isset($member['name'])) {
-//                         $allMemberNames[] = $member['name'];
-//                     }
-//                 }
-//             }
-//         }
-//     }
+    //         if (json_last_error() === JSON_ERROR_NONE) {
+    //             if (isset($attendanceData['presentMembersIds']) && is_array($attendanceData['presentMembersIds'])) {
+    //                 foreach ($attendanceData['presentMembersIds'] as $member) {
+    //                     if (isset($member['name'])) {
+    //                         $allMemberNames[] = $member['name'];
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     }
 
-//     $meetingCount = count($meetings);
-//     $totalPresent = count(array_unique($allMemberNames));
-//     $averageAttendance = $meetingCount > 0 ? $totalPresent / $meetingCount : 0;
-//     $averageAttendanceRounded = round($averageAttendance);
+    //     $meetingCount = count($meetings);
+    //     $totalPresent = count(array_unique($allMemberNames));
+    //     $averageAttendance = $meetingCount > 0 ? $totalPresent / $meetingCount : 0;
+    //     $averageAttendanceRounded = round($averageAttendance);
 
-//     // Total Loans
-//     $numberOfLoans = $sacco->transactions()
-//         ->where('type', 'LOAN')
-//         ->count();
+    //     // Total Loans
+    //     $numberOfLoans = $sacco->transactions()
+    //         ->where('type', 'LOAN')
+    //         ->count();
 
-//     // Total Loan Amount
-//     $totalPrincipal = $sacco->transactions()
-//         ->where('type', 'LOAN')
-//         ->sum('amount');
+    //     // Total Loan Amount
+    //     $totalPrincipal = $sacco->transactions()
+    //         ->where('type', 'LOAN')
+    //         ->sum('amount');
 
-//     // Loans to Males
-//     $numberOfLoansToMen = $sacco->transactions()
-//         ->join('users', 'transactions.source_user_id', '=', 'users.id')
-//         ->where('transactions.type', 'LOAN')
-//         ->where('users.sex', 'Male')
-//         ->count();
+    //     // Loans to Males
+    //     $numberOfLoansToMen = $sacco->transactions()
+    //         ->join('users', 'transactions.source_user_id', '=', 'users.id')
+    //         ->where('transactions.type', 'LOAN')
+    //         ->where('users.sex', 'Male')
+    //         ->count();
 
-//     // Total Loans Disbursed to Males
-//     $totalDisbursedToMen = $sacco->transactions()
-//         ->join('users', 'transactions.source_user_id', '=', 'users.id')
-//         ->where('transactions.type', 'LOAN')
-//         ->where('users.sex', 'Male')
-//         ->sum('transactions.amount');
+    //     // Total Loans Disbursed to Males
+    //     $totalDisbursedToMen = $sacco->transactions()
+    //         ->join('users', 'transactions.source_user_id', '=', 'users.id')
+    //         ->where('transactions.type', 'LOAN')
+    //         ->where('users.sex', 'Male')
+    //         ->sum('transactions.amount');
 
-//     // Loans to Females
-//     $numberOfLoansToWomen = $sacco->transactions()
-//         ->join('users', 'transactions.source_user_id', '=', 'users.id')
-//         ->where('transactions.type', 'LOAN')
-//         ->where('users.sex', 'Female')
-//         ->count();
+    //     // Loans to Females
+    //     $numberOfLoansToWomen = $sacco->transactions()
+    //         ->join('users', 'transactions.source_user_id', '=', 'users.id')
+    //         ->where('transactions.type', 'LOAN')
+    //         ->where('users.sex', 'Female')
+    //         ->count();
 
-//     // Total Loans Disbursed to Females
-//     $totalDisbursedToWomen = $sacco->transactions()
-//         ->join('users', 'transactions.source_user_id', '=', 'users.id')
-//         ->where('transactions.type', 'LOAN')
-//         ->where('users.sex', 'Female')
-//         ->sum('transactions.amount');
+    //     // Total Loans Disbursed to Females
+    //     $totalDisbursedToWomen = $sacco->transactions()
+    //         ->join('users', 'transactions.source_user_id', '=', 'users.id')
+    //         ->where('transactions.type', 'LOAN')
+    //         ->where('users.sex', 'Female')
+    //         ->sum('transactions.amount');
 
-//     // Loans to Youth
-//     $numberOfLoansToYouth = $sacco->transactions()
-//         ->join('users', 'transactions.source_user_id', '=', 'users.id')
-//         ->where('transactions.type', 'LOAN')
-//         ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
-//         ->count();
+    //     // Loans to Youth
+    //     $numberOfLoansToYouth = $sacco->transactions()
+    //         ->join('users', 'transactions.source_user_id', '=', 'users.id')
+    //         ->where('transactions.type', 'LOAN')
+    //         ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
+    //         ->count();
 
-//     // Total Loans Disbursed to Youth
-//     $totalDisbursedToYouth = $sacco->transactions()
-//         ->join('users', 'transactions.source_user_id', '=', 'users.id')
-//         ->where('transactions.type', 'LOAN')
-//         ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
-//         ->sum('transactions.amount');
+    //     // Total Loans Disbursed to Youth
+    //     $totalDisbursedToYouth = $sacco->transactions()
+    //         ->join('users', 'transactions.source_user_id', '=', 'users.id')
+    //         ->where('transactions.type', 'LOAN')
+    //         ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
+    //         ->sum('transactions.amount');
 
-//     // Number of Savings Accounts (Only relevant for the Sacco)
-//     $numberOfSavingsAccounts = User::where('sacco_id', $sacco->id)
-//         ->where(function ($query) {
-//             $query->whereNull('user_type')
-//                 ->orWhere('user_type', '<>', 'Admin');
-//         })
-//         ->count();
+    //     // Number of Savings Accounts (Only relevant for the Sacco)
+    //     $numberOfSavingsAccounts = User::where('sacco_id', $sacco->id)
+    //         ->where(function ($query) {
+    //             $query->whereNull('user_type')
+    //                 ->orWhere('user_type', '<>', 'Admin');
+    //         })
+    //         ->count();
 
-//     // Total Savings Balance
-//     $totalSavingsBalance = $sacco->transactions()
-//         ->join('users', 'transactions.source_user_id', '=', 'users.id')
-//         ->where('transactions.type', 'SHARE')
-//         ->sum('transactions.amount');
+    //     // Total Savings Balance
+    //     $totalSavingsBalance = $sacco->transactions()
+    //         ->join('users', 'transactions.source_user_id', '=', 'users.id')
+    //         ->where('transactions.type', 'SHARE')
+    //         ->sum('transactions.amount');
 
-//     // Average Savings per Member
-//     $averageSavingsPerMember = $numberOfMembers > 0 ? $totalSavingsBalance / $numberOfMembers : 0;
+    //     // Average Savings per Member
+    //     $averageSavingsPerMember = $numberOfMembers > 0 ? $totalSavingsBalance / $numberOfMembers : 0;
 
-//     $saccoDetails = [
-//         "number_of_loans" => $numberOfLoans,
-//         "total_principal" => number_format(abs($totalPrincipal), 2, '.', ','),
-//         "number_of_members" => $numberOfMembers,
-//         "number_of_men" => $numberOfMen,
-//         "number_of_women" => $numberOfWomen,
-//         "number_of_youth" => $numberOfYouth,
-//         "total_meetings" => $totalMeetings,
-//         "average_meeting_attendance" => $averageAttendanceRounded,
-//         "number_of_loans_to_men" => $numberOfLoansToMen,
-//         "total_disbursed_to_men" => number_format(abs($totalDisbursedToMen), 2, '.', ','),
-//         "number_of_loans_to_women" => $numberOfLoansToWomen,
-//         "total_disbursed_to_women" => number_format(abs($totalDisbursedToWomen), 2, '.', ','),
-//         "number_of_loans_to_youth" => $numberOfLoansToYouth,
-//         "total_disbursed_to_youth" => number_format(abs($totalDisbursedToYouth), 2, '.', ','),
-//         "number_of_savings_accounts" => $numberOfSavingsAccounts,
-//         "total_savings_balance" => number_format(abs($totalSavingsBalance), 2, '.', ','),
-//         "average_savings_per_member" => number_format(abs($averageSavingsPerMember), 2, '.', ','),
-//     ];
+    //     $saccoDetails = [
+    //         "number_of_loans" => $numberOfLoans,
+    //         "total_principal" => number_format(abs($totalPrincipal), 2, '.', ','),
+    //         "number_of_members" => $numberOfMembers,
+    //         "number_of_men" => $numberOfMen,
+    //         "number_of_women" => $numberOfWomen,
+    //         "number_of_youth" => $numberOfYouth,
+    //         "total_meetings" => $totalMeetings,
+    //         "average_meeting_attendance" => $averageAttendanceRounded,
+    //         "number_of_loans_to_men" => $numberOfLoansToMen,
+    //         "total_disbursed_to_men" => number_format(abs($totalDisbursedToMen), 2, '.', ','),
+    //         "number_of_loans_to_women" => $numberOfLoansToWomen,
+    //         "total_disbursed_to_women" => number_format(abs($totalDisbursedToWomen), 2, '.', ','),
+    //         "number_of_loans_to_youth" => $numberOfLoansToYouth,
+    //         "total_disbursed_to_youth" => number_format(abs($totalDisbursedToYouth), 2, '.', ','),
+    //         "number_of_savings_accounts" => $numberOfSavingsAccounts,
+    //         "total_savings_balance" => number_format(abs($totalSavingsBalance), 2, '.', ','),
+    //         "average_savings_per_member" => number_format(abs($averageSavingsPerMember), 2, '.', ','),
+    //     ];
 
-//     return $this->success($saccoDetails, "Success");
-// }
+    //     return $this->success($saccoDetails, "Success");
+    // }
 
     public function get_positions()
-{
-    $u = auth('api')->user();
-    if ($u == null) {
-        return $this->error('User not found.');
-    }
+    {
+        $u = auth('api')->user();
+        if ($u == null) {
+            return $this->error('User not found.');
+        }
 
-    $sacco = Sacco::find($u->sacco_id);
-    if ($sacco == null) {
-        return $this->error('Group not found.');
-    }
+        $sacco = Sacco::find($u->sacco_id);
+        if ($sacco == null) {
+            return $this->error('Group not found.');
+        }
 
-    // Get positions associated with the Sacco
-    $positions = MemberPosition::where('sacco_id', $sacco->id)->get();
+        // Get positions associated with the Sacco
+        $positions = MemberPosition::where('sacco_id', $sacco->id)->get();
 
-    // Check and create the necessary positions if they don't exist
-    $requiredPositions = ['Chairperson', 'Secretary', 'Treasurer', 'Member'];
-    foreach ($requiredPositions as $positionName) {
-        if (!$positions->contains('name', $positionName)) {
+        // Check and create the necessary positions if they don't exist
+        $requiredPositions = ['Chairperson', 'Secretary', 'Treasurer', 'Member'];
+        foreach ($requiredPositions as $positionName) {
+            if (!$positions->contains('name', $positionName)) {
+                MemberPosition::create([
+                    'sacco_id' => $sacco->id,
+                    'name' => $positionName,
+                ]);
+            }
+        }
+
+        // Re-fetch positions after potentially adding missing ones, including "Member"
+        $positions = MemberPosition::where('sacco_id', $sacco->id)
+            ->where('name', '!=', 'Member')
+            ->orWhere(function ($query) use ($sacco) {
+                $query->where('sacco_id', $sacco->id)
+                    ->where('name', 'Member');
+            })
+            ->get();
+
+        // If "Member" position still doesn't exist, create one
+        if (!$positions->contains('name', 'Member')) {
             MemberPosition::create([
                 'sacco_id' => $sacco->id,
-                'name' => $positionName,
+                'name' => 'Member',
             ]);
+
+            // Re-fetch positions again to include the newly created "Member"
+            $positions = MemberPosition::where('sacco_id', $sacco->id)
+                ->get();
         }
+
+        // Return success response with positions
+        return $this->success(
+            $positions,
+            $message = "Success",
+            $statusCode = 200
+        );
     }
-
-    // Re-fetch positions after potentially adding missing ones, including "Member"
-    $positions = MemberPosition::where('sacco_id', $sacco->id)
-        ->where('name', '!=', 'Member')
-        ->orWhere(function ($query) use ($sacco) {
-            $query->where('sacco_id', $sacco->id)
-                  ->where('name', 'Member');
-        })
-        ->get();
-
-    // If "Member" position still doesn't exist, create one
-    if (!$positions->contains('name', 'Member')) {
-        MemberPosition::create([
-            'sacco_id' => $sacco->id,
-            'name' => 'Member',
-        ]);
-
-        // Re-fetch positions again to include the newly created "Member"
-        $positions = MemberPosition::where('sacco_id', $sacco->id)
-            ->get();
-    }
-
-    // Return success response with positions
-    return $this->success(
-        $positions,
-        $message = "Success",
-        $statusCode = 200
-    );
-}
 
     public function leader_positions(Request $r)
     {
@@ -2728,121 +2758,121 @@ $average_monthly_savings = number_format(abs($averageMonthlySavingsByAdmin), 2, 
     }
 
     public function register_meeting(Request $request)
-{
-    $admin = auth('api')->user();
+    {
+        $admin = auth('api')->user();
 
-    if ($admin === null) {
-        return $this->error('User not found.');
-    }
-
-    // Get the SACCO ID based on the admin user
-    $sacco = Sacco::where('administrator_id', $admin->id)->first();
-
-    if ($sacco === null) {
-        return $this->error('Group not found for the administrator.');
-    }
-
-    // Get the current active cycle for the SACCO
-    $activeCycle = Cycle::where('sacco_id', $sacco->id)
-        ->where('status', 'Active')
-        ->first();
-
-    if ($activeCycle === null) {
-        return $this->error('No active cycle found for the Group.');
-    }
-
-    // Extract the base name from the meeting name (e.g., "Meeting")
-    $baseName = $request->input('name');
-
-    // Fetch all existing meetings with names like "Meeting X" under the same SACCO and cycle
-    $existingMeetings = Meeting::where('name', 'LIKE', "$baseName%")
-        ->where('sacco_id', $sacco->id)
-        ->where('cycle_id', $activeCycle->id)
-        ->get();
-
-    // Determine the highest meeting number
-    $highestNumber = 0;
-    foreach ($existingMeetings as $existingMeeting) {
-        preg_match('/(\d+)$/', $existingMeeting->name, $matches);
-        if ($matches) {
-            $number = (int)$matches[1];
-            if ($number > $highestNumber) {
-                $highestNumber = $number;
-            }
+        if ($admin === null) {
+            return $this->error('User not found.');
         }
-    }
 
-    // Set the new meeting name to "Meeting Y", where Y is the next number after the highest found
-    $newMeetingName = $baseName . ' ' . ($highestNumber + 1);
+        // Get the SACCO ID based on the admin user
+        $sacco = Sacco::where('administrator_id', $admin->id)->first();
 
-    // Proceed with meeting creation using the updated name
-    $meeting = new Meeting();
-    $meeting->name = $newMeetingName;
-    $meeting->date = $request->input('date');
-    $meeting->location = $request->input('location');
-    $meeting->sacco_id = $sacco->id;
-    $meeting->administrator_id = $admin->id;
-    $meeting->members = $request->input('members');
-    $meeting->minutes = $request->input('minutes');
-    $meeting->attendance = $request->input('attendance');
-    $meeting->cycle_id = $activeCycle->id; // Set the active cycle's ID
-
-    try {
-        $meeting->save();
-
-        // Extract member IDs from the input
-        $membersString = $request->input('members');
-        preg_match_all('/\d+/', $membersString, $matches);
-        $presentMemberIds = $matches[0];
-
-        // Fetch all users whose SACCO ID matches the one in the meeting
-        $users = User::where('sacco_id', $sacco->id)->get();
-
-        // Filter out absent members
-        $absentMembers = $users->filter(function ($user) use ($presentMemberIds) {
-            return !in_array($user->id, $presentMemberIds);
-        });
-
-        // Extract opening and closing summaries
-        $minutes = json_decode($request->input('minutes'), true);
-        $openingSummary = $closingSummary = '';
-        if (isset($minutes['opening_summary'])) {
-            $openingSummary = "Opening Summary:\n";
-            foreach ($minutes['opening_summary'] as $summary) {
-                $openingSummary .= "{$summary['title']}: {$summary['value']}\n";
-            }
+        if ($sacco === null) {
+            return $this->error('Group not found for the administrator.');
         }
-        if (isset($minutes['closing_summary'])) {
-            $closingSummary = "\nClosing Summary:\n";
-            foreach ($minutes['closing_summary'] as $summary) {
-                $closingSummary .= "{$summary['title']}: {$summary['value']}\n";
+
+        // Get the current active cycle for the SACCO
+        $activeCycle = Cycle::where('sacco_id', $sacco->id)
+            ->where('status', 'Active')
+            ->first();
+
+        if ($activeCycle === null) {
+            return $this->error('No active cycle found for the Group.');
+        }
+
+        // Extract the base name from the meeting name (e.g., "Meeting")
+        $baseName = $request->input('name');
+
+        // Fetch all existing meetings with names like "Meeting X" under the same SACCO and cycle
+        $existingMeetings = Meeting::where('name', 'LIKE', "$baseName%")
+            ->where('sacco_id', $sacco->id)
+            ->where('cycle_id', $activeCycle->id)
+            ->get();
+
+        // Determine the highest meeting number
+        $highestNumber = 0;
+        foreach ($existingMeetings as $existingMeeting) {
+            preg_match('/(\d+)$/', $existingMeeting->name, $matches);
+            if ($matches) {
+                $number = (int)$matches[1];
+                if ($number > $highestNumber) {
+                    $highestNumber = $number;
+                }
             }
         }
 
-        // Construct message
-        $message = "Meeting details for {$meeting->name} held on {$meeting->date} for Group: {$sacco->name}:\n";
-        $presentMembersCount = count($presentMemberIds);
-        $message .= "Members present: $presentMembersCount\n";
-        $absentMembersCount = count($absentMembers);
-        $message .= "Absent Members: $absentMembersCount\n";
+        // Set the new meeting name to "Meeting Y", where Y is the next number after the highest found
+        $newMeetingName = $baseName . ' ' . ($highestNumber + 1);
 
-        // Send SMS to each user with a valid phone number
-        foreach ($users as $user) {
-            $phone_number = $user->phone_number;
+        // Proceed with meeting creation using the updated name
+        $meeting = new Meeting();
+        $meeting->name = $newMeetingName;
+        $meeting->date = $request->input('date');
+        $meeting->location = $request->input('location');
+        $meeting->sacco_id = $sacco->id;
+        $meeting->administrator_id = $admin->id;
+        $meeting->members = $request->input('members');
+        $meeting->minutes = $request->input('minutes');
+        $meeting->attendance = $request->input('attendance');
+        $meeting->cycle_id = $activeCycle->id; // Set the active cycle's ID
 
-            // Validate the phone number
-            if (Utils::phone_number_is_valid($phone_number)) {
-                Utils::send_sms($phone_number, $message);
-            } else {
-                continue; // Skip user with invalid phone number
+        try {
+            $meeting->save();
+
+            // Extract member IDs from the input
+            $membersString = $request->input('members');
+            preg_match_all('/\d+/', $membersString, $matches);
+            $presentMemberIds = $matches[0];
+
+            // Fetch all users whose SACCO ID matches the one in the meeting
+            $users = User::where('sacco_id', $sacco->id)->get();
+
+            // Filter out absent members
+            $absentMembers = $users->filter(function ($user) use ($presentMemberIds) {
+                return !in_array($user->id, $presentMemberIds);
+            });
+
+            // Extract opening and closing summaries
+            $minutes = json_decode($request->input('minutes'), true);
+            $openingSummary = $closingSummary = '';
+            if (isset($minutes['opening_summary'])) {
+                $openingSummary = "Opening Summary:\n";
+                foreach ($minutes['opening_summary'] as $summary) {
+                    $openingSummary .= "{$summary['title']}: {$summary['value']}\n";
+                }
             }
-        }
+            if (isset($minutes['closing_summary'])) {
+                $closingSummary = "\nClosing Summary:\n";
+                foreach ($minutes['closing_summary'] as $summary) {
+                    $closingSummary .= "{$summary['title']}: {$summary['value']}\n";
+                }
+            }
 
-        return $this->success($meeting, $message = "Meeting created successfully.");
-    } catch (\Throwable $th) {
-        return $this->error('Failed to create meeting: ' . $th->getMessage());
+            // Construct message
+            $message = "Meeting details for {$meeting->name} held on {$meeting->date} for Group: {$sacco->name}:\n";
+            $presentMembersCount = count($presentMemberIds);
+            $message .= "Members present: $presentMembersCount\n";
+            $absentMembersCount = count($absentMembers);
+            $message .= "Absent Members: $absentMembersCount\n";
+
+            // Send SMS to each user with a valid phone number
+            foreach ($users as $user) {
+                $phone_number = $user->phone_number;
+
+                // Validate the phone number
+                if (Utils::phone_number_is_valid($phone_number)) {
+                    Utils::send_sms($phone_number, $message);
+                } else {
+                    continue; // Skip user with invalid phone number
+                }
+            }
+
+            return $this->success($meeting, $message = "Meeting created successfully.");
+        } catch (\Throwable $th) {
+            return $this->error('Failed to create meeting: ' . $th->getMessage());
+        }
     }
-}
 
     // public function register_meeting(Request $request)
     // {
