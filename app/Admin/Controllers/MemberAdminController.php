@@ -39,6 +39,9 @@ class MemberAdminController extends AdminController
             return redirect(admin_url('/'));
         }
 
+        // **Add this line to sort users by 'created_at' in descending order**
+        $grid->model()->orderBy('created_at', 'desc');
+
         // Display relevant columns
         $grid->column('id', __('ID'))->sortable();
         $grid->column('first_name', __('First Name'))->sortable();
@@ -86,66 +89,64 @@ class MemberAdminController extends AdminController
      * @return Form
      */
     protected function form()
-{
-    $form = new Form(new User());
+    {
+        $form = new Form(new User());
 
-    // Standard form fields
-    $form->text('first_name', __('First Name'))->rules('required');
-    $form->text('last_name', __('Last Name'))->rules('required');
-    $form->text('phone_number', __('Phone Number'))->rules('required');
-    $form->email('email', __('Email'))->rules('required|email|unique:users,email,{{id}}');
+        // Standard form fields
+        $form->text('first_name', __('First Name'))->rules('required');
+        $form->text('last_name', __('Last Name'))->rules('required');
+        $form->text('phone_number', __('Phone Number'))->rules('required');
+        $form->email('email', __('Email'))->rules('required|email|unique:users,email,{{id}}');
 
-    // Password will be generated automatically
-    $form->hidden('password', __('Password'));
+        // Password will be generated automatically
+        $form->hidden('password', __('Password'));
 
-    // Hidden fields for user type and sacco_join_status
-    $form->hidden('user_type')->default('Admin');
-    $form->hidden('sacco_join_status')->default('approved'); // Set the status to 'approved'
+        // Hidden fields for user type and sacco_join_status
+        $form->hidden('user_type')->default('Admin');
+        $form->hidden('sacco_join_status')->default('approved'); // Set the status to 'approved'
 
-    // Generate password and set username in the `saving` closure
-    $form->saving(function (Form $form) {
-        // Generate a unique 6-digit password
-        $plainPassword = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+        // Generate password and set username in the `saving` closure
+        $form->saving(function (Form $form) {
+            // Generate a unique 6-digit password
+            $plainPassword = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
 
-        // Hash the password and store it in the database
-        $form->password = Hash::make($plainPassword);
+            // Hash the password and store it in the database
+            $form->password = Hash::make($plainPassword);
 
-        // Temporarily store the plain password for sending via SMS and email after saving
-        $form->plain_password = $plainPassword;
+            // Temporarily store the plain password for sending via SMS and email after saving
+            $form->plain_password = $plainPassword;
 
-        // Set the username as the phone number
-        $form->model()->username = $form->phone_number;
-    });
+            // Set the username as the phone number
+            $form->model()->username = $form->phone_number;
+        });
 
-    // Send SMS and email after saving the form
-    $form->saved(function (Form $form) {
-        // Get the required fields
-        $user = $form->model();
-        $plainPassword = $form->plain_password;
+        // Send SMS and email after saving the form
+        $form->saved(function (Form $form) {
+            // Get the required fields
+            $user = $form->model();
+            $plainPassword = $form->plain_password;
 
-        // Send SMS
-        $smsMessage = "Your admin account has been created. Use this password to log in: {$plainPassword}";
-        Utils::send_sms($user->phone_number, $smsMessage);
+            // Send SMS
+            $smsMessage = "Your admin account has been created. Use this password to log in: {$plainPassword}";
+            Utils::send_sms($user->phone_number, $smsMessage);
 
-        // Prepare email data
-        $emailData = [
-            'first_name' => $user->first_name,
-            'last_name' => $user->last_name,
-            'phone_number' => $user->email,
-            'password' => $plainPassword,
-            'platformLink' => 'https://digisave.m-omulimisa.com/', // Update with actual link
-            'email' => $user->email,
-            'org' => 'DigiSave VSLA', // Add any organization details if needed
-        ];
+            // Prepare email data
+            $emailData = [
+                'first_name' => $user->first_name,
+                'last_name' => $user->last_name,
+                'phone_number' => $user->email,
+                'password' => $plainPassword,
+                'platformLink' => 'https://digisave.m-omulimisa.com/', // Update with actual link
+                'email' => $user->email,
+                'org' => 'DigiSave VSLA', // Add any organization details if needed
+            ];
 
-        // Send email
-        Mail::to($user->email)->send(new SendMail($emailData));
+            // Send email
+            Mail::to($user->email)->send(new SendMail($emailData));
 
-        admin_success('Success', 'Admin account created successfully, and password sent via SMS and Email.');
-    });
+            admin_success('Success', 'Admin account created successfully, and password sent via SMS and Email.');
+        });
 
-    return $form;
-}
-
-
+        return $form;
+    }
 }
