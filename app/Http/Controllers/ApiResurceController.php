@@ -1452,11 +1452,11 @@ class ApiResurceController extends Controller
             ->where('type', 'LOAN')
             ->sum('amount');
 
-        // Interest paid = total repayments - total principal disbursed
+        // Interest Paid = Total Loan Repayments - Total Principal Disbursed
+        $interestPaid = $totalLoanRepayments - $totalPrincipalDisbursed;
 
-
-    // Calculate outstanding interest
-    $outstandingInterest = $totalLoanInterest - ($totalLoanRepayments - $totalPrincipalDisbursed);
+        // Outstanding Interest = Total Accrued Interest - Interest Paid
+        $outstandingInterest = $totalLoanInterest - $interestPaid;
 
         // Prepare the request data
 
