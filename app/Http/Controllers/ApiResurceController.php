@@ -1446,17 +1446,6 @@ class ApiResurceController extends Controller
 
         $totalPrincipalOutstanding = $totalPrincipal - $totalPrincipalPaid;
 
-        $totalAccruedInterest = $sacco->transactions()
-        ->where('cycle_id', $activeCycleId)
-            ->where('type', 'LOAN_INTEREST')
-            ->sum('amount');
-
-        // Total loan repayments (sum of all LOAN_REPAYMENT transactions)
-        $totalLoanRepayments = $sacco->transactions()
-        ->where('cycle_id', $activeCycleId)
-            ->where('type', 'LOAN_REPAYMENT')
-            ->sum('amount');
-
         // Total loan principal disbursed (sum of all LOAN transactions)
         $totalPrincipalDisbursed = $sacco->transactions()
         ->where('cycle_id', $activeCycleId)
@@ -1464,10 +1453,10 @@ class ApiResurceController extends Controller
             ->sum('amount');
 
         // Interest paid = total repayments - total principal disbursed
-        $totalInterestPaid = $totalLoanRepayments - $totalPrincipalDisbursed;
+
 
     // Calculate outstanding interest
-    $outstandingInterest = $totalAccruedInterest - $totalInterestPaid;
+    $outstandingInterest = $totalLoanInterest - ($totalLoanRepayments - $totalPrincipalDisbursed);
 
         // Prepare the request data
 
