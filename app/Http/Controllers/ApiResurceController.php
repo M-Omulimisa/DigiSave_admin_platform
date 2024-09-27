@@ -1252,16 +1252,19 @@ class ApiResurceController extends Controller
 
         // Total Loans
         $numberOfLoans = $sacco->transactions()
+        ->where('cycle_id', $activeCycleId)
             ->where('type', 'LOAN')
             ->count();
 
         // Total Loan Amount (Principal)
         $totalPrincipal = $sacco->transactions()
+        ->where('cycle_id', $activeCycleId)
             ->where('type', 'LOAN')
             ->sum('amount');
 
         // Total Interest
         $totalInterest = $sacco->transactions()
+        ->where('cycle_id', $activeCycleId)
             ->where('type', 'LOAN_INTEREST')
             ->sum('amount');
 
@@ -1273,6 +1276,7 @@ class ApiResurceController extends Controller
 
         // Loans to Males
         $numberOfLoansToMen = $sacco->transactions()
+        ->where('cycle_id', $activeCycleId)
             ->join('users', 'transactions.source_user_id', '=', 'users.id')
             ->where('transactions.type', 'LOAN')
             ->where('users.sex', 'Male')
@@ -1280,6 +1284,7 @@ class ApiResurceController extends Controller
 
         // Total Loans Disbursed to Males
         $totalDisbursedToMen = $sacco->transactions()
+        ->where('cycle_id', $activeCycleId)
             ->join('users', 'transactions.source_user_id', '=', 'users.id')
             ->where('transactions.type', 'LOAN')
             ->where('users.sex', 'Male')
@@ -1287,6 +1292,7 @@ class ApiResurceController extends Controller
 
         // Loans to Females
         $numberOfLoansToWomen = $sacco->transactions()
+        ->where('cycle_id', $activeCycleId)
             ->join('users', 'transactions.source_user_id', '=', 'users.id')
             ->where('transactions.type', 'LOAN')
             ->where('users.sex', 'Female')
@@ -1294,6 +1300,7 @@ class ApiResurceController extends Controller
 
         // Total Loans Disbursed to Females
         $totalDisbursedToWomen = $sacco->transactions()
+        ->where('cycle_id', $activeCycleId)
             ->join('users', 'transactions.source_user_id', '=', 'users.id')
             ->where('transactions.type', 'LOAN')
             ->where('users.sex', 'Female')
@@ -1301,6 +1308,7 @@ class ApiResurceController extends Controller
 
         // Loans to Youth
         $numberOfLoansToYouth = $sacco->transactions()
+        ->where('cycle_id', $activeCycleId)
             ->join('users', 'transactions.source_user_id', '=', 'users.id')
             ->where('transactions.type', 'LOAN')
             ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
@@ -1308,6 +1316,7 @@ class ApiResurceController extends Controller
 
         // Total Loans Disbursed to Youth
         $totalDisbursedToYouth = $sacco->transactions()
+        ->where('cycle_id', $activeCycleId)
             ->join('users', 'transactions.source_user_id', '=', 'users.id')
             ->where('transactions.type', 'LOAN')
             ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
@@ -1323,12 +1332,14 @@ class ApiResurceController extends Controller
 
         // Total Savings Balance
         $totalSavingsBalance = $sacco->transactions()
+        ->where('cycle_id', $activeCycleId)
             ->join('users', 'transactions.source_user_id', '=', 'users.id')
             ->where('transactions.type', 'SHARE')
             ->sum('transactions.amount');
 
         // Savings to Males
         $savingsAccountsForMen = $sacco->transactions()
+        ->where('cycle_id', $activeCycleId)
             ->join('users', 'transactions.source_user_id', '=', 'users.id')
             ->where('transactions.type', 'SHARE')
             ->where('users.sex', 'Male')
@@ -1336,6 +1347,7 @@ class ApiResurceController extends Controller
 
         // Total Savings Balance for Males
         $totalSavingsBalanceForMen = $sacco->transactions()
+        ->where('cycle_id', $activeCycleId)
             ->join('users', 'transactions.source_user_id', '=', 'users.id')
             ->where('transactions.type', 'SHARE')
             ->where('users.sex', 'Male')
@@ -1343,6 +1355,7 @@ class ApiResurceController extends Controller
 
         // Savings to Females
         $savingsAccountsForWomen = $sacco->transactions()
+        ->where('cycle_id', $activeCycleId)
             ->join('users', 'transactions.source_user_id', '=', 'users.id')
             ->where('transactions.type', 'SHARE')
             ->where('users.sex', 'Female')
@@ -1350,6 +1363,7 @@ class ApiResurceController extends Controller
 
         // Total Savings Balance for Females
         $totalSavingsBalanceForWomen = $sacco->transactions()
+        ->where('cycle_id', $activeCycleId)
             ->join('users', 'transactions.source_user_id', '=', 'users.id')
             ->where('transactions.type', 'SHARE')
             ->where('users.sex', 'Female')
@@ -1357,6 +1371,7 @@ class ApiResurceController extends Controller
 
         // Savings to Youth
         $savingsAccountsForYouth = $sacco->transactions()
+        ->where('cycle_id', $activeCycleId)
             ->join('users', 'transactions.source_user_id', '=', 'users.id')
             ->where('transactions.type', 'SHARE')
             ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
@@ -1364,6 +1379,7 @@ class ApiResurceController extends Controller
 
         // Total Savings Balance for Youth
         $totalSavingsBalanceForYouth = $sacco->transactions()
+             ->where('cycle_id', $activeCycleId)
             ->join('users', 'transactions.source_user_id', '=', 'users.id')
             ->where('transactions.type', 'SHARE')
             ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
@@ -1372,6 +1388,7 @@ class ApiResurceController extends Controller
         // Average Monthly Savings by Admin Members
         $adminSavings = $sacco->transactions()
             ->join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('cycle_id', $activeCycleId)
             ->where('transactions.type', 'SHARE') // Only consider savings transactions
             ->where('users.user_type', 'Admin') // Only for Admin users
             ->selectRaw('SUM(transactions.amount) as total_savings, MONTH(transactions.created_at) as month, YEAR(transactions.created_at) as year')
