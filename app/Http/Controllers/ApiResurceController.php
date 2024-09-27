@@ -1438,11 +1438,36 @@ class ApiResurceController extends Controller
         };
 
         $totalLoanInterest = $sacco->transactions()
-            ->where('cycle_id', $activeCycleId)
-            ->where('type', 'LOAN_INTEREST')
+        ->where('cycle_id', $activeCycleId)
+        ->where('type', 'LOAN_INTEREST')
             ->sum('amount');
 
         $totalPrincipalPaid = $totalLoanRepayments - $totalLoanInterest;
+
+        $totalPrincipalOutstanding = $totalPrincipal - $totalPrincipalPaid;
+
+        $totalAccruedInterest = $sacco->transactions()
+        ->where('cycle_id', $activeCycleId)
+            ->where('type', 'LOAN_INTEREST')
+            ->sum('amount');
+
+        // Total loan repayments (sum of all LOAN_REPAYMENT transactions)
+        $totalLoanRepayments = $sacco->transactions()
+        ->where('cycle_id', $activeCycleId)
+            ->where('type', 'LOAN_REPAYMENT')
+            ->sum('amount');
+
+        // Total loan principal disbursed (sum of all LOAN transactions)
+        $totalPrincipalDisbursed = $sacco->transactions()
+        ->where('cycle_id', $activeCycleId)
+            ->where('type', 'LOAN')
+            ->sum('amount');
+
+        // Interest paid = total repayments - total principal disbursed
+        $totalInterestPaid = $totalLoanRepayments - $totalPrincipalDisbursed;
+
+    // Calculate outstanding interest
+    $outstandingInterest = $totalAccruedInterest - $totalInterestPaid;
 
         // Prepare the request data
 
@@ -1454,8 +1479,8 @@ class ApiResurceController extends Controller
             "total_interest_paid" => $totalLoanInterest,
             "number_of_savings_accounts" => $numberOfSavingsAccounts,
             "total_savings_balance" => abs($totalSavingsBalance),
-            "total_principal_outstanding" => 3000.0,
-            "total_interest_outstanding" => 300,
+            "total_principal_outstanding" => $totalPrincipalOutstanding,
+            "total_interest_outstanding" => $outstandingInterest,
             "number_of_loans_to_men" => $numberOfLoansToMen,
             "total_disbursed_to_men" => abs($totalDisbursedToMen),
             "total_savings_accounts_for_men" => $savingsAccountsForMen,
@@ -1527,8 +1552,8 @@ class ApiResurceController extends Controller
             "fund_savings_credit_status" => "1",
             "total_principal_paid" => $totalPrincipalPaid,
             "total_interest_paid" => $totalLoanInterest,
-            "total_principal_outstanding" => "3000.0",
-            "total_interest_outstanding" => "300.0",
+            "total_principal_outstanding" => $totalPrincipalOutstanding,
+            "total_interest_outstanding" => $outstandingInterest,
             "savings_per_member" => "2000.0"
         ];
 
