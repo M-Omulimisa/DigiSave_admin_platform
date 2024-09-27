@@ -46,6 +46,7 @@ use Carbon\Carbon;
 use Dflydev\DotAccessData\Util;
 use Encore\Admin\Auth\Database\Administrator;
 use Exception;
+use GrahamCampbell\ResultType\Success;
 use Illuminate\Http\Request;
 use Throwable;
 use Illuminate\Support\Facades\Log;
@@ -1178,16 +1179,21 @@ class ApiResurceController extends Controller
         }
 
         // Fetch the active cycle associated with the Sacco
-        $activeCycle = $sacco->activeCycle;
+        $activeCycle = Cycle::where('sacco_id', $sacco->id)
+        ->where('status', 'Active')
+        ->first();
+
         if ($activeCycle == null) {
             return $this->error('No active cycle found.');
         }
+
+        $activeCycleId = $activeCycle->id;
 
         // Total Group Members
         $numberOfMembers = User::where('sacco_id', $sacco->id)
             ->where(function ($query) {
                 $query->whereNull('user_type')
-                    ->orWhere('user_type', '<>', 'Admin');
+                ->orWhere('user_type', '<>', 'Admin');
             })
             ->count();
 
@@ -1196,7 +1202,7 @@ class ApiResurceController extends Controller
             ->where('sex', 'Male')
             ->where(function ($query) {
                 $query->whereNull('user_type')
-                    ->orWhere('user_type', '<>', 'Admin');
+                ->orWhere('user_type', '<>', 'Admin');
             })
             ->count();
 
@@ -1205,7 +1211,7 @@ class ApiResurceController extends Controller
             ->where('sex', 'Female')
             ->where(function ($query) {
                 $query->whereNull('user_type')
-                    ->orWhere('user_type', '<>', 'Admin');
+                ->orWhere('user_type', '<>', 'Admin');
             })
             ->count();
 
@@ -1214,7 +1220,7 @@ class ApiResurceController extends Controller
             ->whereRaw('TIMESTAMPDIFF(YEAR, dob, CURDATE()) < 35')
             ->where(function ($query) {
                 $query->whereNull('user_type')
-                    ->orWhere('user_type', '<>', 'Admin');
+                ->orWhere('user_type', '<>', 'Admin');
             })
             ->count();
 
@@ -1261,6 +1267,7 @@ class ApiResurceController extends Controller
 
         // Total Loan Repayments
         $totalLoanRepayments = $sacco->transactions()
+            ->where('cycle_id', $activeCycleId)
             ->where('type', 'LOAN_REPAYMENT')
             ->sum('amount');
 
@@ -1310,7 +1317,7 @@ class ApiResurceController extends Controller
         $numberOfSavingsAccounts = User::where('sacco_id', $sacco->id)
             ->where(function ($query) {
                 $query->whereNull('user_type')
-                    ->orWhere('user_type', '<>', 'Admin');
+                ->orWhere('user_type', '<>', 'Admin');
             })
             ->count();
 
@@ -1388,31 +1395,37 @@ class ApiResurceController extends Controller
         $averageSavingsPerMember = $numberOfMembers > 0 ? $totalSavingsBalance / $numberOfMembers : 0;
 
         // Ensure that average_monthly_savings is a numeric value without formatting
-$average_monthly_savings = abs($averageMonthlySavingsByAdmin); // No number_format here
+        $average_monthly_savings = abs($averageMonthlySavingsByAdmin); // No number_format here
 
-// Fetch the max loan amount based on average monthly savings
-$maxLoanAmountResponse = Http::withHeaders([
-    'Content-Type' => 'application/json'
-])->post('https://vsla-credit-scoring-bde4afgbgyesgheu.canadacentral-01.azurewebsites.net/max_loan_amount', [
-    "Multiplier" => 6,
-    "Average Monthly Savings" => $average_monthly_savings // Pass the plain numeric value
-]);
+        // Fetch the max loan amount based on average monthly savings
+        $maxLoanAmountResponse = Http::withHeaders([
+            'Content-Type' => 'application/json'
+        ])->post('https://vsla-credit-scoring-bde4afgbgyesgheu.canadacentral-01.azurewebsites.net/max_loan_amount', [
+            "Multiplier" => 6,
+            "Average Monthly Savings" => $average_monthly_savings // Pass the plain numeric value
+        ]);
 
-if ($maxLoanAmountResponse->successful()) {
-    $maxLoanAmountData = $maxLoanAmountResponse->json();
-    $maxLoanAmount = $maxLoanAmountData['max_loan_amount'];
-} else {
-    // Capture the error details
-    $statusCode = $maxLoanAmountResponse->status();
-    $errorMessage = $maxLoanAmountResponse->body();
+        if ($maxLoanAmountResponse->successful()) {
+            $maxLoanAmountData = $maxLoanAmountResponse->json();
+            $maxLoanAmount = $maxLoanAmountData['max_loan_amount'];
+        } else {
+            // Capture the error details
+            $statusCode = $maxLoanAmountResponse->status();
+            $errorMessage = $maxLoanAmountResponse->body();
 
-    // Log the error if needed for debugging
-    \Log::error("Max Loan Amount API error: Status Code: $statusCode, Message: $errorMessage");
+            // Log the error if needed for debugging
+            \Log::error("Max Loan Amount API error: Status Code: $statusCode, Message: $errorMessage");
 
-    // Handle the error if the max loan amount call failed
-    return $this->error("Max Loan Amount API call failed. Status Code: $statusCode, Message: $errorMessage");
-}
-;
+            // Handle the error if the max loan amount call failed
+            return $this->error("Max Loan Amount API call failed. Status Code: $statusCode, Message: $errorMessage");
+        };
+
+        $totalLoanInterest = $sacco->transactions()
+            ->where('cycle_id', $activeCycleId)
+            ->where('type', 'LOAN_INTEREST')
+            ->sum('amount');
+
+        $totalPrincipalPaid = $totalLoanRepayments - $totalLoanInterest;
 
         // Prepare the request data
 
@@ -1420,8 +1433,8 @@ if ($maxLoanAmountResponse->successful()) {
             "number_of_loans" => $numberOfLoans,
             "total_principal" => abs($totalPrincipal),
             "total_interest" => abs($totalInterest),
-            "total_principal_paid" => 12000,
-            "total_interest_paid" => 1200,
+            "total_principal_paid" => $totalPrincipalPaid,
+            "total_interest_paid" => $totalLoanInterest,
             "number_of_savings_accounts" => $numberOfSavingsAccounts,
             "total_savings_balance" => abs($totalSavingsBalance),
             "total_principal_outstanding" => 3000.0,
@@ -1442,26 +1455,26 @@ if ($maxLoanAmountResponse->successful()) {
             "fund_savings_credit_status" => 1
         ];
 
-// Make the prediction API call
-$predictionResponse = Http::withHeaders([
-    'Content-Type' => 'application/json'
-])->post('https://vsla-credit-scoring-bde4afgbgyesgheu.canadacentral-01.azurewebsites.net/predict', $requestData);
+        // Make the prediction API call
+        $predictionResponse = Http::withHeaders([
+            'Content-Type' => 'application/json'
+        ])->post('https://vsla-credit-scoring-bde4afgbgyesgheu.canadacentral-01.azurewebsites.net/predict', $requestData);
 
-// Check if the prediction API call was successful
-if ($predictionResponse->successful()) {
-    // Extract the prediction data from the response
-    $predictionData = $predictionResponse->json();
-} else {
-    // Capture the error details
-    $statusCode = $predictionResponse->status();
-    $errorMessage = $predictionResponse->body(); // This will capture the error message or response body
+        // Check if the prediction API call was successful
+        if ($predictionResponse->successful()) {
+            // Extract the prediction data from the response
+            $predictionData = $predictionResponse->json();
+        } else {
+            // Capture the error details
+            $statusCode = $predictionResponse->status();
+            $errorMessage = $predictionResponse->body(); // This will capture the error message or response body
 
-    // Log the error if needed for debugging
-    \Log::error("Prediction API error: Status Code: $statusCode, Message: $errorMessage");
+            // Log the error if needed for debugging
+            \Log::error("Prediction API error: Status Code: $statusCode, Message: $errorMessage");
 
-    // Handle the error if the prediction call failed
-    return $this->error("Prediction API call failed. Status Code: $statusCode, Message: $errorMessage");
-};
+            // Handle the error if the prediction call failed
+            return $this->error("Prediction API call failed. Status Code: $statusCode, Message: $errorMessage");
+        };
 
         $saccoDetails = [
             "number_of_loans" => $numberOfLoans,
@@ -1495,8 +1508,8 @@ if ($predictionResponse->successful()) {
             "youth_support_rate" => "0.2",
             "savings_credit_mobilization" => "0.5",
             "fund_savings_credit_status" => "1",
-            "total_principal_paid" => "12000.0",
-            "total_interest_paid" => "1200.0",
+            "total_principal_paid" => $totalPrincipalPaid,
+            "total_interest_paid" => $totalLoanInterest,
             "total_principal_outstanding" => "3000.0",
             "total_interest_outstanding" => "300.0",
             "savings_per_member" => "2000.0"
