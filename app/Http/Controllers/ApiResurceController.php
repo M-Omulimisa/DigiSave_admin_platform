@@ -1442,21 +1442,31 @@ class ApiResurceController extends Controller
         ->where('type', 'LOAN_INTEREST')
             ->sum('amount');
 
-        $totalPrincipalPaid = $totalLoanRepayments - $totalLoanInterest;
+        $totalPrincipalPaid = min($totalLoanRepayments, $totalPrincipal);
 
-        $totalPrincipalOutstanding = $totalPrincipal - $totalPrincipalPaid;
+        // $totalPrincipalPaid = $totalLoanRepayments - $totalLoanInterest;
+
+        // $totalPrincipalOutstanding = $totalPrincipal - $totalPrincipalPaid;
 
         // Total loan principal disbursed (sum of all LOAN transactions)
-        $totalPrincipalDisbursed = $sacco->transactions()
-        ->where('cycle_id', $activeCycleId)
-            ->where('type', 'LOAN')
-            ->sum('amount');
+        // $totalPrincipalDisbursed = $sacco->transactions()
+        // ->where('cycle_id', $activeCycleId)
+        //     ->where('type', 'LOAN')
+        //     ->sum('amount');
 
         // Interest Paid = Total Loan Repayments - Total Principal Disbursed
-        $interestPaid = $totalLoanRepayments - $totalPrincipalDisbursed;
+        // $interestPaid = $totalLoanRepayments - $totalPrincipalDisbursed;
+
+        $totalLoanInterest = max($totalLoanRepayments - $totalPrincipal, 0);
 
         // Outstanding Interest = Total Accrued Interest - Interest Paid
-        $outstandingInterest = $totalLoanInterest - $interestPaid;
+        // $outstandingInterest = $totalLoanInterest - $interestPaid;
+
+        // Outstanding Principal
+$totalPrincipalOutstanding = max($totalPrincipal - $totalPrincipalPaid, 0);
+
+// Outstanding Interest
+$outstandingInterest = max($totalInterest - $totalLoanInterest, 0);
 
         // Prepare the request data
 
