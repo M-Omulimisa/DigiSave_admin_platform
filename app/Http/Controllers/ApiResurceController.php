@@ -1444,29 +1444,19 @@ class ApiResurceController extends Controller
 
         $totalPrincipalPaid = min($totalLoanRepayments, $totalPrincipal);
 
-        // $totalPrincipalPaid = $totalLoanRepayments - $totalLoanInterest;
-
-        // $totalPrincipalOutstanding = $totalPrincipal - $totalPrincipalPaid;
-
-        // Total loan principal disbursed (sum of all LOAN transactions)
-        // $totalPrincipalDisbursed = $sacco->transactions()
-        // ->where('cycle_id', $activeCycleId)
-        //     ->where('type', 'LOAN')
-        //     ->sum('amount');
-
-        // Interest Paid = Total Loan Repayments - Total Principal Disbursed
-        // $interestPaid = $totalLoanRepayments - $totalPrincipalDisbursed;
-
-        $totalLoanInterest = max($totalLoanRepayments - $totalPrincipal, 0);
-
-        // Outstanding Interest = Total Accrued Interest - Interest Paid
-        // $outstandingInterest = $totalLoanInterest - $interestPaid;
+        $totalInterestPaid = max($totalLoanRepayments - $totalPrincipal, 0);
 
         // Outstanding Principal
 $totalPrincipalOutstanding = max($totalPrincipal - $totalPrincipalPaid, 0);
 
 // Outstanding Interest
 $outstandingInterest = max($totalInterest - $totalLoanInterest, 0);
+
+// If there are no pending loans, outstanding values should be zero
+if ($totalPrincipalPaid >= $totalPrincipal && $totalInterestPaid >= $totalInterest) {
+    $totalPrincipalOutstanding = 0;
+    $outstandingInterest = 0;
+}
 
         // Prepare the request data
 
@@ -1475,7 +1465,7 @@ $outstandingInterest = max($totalInterest - $totalLoanInterest, 0);
             "total_principal" => abs($totalPrincipal),
             "total_interest" => abs($totalInterest),
             "total_principal_paid" => $totalPrincipalPaid,
-            "total_interest_paid" => $totalLoanInterest,
+            "total_interest_paid" => $totalInterestPaid,
             "number_of_savings_accounts" => $numberOfSavingsAccounts,
             "total_savings_balance" => abs($totalSavingsBalance),
             "total_principal_outstanding" => $totalPrincipalOutstanding,
@@ -1550,7 +1540,7 @@ $outstandingInterest = max($totalInterest - $totalLoanInterest, 0);
             "savings_credit_mobilization" => "0.5",
             "fund_savings_credit_status" => "1",
             "total_principal_paid" => number_format(abs($totalPrincipalPaid), 2, '.', ','),
-            "total_interest_paid" => number_format(abs($totalLoanInterest), 2, '.', ','),
+            "total_interest_paid" => number_format(abs($totalInterestPaid), 2, '.', ','),
             "total_principal_outstanding" => number_format(abs( $totalPrincipalOutstanding), 2, '.', ','),
             "total_interest_outstanding" => number_format(abs($outstandingInterest), 2, '.', ','),
             "savings_per_member" => "2000.0"
