@@ -1442,21 +1442,32 @@ class ApiResurceController extends Controller
         ->where('type', 'LOAN_INTEREST')
             ->sum('amount');
 
-        $totalPrincipalPaid = min($totalLoanRepayments, $totalPrincipal);
+        // Calculate Total Principal Paid
+$totalPrincipalPaid = $totalLoanRepayments - $totalInterest;
 
-        $totalInterestPaid = max($totalLoanRepayments - $totalPrincipal, 0);
+// Ensure Total Principal Paid doesn't exceed the original Total Principal
+$totalPrincipalPaid = min($totalPrincipalPaid, $totalPrincipal);
 
-        // Outstanding Principal
+// Ensure that Total Principal Paid is not negative
+$totalPrincipalPaid = max($totalPrincipalPaid, 0);
+
+// Outstanding Principal (remaining unpaid principal)
 $totalPrincipalOutstanding = max($totalPrincipal - $totalPrincipalPaid, 0);
 
-// Outstanding Interest
-$outstandingInterest = max($totalInterest - $totalLoanInterest, 0);
+// Outstanding Interest (remaining unpaid interest)
+$outstandingInterest = max($totalInterest - ($totalLoanRepayments - $totalPrincipalPaid), 0);
+
+// Calculate Total Interest Paid: (Total Loan Repayments - Original Principal)
+$totalInterestPaid = max($totalLoanRepayments - $totalPrincipal, 0);
+
+// Ensure Total Interest Paid doesn't exceed Expected Interest
+$totalInterestPaid = min($totalInterestPaid, $totalInterest);
 
 // If there are no pending loans, outstanding values should be zero
-if ($totalPrincipalPaid >= $totalPrincipal && $totalInterestPaid >= $totalInterest) {
-    $totalPrincipalOutstanding = 0;
-    $outstandingInterest = 0;
-}
+// if ($totalPrincipalPaid >= $totalPrincipal && $totalInterestPaid >= $totalInterest) {
+//     $totalPrincipalOutstanding = 0;
+//     $outstandingInterest = 0;
+// }
 
         // Prepare the request data
 
@@ -1498,7 +1509,7 @@ if ($totalPrincipalPaid >= $totalPrincipal && $totalInterestPaid >= $totalIntere
         } else {
             // Capture the error details
             $statusCode = $predictionResponse->status();
-            $errorMessage = $predictionResponse->body(); // This will capture the error message or response body
+            $errorMessage = $predictionResponse->body();
 
             // Log the error if needed for debugging
             \Log::error("Prediction API error: Status Code: $statusCode, Message: $errorMessage");
