@@ -1539,10 +1539,10 @@ class ApiResurceController extends Controller
             "youth_support_rate" => "0.2",
             "savings_credit_mobilization" => "0.5",
             "fund_savings_credit_status" => "1",
-            "total_principal_paid" => $totalPrincipalPaid,
-            "total_interest_paid" => $totalLoanInterest,
-            "total_principal_outstanding" => $totalPrincipalOutstanding,
-            "total_interest_outstanding" => $outstandingInterest,
+            "total_principal_paid" => number_format(abs($totalPrincipalPaid), 2, '.', ','),
+            "total_interest_paid" => number_format(abs($totalLoanInterest), 2, '.', ','),
+            "total_principal_outstanding" => number_format(abs( $totalPrincipalOutstanding), 2, '.', ','),
+            "total_interest_outstanding" => number_format(abs($outstandingInterest), 2, '.', ','),
             "savings_per_member" => "2000.0"
         ];
 
