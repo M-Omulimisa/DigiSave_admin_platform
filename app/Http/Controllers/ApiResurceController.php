@@ -1512,6 +1512,10 @@ $fundSavingsCreditStatus = ($fundSavingsCreditStatus < 0.001) ? 0 : $fundSavings
             return $this->error("Prediction API call failed. Status Code: $statusCode, Message: $errorMessage");
         };
 
+
+$youthSupportRateFormatted = number_format($youthSupportRate, 3);
+$fundSavingsCreditStatusFormatted = number_format($fundSavingsCreditStatus, 3);
+
         $saccoDetails = [
             "number_of_loans" => $numberOfLoans,
             "total_principal" => number_format(abs($totalPrincipal), 2, '.', ','),
@@ -1541,9 +1545,9 @@ $fundSavingsCreditStatus = ($fundSavingsCreditStatus < 0.001) ? 0 : $fundSavings
             "savings_accounts_for_youth" => $savingsAccountsForYouth,
             "total_savings_balance_for_youth" => number_format(abs($totalSavingsBalanceForYouth), 2, '.', ','),
             "average_savings_per_member" => number_format(abs($averageSavingsPerMember), 2, '.', ','),
-            'youth_support_rate' => $youthSupportRate,
             'savings_credit_mobilization' => $savingsCreditMobilization,
-            'fund_savings_credit_status' => $fundSavingsCreditStatus,
+            'youth_support_rate' => $youthSupportRateFormatted,
+            'fund_savings_credit_status' => $fundSavingsCreditStatusFormatted,
             "total_principal_paid" => number_format(abs($totalPrincipalPaid), 2, '.', ','),
             "total_interest_paid" => number_format(abs($totalInterestPaid), 2, '.', ','),
             "total_principal_outstanding" => number_format(abs( $totalPrincipalOutstanding), 2, '.', ','),
