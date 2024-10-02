@@ -1439,10 +1439,12 @@ class ApiResurceController extends Controller
 
         // Calculate Total Principal Paid
 
-        $totalPrincipalPaid = $totalLoanRepayments * 0.80;
+        // 4. Calculate Interest Paid
+$calculatedInterestPaid = $totalLoanRepayments * 0.20;
+$totalInterestPaid = min($calculatedInterestPaid, $totalInterest);
 
-// 5. Total Interest Paid (20% of repayments)
-$totalInterestPaid = $totalLoanRepayments * 0.20;
+// 5. Calculate Principal Paid
+$totalPrincipalPaid = $totalLoanRepayments - $totalInterestPaid;
 
 // 6. Total Principal Outstanding
 $totalPrincipalOutstanding = $totalLoans - $totalPrincipalPaid;
@@ -1450,10 +1452,25 @@ $totalPrincipalOutstanding = $totalLoans - $totalPrincipalPaid;
 // 7. Outstanding Interest
 $outstandingInterest = $totalInterest - $totalInterestPaid;
 
-// Optional: Handling Edge Cases
-// Ensure that outstanding amounts don't go negative
+// 8. Handle Edge Cases
+// Ensure that outstanding amounts do not go negative
 $totalPrincipalOutstanding = max($totalPrincipalOutstanding, 0);
 $outstandingInterest = max($outstandingInterest, 0);
+
+// Optional: If there are no outstanding interest, allocate entire repayment to principal
+if ($totalInterestPaid < $calculatedInterestPaid) {
+    // Calculate the excess repayment after fully paying interest
+    $excessRepayment = $calculatedInterestPaid - $totalInterest;
+
+    // Add the excess repayment to principal paid
+    $totalPrincipalPaid += $excessRepayment;
+
+    // Recalculate outstanding principal
+    $totalPrincipalOutstanding = $totalLoans - $totalPrincipalPaid;
+
+    // Ensure no negative outstanding principal
+    $totalPrincipalOutstanding = max($totalPrincipalOutstanding, 0);
+}
 
         // Prepare the request data
 
