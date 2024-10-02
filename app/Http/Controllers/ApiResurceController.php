@@ -1389,32 +1389,27 @@ class ApiResurceController extends Controller
         $adminSavings = $sacco->transactions()
             ->join('users', 'transactions.source_user_id', '=', 'users.id')
             ->where('cycle_id', $activeCycleId)
-            ->where('transactions.type', 'SHARE') // Only consider savings transactions
-            ->where('users.user_type', 'Admin') // Only for Admin users
+            ->where('transactions.type', 'SHARE')
+            ->where('users.user_type', 'Admin')
             ->selectRaw('SUM(transactions.amount) as total_savings, MONTH(transactions.created_at) as month, YEAR(transactions.created_at) as year')
-            ->groupBy('month', 'year') // Group by month and year to get monthly savings
+            ->groupBy('month', 'year')
             ->get();
 
         // Calculate the total number of months where savings were made
         $numberOfMonths = $adminSavings->count();
 
-        // Calculate total savings made by admin members
         $totalSavingsByAdmin = $adminSavings->sum('total_savings');
 
-        // Calculate the average monthly savings for admin members
         $averageMonthlySavingsByAdmin = $numberOfMonths > 0 ? $totalSavingsByAdmin / $numberOfMonths : 0;
 
         // Format the average monthly savings
         // $average_monthly_savings = number_format(abs($averageMonthlySavingsByAdmin), 2, '.', ',');
 
 
-        // Average Savings per Member
         $averageSavingsPerMember = $numberOfMembers > 0 ? $totalSavingsBalance / $numberOfMembers : 0;
 
-        // Ensure that average_monthly_savings is a numeric value without formatting
         $average_monthly_savings = abs($averageMonthlySavingsByAdmin); // No number_format here
 
-        // Fetch the max loan amount based on average monthly savings
         $maxLoanAmountResponse = Http::withHeaders([
             'Content-Type' => 'application/json'
         ])->post('https://vsla-credit-scoring-bde4afgbgyesgheu.canadacentral-01.azurewebsites.net/max_loan_amount', [
@@ -1437,37 +1432,28 @@ class ApiResurceController extends Controller
             return $this->error("Max Loan Amount API call failed. Status Code: $statusCode, Message: $errorMessage");
         };
 
-        $totalLoanInterest = $sacco->transactions()
-        ->where('cycle_id', $activeCycleId)
-        ->where('type', 'LOAN_INTEREST')
-            ->sum('amount');
+        $totalLoans = $sacco->transactions()
+    ->where('cycle_id', $activeCycleId)
+    ->where('type', 'LOAN')
+    ->sum('amount');
 
         // Calculate Total Principal Paid
-$totalPrincipalPaid = $totalLoanRepayments - $totalInterest;
 
-// Ensure Total Principal Paid doesn't exceed the original Total Principal
-$totalPrincipalPaid = min($totalPrincipalPaid, $totalPrincipal);
+        $totalPrincipalPaid = $totalLoanRepayments * 0.80;
 
-// Ensure that Total Principal Paid is not negative
-$totalPrincipalPaid = max($totalPrincipalPaid, 0);
+// 5. Total Interest Paid (20% of repayments)
+$totalInterestPaid = $totalLoanRepayments * 0.20;
 
-// Outstanding Principal (remaining unpaid principal)
-$totalPrincipalOutstanding = max($totalPrincipal - $totalPrincipalPaid, 0);
+// 6. Total Principal Outstanding
+$totalPrincipalOutstanding = $totalLoans - $totalPrincipalPaid;
 
-// Outstanding Interest (remaining unpaid interest)
-$outstandingInterest = max($totalInterest - ($totalLoanRepayments - $totalPrincipalPaid), 0);
+// 7. Outstanding Interest
+$outstandingInterest = $totalInterest - $totalInterestPaid;
 
-// Calculate Total Interest Paid: (Total Loan Repayments - Original Principal)
-$totalInterestPaid = max($totalLoanRepayments - $totalPrincipal, 0);
-
-// Ensure Total Interest Paid doesn't exceed Expected Interest
-$totalInterestPaid = min($totalInterestPaid, $totalInterest);
-
-// If there are no pending loans, outstanding values should be zero
-// if ($totalPrincipalPaid >= $totalPrincipal && $totalInterestPaid >= $totalInterest) {
-//     $totalPrincipalOutstanding = 0;
-//     $outstandingInterest = 0;
-// }
+// Optional: Handling Edge Cases
+// Ensure that outstanding amounts don't go negative
+$totalPrincipalOutstanding = max($totalPrincipalOutstanding, 0);
+$outstandingInterest = max($outstandingInterest, 0);
 
         // Prepare the request data
 
