@@ -1457,10 +1457,10 @@ class ApiResurceController extends Controller
     // Calculating savings_credit_mobilization
     $savingsCreditMobilization = $monthsSinceCreation > 0 ? $totalSavingsBalance / ($monthsSinceCreation * 4) : 0;
 
-    $youthSupportRate = $totalPrincipal > 0 ? ($totalDisbursedToYouth / $totalPrincipal) * 100 : 0;
+    $youthSupportRate = $totalDisbursedToYouth / $totalPrincipal;
 $youthSupportRate = ($youthSupportRate < 0.001) ? 0 : $youthSupportRate; // Avoid extremely small values being formatted as zero
 
-$fundSavingsCreditStatus = $totalPrincipal > 0 ? ($totalPrincipalPaid / $totalPrincipal) * 100 : 0;
+$fundSavingsCreditStatus = $totalPrincipalPaid / $totalPrincipal;
 $fundSavingsCreditStatus = ($fundSavingsCreditStatus < 0.001) ? 0 : $fundSavingsCreditStatus;
 
         // Prepare the request data
