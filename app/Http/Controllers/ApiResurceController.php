@@ -1455,13 +1455,13 @@ class ApiResurceController extends Controller
     $monthsSinceCreation = $sacco->created_at->diffInMonths(now());
 
     // Calculating youth_support_rate
-    $youthSupportRate = $totalPrincipal > 0 ? $totalDisbursedToYouth / $totalPrincipal : 0;
+    $youthSupportRate = $totalPrincipal > 0 ? ($totalDisbursedToYouth / $totalPrincipal) * 100 : 0; // Convert to percentage
 
     // Calculating savings_credit_mobilization
     $savingsCreditMobilization = $monthsSinceCreation > 0 ? $totalSavingsBalance / ($monthsSinceCreation * 4) : 0;
 
     // Calculating fund_savings_credit_status
-    $fundSavingsCreditStatus = $totalPrincipal > 0 ? $totalPrincipalPaid / $totalPrincipal : 0;
+    $fundSavingsCreditStatus = $totalPrincipal > 0 ? ($totalPrincipalPaid / $totalPrincipal) * 100 : 0; // Convert to percentage
 
         // Prepare the request data
 
