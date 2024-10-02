@@ -1447,7 +1447,7 @@ class ApiResurceController extends Controller
         $totalPrincipalPaid = $totalLoanRepayments - $totalInterestPaid;
 
         // 6. Total Principal Outstanding (Principal minus what has been repaid)
-        $totalPrincipalOutstanding = $totalLoans - $totalPrincipalPaid;
+        $totalPrincipalOutstanding = abs($totalLoans) - $totalPrincipalPaid;
 
         // 7. Outstanding Interest (Interest minus what has been repaid)
         $outstandingInterest = $totalInterest - $totalInterestPaid;
