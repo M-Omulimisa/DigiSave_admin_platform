@@ -1486,9 +1486,9 @@ class ApiResurceController extends Controller
             "total_disbursed_to_youth" => abs($totalDisbursedToYouth),
             "total_savings_balance_for_youth" => abs($totalSavingsBalanceForYouth),
             "savings_per_member" => abs($averageSavingsPerMember),
-            'youth_support_rate' => number_format($youthSupportRate, 2),
-            'savings_credit_mobilization' => number_format($savingsCreditMobilization, 2),
-            'fund_savings_credit_status' => number_format($fundSavingsCreditStatus, 2)
+            'youth_support_rate' => $youthSupportRate,
+            'savings_credit_mobilization' => $savingsCreditMobilization,
+            'fund_savings_credit_status' => $fundSavingsCreditStatus
         ];
 
         // Make the prediction API call
