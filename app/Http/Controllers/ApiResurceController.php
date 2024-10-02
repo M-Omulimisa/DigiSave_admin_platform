@@ -1452,6 +1452,17 @@ class ApiResurceController extends Controller
         // 7. Outstanding Interest (Interest minus what has been repaid)
         $outstandingInterest = $totalInterest - $totalInterestPaid;
 
+    $monthsSinceCreation = $sacco->created_at->diffInMonths(now());
+
+    // Calculating youth_support_rate
+    $youthSupportRate = $totalPrincipal > 0 ? $totalDisbursedToYouth / $totalPrincipal : 0;
+
+    // Calculating savings_credit_mobilization
+    $savingsCreditMobilization = $monthsSinceCreation > 0 ? $totalSavingsBalance / ($monthsSinceCreation * 4) : 0;
+
+    // Calculating fund_savings_credit_status
+    $fundSavingsCreditStatus = $totalPrincipal > 0 ? $totalPrincipalPaid / $totalPrincipal : 0;
+
         // Prepare the request data
 
         $requestData = [
@@ -1475,9 +1486,9 @@ class ApiResurceController extends Controller
             "total_disbursed_to_youth" => abs($totalDisbursedToYouth),
             "total_savings_balance_for_youth" => abs($totalSavingsBalanceForYouth),
             "savings_per_member" => abs($averageSavingsPerMember),
-            "youth_support_rate" => 0.5,
-            "savings_credit_mobilization" => 0.5,
-            "fund_savings_credit_status" => 1
+            'youth_support_rate' => number_format($youthSupportRate, 2),
+            'savings_credit_mobilization' => number_format($savingsCreditMobilization, 2),
+            'fund_savings_credit_status' => number_format($fundSavingsCreditStatus, 2)
         ];
 
         // Make the prediction API call
@@ -1530,9 +1541,9 @@ class ApiResurceController extends Controller
             "savings_accounts_for_youth" => $savingsAccountsForYouth,
             "total_savings_balance_for_youth" => number_format(abs($totalSavingsBalanceForYouth), 2, '.', ','),
             "average_savings_per_member" => number_format(abs($averageSavingsPerMember), 2, '.', ','),
-            "youth_support_rate" => "0.2",
-            "savings_credit_mobilization" => "0.5",
-            "fund_savings_credit_status" => "1",
+            'youth_support_rate' => number_format($youthSupportRate, 2),
+            'savings_credit_mobilization' => number_format($savingsCreditMobilization, 2),
+            'fund_savings_credit_status' => number_format($fundSavingsCreditStatus, 2),
             "total_principal_paid" => number_format(abs($totalPrincipalPaid), 2, '.', ','),
             "total_interest_paid" => number_format(abs($totalInterestPaid), 2, '.', ','),
             "total_principal_outstanding" => number_format(abs( $totalPrincipalOutstanding), 2, '.', ','),
