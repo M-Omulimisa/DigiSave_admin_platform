@@ -1432,10 +1432,10 @@ class ApiResurceController extends Controller
             return $this->error("Max Loan Amount API call failed. Status Code: $statusCode, Message: $errorMessage");
         };
 
-        $totalLoans = $sacco->transactions()
+        $totalLoans = abs($sacco->transactions()
     ->where('cycle_id', $activeCycleId)
     ->where('type', 'LOAN')
-    ->sum('amount');
+    ->sum('amount'));
 
         // Calculate Total Principal Paid
 
@@ -1447,7 +1447,7 @@ class ApiResurceController extends Controller
         $totalPrincipalPaid = $totalLoanRepayments - $totalInterestPaid;
 
         // 6. Total Principal Outstanding (Principal minus what has been repaid)
-        $totalPrincipalOutstanding = abs($totalLoans) - $totalPrincipalPaid;
+        $totalPrincipalOutstanding = $totalLoans - $totalPrincipalPaid;
 
         // 7. Outstanding Interest (Interest minus what has been repaid)
         $outstandingInterest = $totalInterest - $totalInterestPaid;
