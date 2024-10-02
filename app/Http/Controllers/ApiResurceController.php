@@ -1443,7 +1443,7 @@ class ApiResurceController extends Controller
         $calculatedInterestPaid = $totalLoanRepayments * 0.20;
         $totalInterestPaid = min($calculatedInterestPaid, $totalInterest); // Ensure you don't pay more interest than owed
 
-        // 5. Calculate how much repayment goes to principal (remaining after interest is paid)
+        // 5. Calculate Principal Paid (remaining after interest is paid)
         $totalPrincipalPaid = $totalLoanRepayments - $totalInterestPaid;
 
         // 6. Total Principal Outstanding (Principal minus what has been repaid)
