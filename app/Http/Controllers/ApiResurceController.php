@@ -1454,15 +1454,15 @@ class ApiResurceController extends Controller
 
     $monthsSinceCreation = $sacco->created_at->diffInMonths(now());
 
+    // Calculating youth_support_rate
+    $youthSupportRate = $totalPrincipal > 0 ? $totalDisbursedToYouth / $totalPrincipal : 0;
+
     // Calculating savings_credit_mobilization
     $savingsCreditMobilization = $monthsSinceCreation > 0 ? $totalSavingsBalance / ($monthsSinceCreation * 4) : 0;
 
     // Calculating fund_savings_credit_status
-    $youthSupportRate = $totalPrincipal > 0 ? ($totalDisbursedToYouth / $totalPrincipal) * 100 : 0;
-    $youthSupportRate = ($youthSupportRate < 0.001) ? 0 : $youthSupportRate; // Avoid extremely small values being formatted as zero
+    $fundSavingsCreditStatus = $totalPrincipal > 0 ? ($totalPrincipalPaid / $totalPrincipal) * 100 : 0; // Convert to percentage
 
-    $fundSavingsCreditStatus = $totalPrincipal > 0 ? ($totalPrincipalPaid / $totalPrincipal) * 100 : 0;
-    $fundSavingsCreditStatus = ($fundSavingsCreditStatus < 0.001) ? 0 : $fundSavingsCreditStatus;
         // Prepare the request data
 
         $requestData = [
@@ -1541,9 +1541,9 @@ class ApiResurceController extends Controller
             "savings_accounts_for_youth" => $savingsAccountsForYouth,
             "total_savings_balance_for_youth" => number_format(abs($totalSavingsBalanceForYouth), 2, '.', ','),
             "average_savings_per_member" => number_format(abs($averageSavingsPerMember), 2, '.', ','),
-            'youth_support_rate' => number_format($youthSupportRate, 3),
+            'youth_support_rate' => $youthSupportRate,
             'savings_credit_mobilization' => $savingsCreditMobilization,
-            'fund_savings_credit_status' => number_format($fundSavingsCreditStatus, 3),
+            'fund_savings_credit_status' => $fundSavingsCreditStatus,
             "total_principal_paid" => number_format(abs($totalPrincipalPaid), 2, '.', ','),
             "total_interest_paid" => number_format(abs($totalInterestPaid), 2, '.', ','),
             "total_principal_outstanding" => number_format(abs( $totalPrincipalOutstanding), 2, '.', ','),
