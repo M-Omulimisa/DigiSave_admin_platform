@@ -1440,17 +1440,17 @@ class ApiResurceController extends Controller
         // Calculate Total Principal Paid
 
         // 4. Calculate Interest Paid (20% of repayments, but capped at total interest)
-$calculatedInterestPaid = $totalLoanRepayments * 0.20;
-$totalInterestPaid = min($calculatedInterestPaid, $totalInterest);
+        $calculatedInterestPaid = $totalLoanRepayments * 0.20;
+        $totalInterestPaid = min($calculatedInterestPaid, $totalInterest); // Ensure you don't pay more interest than owed
 
-// 5. Calculate Principal Paid with remaining repayment
-$totalPrincipalPaid = $totalLoanRepayments - $totalInterestPaid;
+        // 5. Calculate how much repayment goes to principal (remaining after interest is paid)
+        $totalPrincipalPaid = $totalLoanRepayments - $totalInterestPaid;
 
-// 6. Total Principal Outstanding (ensure it doesn't go below 0)
-$totalPrincipalOutstanding = max($totalLoans - $totalPrincipalPaid, 0);
+        // 6. Total Principal Outstanding (Principal minus what has been repaid)
+        $totalPrincipalOutstanding = $totalLoans - $totalPrincipalPaid;
 
-// 7. Outstanding Interest (ensure it doesn't go below 0)
-$outstandingInterest = max($totalInterest - $totalInterestPaid, 0);
+        // 7. Outstanding Interest (Interest minus what has been repaid)
+        $outstandingInterest = $totalInterest - $totalInterestPaid;
 
         // Prepare the request data
 
