@@ -184,28 +184,32 @@ private function getLoanSumForGender($users, $gender, $startDate, $endDate)
         ->where('users.sex', $gender)    // Filter by gender
         // ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
         ->where('t.type', 'LOAN')        // Filter for loans
-        ->whereBetween('t.created_at', [$startDate, $endDate]) // Filter by created_at date range
+        ->whereBetween('t.created_at', [$startDate, $endDate])
         ->where(function ($query) {
             $query->whereNull('users.user_type')
                 ->orWhere('users.user_type', '<>', 'Admin');
-        })
-        ->select(DB::raw('SUM(t.amount) as total_loan_amount'))
-        ->first()
-        ->total_loan_amount;
+            })
+            ->select(DB::raw('SUM(t.amount) as total_loan_amount'))
+            ->first()
+            ->total_loan_amount;
 
-    return $totalLoanAmount;
-}
+        return $totalLoanAmount;
+    }
 
-private function getLoanSumForYouths($users, $startDate, $endDate)
+    private function getLoanSumForYouths($users, $startDate, $endDate)
     {
         $userIds = $users->pluck('id')->toArray();
 
         $loanSumForYouths = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->whereIn('users.id', $userIds)
-                ->where('transactions.type', 'LOAN')
-                ->whereDate('users.dob', '>', now()->subYears(35))
-                ->whereBetween('users.created_at', [$startDate, $endDate])
-                ->sum('transactions.amount');
+        ->whereIn('users.id', $userIds)
+            ->where('transactions.type', 'LOAN')
+            ->whereDate('users.dob', '>', now()->subYears(35))
+            ->whereBetween('users.created_at', [$startDate, $endDate])
+            ->where(function ($query) {
+                $query->whereNull('users.user_type')
+                ->orWhere('users.user_type', '<>', 'Admin');
+            })
+            ->sum('transactions.amount');
 
         return $loanSumForYouths;
     }
@@ -215,11 +219,11 @@ private function getLoanSumForYouths($users, $startDate, $endDate)
         $userIds = $users->pluck('id')->toArray();
 
         $pwdTotalLoanBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->whereIn('users.id', $userIds)
-                ->where('transactions.type', 'LOAN')
-                ->where('users.pwd', 'yes')
-                ->whereBetween('users.created_at', [$startDate, $endDate])
-                ->sum('transactions.amount');
+        ->whereIn('users.id', $userIds)
+            ->where('transactions.type', 'LOAN')
+            ->where('users.pwd', 'yes')
+            ->whereBetween('users.created_at', [$startDate, $endDate])
+            ->sum('transactions.amount');
 
         return $pwdTotalLoanBalance;
     }
