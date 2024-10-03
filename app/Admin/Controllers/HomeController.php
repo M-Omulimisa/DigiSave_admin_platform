@@ -197,21 +197,18 @@ private function getLoanSumForGender($users, $gender, $startDate, $endDate)
 }
 
 private function getLoanSumForYouths($users, $startDate, $endDate)
-{
-    $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
+    {
+        $userIds = $users->pluck('id')->toArray();
 
-    // Extract only the IDs from the $users collection
-    $userIds = $users->pluck('id')->toArray();
-
-                $loanSumForYouths = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+        $loanSumForYouths = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
                 ->whereIn('users.id', $userIds)
-                ->whereDate('users.dob', '>', now()->subYears(35))
                 ->where('transactions.type', 'LOAN')
+                ->whereDate('users.dob', '>', now()->subYears(35))
                 ->whereBetween('users.created_at', [$startDate, $endDate])
-                ->sum('transactions.amount');;
+                ->sum('transactions.amount');
 
-    return $loanSumForYouths;
-}
+        return $loanSumForYouths;
+    }
 
     private function getTotalLoanBalance($users, $startDate, $endDate)
     {
