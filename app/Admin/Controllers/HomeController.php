@@ -173,25 +173,25 @@ private function getTotalLoanAmount($users, $startDate, $endDate)
 
 private function getLoanSumForGender($users, $gender, $startDate, $endDate)
 {
-    // Fetch IDs of saccos that are either deleted or inactive
     $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
 
-    // Extract user IDs from the provided users collection
+    // Extract only the IDs from the $users collection
     $userIds = $users->pluck('id')->toArray();
 
-    // Calculate the total loan amount
-    $totalLoanAmount = Transaction::where('type', 'LOAN')
-        ->whereIn('source_user_id', $userIds) // Filter transactions by user IDs
-        ->whereBetween('created_at', [$startDate, $endDate]) // Filter by date range
-        ->whereHas('sourceUser', function ($query) use ($gender) {
-            $query->where('sex', $gender) // Filter users by gender
-                //   ->whereNotIn('sacco_id', $deletedOrInactiveSaccoIds) // Exclude users from deleted/inactive saccos
-                  ->where(function ($q) {
-                      $q->whereNull('user_type') // Include users with no user_type
-                        ->orWhere('user_type', '<>', 'Admin'); // Exclude Admin users
-                  });
+    $totalLoanAmount = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
+        ->join('saccos as s', 'users.sacco_id', '=', 's.id')
+        ->whereIn('users.id', $userIds)  // Use the extracted user IDs
+        ->where('users.sex', $gender)    // Filter by gender
+        // ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+        ->where('t.type', 'LOAN')        // Filter for loans
+        ->whereBetween('t.created_at', [$startDate, $endDate]) // Filter by created_at date range
+        ->where(function ($query) {
+            $query->whereNull('users.user_type')
+                ->orWhere('users.user_type', '<>', 'Admin');
         })
-        ->sum('amount'); // Sum the loan amounts
+        ->select(DB::raw('SUM(t.amount) as total_loan_amount'))
+        ->first()
+        ->total_loan_amount;
 
     return $totalLoanAmount;
 }
