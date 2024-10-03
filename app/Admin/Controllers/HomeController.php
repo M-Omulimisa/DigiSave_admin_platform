@@ -271,12 +271,14 @@ private function getLoanSumForYouths($users, $startDate, $endDate)
     {
         $userIds = $users->pluck('id')->toArray();
 
-        return Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->where('transactions.type', 'LOAN')
-            ->whereIn('users.id', $userIds)
-            ->where('users.pwd', 'yes')
-            ->whereBetween('users.created_at', [$startDate, $endDate])
-            ->sum('transactions.amount');
+        $pwdTotalLoanBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('users.id', $userIds)
+                ->where('transactions.type', 'LOAN')
+                ->where('users.pwd', 'yes')
+                ->whereBetween('users.created_at', [$startDate, $endDate])
+                ->sum('transactions.amount');
+
+        return $pwdTotalLoanBalance;
     }
 
     private function generateCsv($statistics, $startDate, $endDate)
