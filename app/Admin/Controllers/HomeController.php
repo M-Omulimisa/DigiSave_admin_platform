@@ -181,12 +181,15 @@ private function getLoanSumForGender($users, $gender, $startDate, $endDate)
 
     // Calculate the total loan amount
     $totalLoanAmount = Transaction::where('type', 'LOAN')
-        ->whereIn('user_id', $userIds) // Filter transactions by user IDs
+        ->whereIn('source_user_id', $userIds) // Filter transactions by user IDs
         ->whereBetween('created_at', [$startDate, $endDate]) // Filter by date range
-        ->whereHas('sourceUser', function ($query) use ($gender, $deletedOrInactiveSaccoIds) {
+        ->whereHas('sourceUser', function ($query) use ($gender) {
             $query->where('sex', $gender) // Filter users by gender
-                  ->whereNotIn('sacco_id', $deletedOrInactiveSaccoIds) // Exclude users from deleted/inactive saccos
-
+                //   ->whereNotIn('sacco_id', $deletedOrInactiveSaccoIds) // Exclude users from deleted/inactive saccos
+                  ->where(function ($q) {
+                      $q->whereNull('user_type') // Include users with no user_type
+                        ->orWhere('user_type', '<>', 'Admin'); // Exclude Admin users
+                  });
         })
         ->sum('amount'); // Sum the loan amounts
 
