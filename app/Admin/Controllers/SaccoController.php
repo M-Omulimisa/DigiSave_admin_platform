@@ -19,191 +19,245 @@ class SaccoController extends AdminController
     protected $title = 'VSLA Groups';
 
     protected function grid()
-    {
-        $grid = new Grid(new Sacco());
+{
+    $grid = new Grid(new Sacco());
 
-        $admin = Admin::user();
-        $adminId = $admin->id;
+    $admin = Admin::user();
+    $adminId = $admin->id;
 
-        // Default sort order
-        $sortOrder = request()->get('_sort', 'desc');
-        if (!in_array($sortOrder, ['asc', 'desc'])) {
-            $sortOrder = 'desc';
-        }
-
-        if (!$admin->isRole('admin')) {
-            $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
-            if ($orgAllocation) {
-                $orgId = $orgAllocation->vsla_organisation_id;
-                $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
-                $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
-                $grid->model()
-                    ->whereIn('id', $saccoIds)
-                    ->whereNotIn('status', ['deleted', 'inactive'])
-                    // ->whereHas('users', function ($query) {
-                    //     $query->whereIn('position_id', function ($subQuery) {
-                    //         $subQuery->select('id')
-                    //                  ->from('positions')
-                    //                  ->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
-                    //     })
-                    //     ->whereNotNull('phone_number')
-                    //     ->whereNotNull('name');
-                    // })
-                    ->orderBy('created_at', $sortOrder);
-                $grid->disableCreateButton();
-            }
-        } else {
-            // For admins, display all records ordered by created_at
-            $grid->model()
-                ->whereNotIn('status', ['deleted', 'inactive'])
-                // ->whereHas('users', function ($query) {
-                //     $query->whereIn('position_id', function ($subQuery) {
-                //         $subQuery->select('id')
-                //                  ->from('positions')
-                //                  ->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
-                //     })
-                //     ->whereNotNull('phone_number')
-                //     ->whereNotNull('name');
-                // })
-                ->orderBy('created_at', $sortOrder);
-        }
-
-        $grid->showExportBtn();
-        $grid->disableBatchActions();
-        $grid->quickSearch('name')->placeholder('Search by name');
-
-        $grid->column('name', __('Name'))->sortable()->display(function ($name) {
-            return ucwords(strtolower($name));
-        });
-
-        $grid->column('phone_number', __('Phone Number'))
-            ->sortable()
-            ->display(function () {
-                $user = \App\Models\User::where('sacco_id', $this->id)
-                    ->whereHas('position', function ($query) {
-                        $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
-                    })
-                    ->first();
-
-                return $user ? $user->phone_number : '';
-            });
-
-        // Adding new columns for uses_cash and uses_shares
-        $grid->column('uses_cash', __('Uses Cash'))
-            ->display(function () {
-                return $this->uses_shares == 0 ? 'Yes' : 'No';
-            })->sortable();
-
-        // Adding new columns for share_price and min_cash_savings
-        $grid->column('min_cash_savings', __('Minimum Cash Savings (UGX)'))
-            ->display(function () {
-                return $this->uses_shares == 0 ? number_format($this->share_price) : '0';
-            })->sortable();
-
-        $grid->column('uses_shares', __('Uses Shares'))
-            ->display(function () {
-                return $this->uses_shares == 1 ? 'Yes' : 'No';
-            })->sortable();
-
-        $grid->column('share_price', __('Share Price (UGX)'))
-            ->display(function () {
-                return $this->uses_shares == 1 ? number_format($this->share_price) : '0';
-            })->sortable();
-
-            $grid->column('district', __('District'))->sortable()->display(function ($district) {
-                if (!empty($district)) {
-                    // If district is available, format and display it
-                    return ucwords(strtolower($district));
-                } elseif (!empty($this->physical_address)) {
-                    // If district is not available but physical_address is, format and display physical_address
-                    return ucwords(strtolower($this->physical_address));
-                } else {
-                    // If neither is available, display 'No District'
-                    return 'No District';
-                }
-            });
-
-        $grid->column('chairperson_name', __('Chairperson Name'))
-            ->sortable()
-            ->display(function () {
-                $user = \App\Models\User::where('sacco_id', $this->id)
-                    ->whereHas('position', function ($query) {
-                        $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
-                    })
-                    ->first();
-
-                return $user ? ucwords(strtolower($user->name)) : '';
-            });
-
-        $grid->column('created_at', __('Created At'))
-            ->display(function ($date) {
-                return date('d M Y', strtotime($date));
-            })->sortable();
-
-        // Adding the "View Transactions" column
-        $grid->column('view_transactions', __('View Transactions'))
-            ->display(function () {
-                return '<a href="' . url('/transactions?sacco_id=' . $this->id) . '">View Transactions</a>';
-            });
-
-        // Adding search filters
-        $grid->filter(function ($filter) {
-            $filter->disableIdFilter();
-
-            $filter->like('name', 'Name');
-            $filter->like('phone_number', 'Phone Number');
-            $filter->like('physical_address', 'Physical Address');
-        });
-
-        // Adding custom dropdown for sorting and filtering
-        $grid->tools(function ($tools) {
-            $tools->append('
-            <div class="btn-group pull-right" style="margin-right: 10px; margin-left: 10px;">
-                <button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown">
-                    Sort by Established <span class="caret"></span>
-                </button>
-                <ul class="dropdown-menu" role="menu">
-                    <li><a href="' . url()->current() . '?_sort=asc">Ascending</a></li>
-                    <li><a href="' . url()->current() . '?_sort=desc">Descending</a></li>
-                </ul>
-            </div>
-        ');
-
-            // Adding custom dropdown for filtering uses_cash and uses_shares
-            $tools->append('
-            <div class="btn-group pull-right" style="margin-right: 10px; margin-left: 10px;">
-                <button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown">
-                    Filter by Usage <span class="caret"></span>
-                </button>
-                <ul class="dropdown-menu" role="menu">
-                    <li><a href="' . url()->current() . '?uses_shares=0">Uses Cash</a></li>
-                    <li><a href="' . url()->current() . '?uses_shares=1">Uses Shares</a></li>
-                    <li><a href="' . url()->current() . '">All</a></li>
-                </ul>
-            </div>
-        ');
-        });
-
-        // Adding the filtering logic based on the dropdown selection
-        if (request()->has('uses_shares')) {
-            $uses_shares = request()->get('uses_shares');
-            if (in_array($uses_shares, ['0', '1'])) {
-                $grid->model()->where('uses_shares', $uses_shares);
-            }
-        }
-
-        if (request()->has('transactions')) {
-            $transactions = request()->get('transactions');
-            if ($transactions === 'yes') {
-                $grid->model()->whereHas('transactions');
-            } elseif ($transactions === 'no') {
-                $grid->model()->whereDoesntHave('transactions');
-            }
-        }
-
-        return $grid;
+    // Default sort order
+    $sortOrder = request()->get('_sort', 'desc');
+    if (!in_array($sortOrder, ['asc', 'desc'])) {
+        $sortOrder = 'desc';
     }
 
+    // Apply filters based on user's role
+    if (!$admin->isRole('admin')) {
+        $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+        if ($orgAllocation) {
+            $orgId = $orgAllocation->vsla_organisation_id;
+            $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
+            $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
+            $grid->model()
+                ->whereIn('id', $saccoIds)
+                ->whereNotIn('status', ['deleted', 'inactive'])
+                ->orderBy('created_at', $sortOrder);
+            $grid->disableCreateButton();
+        }
+    } else {
+        // For admins, display all records ordered by created_at
+        $grid->model()
+            ->whereNotIn('status', ['deleted', 'inactive'])
+            ->orderBy('created_at', $sortOrder);
+    }
+
+    // Show export button
+    $grid->showExportBtn();
+    $grid->disableBatchActions();
+    $grid->quickSearch('name')->placeholder('Search by name');
+
+    // Define columns
+    $grid->column('name', __('Name'))->sortable()->display(function ($name) {
+        return ucwords(strtolower($name));
+    });
+
+    $grid->column('phone_number', __('Phone Number'))
+        ->sortable()
+        ->display(function () {
+            $user = \App\Models\User::where('sacco_id', $this->id)
+                ->whereHas('position', function ($query) {
+                    $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+                })
+                ->first();
+
+            return $user ? $user->phone_number : '';
+        });
+
+    // Adding new columns for uses_cash and uses_shares
+    $grid->column('uses_cash', __('Uses Cash'))
+        ->display(function () {
+            return $this->uses_shares == 0 ? 'Yes' : 'No';
+        })->sortable();
+
+    // Adding new columns for share_price and min_cash_savings
+    $grid->column('min_cash_savings', __('Minimum Cash Savings (UGX)'))
+        ->display(function () {
+            return $this->uses_shares == 0 ? number_format($this->share_price) : '0';
+        })->sortable();
+
+    $grid->column('uses_shares', __('Uses Shares'))
+        ->display(function () {
+            return $this->uses_shares == 1 ? 'Yes' : 'No';
+        })->sortable();
+
+    $grid->column('share_price', __('Share Price (UGX)'))
+        ->display(function () {
+            return $this->uses_shares == 1 ? number_format($this->share_price) : '0';
+        })->sortable();
+
+    $grid->column('district', __('District'))->sortable()->display(function ($district) {
+        if (!empty($district)) {
+            // If district is available, format and display it
+            return ucwords(strtolower($district));
+        } elseif (!empty($this->physical_address)) {
+            // If district is not available but physical_address is, format and display physical_address
+            return ucwords(strtolower($this->physical_address));
+        } else {
+            // If neither is available, display 'No District'
+            return 'No District';
+        }
+    });
+
+    $grid->column('chairperson_name', __('Chairperson Name'))
+        ->sortable()
+        ->display(function () {
+            $user = \App\Models\User::where('sacco_id', $this->id)
+                ->whereHas('position', function ($query) {
+                    $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+                })
+                ->first();
+
+            return $user ? ucwords(strtolower($user->name)) : '';
+        });
+
+    $grid->column('created_at', __('Created At'))
+        ->display(function ($date) {
+            return date('d M Y', strtotime($date));
+        })->sortable();
+
+    // Adding the "View Transactions" column
+    $grid->column('view_transactions', __('View Transactions'))
+        ->display(function () {
+            return '<a href="' . url('/transactions?sacco_id=' . $this->id) . '">View Transactions</a>';
+        });
+
+    // Adding search filters
+    $grid->filter(function ($filter) {
+        $filter->disableIdFilter();
+
+        $filter->like('name', 'Name');
+        $filter->like('phone_number', 'Phone Number');
+        $filter->like('physical_address', 'Physical Address');
+    });
+
+    // Filtering logic based on location_search
+    if ($search = request()->get('location_search')) {
+        $grid->model()->where(function ($query) use ($search) {
+            $query->where('district', 'like', "%{$search}%")
+                  ->orWhere('physical_address', 'like', "%{$search}%");
+        });
+    }
+
+    // Adding custom dropdowns and search input in the tools section
+    $grid->tools(function ($tools) {
+        $tools->append('
+            <style>
+                .custom-tool-container {
+                    width: 100%;
+                }
+                .custom-tool-container .button-row {
+                    display: flex;
+                    flex-wrap: wrap;
+                    margin-bottom: 10px;
+                    margin-top: 10px;
+                }
+                .custom-tool-container .search-row {
+                    margin-top: 10px;
+                }
+            </style>
+            <div class="custom-tool-container">
+                <div class="button-row">
+                    <!-- Sort Dropdown -->
+                    <div class="btn-group" style="margin-right: 5px;">
+                        <button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown">
+                            Sort by Established <span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu" role="menu">
+                            <li><a href="' . url()->current() . '?_sort=asc">Ascending</a></li>
+                            <li><a href="' . url()->current() . '?_sort=desc">Descending</a></li>
+                        </ul>
+                    </div>
+                    <!-- Filter Dropdown -->
+                    <div class="btn-group" style="margin-right: 5px;">
+                        <button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown">
+                            Filter by Usage <span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu" role="menu">
+                            <li><a href="' . url()->current() . '?uses_shares=0">Uses Cash</a></li>
+                            <li><a href="' . url()->current() . '?uses_shares=1">Uses Shares</a></li>
+                            <li><a href="' . url()->current() . '">All</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="search-row">
+                    <form action="' . url()->current() . '" method="GET" pjax-container>
+                        <div class="input-group input-group-sm" style="width: 250px;">
+                            <input type="text" name="location_search" class="form-control" placeholder="Search District or Address" value="' . request('location_search', '') . '">
+                            <div class="input-group-btn">
+                                <button type="submit" class="btn btn-default"><i class="fa fa-search"></i></button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        ');
+    });
+
+    // Adding the filtering logic based on the dropdown selection
+    if (request()->has('uses_shares')) {
+        $uses_shares = request()->get('uses_shares');
+        if (in_array($uses_shares, ['0', '1'])) {
+            $grid->model()->where('uses_shares', $uses_shares);
+        }
+    }
+
+    if (request()->has('transactions')) {
+        $transactions = request()->get('transactions');
+        if ($transactions === 'yes') {
+            $grid->model()->whereHas('transactions');
+        } elseif ($transactions === 'no') {
+            $grid->model()->whereDoesntHave('transactions');
+        }
+    }
+
+    // Include jQuery UI
+    Admin::js('https://code.jquery.com/ui/1.12.1/jquery-ui.min.js');
+    Admin::css('https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css');
+
+    // JavaScript code to fetch districts and initialize autocomplete
+    Admin::script("
+        $(function() {
+            var csrfToken = $('meta[name=\"csrf-token\"]').attr('content');
+            var districts = [];
+
+            // Fetch all districts when the page loads
+            $.ajax({
+                url: '" . url('/api/district') . "',
+                type: 'GET',
+                dataType: 'json',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                success: function(data) {
+                    districts = data.data.map(function(item) {
+                        return item.name;
+                    });
+
+                    // Initialize the autocomplete after fetching districts
+                    $('input[name=\"location_search\"]').autocomplete({
+                        source: districts,
+                        minLength: 1,
+                    });
+                },
+                error: function(xhr, status, error) {
+                    console.log('AJAX Error: ' + status + ': ' + error);
+                }
+            });
+        });
+    ");
+
+    return $grid;
+}
 
     protected function detail($id)
     {

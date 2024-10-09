@@ -206,20 +206,24 @@ class ApiResurceController extends Controller
         return $this->success($loans, $message = "Successfully fetched loans");
     }
 
-    public function get_districts()
+    public function get_districts(Request $request)
     {
 
-        // $u = auth('api')->user();
+        $query = $request->get('q');
 
-        // if ($u == null) {
-        //     return $this->error('User not found.');
-        // }
+    $districts = District::query();
 
-        return $this->success(
-            District::all(),
-            $message = "Success.",
-            200
-        );
+    if ($query) {
+        $districts->where('name', 'like', '%' . $query . '%');
+    }
+
+    $data = $districts->get(['id', 'name']);
+
+    return response()->json([
+        'code' => 1,
+        'message' => 'Success.',
+        'data' => $data
+    ]);
     }
 
     /**
