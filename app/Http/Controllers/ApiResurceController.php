@@ -1460,8 +1460,8 @@ class ApiResurceController extends Controller
     $youthSupportRate = $totalDisbursedToYouth / $totalPrincipal;
 $youthSupportRate = ($youthSupportRate < 0.001) ? 0 : $youthSupportRate; // Avoid extremely small values being formatted as zero
 
-$totalPrincipalPaid = floatval($totalPrincipalPaid);
-$totalPrincipal = floatval($totalPrincipal);
+$totalPrincipalPaid = $totalPrincipalPaid;
+$totalPrincipal = $totalPrincipal;
 
 $fundSavingsCreditStatus = $totalPrincipal > 0 ? $totalPrincipalPaid / $totalPrincipal : 0;
 
