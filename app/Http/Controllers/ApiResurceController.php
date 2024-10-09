@@ -1463,7 +1463,7 @@ $youthSupportRate = ($youthSupportRate < 0.001) ? 0 : $youthSupportRate; // Avoi
 $totalPrincipalPaid = $totalPrincipalPaid;
 $totalPrincipal = $totalPrincipal;
 
-$fundSavingsCreditStatus = $totalPrincipal;
+$fundSavingsCreditStatus = abs($totalPrincipal);
 
 // Format to three decimal places for consistency in the response
 $fundSavingsCreditStatusFormatted = number_format($fundSavingsCreditStatus, 3);
