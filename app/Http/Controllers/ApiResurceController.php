@@ -1464,7 +1464,7 @@ $totalPrincipalPaid = $totalPrincipalPaid;
 $cleanTotalPrincipal = str_replace(',', '', $totalPrincipal);
 $numericTotalPrincipal = floatval($cleanTotalPrincipal);
 
-$fundSavingsCreditStatus = $numericTotalPrincipal > 0 ? $totalPrincipalPaid / abs($numericTotalPrincipal) : 0;
+$fundSavingsCreditStatus =  $totalPrincipalPaid / abs($numericTotalPrincipal);
 
 // $fundSavingsCreditStatus = abs($totalPrincipalPaid);
 
