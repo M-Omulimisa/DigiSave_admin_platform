@@ -1522,7 +1522,7 @@ $fundSavingsCreditStatusFormatted = $fundSavingsCreditStatus;
 
 
 $youthSupportRateFormatted = number_format($youthSupportRate, 3);
-$fundSavingsCreditStatusFormatted = $fundSavingsCreditStatus;
+$fundSavingsCreditStatusFormatted = number_format($fundSavingsCreditStatus, 3);
 
         $saccoDetails = [
             "number_of_loans" => $numberOfLoans,
