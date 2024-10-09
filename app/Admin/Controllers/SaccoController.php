@@ -110,9 +110,18 @@ class SaccoController extends AdminController
                 return $this->uses_shares == 1 ? number_format($this->share_price) : '0';
             })->sortable();
 
-        $grid->column('district', __('District'))->sortable()->display(function ($address) {
-            return ucwords(strtolower($address));
-        });
+            $grid->column('district', __('District'))->sortable()->display(function ($district) {
+                if (!empty($district)) {
+                    // If district is available, format and display it
+                    return ucwords(strtolower($district));
+                } elseif (!empty($this->physical_address)) {
+                    // If district is not available but physical_address is, format and display physical_address
+                    return ucwords(strtolower($this->physical_address));
+                } else {
+                    // If neither is available, display 'No District'
+                    return 'No District';
+                }
+            });
 
         $grid->column('chairperson_name', __('Chairperson Name'))
             ->sortable()
