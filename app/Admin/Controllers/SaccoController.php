@@ -148,6 +148,14 @@ class SaccoController extends AdminController
         });
     }
 
+    if ($createdFrom = request('created_from')) {
+        $grid->model()->whereDate('created_at', '>=', $createdFrom);
+    }
+
+    if ($createdTo = request('created_to')) {
+        $grid->model()->whereDate('created_at', '<=', $createdTo);
+    }
+
     // Adding custom dropdowns and search input in the tools section
     $grid->tools(function ($tools) {
         $tools->append('
@@ -165,7 +173,7 @@ class SaccoController extends AdminController
                     margin-top: 10px;
                 }
             </style>
-            <div class="custom-tool-container">
+            <div class="custom-tool-container margin-top: 10px;">
                 <div class="button-row">
                     <!-- Sort Dropdown -->
                     <div class="btn-group" style="margin-right: 5px;">
@@ -188,6 +196,12 @@ class SaccoController extends AdminController
                             <li><a href="' . url()->current() . '">All</a></li>
                         </ul>
                     </div>
+                    <!-- Filter by Created At Button -->
+                    <div class="btn-group" style="margin-right: 5px;">
+                        <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#createdAtFilterModal">
+                            Filter by Date Created
+                        </button>
+                    </div>
                 </div>
                 <div class="search-row">
                     <form action="' . url()->current() . '" method="GET" pjax-container>
@@ -200,6 +214,45 @@ class SaccoController extends AdminController
                     </form>
                 </div>
             </div>
+
+            <!-- Created At Filter Modal -->
+            <div class="modal fade" id="createdAtFilterModal" tabindex="-1" role="dialog" aria-labelledby="createdAtFilterModalLabel">
+              <div class="modal-dialog" role="document">
+                <form action="' . url()->current() . '" method="GET">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                      <h4 class="modal-title" id="createdAtFilterModalLabel">Filter by Created At</h4>
+                    </div>
+                    <div class="modal-body">
+                      <div class="form-group">
+                        <label for="created_from">Start Date:</label>
+                        <input type="text" class="form-control datepicker" id="created_from" name="created_from" placeholder="Select start date" value="' . request('created_from', '') . '" required>
+                      </div>
+                      <div class="form-group">
+                        <label for="created_to">End Date:</label>
+                        <input type="text" class="form-control datepicker" id="created_to" name="created_to" placeholder="Select end date" value="' . request('created_to', '') . '" required>
+                      </div>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                      <button type="submit" class="btn btn-primary">Apply Filter</button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <script>
+                $(document).ready(function(){
+                    // Initialize datepickers
+                    $(".datepicker").datepicker({
+                        format: "yyyy-mm-dd",
+                        autoclose: true,
+                        todayHighlight: true
+                    });
+                });
+            </script>
         ');
     });
 
