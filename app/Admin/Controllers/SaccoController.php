@@ -110,7 +110,7 @@ class SaccoController extends AdminController
                 return $this->uses_shares == 1 ? number_format($this->share_price) : '0';
             })->sortable();
 
-        $grid->column('physical_address', __('Physical Address'))->sortable()->display(function ($address) {
+        $grid->column('district', __('District'))->sortable()->display(function ($address) {
             return ucwords(strtolower($address));
         });
 
