@@ -1461,9 +1461,10 @@ class ApiResurceController extends Controller
 $youthSupportRate = ($youthSupportRate < 0.001) ? 0 : $youthSupportRate; // Avoid extremely small values being formatted as zero
 
 $totalPrincipalPaid = $totalPrincipalPaid;
-$totalPrincipal = $totalPrincipal;
+$cleanTotalPrincipal = str_replace(',', '', $totalPrincipal);
+$numericTotalPrincipal = floatval($cleanTotalPrincipal);
 
-$fundSavingsCreditStatus = abs($totalPrincipal);
+$fundSavingsCreditStatus = abs($numericTotalPrincipal);
 
 // Format to three decimal places for consistency in the response
 $fundSavingsCreditStatusFormatted = number_format($fundSavingsCreditStatus, 3);
