@@ -1464,10 +1464,10 @@ $totalPrincipalPaid = $totalPrincipalPaid;
 $cleanTotalPrincipal = str_replace(',', '', $totalPrincipal);
 $numericTotalPrincipal = floatval($cleanTotalPrincipal);
 
-$fundSavingsCreditStatus = abs($numericTotalPrincipal);
+$fundSavingsCreditStatus = abs($totalPrincipal);
 
 // Format to three decimal places for consistency in the response
-$fundSavingsCreditStatusFormatted = number_format($fundSavingsCreditStatus, 3);
+$fundSavingsCreditStatusFormatted = $fundSavingsCreditStatus;
 
         // Prepare the request data
 
