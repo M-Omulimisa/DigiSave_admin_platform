@@ -138,6 +138,7 @@ class SaccoController extends AdminController
         $filter->like('name', 'Name');
         $filter->like('phone_number', 'Phone Number');
         $filter->like('physical_address', 'Physical Address');
+        $filter->between('created_at', 'Created At')->datetime();
     });
 
     // Filtering logic based on location_search
@@ -148,13 +149,14 @@ class SaccoController extends AdminController
         });
     }
 
-    if ($createdFrom = request('created_from')) {
-        $grid->model()->whereDate('created_at', '>=', $createdFrom);
-    }
+    // Apply Created At date range filter if present
+if ($createdFrom = request('created_from')) {
+    $grid->model()->whereDate('created_at', '>=', $createdFrom);
+}
 
-    if ($createdTo = request('created_to')) {
-        $grid->model()->whereDate('created_at', '<=', $createdTo);
-    }
+if ($createdTo = request('created_to')) {
+    $grid->model()->whereDate('created_at', '<=', $createdTo);
+}
 
     // Adding custom dropdowns and search input in the tools section
     $grid->tools(function ($tools) {
@@ -172,8 +174,12 @@ class SaccoController extends AdminController
                 .custom-tool-container .search-row {
                     margin-top: 10px;
                 }
+                /* Modal Styling */
+                .modal-header, .modal-footer {
+                    background-color: #f5f5f5;
+                }
             </style>
-            <div class="custom-tool-container margin-top: 10px;">
+            <div class="custom-tool-container">
                 <div class="button-row">
                     <!-- Sort Dropdown -->
                     <div class="btn-group" style="margin-right: 5px;">
@@ -202,6 +208,12 @@ class SaccoController extends AdminController
                             Filter by Date Created
                         </button>
                     </div>
+                    <!-- Reset Filters Button -->
+                    <div class="btn-group" style="margin-right: 5px;">
+                        <a href="' . url()->current() . '" class="btn btn-sm btn-warning">
+                            <i class="fa fa-refresh"></i> Reset Filters
+                        </a>
+                    </div>
                 </div>
                 <div class="search-row">
                     <form action="' . url()->current() . '" method="GET" pjax-container>
@@ -225,6 +237,11 @@ class SaccoController extends AdminController
                       <h4 class="modal-title" id="createdAtFilterModalLabel">Filter by Created At</h4>
                     </div>
                     <div class="modal-body">
+                      <!-- Preserve existing filters -->
+                      <input type="hidden" name="uses_shares" value="' . request('uses_shares', '') . '">
+                      <input type="hidden" name="location_search" value="' . request('location_search', '') . '">
+                      <input type="hidden" name="_sort" value="' . request('_sort', 'desc') . '">
+
                       <div class="form-group">
                         <label for="created_from">Start Date:</label>
                         <input type="text" class="form-control datepicker" id="created_from" name="created_from" placeholder="Select start date" value="' . request('created_from', '') . '" required>
