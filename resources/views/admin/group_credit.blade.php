@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,14 +10,17 @@
         .container {
             max-width: 1200px;
         }
+
         .table th {
             background-color: #343a40;
             color: #fff;
             width: 30%;
         }
+
         .alert {
             margin-top: 20px;
         }
+
         .box {
             border: 1px solid #dee2e6;
             border-radius: 5px;
@@ -24,28 +28,34 @@
             padding: 20px;
             margin-bottom: 20px;
         }
+
         .box-header {
             border-bottom: 1px solid #dee2e6;
             margin-bottom: 15px;
         }
+
         .box-title {
             font-size: 1.5rem;
             font-weight: bold;
         }
+
         pre {
             background-color: #f1f1f1;
             padding: 15px;
             border-radius: 5px;
             overflow: auto;
         }
+
         .progress {
             height: 20px;
         }
+
         .progress-bar {
             line-height: 20px;
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <!-- Header -->
@@ -57,7 +67,7 @@
         <!-- Main Content -->
         <div class="row">
             <div class="col-md-12">
-                @if(isset($saccoDetails['error']))
+                @if (isset($saccoDetails['error']))
                     <div class="alert alert-danger">
                         {{ $saccoDetails['error'] }}
                     </div>
@@ -69,33 +79,39 @@
                         <div class="box-body; margin-bottom: 10px;">
 
                             <!-- New Prediction Response Section -->
-                            @if(isset($saccoDetails['prediction_response']['error']))
-                                <div class="alert alert-danger">
-                                    {{ $saccoDetails['prediction_response']['error'] }}
-                                </div>
-                            @else
-                                <div id="prediction-response" class="mt-4">
-                                    <h4 class="mb-3">Prediction Response</h4>
-                                    <div class="card">
-                                        <div class="card-body">
-                                            <div class="row mb-3">
-                                                <div class="col-md-4">
-                                                    <strong>Credit Score Class:</strong>
-                                                    <span id="credit-score-class"></span>
+                            @if (isset($saccoDetails['prediction_response']))
+                                @if (isset($saccoDetails['prediction_response']['error']))
+                                    <div class="alert alert-danger">
+                                        {{ $saccoDetails['prediction_response']['error'] }}
+                                    </div>
+                                @else
+                                    <div id="prediction-response" class="mt-4">
+                                        <h4 class="mb-3">Prediction Response</h4>
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <div class="row mb-3">
+                                                    <div class="col-md-4">
+                                                        <strong>Credit Score Class:</strong>
+                                                        <span id="credit-score-class"></span>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <strong>Description:</strong>
+                                                        <span id="description"></span>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <strong>Credit Score:</strong>
+                                                        <span id="credit-score"></span>
+                                                    </div>
                                                 </div>
-                                                <div class="col-md-4">
-                                                    <strong>Description:</strong>
-                                                    <span id="description"></span>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <strong>Credit Score:</strong>
-                                                    <span id="credit-score"></span>
-                                                </div>
+                                                <h5 class="mb-3">Indicator Performance</h5>
+                                                <div id="performance-indicators"></div>
                                             </div>
-                                            <h5 class="mb-3">Indicator Performance</h5>
-                                            <div id="performance-indicators"></div>
                                         </div>
                                     </div>
+                                @endif
+                            @else
+                                <div class="alert alert-info mt-4">
+                                    Prediction response is not available for this group.
                                 </div>
                             @endif
                             <div class="box-header">
@@ -122,7 +138,8 @@
                                         </tr>
                                         <tr>
                                             <th>Average Monthly Savings (UGX)</th>
-                                            <td>{{ number_format($saccoDetails['average_monthly_savings'], 2, '.', ',') }}</td>
+                                            <td>{{ number_format($saccoDetails['average_monthly_savings'], 2, '.', ',') }}
+                                            </td>
                                         </tr>
                                         <tr>
                                             <th>Number of Members</th>
@@ -214,7 +231,8 @@
                                         </tr>
                                         <tr>
                                             <th>Savings Credit Mobilization</th>
-                                            <td>{{ number_format($saccoDetails['savings_credit_mobilization'], 2, '.', ',') }}</td>
+                                            <td>{{ number_format($saccoDetails['savings_credit_mobilization'], 2, '.', ',') }}
+                                            </td>
                                         </tr>
                                         <tr>
                                             <th>Youth Support Rate</th>
@@ -257,49 +275,65 @@
     </div>
 
     <!-- Bootstrap JS and dependencies -->
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+        integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous">
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Prediction Response Script -->
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const predictionData = @json($saccoDetails['prediction_response']);
+        document.addEventListener('DOMContentLoaded', function() {
+            @if (isset($saccoDetails['prediction_response']) && !isset($saccoDetails['prediction_response']['error']))
+                const predictionData = @json($saccoDetails['prediction_response']);
 
-        document.getElementById('credit-score-class').textContent = predictionData.credit_score_class;
-        document.getElementById('description').textContent = predictionData.description;
-        document.getElementById('credit-score').textContent = predictionData.credi_score;
+                document.getElementById('credit-score-class').textContent = predictionData.credit_score_class;
+                document.getElementById('description').textContent = predictionData.description;
+                document.getElementById('credit-score').textContent = predictionData.credi_score;
 
-        const performanceIndicators = document.getElementById('performance-indicators');
+                const performanceIndicators = document.getElementById('performance-indicators');
 
-        const indicators = [
-            { name: 'Capacity', key: 'Capacity' },
-            { name: 'Savings and Credit Mobilization', key: 'Savings and Credit Mobilization' },
-            { name: 'Vulnerability', key: 'Vulnerability' },
-            { name: 'Maturity', key: 'Maturity' }
-        ];
+                const indicators = [{
+                        name: 'Capacity',
+                        key: 'Capacity'
+                    },
+                    {
+                        name: 'Savings and Credit Mobilization',
+                        key: 'Savings and Credit Mobilization'
+                    },
+                    {
+                        name: 'Vulnerability',
+                        key: 'Vulnerability'
+                    },
+                    {
+                        name: 'Maturity',
+                        key: 'Maturity'
+                    }
+                ];
 
-        indicators.forEach(indicator => {
-            const data = predictionData.indactor_performance[indicator.key];
-            const percentage = (data.score / data.max_points) * 100;
+                indicators.forEach(indicator => {
+                    const data = predictionData.indactor_performance[indicator.key];
+                    const percentage = (data.score / data.max_points) * 100;
 
-            const indicatorHtml = `
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span>${indicator.name}</span>
-                        <span>${data.score} / ${data.max_points}</span>
-                    </div>
-                    <div class="progress">
-                        <div class="progress-bar" role="progressbar" style="width: ${percentage}%;"
-                             aria-valuenow="${data.score}" aria-valuemin="0" aria-valuemax="${data.max_points}">
-                            ${percentage.toFixed(1)}%
+                    const indicatorHtml = `
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span>${indicator.name}</span>
+                            <span>${data.score} / ${data.max_points}</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" style="width: ${percentage}%;"
+                                 aria-valuenow="${data.score}" aria-valuemin="0" aria-valuemax="${data.max_points}">
+                                ${percentage.toFixed(1)}%
+                            </div>
                         </div>
                     </div>
-                </div>
-            `;
+                `;
 
-            performanceIndicators.insertAdjacentHTML('beforeend', indicatorHtml);
+                    performanceIndicators.insertAdjacentHTML('beforeend', indicatorHtml);
+                });
+            @endif
         });
-    });
     </script>
 </body>
+
 </html>
