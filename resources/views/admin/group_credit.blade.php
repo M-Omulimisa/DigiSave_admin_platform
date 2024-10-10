@@ -7,8 +7,85 @@
     <title>Group Credit Details</title>
     {{-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/css/bootstrap.min.css" rel="stylesheet"> --}}
     <style>
+
+        .box {
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            background-color: #fff;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+.box-header {
+    border-bottom: 1px solid #dee2e6;
+    margin-bottom: 15px;
+}
+
+.box-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
         .container {
             max-width: 1200px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        /* .header h1 {
+            color: #343a40;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header hr {
+            width: 60%;
+            margin: 0 auto;
+            border: 2px solid #343a40;
+        } */
+
+        .card {
+            background-color: #ffffff;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-title {
+            font-size: 1.75rem;
+            color: #343a40;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #dee2e6;
+            padding-bottom: 10px;
+        }
+
+        .max-loan {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #e9f7ef;
+            border-left: 5px solid #28a745;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .max-loan h2 {
+            color: #28a745;
+            font-size: 2rem;
+            margin: 0;
+        }
+
+        .max-loan .loan-amount {
+            font-size: 1.5rem;
+            color: #343a40;
         }
 
         .table th {
@@ -21,37 +98,10 @@
             margin-top: 20px;
         }
 
-        .box {
-            border: 1px solid #dee2e6;
-            border-radius: 5px;
-            background-color: #fff;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-
-        .box-header {
-            border-bottom: 1px solid #dee2e6;
-            margin-bottom: 15px;
-        }
-
-        .box-title {
-            font-size: 1.5rem;
-            font-weight: bold;
-        }
-
-        pre {
-            background-color: #f1f1f1;
-            padding: 15px;
-            border-radius: 5px;
-            overflow: auto;
-        }
-
-        .progress {
-            height: 20px;
-        }
-
-        .progress-bar {
-            line-height: 20px;
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            color: #6c757d;
         }
     </style>
 </head>
@@ -73,6 +123,17 @@
                     </div>
                 @else
                     <div class="box">
+                        <!-- Max Loan Amount Card -->
+                        <div class="max-loan">
+                            <div>
+                                <h2>Max Loan Amount</h2>
+                                <p class="loan-amount">UGX {{ number_format($saccoDetails['max_loan_amount'], 2, '.', ',') }}</p>
+                            </div>
+                            <div>
+                                <!-- You can add an icon here if desired -->
+                                <img src="https://img.icons8.com/fluency/48/000000/money.png" alt="Max Loan Icon">
+                            </div>
+                        </div>
                         <div class="box-header">
                             <h3 class="box-title">Credit Details</h3>
                         </div>

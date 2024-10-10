@@ -287,27 +287,27 @@ class GroupCreditController extends AdminController
         $average_monthly_savings = abs($averageMonthlySavingsByAdmin); // No number_format here
 
         // Call External API for Max Loan Amount
-        // $maxLoanAmountResponse = Http::withHeaders([
-        //     'Content-Type' => 'application/json'
-        // ])->withoutVerifying()->post('https://vsla-credit-scoring-bde4afgbgyesgheu.canadacentral-01.azurewebsites.net/max_loan_amount', [
-        //     "Multiplier" => 6,
-        //     "Average Monthly Savings" => $average_monthly_savings
-        // ]);
+        $maxLoanAmountResponse = Http::withHeaders([
+            'Content-Type' => 'application/json'
+        ])->withoutVerifying()->post('https://vsla-credit-scoring-bde4afgbgyesgheu.canadacentral-01.azurewebsites.net/max_loan_amount', [
+            "Multiplier" => 6,
+            "Average Monthly Savings" => $average_monthly_savings
+        ]);
 
-        // if ($maxLoanAmountResponse->successful()) {
-        //     $maxLoanAmountData = $maxLoanAmountResponse->json();
-        //     $maxLoanAmount = $maxLoanAmountData['max_loan_amount'];
-        // } else {
-        //     // Capture the error details
-        //     $statusCode = $maxLoanAmountResponse->status();
-        //     $errorMessage = $maxLoanAmountResponse->body();
+        if ($maxLoanAmountResponse->successful()) {
+            $maxLoanAmountData = $maxLoanAmountResponse->json();
+            $maxLoanAmount = $maxLoanAmountData['max_loan_amount'];
+        } else {
+            // Capture the error details
+            $statusCode = $maxLoanAmountResponse->status();
+            $errorMessage = $maxLoanAmountResponse->body();
 
-        //     // Log the error for debugging
-        //     Log::error("Max Loan Amount API error: Status Code: $statusCode, Message: $errorMessage");
+            // Log the error for debugging
+            Log::error("Max Loan Amount API error: Status Code: $statusCode, Message: $errorMessage");
 
-        //     // Handle the error if the max loan amount call failed
-        //     $maxLoanAmount = "API Error: Unable to retrieve max loan amount.";
-        // }
+            // Handle the error if the max loan amount call failed
+            $maxLoanAmount = 0;
+        }
 
         $totalLoans = abs($sacco->transactions()
             ->where('cycle_id', $activeCycleId)
@@ -404,7 +404,7 @@ class GroupCreditController extends AdminController
             "number_of_women" => $numberOfWomen,
             "number_of_youth" => $numberOfYouth,
             "total_meetings" => $totalMeetings,
-            "max_loan_amount" => "0",
+            "max_loan_amount" => $maxLoanAmount,
             "prediction_response" => $predictionData,
             "average_meeting_attendance" => $averageAttendanceRounded,
             "number_of_loans_to_men" => $numberOfLoansToMen,
