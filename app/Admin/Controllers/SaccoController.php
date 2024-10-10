@@ -61,7 +61,19 @@ class SaccoController extends AdminController
         return ucwords(strtolower($name));
     });
 
-    $grid->column('phone_number', __('Phone Number'))
+    $grid->column('chairperson_name', __('Leader'))
+        ->sortable()
+        ->display(function () {
+            $user = \App\Models\User::where('sacco_id', $this->id)
+                ->whereHas('position', function ($query) {
+                    $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+                })
+                ->first();
+
+            return $user ? ucwords(strtolower($user->name)) : '';
+    });
+
+    $grid->column('phone_number', __('Contact'))
         ->sortable()
         ->display(function () {
             $user = \App\Models\User::where('sacco_id', $this->id)
@@ -71,29 +83,7 @@ class SaccoController extends AdminController
                 ->first();
 
             return $user ? $user->phone_number : '';
-        });
-
-    // Adding new columns for uses_cash and uses_shares
-    $grid->column('uses_cash', __('Uses Cash'))
-        ->display(function () {
-            return $this->uses_shares == 0 ? 'Yes' : 'No';
-        })->sortable();
-
-    // Adding new columns for share_price and min_cash_savings
-    $grid->column('min_cash_savings', __('Minimum Cash Savings (UGX)'))
-        ->display(function () {
-            return $this->uses_shares == 0 ? number_format($this->share_price) : '0';
-        })->sortable();
-
-    $grid->column('uses_shares', __('Uses Shares'))
-        ->display(function () {
-            return $this->uses_shares == 1 ? 'Yes' : 'No';
-        })->sortable();
-
-    $grid->column('share_price', __('Share Price (UGX)'))
-        ->display(function () {
-            return $this->uses_shares == 1 ? number_format($this->share_price) : '0';
-        })->sortable();
+    });
 
     $grid->column('district', __('District'))->sortable()->display(function ($district) {
         if (!empty($district)) {
@@ -108,28 +98,43 @@ class SaccoController extends AdminController
         }
     });
 
-    $grid->column('chairperson_name', __('Chairperson Name'))
-        ->sortable()
+    // Adding new columns for uses_cash and uses_shares
+    $grid->column('uses_cash', __('Uses Cash'))
         ->display(function () {
-            $user = \App\Models\User::where('sacco_id', $this->id)
-                ->whereHas('position', function ($query) {
-                    $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
-                })
-                ->first();
+            return $this->uses_shares == 0 ? 'Yes' : 'No';
+    })->sortable();
 
-            return $user ? ucwords(strtolower($user->name)) : '';
-        });
+    // Adding new columns for share_price and min_cash_savings
+    $grid->column('min_cash_savings', __('Minimum Cash Savings (UGX)'))
+        ->display(function () {
+            return $this->uses_shares == 0 ? number_format($this->share_price) : '0';
+    })->sortable();
 
-    $grid->column('created_at', __('Created At'))
-        ->display(function ($date) {
-            return date('d M Y', strtotime($date));
-        })->sortable();
+    $grid->column('uses_shares', __('Uses Shares'))
+        ->display(function () {
+            return $this->uses_shares == 1 ? 'Yes' : 'No';
+    })->sortable();
+
+    $grid->column('share_price', __('Share Price (UGX)'))
+        ->display(function () {
+            return $this->uses_shares == 1 ? number_format($this->share_price) : '0';
+    })->sortable();
 
     // Adding the "View Transactions" column
     $grid->column('view_transactions', __('View Transactions'))
         ->display(function () {
             return '<a href="' . url('/transactions?sacco_id=' . $this->id) . '">View Transactions</a>';
-        });
+    });
+
+    $grid->column('view_credit', __('Credit Score'))
+    ->display(function () {
+        return '<a href="' . url('/credit?sacco_id=' . $this->id) . '">View Credit</a>';
+    });
+
+    $grid->column('created_at', __('Created At'))
+            ->display(function ($date) {
+                return date('d M Y', strtotime($date));
+    })->sortable();
 
     // Adding search filters
     $grid->filter(function ($filter) {
