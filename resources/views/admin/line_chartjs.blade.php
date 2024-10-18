@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,11 +11,12 @@
     <script src="https://code.highcharts.com/modules/exporting.js"></script>
     <script src="https://code.highcharts.com/modules/export-data.js"></script>
 </head>
+
 <body>
     <div id="barContainer" style="max-width: 100%; height: 400px;"></div>
 
     <script>
-        $(function () {
+        $(function() {
             var barContainer = $('#barContainer');
             var monthYearList = {!! json_encode($monthYearList) !!};
             var totalSavingsList = {!! json_encode(array_values($totalSavingsList)) !!};
@@ -82,16 +84,33 @@
                     column: {
                         dataLabels: {
                             enabled: true,
+                            inside: false, // Ensure the label is placed outside the column if necessary
                             formatter: function() {
                                 return 'UGX ' + this.y.toLocaleString();
                             },
                             style: {
                                 fontSize: '12px',
                                 color: '#333'
-                            }
+                            },
+                            crop: false, // Prevent cropping of data labels
+                            overflow: 'none' // Handle overflow better to ensure visibility
                         }
                     }
                 },
+                // plotOptions: {
+                //     column: {
+                //         dataLabels: {
+                //             enabled: true,
+                //             formatter: function() {
+                //                 return 'UGX ' + this.y.toLocaleString();
+                //             },
+                //             style: {
+                //                 fontSize: '12px',
+                //                 color: '#333'
+                //             }
+                //         }
+                //     }
+                // },
                 series: [{
                     name: 'Total Savings',
                     data: totalSavingsList,
@@ -109,4 +128,5 @@
         });
     </script>
 </body>
+
 </html>
