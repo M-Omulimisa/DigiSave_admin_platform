@@ -3,79 +3,54 @@
 namespace App\Admin\Controllers;
 
 use App\Models\AdminRole;
-use App\Models\Agent;
-use App\Models\District;
-use App\Models\Parish;
-use App\Models\Sacco;
-use App\Models\Subcounty;
-use App\Models\User;
-use App\Models\Village;
-use Encore\Admin\Auth\Database\Administrator;
 use Encore\Admin\Controllers\AdminController;
 use Encore\Admin\Facades\Admin;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Encore\Admin\Show;
-use Illuminate\Support\Facades\Hash;
 
 class AdminRoleController extends AdminController
 {
-    /**
-     * Title for current resource.
-     *
-     * @var string
-     */
-    protected $title = 'User Roles';
+    protected $title = 'Admin Roles';
 
-    /**
-     * Make a grid builder.
-     *
-     * @return Grid
-     */
     protected function grid()
     {
         $grid = new Grid(new AdminRole());
 
-        $grid->column('id', 'ID')->sortable();
-        $grid->column('name', 'Role Name')->sortable();
-        $grid->column('created_at', 'Created At')->sortable();
+        $grid->column('id', __('ID'))->sortable();
+        $grid->column('name', __('Name'))->sortable()->editable();
+        $grid->column('slug', __('Slug'))->sortable();
+        $grid->column('created_at', __('Created At'))->sortable();
+        $grid->column('updated_at', __('Updated At'))->sortable();
+
+        $grid->quickSearch('name', 'slug');
+        $grid->disableBatchActions();
 
         return $grid;
     }
 
-    /**
-     * Make a show builder.
-     *
-     * @param mixed $id
-     * @return Show
-     */
     protected function detail($id)
     {
         $show = new Show(AdminRole::findOrFail($id));
 
-        $show->field('id', 'ID');
-        $show->field('name', 'Role Name');
-        $show->field('created_at', 'Created At');
-        $show->field('updated_at', 'Updated At');
+        $show->field('id', __('ID'));
+        $show->field('name', __('Name'));
+        $show->field('slug', __('Slug'));
+        $show->field('created_at', __('Created At'));
+        $show->field('updated_at', __('Updated At'));
 
         return $show;
     }
 
-    /**
-     * Make a form builder.
-     *
-     * @return Form
-     */
     protected function form()
-{
-    $form = new Form(new AdminRole());
+    {
+        $form = new Form(new AdminRole());
 
-    $form->text('name', 'Role Name')->rules('required');
-    
-    // Add the 'slug' field with a default value of 'admin'
-    $form->text('slug', 'Slug')->default('agent')->readonly();
+        $form->text('name', __('Name'))->rules('required');
+        $form->text('slug', __('Slug'))->rules('required');
+        $form->datetime('created_at', __('Created At'))->default(date('Y-m-d H:i:s'));
+        $form->datetime('updated_at', __('Updated At'))->default(date('Y-m-d H:i:s'));
 
-    return $form;
-}
-
+        return $form;
+    }
 }

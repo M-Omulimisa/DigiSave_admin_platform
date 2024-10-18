@@ -102,6 +102,9 @@ $router->post('cycle-transactions', 'CycleTransactionController@store')->name('c
     $router->resource('credit-scores', CreditScoreController::class);
     $router->resource('transactions-all', TransactionAllController::class);
     $router->resource('users', MemberController::class);
+    $router->resource('roles', AdminRoleController::class);
+    $router->resource('roles-permission', AdminRolePermissionController::class);
+    $router->resource('district-agents', DistrictAgentController::class);
     // Route::post('admin/get-users', [MemberAccountController::class, 'fetchUsers']);
 
 });
