@@ -84,7 +84,7 @@
                     column: {
                         dataLabels: {
                             enabled: true,
-                            inside: true, // Ensure the label is placed outside the column if necessary
+                            inside: false, // Ensure the label is placed outside the column if necessary
                             formatter: function() {
                                 return 'UGX ' + this.y.toLocaleString();
                             },
