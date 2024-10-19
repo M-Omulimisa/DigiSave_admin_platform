@@ -92,7 +92,7 @@ class ApiAuthController extends Controller
 
         $group_account = [
             'savings' => $group->balance,
-            'group_profit' => $group->FEE + $group->FINES + $group->register,
+            'group_profit' => $group->LOAN_INTEREST + $group->FINES + $group->register,
             'outstanding_loan' => $group->LOAN_BALANCE + $group->LOAN_INTEREST,
             'loan_amount' => $group->LOAN_REPAYMENT + $group->LOAN_BALANCE + $group->LOAN_INTEREST
         ];
