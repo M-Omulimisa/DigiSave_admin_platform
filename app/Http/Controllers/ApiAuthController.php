@@ -80,7 +80,7 @@ class ApiAuthController extends Controller
 
 
         $requestData = [
-            'group_name' => $group->first_name,
+            // 'group_name' => $group->first_name,
             'savings' => $group->balance,
             'loan' => abs($group->LOAN),
             'outstanding_loan' => '500',
