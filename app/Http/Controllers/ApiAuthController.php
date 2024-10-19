@@ -99,7 +99,7 @@ class ApiAuthController extends Controller
         //     'profits' => '500'
         // ];
 
-        return $this->success($request_data, 'New user data');
+        return $this->success($request_data, 'Success');
     }
 
     public function getOrganisationsForUser()
