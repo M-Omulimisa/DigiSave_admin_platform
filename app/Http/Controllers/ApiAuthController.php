@@ -69,14 +69,25 @@ class ApiAuthController extends Controller
             return $this->error('Group not found.');
         }
 
+        $activeCycle = $sacco->activeCycle;
+        if ($activeCycle == null) {
+            return $this->error('No active cycle found.');
+        }
+
+        $group = User::where('user_type', 'admin')
+                 -> where('sacco_id', $sacco_id)
+                 -> where('cycle_id', $activeCycle);
+
+
         $requestData = [
-            'savings' => $sacco->balance,
-            'loan' => abs($sacco->LOAN),
+            'group_name' => $group->name,
+            'savings' => $group->balance,
+            'loan' => abs($group->LOAN),
             'outstanding_loan' => '500',
             'profits' => '500'
         ];
 
-        return $this->success($sacco, 'User group');
+        return $this->success($requestData, 'User group');
     }
 
     public function getOrganisationsForUser()
