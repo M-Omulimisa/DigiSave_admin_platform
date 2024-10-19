@@ -61,7 +61,15 @@ class ApiAuthController extends Controller
         if ($u == null) {
             return $this->error('User account not found.');
         }
-        return $this->success($u, 'User exists');
+        $sacco_id = $u->sacco_id;
+
+        $sacco = Sacco::find($sacco_id);
+
+        if ($sacco === null) {
+            return $this->error('Group not found.');
+        }
+
+        return $this->success($sacco, 'User group');
     }
 
     public function getOrganisationsForUser()
@@ -178,7 +186,6 @@ class ApiAuthController extends Controller
 
         // Try to find the user by phone number
         $user = User::where('phone_number', $identifier)->first();
-
         // If not found, try to find the user by email
         if (!$user) {
             $user = User::where('email', $identifier)->first();
