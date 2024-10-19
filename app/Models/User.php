@@ -228,7 +228,7 @@ public function roles()
         $admin_savings = $admin->balance;
         $admin_profits = $admin->LOAN_INTEREST + $admin->FINES + $admin->register;
         if ($admin_savings > 0) {
-            $profit =($savings/$admin_profits)*$admin_profits;
+            $profit =($savings/$admin_savings)*$admin_profits;
             return $profit;
         };
         return 0;
