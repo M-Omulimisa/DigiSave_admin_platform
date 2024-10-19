@@ -83,18 +83,18 @@ class ApiAuthController extends Controller
             return $this->error('No group account found.');
         }
 
-        $loan = $group->LOAN_BALANCE + $group->LOAN_INTEREST;
-        $actual_loan = $loan + $group->LOAN_REPAYMENT;
+        // $loan = $group->LOAN_BALANCE + $group->LOAN_INTEREST;
+        // $actual_loan = $loan + $group->LOAN_REPAYMENT;
 
 
-        $requestData = [
-            'savings' => $group->balance,
-            'loan' => abs($actual_loan),
-            'outstanding_loan' => abs($loan),
-            'profits' => '500'
-        ];
+        // $requestData = [
+        //     'savings' => $group->balance,
+        //     'loan' => abs($actual_loan),
+        //     'outstanding_loan' => abs($loan),
+        //     'profits' => '500'
+        // ];
 
-        return $this->success($requestData, 'New user data');
+        return $this->success($group, 'New user data');
     }
 
     public function getOrganisationsForUser()
