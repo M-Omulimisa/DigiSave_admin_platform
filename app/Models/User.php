@@ -226,7 +226,7 @@ public function roles()
         ->where('sacco_id', $this->sacco_id)
         ->first();
         $admin_savings = $admin->balance;
-        $admin_profits = $admin->FEE + $admin->FINES + $admin->register;
+        $admin_profits = $admin->LOAN_INTEREST + $admin->FINES + $admin->register;
         if ($admin_savings > 0) {
             $profit =($savings/$admin_profits)*$admin_profits;
             return $profit;
