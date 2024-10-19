@@ -83,8 +83,13 @@ class ApiAuthController extends Controller
             return $this->error('No group account found.');
         }
 
+        $member = [
+            'balance' => $u->balance,
+            'loan_amount' => $u->LOAN
+        ];
+
         $request_data = [
-            'member' => $u,
+            'member' => $member,
             'group' =>  $group
         ];
 
