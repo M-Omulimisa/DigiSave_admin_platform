@@ -69,7 +69,14 @@ class ApiAuthController extends Controller
             return $this->error('Group not found.');
         }
 
-        return $this->success($sacco, 'User group');
+        $requestData = [
+            'savings' => $sacco->balance,
+            'loan' => abs($sacco->LOAN),
+            'outstanding_loan' => '500',
+            'profits' => '500'
+        ];
+
+        return $this->success($requestData, 'User group');
     }
 
     public function getOrganisationsForUser()
