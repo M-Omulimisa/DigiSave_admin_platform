@@ -76,7 +76,7 @@ class ApiAuthController extends Controller
             'profits' => '500'
         ];
 
-        return $this->success($requestData, 'User group');
+        return $this->success($sacco, 'User group');
     }
 
     public function getOrganisationsForUser()
