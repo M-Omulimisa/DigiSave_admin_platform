@@ -83,13 +83,13 @@ class ApiAuthController extends Controller
         }
 
 
-        $requestData = [
-            // 'group_name' => $group->first_name,
-            'savings' => $group->balance,
-            'loan' => abs($group->LOAN),
-            'outstanding_loan' => '500',
-            'profits' => '500'
-        ];
+        // $requestData = [
+        //     // 'group_name' => $group->first_name,
+        //     'savings' => $group->balance,
+        //     'loan' => abs($group->LOAN),
+        //     'outstanding_loan' => '500',
+        //     'profits' => '500'
+        // ];
 
         return $this->success($group, 'User group');
     }
