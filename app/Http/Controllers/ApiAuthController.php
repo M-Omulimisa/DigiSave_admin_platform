@@ -76,7 +76,8 @@ class ApiAuthController extends Controller
 
         $group = User::where('user_type', 'admin')
             ->where('sacco_id', $sacco_id)
-            ->where('cycle_id', $activeCycle);
+            ->where('cycle_id', $activeCycle)
+            ->get();
 
         if ($group == null) {
             return $this->error('No group account found.');
