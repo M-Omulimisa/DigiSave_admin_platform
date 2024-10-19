@@ -83,8 +83,8 @@ class ApiAuthController extends Controller
             return $this->error('No group account found.');
         }
 
-        $loan = $group->LOAN_BALANCE + $group->LOAN_INTEREST;
-        $actual_loan = $loan + $group->LOAN_REPAYMENT;
+        $loan = $group->getLOANAttribute + $group->getLOANINTERESTAttribute;
+        $actual_loan = $loan + $group->getLOANREPAYMENTAttribute;
 
 
         $requestData = [
