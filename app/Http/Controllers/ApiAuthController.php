@@ -46,7 +46,22 @@ class ApiAuthController extends Controller
      */
     public function __construct()
     {
-        //$this->middleware('auth:api', ['except' => ['login', 'resetPassword', 'register', 'agent_login', 'registerGroup', 'update_admin', 'new_position', 'updateUser', 'registerRole']]);
+        $this->middleware('auth:api', ['except' => ['check_user', 'login', 'resetPassword', 'register', 'agent_login', 'registerGroup', 'update_admin', 'new_position', 'updateUser', 'registerRole']]);
+    }
+
+    public function check_user(Request $r)
+    {
+        if ($r->phone_number == null) {
+            return $this->error('Phone number is required.');
+        }
+
+        $u = User::where('phone_number', $r->phone_number)
+            ->first();
+
+        if ($u == null) {
+            return $this->error('User account not found.');
+        }
+        return $this->success($u, 'User exists');
     }
 
     public function getOrganisationsForUser()
