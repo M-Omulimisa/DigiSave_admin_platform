@@ -176,6 +176,7 @@ public function roles()
         'LOAN_REPAYMENT',
         'LOAN_INTEREST',
         'FEE',
+        'profit',
         'WITHDRAWAL',
         'CYCLE_PROFIT',
         'cycle_id',
@@ -186,6 +187,8 @@ public function roles()
         'user_type_name',
         'register'
     ];
+
+
 
 
     // public function userType(): BelongsTo
@@ -213,6 +216,22 @@ public function roles()
 
         // Return the uses_shares value if the user is the administrator; otherwise, return false
         return $isAdminUser ? (bool)$sacco->uses_shares : false;  // Cast to bool to ensure the return type is boolean
+    }
+
+    public function getProfitAttribute()
+    {
+        $user = User::find($this->id);
+        $savings = $user->balance;
+        $admin = User::where('user_type', 'admin')
+        ->where('sacco_id', $this->sacco_id)
+        ->first();
+        $admin_savings = $admin->balance;
+        $admin_profits = $admin->FEE + $admin->FINES + $admin->register;
+        if ($admin_savings > 0) {
+            $profit =($savings/$admin_profits)*$admin_profits;
+            return $profit;
+        };
+        return 0;
     }
 
     public function getSHAREOUTSHAREPRICEAttribute()
