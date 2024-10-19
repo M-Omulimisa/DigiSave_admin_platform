@@ -46,7 +46,7 @@ class ApiAuthController extends Controller
      */
     public function __construct()
     {
-        $this->middleware('auth:api', ['except' => ['check_user', 'login', 'resetPassword', 'register', 'agent_login', 'registerGroup', 'update_admin', 'new_position', 'updateUser', 'registerRole']]);
+        $this->middleware('auth:api', ['except' => ['check_user', 'resetPassword', 'register', 'agent_login', 'registerGroup', 'update_admin', 'new_position', 'updateUser', 'registerRole']]);
     }
 
     public function check_user(Request $r)
