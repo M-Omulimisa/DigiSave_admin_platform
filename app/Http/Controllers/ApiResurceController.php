@@ -1618,6 +1618,8 @@ $fundSavingsCreditStatusFormatted = $fundSavingsCreditStatus;
             'fund_savings_credit_status' => $fundSavingsCreditStatus
         ];
 
+        $requestData['fund_savings_credit_status'] = intval(round($requestData['fund_savings_credit_status']));
+
         // Make the prediction API call
         $predictionResponse = Http::withHeaders([
             'Content-Type' => 'application/json'
