@@ -73,7 +73,7 @@ class ApiResurceController extends Controller
 
 
         // Get the sacco_id from the authenticated user
-        // $saccoId = $user->sacco_id;
+        $saccoId = $user->sacco_id;
 
         // // Validate the request input
         // $request->validate([
@@ -94,26 +94,26 @@ class ApiResurceController extends Controller
 
         // // Create a new CreditLoan record
         // try {
-            // $creditLoan = CreditLoan::create([
-            //     'sacco_id' => $saccoId,
-            //     'loan_amount' => $request->loan_amount,
-            //     'loan_term' => $request->loan_term,
-            //     'total_interest' => $request->total_interest,
-            //     'monthly_payment' => $request->monthly_payment,
-            //     'loan_purpose' => $request->loan_purpose,
-            //     'billing_address' => $request->billing_address,
-            //     'selected_method' => $request->selected_method,
-            //     'selected_bank' => $request->selected_bank,
-            //     'account_number' => $request->account_number,
-            //     'account_name' => $request->account_name,
-            //     'phone_number' => $request->phone_number,
-            //     'terms_accepted' => $request->terms_accepted,
-            //     'use_current_address' => $request->use_current_address,
-            //     'loan_status' => 'pending', // Default status for a new loan
-            // ]);
+            $creditLoan = CreditLoan::create([
+                'sacco_id' => $saccoId,
+                'loan_amount' => $request->loan_amount,
+                'loan_term' => $request->loan_term,
+                'total_interest' => $request->total_interest,
+                'monthly_payment' => $request->monthly_payment,
+                'loan_purpose' => $request->loan_purpose,
+                'billing_address' => $request->billing_address,
+                'selected_method' => $request->selected_method,
+                'selected_bank' => $request->selected_bank,
+                'account_number' => $request->account_number,
+                'account_name' => $request->account_name,
+                'phone_number' => $request->phone_number,
+                'terms_accepted' => $request->terms_accepted,
+                'use_current_address' => $request->use_current_address,
+                'loan_status' => 'pending', // Default status for a new loan
+            ]);
 
             // // Notify Sacco members about the loan application
-            // $message = "Dear member, your group has applied for a loan of UGX {$request->loanAmount} for the purpose of {$request->loanPurpose}. You will be informed of the approval status soon.";
+            $message = "Dear member, your group has applied for a loan of UGX {$request->loanAmount} for the purpose of {$request->loanPurpose}. You will be informed of the approval status soon.";
 
 
         // Find the Sacco by its ID
