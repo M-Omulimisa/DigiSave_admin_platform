@@ -1621,7 +1621,7 @@ $fundSavingsCreditStatusFormatted = $fundSavingsCreditStatus;
         // Make the prediction API call
         $predictionResponse = Http::withHeaders([
             'Content-Type' => 'application/json'
-        ])->post('https://vsla-credit-scoring-bde4afgbgyesgheu.canadacentral-01.azurewebsites.net/predict', $requestData);
+        ])->post('https://vslacreditv2-brdqanfsfnd6fbfc.canadacentral-01.azurewebsites.net/predict', $requestData);
 
         // Check if the prediction API call was successful
         if ($predictionResponse->successful()) {
