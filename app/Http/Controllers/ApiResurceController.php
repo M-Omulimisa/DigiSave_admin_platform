@@ -72,25 +72,25 @@ class ApiResurceController extends Controller
 
 
 
-        // // Get the sacco_id from the authenticated user
-        // $saccoId = $user->sacco_id;
+        // Get the sacco_id from the authenticated user
+        $saccoId = $user->sacco_id;
 
-        // // Validate the request input
-        // $request->validate([
-        //     'loan_amount' => 'required|string',
-        //     'loan_term' => 'required|integer',
-        //     'total_interest' => 'required|numeric',
-        //     'monthly_payment' => 'required|numeric',
-        //     'loan_purpose' => 'required|string',
-        //     'billing_address' => 'required|string',
-        //     'selected_method' => 'required|string',
-        //     'selected_bank' => 'nullable|string',
-        //     'account_number' => 'nullable|string',
-        //     'account_name' => 'nullable|string',
-        //     'phone_number' => 'nullable|string',
-        //     'terms_accepted' => 'required|boolean',
-        //     'use_current_address' => 'required|boolean',
-        // ]);
+        // Validate the request input
+        $request->validate([
+            'loan_amount' => 'required|string',
+            'loan_term' => 'required|integer',
+            'total_interest' => 'required|numeric',
+            'monthly_payment' => 'required|numeric',
+            'loan_purpose' => 'required|string',
+            'billing_address' => 'required|string',
+            'selected_method' => 'required|string',
+            'selected_bank' => 'nullable|string',
+            'account_number' => 'nullable|string',
+            'account_name' => 'nullable|string',
+            'phone_number' => 'nullable|string',
+            'terms_accepted' => 'required|boolean',
+            'use_current_address' => 'required|boolean',
+        ]);
 
         // // Create a new CreditLoan record
         // try {
