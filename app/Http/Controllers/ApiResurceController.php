@@ -113,7 +113,31 @@ class ApiResurceController extends Controller
             ]);
 
             // Notify Sacco members about the loan application
-            $this->notifyMembersLoanApplication($saccoId, $request->loan_amount, $request->loan_purpose);
+            $message = "Dear member, your group has applied for a loan of UGX {$request->loanAmount} for the purpose of {$request->loanPurpose}. You will be informed of the approval status soon.";
+
+
+        // Find the Sacco by its ID
+        // $sacco = Sacco::find($saccoId);
+        // if (!$sacco) {
+        //     return $this->error('Sacco not found.');
+        // }
+
+        // // Get all members belonging to the Sacco
+        // $users = User::where('sacco_id', $sacco->id)->get();
+
+        //     // Loop through each user and send the message
+        //     foreach ($users as $user) {
+        //         $phone_number = $user->phone_number;
+
+        //         // Validate the phone number
+        //         if (Utils::phone_number_is_valid($phone_number)) {
+        //             // Send SMS
+        //             Utils::send_sms($phone_number, $message);
+        //         } else {
+        //             // Skip users with invalid phone numbers
+        //             continue;
+        //         }
+        //     }
 
             return $this->success($creditLoan, 'Credit loan application created and members notified successfully.');
         } catch (\Exception $e) {
