@@ -73,7 +73,7 @@ class ApiResurceController extends Controller
 
 
         // Get the sacco_id from the authenticated user
-        $saccoId = $user->sacco_id;
+        // $saccoId = $user->sacco_id;
 
         // Validate the request input
         $request->validate([
