@@ -63,12 +63,14 @@ class ApiResurceController extends Controller
 
     public function createCreditLoan(Request $request)
     {
-        return $this->success('Credit loan application created and members notified successfully.');
         // // Get the authenticated user
-        // $user = auth('api')->user();
-        // if ($user == null) {
-        //     return $this->error('User not found.');
-        // }
+        $user = auth('api')->user();
+        if ($user == null) {
+            return $this->error('User not found.');
+        }
+
+        return $this->success($user, 'Credit loan application created and members notified successfully.');
+
 
         // // Get the sacco_id from the authenticated user
         // $saccoId = $user->sacco_id;
