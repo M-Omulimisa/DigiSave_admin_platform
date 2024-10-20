@@ -9,6 +9,7 @@ use App\Models\Association;
 use App\Models\Transaction;
 use Illuminate\Support\Facades\DB;
 use App\Models\CounsellingCentre;
+use App\Models\CreditLoan;
 use App\Models\Crop;
 use App\Models\CropProtocol;
 use App\Models\Cycle;
@@ -58,6 +59,93 @@ class ApiResurceController extends Controller
     public function policy()
     {
         return redirect('https://sites.google.com/view/m-omulimisaprivacypolicy?usp=sharing');
+    }
+
+    public function createCreditLoan(Request $request)
+    {
+        // Get the authenticated user
+        $user = auth('api')->user();
+        if ($user == null) {
+            return $this->error('User not found.');
+        }
+
+        // Get the sacco_id from the authenticated user
+        $saccoId = $user->sacco_id;
+
+        // Validate the request input
+        $request->validate([
+            'loan_amount' => 'required|string',
+            'loan_term' => 'required|integer',
+            'total_interest' => 'required|numeric',
+            'monthly_payment' => 'required|numeric',
+            'loan_purpose' => 'required|string',
+            'billing_address' => 'required|string',
+            'selected_method' => 'required|string',
+            'selected_bank' => 'nullable|string',
+            'account_number' => 'nullable|string',
+            'account_name' => 'nullable|string',
+            'phone_number' => 'nullable|string',
+            'terms_accepted' => 'required|boolean',
+            'use_current_address' => 'required|boolean',
+        ]);
+
+        // Create a new CreditLoan record
+        try {
+            $creditLoan = CreditLoan::create([
+                'sacco_id' => $saccoId,
+                'loan_amount' => $request->loan_amount,
+                'loan_term' => $request->loan_term,
+                'total_interest' => $request->total_interest,
+                'monthly_payment' => $request->monthly_payment,
+                'loan_purpose' => $request->loan_purpose,
+                'billing_address' => $request->billing_address,
+                'selected_method' => $request->selected_method,
+                'selected_bank' => $request->selected_bank,
+                'account_number' => $request->account_number,
+                'account_name' => $request->account_name,
+                'phone_number' => $request->phone_number,
+                'terms_accepted' => $request->terms_accepted,
+                'use_current_address' => $request->use_current_address,
+                'loan_status' => 'pending', // Default status for a new loan
+            ]);
+
+            // Notify Sacco members about the loan application
+            $this->notifyMembersLoanApplication($saccoId, $request->loan_amount, $request->loan_purpose);
+
+            return $this->success($creditLoan, 'Credit loan application created and members notified successfully.');
+        } catch (\Exception $e) {
+            return $this->error('Failed to create credit loan: ' . $e->getMessage());
+        }
+    }
+
+    // Function to notify Sacco members about the loan application
+    private function notifyMembersLoanApplication($saccoId, $loanAmount, $loanPurpose)
+    {
+        // Find the Sacco by its ID
+        $sacco = Sacco::find($saccoId);
+        if (!$sacco) {
+            return $this->error('Sacco not found.');
+        }
+
+        // Get all members belonging to the Sacco
+        $users = User::where('sacco_id', $sacco->id)->get();
+
+        // Define the message template
+        $message = "Dear member, your group has applied for a loan of UGX {$loanAmount} for the purpose of {$loanPurpose}. You will be informed of the approval status soon.";
+
+        // Loop through each user and send the message
+        foreach ($users as $user) {
+            $phone_number = $user->phone_number;
+
+            // Validate the phone number
+            if (Utils::phone_number_is_valid($phone_number)) {
+                // Send SMS
+                Utils::send_sms($phone_number, $message);
+            } else {
+                // Skip users with invalid phone numbers
+                continue;
+            }
+        }
     }
 
     public function reverseTransaction(Request $request)

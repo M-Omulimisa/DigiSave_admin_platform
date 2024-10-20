@@ -23,6 +23,7 @@ Route::get("manifest", [ApiResurceController::class, "manifest"]);
 Route::get("loan-schemes", [ApiResurceController::class, "loan_schemes"]);
 Route::post("loan-schemes", [ApiAuthController::class, "create_scheme"]);
 Route::post("reset-password", [ApiAuthController::class, "resetPassword"]);
+Route::post("credit-loan", [ApiAuthController::class, "createCreditLoan"]);
 Route::post("get-user", [ApiAuthController::class, "check_user"]);
 Route::post("get-geo-data", [ApiResurceController::class, "getGeographicalDataByDistrict"]);
 Route::post("get-subcounties", [ApiResurceController::class, "getSubcountiesByDistrict"]);
