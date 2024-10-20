@@ -93,7 +93,7 @@ class ApiResurceController extends Controller
         // ]);
 
         // // Create a new CreditLoan record
-        try {
+        // try {
             // $creditLoan = CreditLoan::create([
             //     'sacco_id' => $saccoId,
             //     'loan_amount' => $request->loan_amount,
@@ -140,9 +140,9 @@ class ApiResurceController extends Controller
         //     }
 
             return $this->success( 'Credit loan application created and members notified successfully.');
-        } catch (\Exception $e) {
-            return $this->error('Failed to create credit loan: ' . $e->getMessage());
-        }
+        // } catch (\Exception $e) {
+        //     return $this->error('Failed to create credit loan: ' . $e->getMessage());
+        // }
     }
 
     // Function to notify Sacco members about the loan application
