@@ -117,29 +117,29 @@ class ApiResurceController extends Controller
 
 
         // Find the Sacco by its ID
-        // $sacco = Sacco::find($saccoId);
-        // if (!$sacco) {
-        //     return $this->error('Sacco not found.');
-        // }
+        $sacco = Sacco::find($saccoId);
+        if (!$sacco) {
+            return $this->error('Sacco not found.');
+        }
 
-        // // Get all members belonging to the Sacco
-        // $users = User::where('sacco_id', $sacco->id)->get();
+        // Get all members belonging to the Sacco
+        $users = User::where('sacco_id', $sacco->id)->get();
 
-        //     // Loop through each user and send the message
-        //     foreach ($users as $user) {
-        //         $phone_number = $user->phone_number;
+            // Loop through each user and send the message
+            foreach ($users as $user) {
+                $phone_number = $user->phone_number;
 
-        //         // Validate the phone number
-        //         if (Utils::phone_number_is_valid($phone_number)) {
-        //             // Send SMS
-        //             Utils::send_sms($phone_number, $message);
-        //         } else {
-        //             // Skip users with invalid phone numbers
-        //             continue;
-        //         }
-        //     }
+                // Validate the phone number
+                if (Utils::phone_number_is_valid($phone_number)) {
+                    // Send SMS
+                    Utils::send_sms($phone_number, $message);
+                } else {
+                    // Skip users with invalid phone numbers
+                    continue;
+                }
+            }
 
-            return $this->success( 'Credit loan application created and members notified successfully.');
+            return $this->success( $creditLoan, 'Credit loan application created and members notified successfully.');
         // } catch (\Exception $e) {
         //     return $this->error('Failed to create credit loan: ' . $e->getMessage());
         // }
