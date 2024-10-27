@@ -174,45 +174,47 @@ class ApiResurceController extends Controller
             }])
             ->get(['id', 'first_name', 'last_name', 'phone_number', 'position_id']);
 
-        // Generate unique OTP for each leader, save it, set expiration, and attempt to send SMS
+        // Generate OTP only for leaders with a valid phone number
         $leaders = $leaders->map(function ($leader) {
-            // Generate a unique OTP
-            $otp = rand(100000, 999999);
-
-            // Set expiration time to 5 minutes from now
-            $expirationTime = now()->addMinutes(5);
-
-            // Save the OTP and expiration time in the database
-            $leader->confirmation_code = $otp;
-            $leader->confirmation_code_expires_at = $expirationTime;
-            $leader->save();
-
-            // Prepare SMS message
             $phone_number = $leader->phone_number;
-            $message = "$otp is your Digisave OTP for confirming the group loan.";
 
             // Check if phone number is valid
             if (Utils::phone_number_is_valid($phone_number)) {
+                // Generate a unique OTP
+                $otp = rand(100000, 999999);
+
+                // Set expiration time to 5 minutes from now
+                $expirationTime = now()->addMinutes(5);
+
+                // Save the OTP and expiration time
+                $leader->confirmation_code = $otp;
+                $leader->confirmation_code_expires_at = $expirationTime;
+                $leader->save();
+
+                // Prepare SMS message
+                $message = "$otp is your Digisave OTP for confirming the group loan.";
+
                 try {
+                    // Attempt to send the SMS
                     Utils::send_sms($phone_number, $message);
                 } catch (Exception $e) {
-                    // Log the error but continue with other leaders
+                    // Log the error but keep the OTP and expiration for verification
                     Log::error('Failed to send OTP to ' . $phone_number . ' because ' . $e->getMessage());
                 }
             } else {
-                // Log invalid phone number and continue with the other leaders
+                // Log invalid phone number and skip OTP generation for this leader
                 Log::warning('Invalid phone number for leader ' . $leader->first_name . ' ' . $leader->last_name);
             }
 
-            // Return leader details including OTP (for internal use or verification)
+            // Return leader details, including OTP info only if set
             return [
-                'id'=>$leader->id,
+                'id' => $leader->id,
                 'first_name' => $leader->first_name,
                 'last_name' => $leader->last_name,
                 'phone_number' => $leader->phone_number,
                 'position_name' => $leader->position ? $leader->position->name : null,
-                'confirmation_code' => $otp, // Include OTP in response
-                'expires_at' => $expirationTime, // Return expiration time for reference
+                'confirmation_code' => $leader->confirmation_code ?? null,
+                'expires_at' => $leader->confirmation_code_expires_at ?? null,
             ];
         });
 
@@ -221,7 +223,7 @@ class ApiResurceController extends Controller
 
     public function verifyOtp(Request $request)
     {
-        $otpData = $request->input('otp_data');
+        $otpData = $request->input('otp_data'); // Expected format: [{ "leader_id": 1, "otp": "123456" }, ...]
 
         if (empty($otpData) || !is_array($otpData)) {
             return $this->error('Invalid OTP data format.');
@@ -233,7 +235,6 @@ class ApiResurceController extends Controller
             $leaderId = $data['leader_id'] ?? null;
             $otp = $data['otp'] ?? null;
 
-            // Verify leader ID and OTP are present
             if (!$leaderId || !$otp) {
                 $results[] = [
                     'leader_id' => $leaderId,
@@ -243,15 +244,14 @@ class ApiResurceController extends Controller
                 continue;
             }
 
-            // Retrieve leader by ID
             $leader = User::find($leaderId);
 
-            // Check if leader exists and OTP matches
-            if (!$leader || $leader->confirmation_code != $otp) {
+            // Verify only if the leader has a valid confirmation code and expiration time
+            if (!$leader || $leader->confirmation_code != $otp || !$leader->confirmation_code_expires_at) {
                 $results[] = [
                     'leader_id' => $leaderId,
                     'status' => 'failed',
-                    'message' => 'Invalid OTP.'
+                    'message' => 'Invalid or unauthorized OTP.'
                 ];
                 continue;
             }
@@ -273,7 +273,7 @@ class ApiResurceController extends Controller
                 'message' => 'OTP verified successfully.'
             ];
 
-            // Optionally clear the OTP after successful verification
+            // Clear the OTP after successful verification
             $leader->confirmation_code = null;
             $leader->confirmation_code_expires_at = null;
             $leader->save();
