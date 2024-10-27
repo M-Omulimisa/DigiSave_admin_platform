@@ -206,6 +206,7 @@ class ApiResurceController extends Controller
 
             // Return leader details including OTP (for internal use or verification)
             return [
+                'id'=>$leader->id,
                 'first_name' => $leader->first_name,
                 'last_name' => $leader->last_name,
                 'phone_number' => $leader->phone_number,
