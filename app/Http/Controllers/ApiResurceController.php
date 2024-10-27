@@ -125,21 +125,21 @@ class ApiResurceController extends Controller
         // Get all members belonging to the Sacco
         $users = User::where('sacco_id', $sacco->id)->get();
 
-        // Loop through each user and send the message
-        foreach ($users as $user) {
-            $phone_number = $user->phone_number;
+            // Loop through each user and send the message
+            foreach ($users as $user) {
+                $phone_number = $user->phone_number;
 
-            // Validate the phone number
-            if (Utils::phone_number_is_valid($phone_number)) {
-                // Send SMS
-                Utils::send_sms($phone_number, $message);
-            } else {
-                // Skip users with invalid phone numbers
-                continue;
+                // Validate the phone number
+                if (Utils::phone_number_is_valid($phone_number)) {
+                    // Send SMS
+                    Utils::send_sms($phone_number, $message);
+                } else {
+                    // Skip users with invalid phone numbers
+                    continue;
+                }
             }
-        }
 
-        return $this->success($creditLoan, 'Credit loan application created and members notified successfully.');
+            return $this->success( $creditLoan, 'Credit loan application created and members notified successfully.');
         // } catch (\Exception $e) {
         //     return $this->error('Failed to create credit loan: ' . $e->getMessage());
         // }
@@ -170,28 +170,48 @@ class ApiResurceController extends Controller
                 $query->whereIn('name', $desiredPositions);
             })
             ->with(['position' => function ($query) {
-                $query->select('id', 'name'); // Only select the necessary fields from MemberPosition
+                $query->select('id', 'name'); // Only select necessary fields from MemberPosition
             }])
             ->get(['id', 'first_name', 'last_name', 'phone_number', 'position_id']);
 
-        // Transform the result to include position name
+        // Generate unique OTP for each leader, save it, and attempt to send SMS
         $leaders = $leaders->map(function ($leader) {
+            // Generate a unique OTP
+            $otp = rand(100000, 999999);
+
+            // Save the OTP temporarily in the database
+            $leader->confirmation_code = $otp;
+            $leader->save();
+
+            // Prepare SMS message
+            $phone_number = $leader->phone_number;
+            $message = "$otp is your Digisave OTP for confirming the group loan.";
+
+            // Check if phone number is valid
+            if (Utils::phone_number_is_valid($phone_number)) {
+                try {
+                    Utils::send_sms($phone_number, $message);
+                } catch (Exception $e) {
+                    // Log the error but continue with other leaders
+                    Log::error('Failed to send OTP to ' . $phone_number . ' because ' . $e->getMessage());
+                }
+            } else {
+                // Log invalid phone number and continue with the other leaders
+                Log::warning('Invalid phone number for leader ' . $leader->first_name . ' ' . $leader->last_name);
+            }
+
+            // Return leader details including OTP (for internal use or verification)
             return [
                 'first_name' => $leader->first_name,
                 'last_name' => $leader->last_name,
                 'phone_number' => $leader->phone_number,
                 'position_name' => $leader->position ? $leader->position->name : null,
+                'confirmation_code' => $otp, // Include OTP in response
             ];
         });
 
-        // Check if leaders were found
-        if ($leaders->isEmpty()) {
-            return $this->error('No leaders found in this Sacco with the specified positions.');
-        }
-
-        return $this->success($leaders, 'Sacco leaders retrieved successfully.');
+        return $this->success($leaders, 'Sacco leaders retrieved successfully with OTPs.');
     }
-
 
     // Function to notify Sacco members about the loan application
     private function notifyMembersLoanApplication($saccoId, $loanAmount, $loanPurpose)
