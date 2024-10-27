@@ -125,21 +125,21 @@ class ApiResurceController extends Controller
         // Get all members belonging to the Sacco
         $users = User::where('sacco_id', $sacco->id)->get();
 
-            // Loop through each user and send the message
-            foreach ($users as $user) {
-                $phone_number = $user->phone_number;
+        // Loop through each user and send the message
+        foreach ($users as $user) {
+            $phone_number = $user->phone_number;
 
-                // Validate the phone number
-                if (Utils::phone_number_is_valid($phone_number)) {
-                    // Send SMS
-                    Utils::send_sms($phone_number, $message);
-                } else {
-                    // Skip users with invalid phone numbers
-                    continue;
-                }
+            // Validate the phone number
+            if (Utils::phone_number_is_valid($phone_number)) {
+                // Send SMS
+                Utils::send_sms($phone_number, $message);
+            } else {
+                // Skip users with invalid phone numbers
+                continue;
             }
+        }
 
-            return $this->success( $creditLoan, 'Credit loan application created and members notified successfully.');
+        return $this->success($creditLoan, 'Credit loan application created and members notified successfully.');
         // } catch (\Exception $e) {
         //     return $this->error('Failed to create credit loan: ' . $e->getMessage());
         // }
@@ -164,12 +164,25 @@ class ApiResurceController extends Controller
         // Define the desired positions
         $desiredPositions = ['Chairperson', 'Secretary', 'Treasurer'];
 
-        // Get users in the same Sacco with the specified positions, only selecting necessary fields
+        // Get users in the same Sacco with the specified positions, joining with MemberPosition for position_name
         $leaders = User::where('sacco_id', $saccoId)
             ->whereHas('position', function ($query) use ($desiredPositions) {
                 $query->whereIn('name', $desiredPositions);
             })
-            ->get(['first_name', 'last_name', 'phone_number', 'position_name']);
+            ->with(['position' => function ($query) {
+                $query->select('id', 'name'); // Only select the necessary fields from MemberPosition
+            }])
+            ->get(['id', 'first_name', 'last_name', 'phone_number', 'position_id']);
+
+        // Transform the result to include position name
+        $leaders = $leaders->map(function ($leader) {
+            return [
+                'first_name' => $leader->first_name,
+                'last_name' => $leader->last_name,
+                'phone_number' => $leader->phone_number,
+                'position_name' => $leader->position ? $leader->position->name : null,
+            ];
+        });
 
         // Check if leaders were found
         if ($leaders->isEmpty()) {
@@ -178,6 +191,7 @@ class ApiResurceController extends Controller
 
         return $this->success($leaders, 'Sacco leaders retrieved successfully.');
     }
+
 
     // Function to notify Sacco members about the loan application
     private function notifyMembersLoanApplication($saccoId, $loanAmount, $loanPurpose)
