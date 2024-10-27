@@ -145,6 +145,40 @@ class ApiResurceController extends Controller
         // }
     }
 
+    public function getSaccoLeaders()
+    {
+        // Get the logged-in user
+        $user = auth('api')->user();
+        if ($user == null) {
+            return $this->error('User not found.');
+        }
+
+        // Get the Sacco ID of the logged-in user
+        $saccoId = $user->sacco_id;
+
+        // Check if Sacco ID exists
+        if (!$saccoId) {
+            return $this->error('User does not belong to any Sacco.');
+        }
+
+        // Define the desired positions
+        $desiredPositions = ['Chairperson', 'Secretary', 'Treasurer'];
+
+        // Get users in the same Sacco who have one of the specified positions
+        $leaders = User::where('sacco_id', $saccoId)
+            ->whereHas('position', function ($query) use ($desiredPositions) {
+                $query->whereIn('name', $desiredPositions);
+            })
+            ->get();
+
+        // Check if leaders were found
+        if ($leaders->isEmpty()) {
+            return $this->error('No leaders found in this Sacco with the specified positions.');
+        }
+
+        return $this->success($leaders, 'Sacco leaders retrieved successfully.');
+    }
+
     // Function to notify Sacco members about the loan application
     private function notifyMembersLoanApplication($saccoId, $loanAmount, $loanPurpose)
     {
