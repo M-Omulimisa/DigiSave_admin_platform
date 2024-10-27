@@ -61,6 +61,28 @@ class ApiResurceController extends Controller
         return redirect('https://sites.google.com/view/m-omulimisaprivacypolicy?usp=sharing');
     }
 
+    public function getGroupLoan()
+    {
+        // Get the authenticated user
+        $user = auth('api')->user();
+        if ($user == null) {
+            return $this->error('User not found.');
+        }
+
+        $saccoId = $user->sacco_id;
+
+        // Fetch the latest group loan for this sacco
+        $groupLoan = CreditLoan::where('sacco_id', $saccoId)
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        if (!$groupLoan) {
+            return $this->error('No group loan found for this group.');
+        }
+
+        return $this->success($groupLoan, 'Group loan retrieved successfully.');
+    }
+
     public function createCreditLoan(Request $request)
     {
         // // Get the authenticated user
@@ -68,32 +90,7 @@ class ApiResurceController extends Controller
         if ($user == null) {
             return $this->error('User not found.');
         }
-
-
-
-
-        // Get the sacco_id from the authenticated user
         $saccoId = $user->sacco_id;
-
-        // // Validate the request input
-        // $request->validate([
-        //     'loan_amount' => 'required|string',
-        //     'loan_term' => 'required|integer',
-        //     'total_interest' => 'required|numeric',
-        //     'monthly_payment' => 'required|numeric',
-        //     'loan_purpose' => 'required|string',
-        //     'billing_address' => 'required|string',
-        //     'selected_method' => 'required|string',
-        //     'selected_bank' => 'nullable|string',
-        //     'account_number' => 'nullable|string',
-        //     'account_name' => 'nullable|string',
-        //     'phone_number' => 'nullable|string',
-        //     'terms_accepted' => 'required|boolean',
-        //     'use_current_address' => 'required|boolean',
-        // ]);
-
-        // // Create a new CreditLoan record
-        // try {
             $creditLoan = CreditLoan::create([
                 'sacco_id' => $saccoId,
                 'loan_amount' => $request->loan_amount,
@@ -140,9 +137,6 @@ class ApiResurceController extends Controller
             }
 
             return $this->success( $creditLoan, 'Credit loan application created and members notified successfully.');
-        // } catch (\Exception $e) {
-        //     return $this->error('Failed to create credit loan: ' . $e->getMessage());
-        // }
     }
 
     public function getSaccoLeaders()
