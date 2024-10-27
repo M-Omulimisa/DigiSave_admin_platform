@@ -174,13 +174,17 @@ class ApiResurceController extends Controller
             }])
             ->get(['id', 'first_name', 'last_name', 'phone_number', 'position_id']);
 
-        // Generate unique OTP for each leader, save it, and attempt to send SMS
+        // Generate unique OTP for each leader, save it, set expiration, and attempt to send SMS
         $leaders = $leaders->map(function ($leader) {
             // Generate a unique OTP
             $otp = rand(100000, 999999);
 
-            // Save the OTP temporarily in the database
+            // Set expiration time to 5 minutes from now
+            $expirationTime = now()->addMinutes(5);
+
+            // Save the OTP and expiration time in the database
             $leader->confirmation_code = $otp;
+            $leader->confirmation_code_expires_at = $expirationTime;
             $leader->save();
 
             // Prepare SMS message
@@ -207,10 +211,74 @@ class ApiResurceController extends Controller
                 'phone_number' => $leader->phone_number,
                 'position_name' => $leader->position ? $leader->position->name : null,
                 'confirmation_code' => $otp, // Include OTP in response
+                'expires_at' => $expirationTime, // Return expiration time for reference
             ];
         });
 
         return $this->success($leaders, 'Sacco leaders retrieved successfully with OTPs.');
+    }
+
+    public function verifyOtp(Request $request)
+    {
+        $otpData = $request->input('otp_data');
+
+        if (empty($otpData) || !is_array($otpData)) {
+            return $this->error('Invalid OTP data format.');
+        }
+
+        $results = [];
+
+        foreach ($otpData as $data) {
+            $leaderId = $data['leader_id'] ?? null;
+            $otp = $data['otp'] ?? null;
+
+            // Verify leader ID and OTP are present
+            if (!$leaderId || !$otp) {
+                $results[] = [
+                    'leader_id' => $leaderId,
+                    'status' => 'failed',
+                    'message' => 'Missing leader ID or OTP.'
+                ];
+                continue;
+            }
+
+            // Retrieve leader by ID
+            $leader = User::find($leaderId);
+
+            // Check if leader exists and OTP matches
+            if (!$leader || $leader->confirmation_code != $otp) {
+                $results[] = [
+                    'leader_id' => $leaderId,
+                    'status' => 'failed',
+                    'message' => 'Invalid OTP.'
+                ];
+                continue;
+            }
+
+            // Check if OTP has expired
+            if (now()->greaterThan($leader->confirmation_code_expires_at)) {
+                $results[] = [
+                    'leader_id' => $leaderId,
+                    'status' => 'failed',
+                    'message' => 'OTP has expired.'
+                ];
+                continue;
+            }
+
+            // OTP is valid
+            $results[] = [
+                'leader_id' => $leaderId,
+                'status' => 'success',
+                'message' => 'OTP verified successfully.'
+            ];
+
+            // Optionally clear the OTP after successful verification
+            $leader->confirmation_code = null;
+            $leader->confirmation_code_expires_at = null;
+            $leader->save();
+        }
+
+        return $this->success($results, 'OTP verification completed.');
     }
 
     // Function to notify Sacco members about the loan application

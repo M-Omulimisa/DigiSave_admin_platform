@@ -38,6 +38,7 @@ Route::get('def-positions', [ApiResurceController::class, 'get_positions']);
 Route::get('positions', [ApiResurceController::class, 'get_positions']);
 Route::get('credit', [ApiResurceController::class, 'getSaccoDetailsForUser']);
 Route::get('leader-confirmation', [ApiResurceController::class, 'getSaccoLeaders']);
+Route::post('leader-verify', [ApiResurceController::class, 'verifyOtp']);
 Route::post('get_positions', [ApiResurceController::class, 'leader_positions']);
 Route::get("share-records", [ApiResurceController::class, "share_records"]);
 Route::post("share-records", [ApiResurceController::class, "share_record_create"]);
