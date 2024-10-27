@@ -164,12 +164,12 @@ class ApiResurceController extends Controller
         // Define the desired positions
         $desiredPositions = ['Chairperson', 'Secretary', 'Treasurer'];
 
-        // Get users in the same Sacco who have one of the specified positions
+        // Get users in the same Sacco with the specified positions, only selecting necessary fields
         $leaders = User::where('sacco_id', $saccoId)
             ->whereHas('position', function ($query) use ($desiredPositions) {
                 $query->whereIn('name', $desiredPositions);
             })
-            ->get();
+            ->get(['first_name', 'last_name', 'phone_number', 'position_name']);
 
         // Check if leaders were found
         if ($leaders->isEmpty()) {
