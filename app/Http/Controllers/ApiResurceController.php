@@ -1720,7 +1720,6 @@ $fundSavingsCreditStatus =  $totalPrincipalPaid / abs($numericTotalPrincipal);
 
 // Format to three decimal places for consistency in the response
 $fundSavingsCreditStatusFormatted = $fundSavingsCreditStatus;
-$numberOfLoans =1;
 
         // Prepare the request data
 
