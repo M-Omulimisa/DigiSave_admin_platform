@@ -1724,7 +1724,7 @@ $fundSavingsCreditStatusFormatted = $fundSavingsCreditStatus;
         // Prepare the request data
 
         $requestData = [
-            "number_of_loans" => $numberOfLoans,
+            "number_of_loans" => 1,
             "total_principal" => abs($totalPrincipal),
             "total_interest" => abs($totalInterest),
             "total_principal_paid" => $totalPrincipalPaid,
