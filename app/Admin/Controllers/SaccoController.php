@@ -98,6 +98,13 @@ class SaccoController extends AdminController
         }
     });
 
+    $grid->column('amount_required_per_meeting', __('Welfare'))
+    ->display(function () {
+        // Get the latest cycle associated with the sacco
+        $latestCycle = $this->cycles()->orderBy('created_at', 'desc')->first();
+        return $latestCycle ? number_format($latestCycle->amount_required_per_meeting) : 'N/A';
+    })->sortable();
+
     // Adding new columns for uses_cash and uses_shares
     $grid->column('uses_cash', __('Uses Cash'))
         ->display(function () {
@@ -553,3 +560,84 @@ if ($createdTo = request('created_to')) {
         return $form;
     }
 }
+
+// <?php
+
+// namespace App\Admin\Controllers;
+
+// use App\Models\Sacco;
+// use App\Models\User;
+// use App\Models\OrgAllocation;
+// use App\Models\VslaOrganisationSacco;
+// use Encore\Admin\Controllers\AdminController;
+// use Encore\Admin\Facades\Admin;
+// use Encore\Admin\Layout\Content;
+
+// class SaccoController extends AdminController
+// {
+//     protected $title = 'VSLA Groups';
+
+//     /**
+//      * Display a listing of the VSLA Groups with relevant details.
+//      *
+//      * @param Content $content
+//      * @return Content
+//      */
+//     public function index(Content $content)
+// {
+//     // Fetch the logged-in admin user
+//     $admin = Admin::user();
+//     $adminId = $admin->id;
+
+//     // Determine the sorting order based on the request parameter
+//     $sortOrder = request()->get('_sort', 'desc');
+//     $sortOrder = in_array($sortOrder, ['asc', 'desc']) ? $sortOrder : 'desc';
+
+//     // Query to fetch Saccos based on user's role
+//     $saccosQuery = Sacco::query();
+
+//     if (!$admin->isRole('admin')) {
+//         // Non-admin users can only view assigned Saccos
+//         $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+//         if ($orgAllocation) {
+//             $orgId = $orgAllocation->vsla_organisation_id;
+//             $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)
+//                             ->pluck('sacco_id')
+//                             ->toArray();
+//             $saccosQuery->whereIn('id', $saccoIds)
+//                         ->whereNotIn('status', ['deleted', 'inactive']);
+//         }
+//     } else {
+//         // Admins can view all active Saccos
+//         $saccosQuery->whereNotIn('status', ['deleted', 'inactive']);
+//     }
+
+//     // Apply search and filter criteria if present
+//     if ($search = request()->get('location_search')) {
+//         $saccosQuery->where(function ($query) use ($search) {
+//             $query->where('district', 'like', "%{$search}%")
+//                   ->orWhere('physical_address', 'like', "%{$search}%");
+//         });
+//     }
+
+//     // Apply created date range filters
+//     if ($createdFrom = request()->get('created_from')) {
+//         $saccosQuery->whereDate('created_at', '>=', $createdFrom);
+//     }
+//     if ($createdTo = request()->get('created_to')) {
+//         $saccosQuery->whereDate('created_at', '<=', $createdTo);
+//     }
+
+//     // Apply sorting
+//     $saccos = $saccosQuery->orderBy('created_at', $sortOrder)
+//                           ->get();
+
+//     // Return the view with the fetched data
+//     return $content
+//         ->header('VSLA Groups Dashboard')
+//         ->description('Overview of all VSLA groups')
+//         ->body(view('vsla-groups', compact('saccos')));
+// }
+
+// }
+
