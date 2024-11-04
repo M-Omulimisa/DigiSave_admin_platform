@@ -121,17 +121,7 @@ class HomeController extends Controller
         // Add your logic here
     }
 
-    $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
-            ->whereIn('saccos.id', $saccoIds) // Ensure this checks 'saccos.id' rather than 'sacco_id'
-            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-            ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
-            ->where(function ($query) {
-                $query->whereNull('users.user_type')
-                    ->orWhere('users.user_type', '<>', 'Admin');
-            })
-            ->select('transactions.*') // Select all transaction fields
-            ->get()
+
 
     private function getTotalBalance($users, $type, $startDate, $endDate)
 {
@@ -143,7 +133,7 @@ class HomeController extends Controller
     $totalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
         ->join('saccos as s', 'users.sacco_id', '=', 's.id')
         ->whereIn('users.id', $userIds)  // Use the extracted user IDs
-        // ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+        ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
         ->where('t.type', $type)  // Use the specified transaction type
         ->whereBetween('t.created_at', [$startDate, $endDate]) // Filter by created_at date range
         ->where(function ($query) {
