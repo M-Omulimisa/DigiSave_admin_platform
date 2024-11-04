@@ -15,6 +15,12 @@ class DistrictAgentController extends AdminController
 {
     protected $title = 'District Agents';
 
+    // public function __construct()
+    // {
+    //     ini_set('max_execution_time', 300); // Increase to 5 minutes
+    //     DistrictAgent::registerDefaultAgents(); // Call your registration method
+    // }
+
     /**
      * Create the grid view for DistrictAgent.
      *
@@ -84,14 +90,14 @@ class DistrictAgentController extends AdminController
         $form->date('dob', __('Date of Birth'))->rules('required|date');
         $form->select('sex', __('Gender'))->options(['male' => 'Male', 'female' => 'Female'])->rules('required');
 
-         // Password fields
-         $form->password('password', trans('admin.password'))->rules('confirmed|required');
-         $form->password('password_confirmation', trans('admin.password_confirmation'))->rules('required')
-             ->default(function ($form) {
-                 return $form->model()->password;
-             });
-         $form->ignore(['password_confirmation']);
-         $form->ignore(['change_password']);
+        // Password fields
+        $form->password('password', trans('admin.password'))->rules('confirmed|required');
+        $form->password('password_confirmation', trans('admin.password_confirmation'))->rules('required')
+            ->default(function ($form) {
+                return $form->model()->password;
+            });
+        $form->ignore(['password_confirmation']);
+        $form->ignore(['change_password']);
 
         // Dropdown to select the district
         $form->select('district_id', __('District'))->options(District::all()->pluck('name', 'id'))->rules('required');
