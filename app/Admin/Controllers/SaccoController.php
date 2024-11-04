@@ -100,10 +100,17 @@ class SaccoController extends AdminController
 
     $grid->column('amount_required_per_meeting', __('Welfare'))
     ->display(function () {
-        // Get the latest cycle associated with the sacco
         $latestCycle = $this->cycles()->orderBy('created_at', 'desc')->first();
         return $latestCycle ? number_format($latestCycle->amount_required_per_meeting) : 'N/A';
-    })->sortable();
+    })->sortable()
+    ->editable();
+
+    // $grid->column('amount_required_per_meeting', __('Welfare'))
+    // ->display(function () {
+    //     // Get the latest cycle associated with the sacco
+    //     $latestCycle = $this->cycles()->orderBy('created_at', 'desc')->first();
+    //     return $latestCycle ? number_format($latestCycle->amount_required_per_meeting) : 'N/A';
+    // })->sortable();
 
     // Adding new columns for uses_cash and uses_shares
     $grid->column('uses_cash', __('Uses Cash'))

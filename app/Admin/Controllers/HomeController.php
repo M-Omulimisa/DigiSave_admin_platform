@@ -121,17 +121,17 @@ class HomeController extends Controller
         // Add your logic here
     }
 
-    // $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-    //         ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
-    //         ->whereIn('saccos.id', $saccoIds) // Ensure this checks 'saccos.id' rather than 'sacco_id'
-    //         ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-    //         ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
-    //         ->where(function ($query) {
-    //             $query->whereNull('users.user_type')
-    //                 ->orWhere('users.user_type', '<>', 'Admin');
-    //         })
-    //         ->select('transactions.*') // Select all transaction fields
-    //         ->get()
+    $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
+            ->whereIn('saccos.id', $saccoIds) // Ensure this checks 'saccos.id' rather than 'sacco_id'
+            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+            ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
+            ->where(function ($query) {
+                $query->whereNull('users.user_type')
+                    ->orWhere('users.user_type', '<>', 'Admin');
+            })
+            ->select('transactions.*') // Select all transaction fields
+            ->get()
 
     private function getTotalBalance($users, $type, $startDate, $endDate)
 {
