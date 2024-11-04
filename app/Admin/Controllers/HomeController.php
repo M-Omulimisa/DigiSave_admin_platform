@@ -544,25 +544,12 @@ private function formatCurrency($amount)
             ->whereIn('saccos.id', $saccoIds) // Ensure this checks 'saccos.id' rather than 'sacco_id'
             ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
             ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
-            ->where('users.sex', 'Male') // Filter for Male users
             ->where(function ($query) {
                 $query->whereNull('users.user_type')
-                ->orWhere('users.user_type', '<>', 'Admin');
+                    ->orWhere('users.user_type', '<>', 'Admin');
             })
             ->select('transactions.*') // Select all transaction fields
             ->get();
-
-            // $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            // ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
-            // ->whereIn('saccos.id', $saccoIds) // Ensure this checks 'saccos.id' rather than 'sacco_id'
-            // ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-            // ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
-            // ->where(function ($query) {
-            //     $query->whereNull('users.user_type')
-            //         ->orWhere('users.user_type', '<>', 'Admin');
-            // })
-            // ->select('transactions.*') // Select all transaction fields
-            // ->get();
             $monthYearList = [];
             $totalSavingsList = [];
 
@@ -805,32 +792,15 @@ private function formatCurrency($amount)
             $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
 
             $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-    ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
-    ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-    ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
-    ->where('users.user_type', 'Admin') // Specifically include only Admin users
-    ->where('users.sex', 'Male') // Filter for Male users
-    ->select('transactions.*') // Select all transaction fields
-    ->get();
-
-    //         $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-    // ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
-    // ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-    // ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
-    // ->where('users.user_type', 'Admin') // Specifically include only Admin users
-    // ->select('transactions.*') // Select all transaction fields
-    // ->get();
-
-            // $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            // ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
-            // ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-            // ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
-            // ->where(function ($query) {
-            //     $query->whereNull('users.user_type')
-            //         ->orWhere('users.user_type', '<>', 'Admin');
-            // })
-            // ->select('transactions.*') // Select all transaction fields
-            // ->get();
+            ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
+            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+            ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
+            ->where(function ($query) {
+                $query->whereNull('users.user_type')
+                    ->orWhere('users.user_type', '<>', 'Admin');
+            })
+            ->select('transactions.*') // Select all transaction fields
+            ->get();
             $monthYearList = [];
             $totalSavingsList = [];
 
