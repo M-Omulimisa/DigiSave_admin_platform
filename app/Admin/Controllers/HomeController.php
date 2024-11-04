@@ -1053,7 +1053,7 @@ private function formatCurrency($amount)
                         'Female' => $femaleTotalBalance,
                         'Male' => $maleTotalBalance,
                         'monthYearList' => $monthYearList,
-                        // 'totalSavingsList' => $totalSavingsList,
+                        'totalSavingsList' => $totalSavingsList,
                     ]) .
                     '<div class="row" style="padding-top: 35px;">
                         <div class="col-md-6">
