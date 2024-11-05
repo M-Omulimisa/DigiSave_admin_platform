@@ -562,8 +562,10 @@ private function formatCurrency($amount)
 
                 if (array_key_exists($monthYear, $totalSavingsList)) {
                     $totalSavingsList[$monthYear] += $transaction->amount;
+                    dd($totalSavingsList);
                 } else {
                     $totalSavingsList[$monthYear] = $transaction->amount;
+                    dd($totalSavingsList);
                 }
             }
 
@@ -813,8 +815,10 @@ private function formatCurrency($amount)
 
                 if (array_key_exists($monthYear, $totalSavingsList)) {
                     $totalSavingsList[$monthYear] += $transaction->amount;
+                    dd($totalSavingsList);
                 } else {
                     $totalSavingsList[$monthYear] = $transaction->amount;
+                    dd($totalSavingsList);
                 }
             }
 
