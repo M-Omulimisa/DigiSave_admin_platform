@@ -553,6 +553,15 @@ private function formatCurrency($amount)
             $monthYearList = [];
             $totalSavingsList = [];
 
+            // Filter transactions for October
+            $octoberTransactions = $transactions->filter(function ($transaction) {
+                $transactionDate = Carbon::parse($transaction->created_at);
+                return $transactionDate->month == 10 && $transactionDate->year == Carbon::now()->year;
+            });
+
+            // Output the October transactions
+            dd($octoberTransactions);
+
             foreach ($transactions as $transaction) {
                 $monthYear = Carbon::parse($transaction->created_at)->format('F Y');
 
@@ -562,10 +571,8 @@ private function formatCurrency($amount)
 
                 if (array_key_exists($monthYear, $totalSavingsList)) {
                     $totalSavingsList[$monthYear] += $transaction->amount;
-                    dd($totalSavingsList);
                 } else {
                     $totalSavingsList[$monthYear] = $transaction->amount;
-                    dd($totalSavingsList);
                 }
             }
 
@@ -806,6 +813,15 @@ private function formatCurrency($amount)
             $monthYearList = [];
             $totalSavingsList = [];
 
+            // Filter transactions for October
+            $octoberTransactions = $transactions->filter(function ($transaction) {
+                $transactionDate = Carbon::parse($transaction->created_at);
+                return $transactionDate->month == 10 && $transactionDate->year == Carbon::now()->year;
+            });
+
+            // Output the October transactions
+            dd($octoberTransactions);
+
             foreach ($transactions as $transaction) {
                 $monthYear = Carbon::parse($transaction->created_at)->format('F Y');
 
@@ -815,10 +831,8 @@ private function formatCurrency($amount)
 
                 if (array_key_exists($monthYear, $totalSavingsList)) {
                     $totalSavingsList[$monthYear] += $transaction->amount;
-                    dd($totalSavingsList);
                 } else {
                     $totalSavingsList[$monthYear] = $transaction->amount;
-                    dd($totalSavingsList);
                 }
             }
 
