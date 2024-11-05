@@ -19,15 +19,7 @@
         $(function() {
             var barContainer = $('#barContainer');
             var monthYearList = {!! json_encode($monthYearList) !!};
-            var totalSavingsList = {!! json_encode($totalSavingsList) !!};
-
-            // Prepare data for male and female savings
-            var maleSavings = monthYearList.map(function(monthYear) {
-                return totalSavingsList[monthYear] ? totalSavingsList[monthYear]['men'] : 0;
-            });
-            var femaleSavings = monthYearList.map(function(monthYear) {
-                return totalSavingsList[monthYear] ? totalSavingsList[monthYear]['women'] : 0;
-            });
+            var totalSavingsList = {!! json_encode(array_values($totalSavingsList)) !!};
 
             Highcharts.chart('barContainer', {
                 chart: {
@@ -35,7 +27,7 @@
                     height: 400,
                 },
                 title: {
-                    text: 'Total Savings per Month-Year by Sex',
+                    text: 'Total Savings per Month-Year',
                     style: {
                         fontSize: '18px',
                         color: '#333'
@@ -84,44 +76,54 @@
                     }
                 },
                 tooltip: {
-                    shared: false,
-                    useHTML: true,
-                    formatter: function() {
-                        return '<span style="color:' + this.series.color + '">\u25CF</span> ' +
-                            this.series.name + ': <b>UGX ' + this.y.toLocaleString() + '</b><br>';
-                    }
+                    pointFormat: '{series.name}: <b>UGX {point.y:,.1f}</b>',
+                    shared: true,
+                    useHTML: true
                 },
                 plotOptions: {
                     column: {
-                        pointPadding: 0,
-                        groupPadding: 0.1,
                         dataLabels: {
                             enabled: true,
+                            inside: false, // Ensure the label is placed outside the column if necessary
                             formatter: function() {
                                 return 'UGX ' + this.y.toLocaleString();
                             },
                             style: {
                                 fontSize: '12px',
-                                fontWeight: 'bold',
                                 color: '#333'
                             },
-                            crop: false,
-                            overflow: 'none'
+                            crop: false, // Prevent cropping of data labels
+                            overflow: 'none' // Handle overflow better to ensure visibility
                         }
                     }
                 },
-                series: [
-                    {
-                        name: 'Male Savings',
-                        data: maleSavings,
-                        color: 'rgba(54, 162, 235, 0.8)' // Blue color for male savings
-                    },
-                    {
-                        name: 'Female Savings',
-                        data: femaleSavings,
-                        color: 'rgba(255, 99, 132, 0.8)' // Pink color for female savings
-                    }
-                ]
+                // plotOptions: {
+                //     column: {
+                //         dataLabels: {
+                //             enabled: true,
+                //             formatter: function() {
+                //                 return 'UGX ' + this.y.toLocaleString();
+                //             },
+                //             style: {
+                //                 fontSize: '12px',
+                //                 color: '#333'
+                //             }
+                //         }
+                //     }
+                // },
+                series: [{
+                    name: 'Total Savings',
+                    data: totalSavingsList,
+                    colorByPoint: true,
+                    colors: [
+                        'rgba(75, 192, 192, 0.8)',
+                        'rgba(153, 102, 255, 0.8)',
+                        'rgba(255, 159, 64, 0.8)',
+                        'rgba(255, 99, 132, 0.8)',
+                        'rgba(54, 162, 235, 0.8)',
+                        'rgba(255, 206, 86, 0.8)'
+                    ]
+                }]
             });
         });
     </script>

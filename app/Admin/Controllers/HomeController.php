@@ -539,7 +539,6 @@ private function formatCurrency($amount)
 
             $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
 
-
             $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
             ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
             ->whereIn('saccos.id', $saccoIds) // Ensure this checks 'saccos.id' rather than 'sacco_id'
@@ -549,67 +548,24 @@ private function formatCurrency($amount)
                 $query->whereNull('users.user_type')
                     ->orWhere('users.user_type', '<>', 'Admin');
             })
-            ->select('transactions.*', 'users.sex') // Select transaction fields and user sex
+            ->select('transactions.*') // Select all transaction fields
             ->get();
+            $monthYearList = [];
+            $totalSavingsList = [];
 
-        $totalSavingsList = [];
-        $monthYearList = [];
+            foreach ($transactions as $transaction) {
+                $monthYear = Carbon::parse($transaction->created_at)->format('F Y');
 
-        foreach ($transactions as $transaction) {
-            $monthYear = Carbon::parse($transaction->created_at)->format('F Y');
+                if (!in_array($monthYear, $monthYearList)) {
+                    $monthYearList[] = $monthYear;
+                }
 
-            // Add the month-year to the list if it’s not already there
-            if (!in_array($monthYear, $monthYearList)) {
-                $monthYearList[] = $monthYear;
+                if (array_key_exists($monthYear, $totalSavingsList)) {
+                    $totalSavingsList[$monthYear] += $transaction->amount;
+                } else {
+                    $totalSavingsList[$monthYear] = $transaction->amount;
+                }
             }
-
-            // Initialize the month entry if it doesn't exist
-            if (!array_key_exists($monthYear, $totalSavingsList)) {
-                $totalSavingsList[$monthYear] = [
-                    'total' => 0,
-                    'men' => 0,
-                    'women' => 0,
-                ];
-            }
-
-            // Add to the total savings for the month
-            $totalSavingsList[$monthYear]['total'] += $transaction->amount;
-
-            // Add to men’s or women’s savings based on sex
-            if ($transaction->sex === 'Male') {
-                $totalSavingsList[$monthYear]['men'] += $transaction->amount;
-            } elseif ($transaction->sex === 'Female') {
-                $totalSavingsList[$monthYear]['women'] += $transaction->amount;
-            }
-        }
-
-            // $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            // ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
-            // ->whereIn('saccos.id', $saccoIds) // Ensure this checks 'saccos.id' rather than 'sacco_id'
-            // ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-            // ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
-            // ->where(function ($query) {
-            //     $query->whereNull('users.user_type')
-            //         ->orWhere('users.user_type', '<>', 'Admin');
-            // })
-            // ->select('transactions.*') // Select all transaction fields
-            // ->get();
-            // $monthYearList = [];
-            // $totalSavingsList = [];
-
-            // foreach ($transactions as $transaction) {
-            //     $monthYear = Carbon::parse($transaction->created_at)->format('F Y');
-
-            //     if (!in_array($monthYear, $monthYearList)) {
-            //         $monthYearList[] = $monthYear;
-            //     }
-
-            //     if (array_key_exists($monthYear, $totalSavingsList)) {
-            //         $totalSavingsList[$monthYear] += $transaction->amount;
-            //     } else {
-            //         $totalSavingsList[$monthYear] = $transaction->amount;
-            //     }
-            // }
 
             $userRegistrations = $users->whereIn('sacco_id', $saccoIds)->where('user_type', '!=', 'Admin')->groupBy(function ($date) {
                 return Carbon::parse($date->created_at)->format('Y-m');
@@ -836,73 +792,31 @@ private function formatCurrency($amount)
             $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
 
             $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-    ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
-    ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-    ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
-    ->where(function ($query) {
-        $query->whereNull('users.user_type')
-            ->orWhere('users.user_type', '<>', 'Admin');
-    })
-    ->select('transactions.*', 'users.sex') // Select transaction fields and user sex
-    ->get();
+            ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
+            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+            ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
+            ->where(function ($query) {
+                $query->whereNull('users.user_type')
+                    ->orWhere('users.user_type', '<>', 'Admin');
+            })
+            ->select('transactions.*') // Select all transaction fields
+            ->get();
+            $monthYearList = [];
+            $totalSavingsList = [];
 
-$totalSavingsList = [];
-$monthYearList = [];
+            foreach ($transactions as $transaction) {
+                $monthYear = Carbon::parse($transaction->created_at)->format('F Y');
 
-foreach ($transactions as $transaction) {
-    $monthYear = Carbon::parse($transaction->created_at)->format('F Y');
+                if (!in_array($monthYear, $monthYearList)) {
+                    $monthYearList[] = $monthYear;
+                }
 
-    // Add the month-year to the list if it’s not already there
-    if (!in_array($monthYear, $monthYearList)) {
-        $monthYearList[] = $monthYear;
-    }
-
-    // Initialize the month entry if it doesn't exist
-    if (!array_key_exists($monthYear, $totalSavingsList)) {
-        $totalSavingsList[$monthYear] = [
-            'total' => 0,
-            'men' => 0,
-            'women' => 0,
-        ];
-    }
-
-    // Add to the total savings for the month
-    $totalSavingsList[$monthYear]['total'] += $transaction->amount;
-
-    // Add to men’s or women’s savings based on sex
-    if ($transaction->sex === 'Male') {
-        $totalSavingsList[$monthYear]['men'] += $transaction->amount;
-    } elseif ($transaction->sex === 'Female') {
-        $totalSavingsList[$monthYear]['women'] += $transaction->amount;
-    }
-}
-
-            // $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            // ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
-            // ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-            // ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
-            // ->where(function ($query) {
-            //     $query->whereNull('users.user_type')
-            //         ->orWhere('users.user_type', '<>', 'Admin');
-            // })
-            // ->select('transactions.*') // Select all transaction fields
-            // ->get();
-            // $monthYearList = [];
-            // $totalSavingsList = [];
-
-            // foreach ($transactions as $transaction) {
-            //     $monthYear = Carbon::parse($transaction->created_at)->format('F Y');
-
-            //     if (!in_array($monthYear, $monthYearList)) {
-            //         $monthYearList[] = $monthYear;
-            //     }
-
-            //     if (array_key_exists($monthYear, $totalSavingsList)) {
-            //         $totalSavingsList[$monthYear] += $transaction->amount;
-            //     } else {
-            //         $totalSavingsList[$monthYear] = $transaction->amount;
-            //     }
-            // }
+                if (array_key_exists($monthYear, $totalSavingsList)) {
+                    $totalSavingsList[$monthYear] += $transaction->amount;
+                } else {
+                    $totalSavingsList[$monthYear] = $transaction->amount;
+                }
+            }
 
             $userRegistrations = $users->where('user_type', '!=', 'Admin')->groupBy(function ($date) {
                 return Carbon::parse($date->created_at)->format('Y-m');
