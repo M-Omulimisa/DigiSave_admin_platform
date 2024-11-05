@@ -561,14 +561,14 @@ private function formatCurrency($amount)
 
             // Output the October transactions
             dd($octoberTransactions->map(function ($transaction) {
-                return [
-                    'id' => $transaction->id,
-                    'amount' => $transaction->amount,
-                    'user_id' => $transaction->user_id,
-                    'source_user_id' => $transaction->source_user_id,
-                    'created_at' =>$transaction->created_at
-                ];
-            }));
+    return [
+        'id' => $transaction->id,
+        'amount' => $transaction->amount,
+        'user_id' => $transaction->user_id,
+        'source_user_id' => $transaction->source_user_id,
+        'month' => Carbon::parse($transaction->created_at)->format('m'), // Month as integer
+    ];
+}));
 
             foreach ($transactions as $transaction) {
                 $monthYear = Carbon::parse($transaction->created_at)->format('F Y');
@@ -829,14 +829,14 @@ private function formatCurrency($amount)
 
             // Output the October transactions
             dd($octoberTransactions->map(function ($transaction) {
-                return [
-                    'id' => $transaction->id,
-                    'amount' => $transaction->amount,
-                    'user_id' => $transaction->user_id,
-                    'source_user_id' => $transaction->source_user_id,
-                    'created_at' =>$transaction->created_at
-                ];
-            }));
+    return [
+        'id' => $transaction->id,
+        'amount' => $transaction->amount,
+        'user_id' => $transaction->user_id,
+        'source_user_id' => $transaction->source_user_id,
+        'month' => Carbon::parse($transaction->created_at)->format('m'), // Month as integer
+    ];
+}));
 
             foreach ($transactions as $transaction) {
                 $monthYear = Carbon::parse($transaction->created_at)->format('F Y');
