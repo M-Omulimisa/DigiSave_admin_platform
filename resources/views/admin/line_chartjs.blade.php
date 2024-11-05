@@ -84,20 +84,25 @@
                     }
                 },
                 tooltip: {
-                    pointFormat: '{series.name}: <b>UGX {point.y:,.1f}</b>',
-                    shared: true,
-                    useHTML: true
+                    shared: false,
+                    useHTML: true,
+                    formatter: function() {
+                        return '<span style="color:' + this.series.color + '">\u25CF</span> ' +
+                            this.series.name + ': <b>UGX ' + this.y.toLocaleString() + '</b><br>';
+                    }
                 },
                 plotOptions: {
                     column: {
+                        pointPadding: 0,
+                        groupPadding: 0.1,
                         dataLabels: {
                             enabled: true,
-                            inside: false,
                             formatter: function() {
                                 return 'UGX ' + this.y.toLocaleString();
                             },
                             style: {
                                 fontSize: '12px',
+                                fontWeight: 'bold',
                                 color: '#333'
                             },
                             crop: false,
