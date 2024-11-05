@@ -566,6 +566,7 @@ private function formatCurrency($amount)
                     'amount' => $transaction->amount,
                     'user_id' => $transaction->user_id,
                     'source_user_id' => $transaction->source_user_id,
+                    'created_at' =>$transaction->created_at
                 ];
             }));
 
@@ -833,6 +834,7 @@ private function formatCurrency($amount)
                     'amount' => $transaction->amount,
                     'user_id' => $transaction->user_id,
                     'source_user_id' => $transaction->source_user_id,
+                    'created_at' =>$transaction->created_at
                 ];
             }));
 
