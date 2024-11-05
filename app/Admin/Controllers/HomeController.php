@@ -539,7 +539,7 @@ private function formatCurrency($amount)
 
             $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
 
-            $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            $transactions = Transaction::join('users', 'transactions.user_id', '=', 'users.id')
             ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
             ->whereIn('saccos.id', $saccoIds) // Ensure this checks 'saccos.id' rather than 'sacco_id'
             ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
@@ -791,7 +791,7 @@ private function formatCurrency($amount)
 
             $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
 
-            $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            $transactions = Transaction::join('users', 'transactions.user_id', '=', 'users.id')
             ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
             ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
             ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
