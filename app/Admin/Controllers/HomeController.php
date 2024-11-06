@@ -118,7 +118,7 @@ $monthlyRegistrationCounts = $userRegistrationsByMonth->map(function ($item, $mo
 
 // Use dd() to display the count and month values
 // After setting $startDate and $endDate
-dd('Start Date:', $startDate->toDateTimeString(), 'End Date:', $endDate->toDateTimeString());
+dd('Start Date:', $startDate, 'End Date:', $endDate-);
 
 // After filtering users
 dd('Filtered Users Count:', $filteredUsersByDateRange->count(), 'Users:', $filteredUsersByDateRange->pluck('created_at'));
