@@ -116,12 +116,18 @@ $monthlyRegistrationCounts = $userRegistrationsByMonth->map(function ($item, $mo
     ];
 })->values()->toArray();
 
-// Use dd() to display the count and month values
-// After setting $startDate and $endDate
-dd('Start Date:', $startDate, 'End Date:', $endDate, 'Filtered Users Count:', $filteredUsersByDateRange->count(), 'Users:', $filteredUsersByDateRange->pluck('created_at'));
+// Use map to extract only the created_at dates
+$createdAts = $filteredUsersByDateRange->map(function ($user) {
+    return $user->created_at;
+});
 
-// After filtering users
-// dd('Filtered Users Count:', $filteredUsersByDateRange->count(), 'Users:', $filteredUsersByDateRange->pluck('created_at'));
+// Now use dd() to display the data
+dd(
+    'Start Date:', $startDate,
+    'End Date:', $endDate,
+    'Filtered Users Count:', $filteredUsersByDateRange->count(),
+    'Created At Dates:', $createdAts
+);
 
 // Optionally, sum the total members for the specified months
 $totalMembersForRange = array_sum(array_column($monthlyRegistrationCounts, 'count'));
