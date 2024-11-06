@@ -549,27 +549,11 @@ private function formatCurrency($amount)
                 return in_array($user->user_type, ['4', '5', 'Admin']);
             });
 
-            if (!$admin->isRole('admin')) {
-
-                $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
-                if (!$orgAllocation) {
-                    Auth::logout();
-                    $message = "You are not allocated to any organization. Please contact M-Omulimisa Service Help for assistance.";
-                    Session::flash('warning', $message);
-                    admin_error($message);
-                    return redirect('auth/logout');
-                }
-
-                $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgAllocation->vsla_organisation_id)->pluck('sacco_id')->toArray();
-                $filteredUsers = $filteredUsers->whereIn('sacco_id', $saccoIds);
-                $users = $users->whereIn('sacco_id', $saccoIds);
-            }
-
             $user_ids = $users->pluck('id');
 
             $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
             ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
-            ->whereIn('users.id', $user_ids)
+            ->where('users.user_type', 'Admin')
             ->whereIn('saccos.id', $saccoIds) // Ensure this checks 'saccos.id' rather than 'sacco_id'
             ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
             ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
