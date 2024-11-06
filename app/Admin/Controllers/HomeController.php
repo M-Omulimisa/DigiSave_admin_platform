@@ -66,11 +66,9 @@ class HomeController extends Controller
         });
 
         // Apply date filter
-        // $filteredUsers = $users->filter(function ($user) use ($startDate, $endDate) {
-        //     return Carbon::parse($user->created_at)->between($startDate, $endDate);
-        // });
-
-    $filteredUsers = $users->pluck('id')->toArray();
+        $filteredUsers = $users->filter(function ($user) use ($startDate, $endDate) {
+            return Carbon::parse($user->created_at)->between($startDate, $endDate);
+        });
 
         // Additional filters based on admin role
         if (!$admin->isRole('admin')) {
@@ -91,6 +89,8 @@ class HomeController extends Controller
         // Calculate statistics
         $femaleUsers = $filteredUsers->where('sex', 'Female');
         $maleUsers = $filteredUsers->where('sex', 'Male');
+        $male = $users->where('sex', 'Male');
+        $female = $users->where('sex', 'Female');
         $youthUsers = $filteredUsers->filter(function ($user) {
             return Carbon::parse($user->dob)->age < 35;
         });
@@ -103,8 +103,8 @@ class HomeController extends Controller
             'maleMembersCount' => $maleUsers->count(),
             'youthMembersCount' => $youthUsers->count(),
             'pwdMembersCount' => $pwdUsers->count(),
-            'femaleTotalBalance' => $this->getTotalBalance($femaleUsers, 'SHARE', $startDate, $endDate),
-            'maleTotalBalance' => $this->getTotalBalance($maleUsers, 'SHARE', $startDate, $endDate),
+            'femaleTotalBalance' => $this->getTotalBalance($female, 'SHARE', $startDate, $endDate),
+            'maleTotalBalance' => $this->getTotalBalance($male, 'SHARE', $startDate, $endDate),
             'youthTotalBalance' => $this->getTotalBalance($youthUsers, 'SHARE', $startDate, $endDate),
             'pwdTotalBalance' => $this->getTotalBalance($pwdUsers, 'SHARE', $startDate, $endDate),
             'totalLoanAmount' => $this->getTotalLoanAmount($filteredUsers, $startDate, $endDate),
