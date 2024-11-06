@@ -542,8 +542,17 @@ private function formatCurrency($amount)
 
             $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
 
+            $users = User::all()->reject(function ($user) use ($adminId) {
+                return $user->id === $adminId && $user->user_type === 'Admin';
+            })->reject(function ($user) {
+                return in_array($user->user_type, ['4', '5', 'Admin']);
+            });
+
+            $user_ids = $users->pluck('id');
+
             $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
             ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
+            ->where('users.id', $user_ids)
             ->whereIn('saccos.id', $saccoIds) // Ensure this checks 'saccos.id' rather than 'sacco_id'
             ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
             ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
@@ -794,8 +803,17 @@ private function formatCurrency($amount)
 
             $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
 
+            $users = User::all()->reject(function ($user) use ($adminId) {
+                return $user->id === $adminId && $user->user_type === 'Admin';
+            })->reject(function ($user) {
+                return in_array($user->user_type, ['4', '5', 'Admin']);
+            });
+
+            $user_ids = $users->pluck('id');
+
             $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
             ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
+            ->where('users.id', $user_ids)
             ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
             ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
             ->where(function ($query) {
