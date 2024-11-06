@@ -99,27 +99,33 @@ class HomeController extends Controller
         $pwdUsers = $filteredUsers->where('pwd', 'Yes');
 
         // Filter users based on creation date within the specified range
-        $filteredUsersByDateRange = $users->where('user_type', '!=', 'Admin')
-        ->filter(function ($user) use ($startDate, $endDate) {
-            return Carbon::parse($user->created_at)->between($startDate, $endDate);
-        });
+$filteredUsersByDateRange = $users->where('user_type', '!=', 'Admin')
+->filter(function ($user) use ($startDate, $endDate) {
+    return Carbon::parse($user->created_at)->between($startDate, $endDate);
+});
 
-        // Group filtered users by month and year
-        $userRegistrations = $filteredUsersByDateRange->groupBy(function ($user) {
-            return Carbon::parse($user->created_at)->format('Y-m');
-        });
+// Group filtered users by month only (ignoring year)
+$userRegistrationsByMonth = $filteredUsersByDateRange->groupBy(function ($user) {
+return Carbon::parse($user->created_at)->format('m'); // Extracts only the month part
+});
 
-        // Get the monthly registration counts
-        $registrationCounts = $userRegistrations->map(function ($item) {
-            return count($item);
-        })->values()->toArray();
+// Get the registration counts for each month (ignoring year)
+$monthlyRegistrationCounts = $userRegistrationsByMonth->map(function ($item, $month) {
+return [
+    'month' => $month, // month (e.g., '01' for January)
+    'count' => count($item), // number of registrations in that month
+];
+})->values()->toArray();
 
-        // Calculate total members for the specified date range
-        $totalMembersForRange = array_sum($registrationCounts);
+// Use dd() to display the count and month values
+dd($monthlyRegistrationCounts);
 
-        $statistics = [
-            'totalAccounts' => $this->getTotalAccounts($filteredUsersByDateRange, $startDate, $endDate),
-            'totalMembers' => $totalMembersForRange, // Member count for the specified date range
+// Optionally, sum the total members for the specified months
+$totalMembersForRange = array_sum(array_column($monthlyRegistrationCounts, 'count'));
+
+$statistics = [
+'totalAccounts' => $this->getTotalAccounts($filteredUsersByDateRange, $startDate, $endDate),
+'totalMembers' => $totalMembersForRange, // Member count for the specified date range
             'femaleMembersCount' => $femaleUsers->count(),
             'femaleMembersCount' => $femaleUsers->count(),
             'maleMembersCount' => $maleUsers->count(),
