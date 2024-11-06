@@ -130,7 +130,7 @@ dd([
         return [
             'first_name' => $user->first_name,
             'last_name' => $user->last_name,
-            'created_at' => $user->created_at->toDateTimeString(),
+            'created_at' => $user->created_at
         ];
     })->values()->toArray(),
 ]);
