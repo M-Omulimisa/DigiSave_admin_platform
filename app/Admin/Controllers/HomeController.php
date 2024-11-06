@@ -99,8 +99,7 @@ class HomeController extends Controller
         $pwdUsers = $filteredUsers->where('pwd', 'Yes');
 
         // Filter users based on creation date within the specified range
-$filteredUsersByDateRange = $users->where('user_type', '!=', 'Admin')
-->filter(function ($user) use ($startDate, $endDate) {
+$filteredUsersByDateRange = $users->filter(function ($user) use ($startDate, $endDate) {
     return Carbon::parse($user->created_at)->between($startDate, $endDate);
 });
 
