@@ -84,7 +84,7 @@ class HomeController extends Controller
 
             $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgAllocation->vsla_organisation_id)->pluck('sacco_id')->toArray();
             $filteredUsers = $filteredUsers->whereIn('sacco_id', $saccoIds);
-            // $users = $users->whereIn('sacco_id', $saccoIds);
+            $users = $users->whereIn('sacco_id', $saccoIds);
         }
 
         // Calculate statistics
@@ -100,7 +100,7 @@ class HomeController extends Controller
 
         $statistics = [
             'totalAccounts' => $this->getTotalAccounts($filteredUsers, $startDate, $endDate),
-            'totalMembers' => $filteredUsers->count(),
+            'totalMembers' => $this->getTotalMembers($users, $startDate, $endDate),
             'femaleMembersCount' => $femaleUsers->count(),
             'maleMembersCount' => $maleUsers->count(),
             'youthMembersCount' => $youthUsers->count(),
@@ -117,6 +117,19 @@ class HomeController extends Controller
         ];
 
         return $this->generateCsv($statistics, $startDate, $endDate);
+    }
+
+    private function getTotalMembers($users, $startDate, $endDate)
+    {
+        // Get the distinct Sacco IDs from the filtered users
+        $userIds = $users->pluck('id')->unique();
+
+        // Count Saccos registered within the specified date range
+        $totalMembers = User::whereIn('id', $userIds)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->count();
+
+        return $totalMembers;
     }
 
     private function getTotalAccounts($filteredUsers, $startDate, $endDate)
