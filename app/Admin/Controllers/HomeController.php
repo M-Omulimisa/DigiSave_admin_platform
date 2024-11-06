@@ -816,6 +816,7 @@ private function formatCurrency($amount)
             $totalBalancesByMonth = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
             ->join('saccos as s', 'users.sacco_id', '=', 's.id')
             ->whereIn('users.id', $userIds)
+            ->where('users.sex', 'male')
             ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
             ->where('t.type', 'SHARE')
             ->where(function ($query) {
