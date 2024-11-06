@@ -66,13 +66,8 @@ class HomeController extends Controller
         });
 
         // Apply date filter
-        // $filteredUsers = $users->filter(function ($user) use ($startDate, $endDate) {
-        //     return Carbon::parse($user->created_at)->between($startDate, $endDate);
-        // });
-
         $filteredUsers = $users->filter(function ($user) use ($startDate, $endDate) {
-            $createdDate = new \DateTime($user->created_at);
-            return $createdDate >= $startDate && $createdDate <= $endDate;
+            return Carbon::parse($user->created_at)->between($startDate, $endDate);
         });
 
         // Additional filters based on admin role
