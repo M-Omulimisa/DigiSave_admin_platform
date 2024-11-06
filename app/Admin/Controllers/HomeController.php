@@ -70,6 +70,8 @@ class HomeController extends Controller
             return Carbon::parse($user->created_at)->between($startDate, $endDate);
         });
 
+        $saccoIds = Sacco::all()->pluck('id');
+
         // Additional filters based on admin role
         if (!$admin->isRole('admin')) {
 
@@ -100,7 +102,7 @@ class HomeController extends Controller
 
         $statistics = [
             'totalAccounts' => $this->getTotalAccounts($filteredUsers, $startDate, $endDate),
-            'totalMembers' => $this->getTotalMembers($saccoIds, $startDate, $endDate),
+            'totalMembers' => $this->getTotalMembers($users, $startDate, $endDate),
             'femaleMembersCount' => $femaleUsers->count(),
             'maleMembersCount' => $maleUsers->count(),
             'youthMembersCount' => $youthUsers->count(),
@@ -625,15 +627,10 @@ private function formatCurrency($amount)
                 }
             }
 
-            // Group users by month of registration and count them
-            $userRegistrations = User::where('user_type', '!=', 'Admin')
-            ->whereIn('sacco_id', $saccoIds)  // Apply any Sacco ID filtering if necessary
-            ->get()
-            ->groupBy(function ($user) {
-                return Carbon::parse($user->created_at)->format('Y-m');
+            $userRegistrations = $users->whereIn('sacco_id', $saccoIds)->where('user_type', '!=', 'Admin')->groupBy(function ($date) {
+                return Carbon::parse($date->created_at)->format('Y-m');
             });
 
-            // Get registration dates and counts per month
             $registrationDates = $userRegistrations->keys()->toArray();
             $registrationCounts = $userRegistrations->map(function ($item) {
                 return count($item);
