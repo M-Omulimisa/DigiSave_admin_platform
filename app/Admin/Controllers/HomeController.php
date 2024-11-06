@@ -122,29 +122,29 @@ class HomeController extends Controller
     }
 
     private function getTotalMembers($startDate, $endDate, $saccoIds = null)
-    {
-        // Start building the query
-        $query = User::where('user_type', '!=', 'Admin')
+{
+    // Start building the query
+    $query = User::where('user_type', '!=', 'Admin')
         ->whereBetween('created_at', [$startDate, $endDate]);
 
-        // Apply sacco_id filtering only if saccoIds is provided
-        if (!is_null($saccoIds)) {
-            $query->whereIn('sacco_id', $saccoIds);
-        }
+    // Only apply sacco_id filtering if $saccoIds is an array and not empty
+    if (is_array($saccoIds) && !empty($saccoIds)) {
+        $query->whereIn('sacco_id', $saccoIds);
+    }
 
-        // Group by month and count registrations per month
-        $userRegistrations = $query->get()
-            ->groupBy(function ($user) {
-                return Carbon::parse($user->created_at)->format('Y-m');
-            });
-
-        // Prepare monthly registration counts
-        $registrationCounts = $userRegistrations->mapWithKeys(function ($users, $month) {
-            return [$month => count($users)];
+    // Group by month and count registrations per month
+    $userRegistrations = $query->get()
+        ->groupBy(function ($user) {
+            return Carbon::parse($user->created_at)->format('Y-m');
         });
 
-        return $registrationCounts;
-    }
+    // Prepare monthly registration counts
+    $registrationCounts = $userRegistrations->mapWithKeys(function ($users, $month) {
+        return [$month => count($users)];
+    });
+
+    return $registrationCounts;
+}
 
     private function getTotalAccounts($filteredUsers, $startDate, $endDate)
     {
