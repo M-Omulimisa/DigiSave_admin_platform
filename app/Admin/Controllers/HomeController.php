@@ -548,7 +548,7 @@ private function formatCurrency($amount)
                 return in_array($user->user_type, ['4', '5', 'Admin']);
             });
 
-            $user_ids = $users->pluck('id');
+            $user_ids = $users->pluck('id')->toArray();
 
             $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
             ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
@@ -809,7 +809,7 @@ private function formatCurrency($amount)
                 return in_array($user->user_type, ['4', '5', 'Admin']);
             });
 
-            $user_ids = $users->pluck('id');
+            $user_ids = $users->pluck('id')->toArray();
 
             $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
             ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
