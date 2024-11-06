@@ -552,15 +552,14 @@ private function formatCurrency($amount)
 
             $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
             ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
-            ->whereIn('users.id', $user_ids)
-            ->where('sex', 'Male')
+            ->where('users.user_type', 'Admin')
             ->whereIn('saccos.id', $saccoIds) // Ensure this checks 'saccos.id' rather than 'sacco_id'
             ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
             ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
-            ->where(function ($query) {
-                $query->whereNull('users.user_type')
-                    ->orWhere('users.user_type', '<>', 'Admin');
-            })
+            // ->where(function ($query) {
+            //     $query->whereNull('users.user_type')
+            //         ->orWhere('users.user_type', '<>', 'Admin');
+            // })
             ->select('transactions.*') // Select all transaction fields
             ->get();
             $monthYearList = [];
@@ -814,7 +813,6 @@ private function formatCurrency($amount)
 
             $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
             ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
-            ->whereIn('users.id', $user_ids)
             ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
             ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
             ->where(function ($query) {
