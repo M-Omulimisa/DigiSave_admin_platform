@@ -808,49 +808,72 @@ private function formatCurrency($amount)
 
             $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
 
-            $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
-            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-            ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
-            ->where(function ($query) {
-                $query->whereNull('users.user_type')
-                    ->orWhere('users.user_type', '<>', 'Admin');
-            })
-            ->select('transactions.*') // Select all transaction fields
-            ->get();
+            $userIds = $users->pluck('id')->toArray();
+
             $monthYearList = [];
             $totalSavingsList = [];
 
-            // Filter transactions for October
-            $octoberTransactions = $transactions->filter(function ($transaction) {
-                $transactionDate = Carbon::parse($transaction->created_at);
-                return $transactionDate->month == 10 && $transactionDate->year == Carbon::now()->year;
-            });
+            $totalBalancesByMonth = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
+            ->join('saccos as s', 'users.sacco_id', '=', 's.id')
+            ->whereIn('users.id', $userIds)
+            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+            ->where('t.type', 'SHARE')
+            ->where(function ($query) {
+                $query->whereNull('users.user_type')
+                ->orWhere('users.user_type', '<>', 'Admin');
+            })
+            ->select(
+                DB::raw("DATE_FORMAT(t.created_at, '%M %Y') as month_year"),
+                DB::raw("SUM(t.amount) as total_balance")
+            )
+            ->groupBy('month_year')
+            ->orderBy('t.created_at')
+            ->get();
 
-            // Output the October transactions
-//             dd($octoberTransactions->map(function ($transaction) {
-//     return [
-//         'id' => $transaction->id,
-//         'amount' => $transaction->amount,
-//         'user_id' => $transaction->user_id,
-//         'source_user_id' => $transaction->source_user_id,
-//         'month' => Carbon::parse($transaction->created_at)->format('m'), // Month as integer
-//     ];
-// }));
-
-            foreach ($transactions as $transaction) {
-                $monthYear = Carbon::parse($transaction->created_at)->format('F Y');
-
-                if (!in_array($monthYear, $monthYearList)) {
-                    $monthYearList[] = $monthYear;
-                }
-
-                if (array_key_exists($monthYear, $totalSavingsList)) {
-                    $totalSavingsList[$monthYear] += $transaction->amount;
-                } else {
-                    $totalSavingsList[$monthYear] = $transaction->amount;
-                }
+            foreach ($totalBalancesByMonth as $record) {
+                $monthYearList[] = $record->month_year;
+                $totalSavingsList[$record->month_year] = $record->total_balance;
             }
+
+        //     $totalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
+        // ->join('saccos as s', 'users.sacco_id', '=', 's.id')
+        // ->whereIn('users.id', $userIds)  // Use the extracted user IDs
+        // ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+        // ->where('t.type', 'SHARE')
+        // ->where(function ($query) {
+        //     $query->whereNull('users.user_type')
+        //         ->orWhere('users.user_type', '<>', 'Admin');
+        // })
+        // ->select(DB::raw('SUM(t.amount) as total_balance'))
+        // ->first()
+        // ->total_balance;
+
+        //     $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+        //     ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
+        //     ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+        //     ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
+        //     ->where(function ($query) {
+        //         $query->whereNull('users.user_type')
+        //             ->orWhere('users.user_type', '<>', 'Admin');
+        //     })
+        //     ->select('transactions.*') // Select all transaction fields
+        //     ->get();
+        //     $monthYearList = [];
+        //     $totalSavingsList = [];
+
+        //     foreach ($transactions as $transaction) {
+        //         $monthYear = Carbon::parse($transaction->created_at)->format('F Y');
+
+        //         if (!in_array($monthYear, $monthYearList)) {
+        //             $monthYearList[] = $monthYear;
+        //         }
+
+        //         if (array_key_exists($monthYear, $totalSavingsList)) {
+        //             $totalSavingsList[$monthYear] += $transaction->amount;
+        //         } else {
+        //             $totalSavingsList[$monthYear] = $transaction->amount;
+        //         }
+        //     }
 
             $userRegistrations = $users->where('user_type', '!=', 'Admin')->groupBy(function ($date) {
                 return Carbon::parse($date->created_at)->format('Y-m');
