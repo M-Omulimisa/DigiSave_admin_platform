@@ -59,11 +59,12 @@ class HomeController extends Controller
         $adminId = $admin->id;
 
         // Get all users, then apply filters
-        $users = User::all()->reject(function ($user) use ($adminId) {
-            return $user->id === $adminId && $user->user_type === 'Admin';
-        })->reject(function ($user) {
-            return in_array($user->user_type, ['4', '5', 'Admin']);
-        });
+        // $users = User::all()->reject(function ($user) use ($adminId) {
+        //     return $user->id === $adminId && $user->user_type === 'Admin';
+        // })->reject(function ($user) {
+        //     return in_array($user->user_type, ['4', '5', 'Admin']);
+        // });
+        $users = User::all();
 
         // Apply date filter
         $filteredUsers = $users->filter(function ($user) use ($startDate, $endDate) {
