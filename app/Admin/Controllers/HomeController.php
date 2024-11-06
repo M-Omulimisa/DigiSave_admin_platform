@@ -135,7 +135,7 @@ class HomeController extends Controller
         ->whereIn('users.id', $userIds)  // Use the extracted user IDs
         ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
         ->where('t.type', $type)  // Use the specified transaction type
-        ->whereBetween('t.created_at', [$startDate, $endDate]) // Filter by created_at date range
+        ->whereBetween('t.created_at', [$startDate, $endDate])
         ->where(function ($query) {
             $query->whereNull('users.user_type')
                 ->orWhere('users.user_type', '<>', 'Admin');
@@ -545,27 +545,36 @@ private function formatCurrency($amount)
             $totalSavingsList = [];
 
             $totalBalancesByMonth = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
-            ->join('saccos as s', 'users.sacco_id', '=', 's.id')
-            ->whereIn('saccos.id', $saccoIds)
-            ->whereIn('users.id', $userIds)
-            ->where('users.sex', 'male')
-            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-            ->where('t.type', 'SHARE')
-            ->where(function ($query) {
-                $query->whereNull('users.user_type')
-                ->orWhere('users.user_type', '<>', 'Admin');
-            })
-            ->select(
-                DB::raw("DATE_FORMAT(t.created_at, '%M %Y') as month_year"),
-                DB::raw("SUM(t.amount) as total_balance")
-            )
-            ->groupBy('month_year')
-            ->orderBy('t.created_at')
-            ->get();
+                ->join('saccos as s', 'users.sacco_id', '=', 's.id')
+                ->whereIn('saccos.id', $saccoIds)
+                ->whereIn('users.id', $userIds)
+                ->where('users.sex', 'male')
+                ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+                ->where('t.type', 'SHARE')
+                ->where(function ($query) {
+                    $query->whereNull('users.user_type')
+                          ->orWhere('users.user_type', '<>', 'Admin');
+                })
+                ->select(
+                    DB::raw("DATE_FORMAT(t.created_at, '%M %Y') as month_year"),
+                    DB::raw("SUM(t.amount) as total_balance")
+                )
+                ->groupBy('month_year')
+                ->orderBy('t.created_at')
+                ->get();
 
             foreach ($totalBalancesByMonth as $record) {
+                // Calculate dynamic start and end date for each month
+                $startOfMonth = Carbon::createFromFormat('F Y', $record->month_year)->startOfMonth();
+                $endOfMonth = Carbon::createFromFormat('F Y', $record->month_year)->endOfMonth();
+
+                // Add month and calculated data to lists
                 $monthYearList[] = $record->month_year;
-                $totalSavingsList[$record->month_year] = $record->total_balance;
+                $totalSavingsList[$record->month_year] = [
+                    'total_balance' => $record->total_balance,
+                    'start_date' => $startOfMonth->format('Y-m-d'),
+                    'end_date' => $endOfMonth->format('Y-m-d')
+                ];
             }
 
             $userRegistrations = $users->whereIn('sacco_id', $saccoIds)->where('user_type', '!=', 'Admin')->groupBy(function ($date) {
@@ -798,26 +807,35 @@ private function formatCurrency($amount)
             $totalSavingsList = [];
 
             $totalBalancesByMonth = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
-            ->join('saccos as s', 'users.sacco_id', '=', 's.id')
-            ->whereIn('users.id', $userIds)
-            ->where('users.sex', 'male')
-            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-            ->where('t.type', 'SHARE')
-            ->where(function ($query) {
-                $query->whereNull('users.user_type')
-                ->orWhere('users.user_type', '<>', 'Admin');
-            })
-            ->select(
-                DB::raw("DATE_FORMAT(t.created_at, '%M %Y') as month_year"),
-                DB::raw("SUM(t.amount) as total_balance")
-            )
-            ->groupBy('month_year')
-            ->orderBy('t.created_at')
-            ->get();
+                ->join('saccos as s', 'users.sacco_id', '=', 's.id')
+                ->whereIn('users.id', $userIds)
+                ->where('users.sex', 'male')
+                ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+                ->where('t.type', 'SHARE')
+                ->where(function ($query) {
+                    $query->whereNull('users.user_type')
+                          ->orWhere('users.user_type', '<>', 'Admin');
+                })
+                ->select(
+                    DB::raw("DATE_FORMAT(t.created_at, '%M %Y') as month_year"),
+                    DB::raw("SUM(t.amount) as total_balance")
+                )
+                ->groupBy('month_year')
+                ->orderBy('t.created_at')
+                ->get();
 
             foreach ($totalBalancesByMonth as $record) {
+                // Calculate dynamic start and end date for each month
+                $startOfMonth = Carbon::createFromFormat('F Y', $record->month_year)->startOfMonth();
+                $endOfMonth = Carbon::createFromFormat('F Y', $record->month_year)->endOfMonth();
+
+                // Add month and calculated data to lists
                 $monthYearList[] = $record->month_year;
-                $totalSavingsList[$record->month_year] = $record->total_balance;
+                $totalSavingsList[$record->month_year] = [
+                    'total_balance' => $record->total_balance,
+                    'start_date' => $startOfMonth->format('Y-m-d'),
+                    'end_date' => $endOfMonth->format('Y-m-d')
+                ];
             }
 
         //     $totalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
