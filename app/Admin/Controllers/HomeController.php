@@ -100,7 +100,7 @@ class HomeController extends Controller
 
         $statistics = [
             'totalAccounts' => $this->getTotalAccounts($filteredUsers, $startDate, $endDate),
-            'totalMembers' => $this->getTotalMembers($users, $startDate, $endDate),
+            'totalMembers' => $this->getTotalMembers($saccoIds, $startDate, $endDate),
             'femaleMembersCount' => $femaleUsers->count(),
             'maleMembersCount' => $maleUsers->count(),
             'youthMembersCount' => $youthUsers->count(),
@@ -119,18 +119,29 @@ class HomeController extends Controller
         return $this->generateCsv($statistics, $startDate, $endDate);
     }
 
-    private function getTotalMembers($users, $startDate, $endDate)
+    private function getTotalMembers($startDate, $endDate, $saccoIds = null)
     {
-        // Get the distinct Sacco IDs from the filtered users
-        $userIds = $users->pluck('id')->unique();
+        // Start building the query
+        $query = User::where('user_type', '!=', 'Admin')
+        ->whereBetween('created_at', [$startDate, $endDate]);
 
-        // Count Saccos registered within the specified date range
-        $totalMembers = User::whereIn('id', $userIds)
-        ->where('user_type', '!=', 'Admin')
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->count();
+        // Apply sacco_id filtering only if saccoIds is provided
+        if (!is_null($saccoIds)) {
+            $query->whereIn('sacco_id', $saccoIds);
+        }
 
-        return $totalMembers;
+        // Group by month and count registrations per month
+        $userRegistrations = $query->get()
+            ->groupBy(function ($user) {
+                return Carbon::parse($user->created_at)->format('Y-m');
+            });
+
+        // Prepare monthly registration counts
+        $registrationCounts = $userRegistrations->mapWithKeys(function ($users, $month) {
+            return [$month => count($users)];
+        });
+
+        return $registrationCounts;
     }
 
     private function getTotalAccounts($filteredUsers, $startDate, $endDate)
@@ -614,10 +625,15 @@ private function formatCurrency($amount)
                 }
             }
 
-            $userRegistrations = $users->whereIn('sacco_id', $saccoIds)->where('user_type', '!=', 'Admin')->groupBy(function ($date) {
-                return Carbon::parse($date->created_at)->format('Y-m');
+            // Group users by month of registration and count them
+            $userRegistrations = User::where('user_type', '!=', 'Admin')
+            ->whereIn('sacco_id', $saccoIds)  // Apply any Sacco ID filtering if necessary
+            ->get()
+            ->groupBy(function ($user) {
+                return Carbon::parse($user->created_at)->format('Y-m');
             });
 
+            // Get registration dates and counts per month
             $registrationDates = $userRegistrations->keys()->toArray();
             $registrationCounts = $userRegistrations->map(function ($item) {
                 return count($item);
