@@ -70,8 +70,6 @@ class HomeController extends Controller
             return Carbon::parse($user->created_at)->between($startDate, $endDate);
         });
 
-        $allusers = $users;
-
         // Additional filters based on admin role
         if (!$admin->isRole('admin')) {
 
@@ -86,15 +84,14 @@ class HomeController extends Controller
 
             $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgAllocation->vsla_organisation_id)->pluck('sacco_id')->toArray();
             $filteredUsers = $filteredUsers->whereIn('sacco_id', $saccoIds);
-            $allusers = $users->whereIn('sacco_id', $saccoIds);
         }
 
         // Calculate statistics
         $femaleUsers = $filteredUsers->where('sex', 'Female');
         $maleUsers = $filteredUsers->where('sex', 'Male');
-        // $allusers = User::all();
-        $male = $allusers->where('sex', 'Male');
-        $female = $allusers->where('sex', 'Female');
+        $allusers = User::all();
+        $male = $users->where('sex', 'Male');
+        $female = $users->where('sex', 'Female');
         $youthUsers = $filteredUsers->filter(function ($user) {
             return Carbon::parse($user->dob)->age < 35;
         });
