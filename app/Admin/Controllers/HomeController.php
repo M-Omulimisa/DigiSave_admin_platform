@@ -120,10 +120,17 @@ class HomeController extends Controller
     }
 
     private function getTotalAccounts($filteredUsers)
-    {
-        // Calculate total accounts based on the same logic as the dashboard
-        // Add your logic here
-    }
+{
+    // Get the distinct Sacco IDs from the filtered users
+    $saccoIds = $filteredUsers->pluck('sacco_id')->unique();
+
+    // Count Saccos registered within the specified date range
+    $totalAccounts = Sacco::whereIn('id', $saccoIds)
+        ->whereBetween('created_at', [request()->input('start_date'), request()->input('end_date')])
+        ->count();
+
+    return $totalAccounts;
+}
 
 
 
