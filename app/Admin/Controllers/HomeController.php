@@ -98,9 +98,29 @@ class HomeController extends Controller
         });
         $pwdUsers = $filteredUsers->where('pwd', 'Yes');
 
+        // Filter users based on creation date within the specified range
+        $filteredUsersByDateRange = $users->where('user_type', '!=', 'Admin')
+        ->filter(function ($user) use ($startDate, $endDate) {
+            return Carbon::parse($user->created_at)->between($startDate, $endDate);
+        });
+
+        // Group filtered users by month and year
+        $userRegistrations = $filteredUsersByDateRange->groupBy(function ($user) {
+            return Carbon::parse($user->created_at)->format('Y-m');
+        });
+
+        // Get the monthly registration counts
+        $registrationCounts = $userRegistrations->map(function ($item) {
+            return count($item);
+        })->values()->toArray();
+
+        // Calculate total members for the specified date range
+        $totalMembersForRange = array_sum($registrationCounts);
+
         $statistics = [
-            'totalAccounts' => $this->getTotalAccounts($filteredUsers, $startDate, $endDate),
-            'totalMembers' => $filteredUsers->count(),
+            'totalAccounts' => $this->getTotalAccounts($filteredUsersByDateRange, $startDate, $endDate),
+            'totalMembers' => $totalMembersForRange, // Member count for the specified date range
+            'femaleMembersCount' => $femaleUsers->count(),
             'femaleMembersCount' => $femaleUsers->count(),
             'maleMembersCount' => $maleUsers->count(),
             'youthMembersCount' => $youthUsers->count(),
