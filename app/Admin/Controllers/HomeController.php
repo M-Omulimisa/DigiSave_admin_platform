@@ -66,11 +66,14 @@ class HomeController extends Controller
         });
 
         // Apply date filter
-        $filteredUsers = $users->filter(function ($user) use ($startDate, $endDate) {
-            return Carbon::parse($user->created_at)->between($startDate, $endDate);
-        });
+        // $filteredUsers = $users->filter(function ($user) use ($startDate, $endDate) {
+        //     return Carbon::parse($user->created_at)->between($startDate, $endDate);
+        // });
 
-        $saccoIds = Sacco::all()->pluck('id');
+        $filteredUsers = $users->filter(function ($user) use ($startDate, $endDate) {
+            $createdDate = new DateTime($user->created_at);
+            return $createdDate >= $startDate && $createdDate <= $endDate;
+        })
 
         // Additional filters based on admin role
         if (!$admin->isRole('admin')) {
@@ -102,7 +105,7 @@ class HomeController extends Controller
 
         $statistics = [
             'totalAccounts' => $this->getTotalAccounts($filteredUsers, $startDate, $endDate),
-            'totalMembers' => $this->getTotalMembers($users, $startDate, $endDate),
+            'totalMembers' => $filteredUsers->count(),
             'femaleMembersCount' => $femaleUsers->count(),
             'maleMembersCount' => $maleUsers->count(),
             'youthMembersCount' => $youthUsers->count(),
@@ -120,31 +123,6 @@ class HomeController extends Controller
 
         return $this->generateCsv($statistics, $startDate, $endDate);
     }
-
-    private function getTotalMembers($startDate, $endDate, $saccoIds = null)
-{
-    // Start building the query
-    $query = User::where('user_type', '!=', 'Admin')
-        ->whereBetween('created_at', [$startDate, $endDate]);
-
-    // Only apply sacco_id filtering if $saccoIds is an array and not empty
-    if (is_array($saccoIds) && !empty($saccoIds)) {
-        $query->whereIn('sacco_id', $saccoIds);
-    }
-
-    // Group by month and count registrations per month
-    $userRegistrations = $query->get()
-        ->groupBy(function ($user) {
-            return Carbon::parse($user->created_at)->format('Y-m');
-        });
-
-    // Prepare monthly registration counts
-    $registrationCounts = $userRegistrations->mapWithKeys(function ($users, $month) {
-        return [$month => count($users)];
-    });
-
-    return $registrationCounts;
-}
 
     private function getTotalAccounts($filteredUsers, $startDate, $endDate)
     {
