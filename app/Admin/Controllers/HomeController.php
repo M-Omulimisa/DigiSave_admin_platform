@@ -71,7 +71,7 @@ class HomeController extends Controller
         // });
 
         $filteredUsers = $users->filter(function ($user) use ($startDate, $endDate) {
-            $createdDate = new DateTime($user->created_at);
+            $createdDate = new \DateTime($user->created_at);
             return $createdDate >= $startDate && $createdDate <= $endDate;
         });
 
