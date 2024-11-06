@@ -103,17 +103,17 @@ $filteredUsersByDateRange = $users->filter(function ($user) use ($startDate, $en
     return Carbon::parse($user->created_at)->between($startDate, $endDate);
 });
 
-// Group filtered users by month only (ignoring year)
+// Group filtered users by year and month
 $userRegistrationsByMonth = $filteredUsersByDateRange->groupBy(function ($user) {
-return Carbon::parse($user->created_at)->format('m'); // Extracts only the month part
+    return Carbon::parse($user->created_at)->format('Y-m'); // Extracts year and month
 });
 
-// Get the registration counts for each month (ignoring year)
+// Get the registration counts for each month
 $monthlyRegistrationCounts = $userRegistrationsByMonth->map(function ($item, $month) {
-return [
-    'month' => $month, // month (e.g., '01' for January)
-    'count' => count($item), // number of registrations in that month
-];
+    return [
+        'month' => $month, // e.g., '2023-11' for November 2023
+        'count' => count($item),
+    ];
 })->values()->toArray();
 
 // Use dd() to display the count and month values
