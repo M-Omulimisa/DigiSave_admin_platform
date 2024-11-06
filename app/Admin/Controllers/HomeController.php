@@ -548,11 +548,11 @@ private function formatCurrency($amount)
                 return in_array($user->user_type, ['4', '5', 'Admin']);
             });
 
-            $user_ids = $users->pluck('id')->toArray();
+            $user_ids = $users->pluck('id');
 
             $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
             ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
-            ->where('users.id', $user_ids)
+            ->whereIn('users.id', $user_ids)
             ->whereIn('saccos.id', $saccoIds) // Ensure this checks 'saccos.id' rather than 'sacco_id'
             ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
             ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
@@ -813,7 +813,7 @@ private function formatCurrency($amount)
 
             $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
             ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
-            ->where('users.id', $user_ids)
+            ->whereIn('users.id', $user_ids)
             ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
             ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
             ->where(function ($query) {
