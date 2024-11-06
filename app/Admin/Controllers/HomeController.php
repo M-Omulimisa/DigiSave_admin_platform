@@ -73,7 +73,7 @@ class HomeController extends Controller
         $filteredUsers = $users->filter(function ($user) use ($startDate, $endDate) {
             $createdDate = new DateTime($user->created_at);
             return $createdDate >= $startDate && $createdDate <= $endDate;
-        })
+        });
 
         // Additional filters based on admin role
         if (!$admin->isRole('admin')) {
