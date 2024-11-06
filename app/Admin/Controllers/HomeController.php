@@ -126,6 +126,7 @@ class HomeController extends Controller
 
         // Count Saccos registered within the specified date range
         $totalMembers = User::whereIn('id', $userIds)
+        ->where('user_type', '!=', 'Admin')
             ->whereBetween('created_at', [$startDate, $endDate])
             ->count();
 
