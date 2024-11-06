@@ -89,8 +89,9 @@ class HomeController extends Controller
         // Calculate statistics
         $femaleUsers = $filteredUsers->where('sex', 'Female');
         $maleUsers = $filteredUsers->where('sex', 'Male');
-        $male = $users->where('sex', 'Male');
-        $female = $users->where('sex', 'Female');
+        $allusers = User::all();
+        $male = $allusers->where('sex', 'Male');
+        $female = $allusers->where('sex', 'Female');
         $youthUsers = $filteredUsers->filter(function ($user) {
             return Carbon::parse($user->dob)->age < 35;
         });
