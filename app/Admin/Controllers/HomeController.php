@@ -59,12 +59,11 @@ class HomeController extends Controller
         $adminId = $admin->id;
 
         // Get all users, then apply filters
-        // $users = User::all()->reject(function ($user) use ($adminId) {
-        //     return $user->id === $adminId && $user->user_type === 'Admin';
-        // })->reject(function ($user) {
-        //     return in_array($user->user_type, ['4', '5', 'Admin']);
-        // });
-        $users = User::all();
+        $users = User::all()->reject(function ($user) use ($adminId) {
+            return $user->id === $adminId && $user->user_type === 'Admin';
+        })->reject(function ($user) {
+            return in_array($user->user_type, ['4', '5', 'Admin']);
+        });
 
         // Apply date filter
         $filteredUsers = $users->filter(function ($user) use ($startDate, $endDate) {
@@ -141,10 +140,10 @@ class HomeController extends Controller
         ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
         ->where('t.type', $type)  // Use the specified transaction type
         ->whereBetween('t.created_at', [$startDate, $endDate]) // Filter by created_at date range
-        // ->where(function ($query) {
-        //     $query->whereNull('users.user_type')
-        //         ->orWhere('users.user_type', '<>', 'Admin');
-        // })
+        ->where(function ($query) {
+            $query->whereNull('users.user_type')
+                ->orWhere('users.user_type', '<>', 'Admin');
+        })
         ->select(DB::raw('SUM(t.amount) as total_balance'))
         ->first()
         ->total_balance;
@@ -550,18 +549,34 @@ private function formatCurrency($amount)
                 return in_array($user->user_type, ['4', '5', 'Admin']);
             });
 
-            $user_ids = $users->pluck('id');
+
+            // Additional filters based on admin role
+            if (!$admin->isRole('admin')) {
+
+                $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+                if (!$orgAllocation) {
+                    Auth::logout();
+                    $message = "You are not allocated to any organization. Please contact M-Omulimisa Service Help for assistance.";
+                    Session::flash('warning', $message);
+                    admin_error($message);
+                    return redirect('auth/logout');
+                }
+
+                $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgAllocation->vsla_organisation_id)->pluck('sacco_id')->toArray();
+                $filteredUsers = $filteredUsers->whereIn('sacco_id', $saccoIds);
+                $users = $users->whereIn('sacco_id', $saccoIds);
+            }
 
             $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
             ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
-            ->where('users.user_type', 'Admin')
+            ->whereIn('users.id', $users)
             ->whereIn('saccos.id', $saccoIds) // Ensure this checks 'saccos.id' rather than 'sacco_id'
             ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
             ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
-            // ->where(function ($query) {
-            //     $query->whereNull('users.user_type')
-            //         ->orWhere('users.user_type', '<>', 'Admin');
-            // })
+            ->where(function ($query) {
+                $query->whereNull('users.user_type')
+                    ->orWhere('users.user_type', '<>', 'Admin');
+            })
             ->select('transactions.*') // Select all transaction fields
             ->get();
             $monthYearList = [];
@@ -811,17 +826,14 @@ private function formatCurrency($amount)
                 return in_array($user->user_type, ['4', '5', 'Admin']);
             });
 
-            $user_ids = $users->pluck('id')->toArray();
-
             $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
             ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
-            ->where('users.user_type', 'Admin')
             ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
             ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
-            // ->where(function ($query) {
-            //     $query->whereNull('users.user_type')
-            //         ->orWhere('users.user_type', '<>', 'Admin');
-            // })
+            ->where(function ($query) {
+                $query->whereNull('users.user_type')
+                    ->orWhere('users.user_type', '<>', 'Admin');
+            })
             ->select('transactions.*') // Select all transaction fields
             ->get();
             $monthYearList = [];
