@@ -90,8 +90,8 @@ class HomeController extends Controller
         $femaleUsers = $filteredUsers->where('sex', 'Female');
         $maleUsers = $filteredUsers->where('sex', 'Male');
         $allusers = User::all();
-        $male = $allusers->where('sex', 'Male');
-        $female = $allusers->where('sex', 'Female');
+        $male = $users->where('sex', 'Male');
+        $female = $users->where('sex', 'Female');
         $youthUsers = $filteredUsers->filter(function ($user) {
             return Carbon::parse($user->dob)->age < 35;
         });
