@@ -141,10 +141,10 @@ class HomeController extends Controller
         ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
         ->where('t.type', $type)  // Use the specified transaction type
         ->whereBetween('t.created_at', [$startDate, $endDate]) // Filter by created_at date range
-        ->where(function ($query) {
-            $query->whereNull('users.user_type')
-                ->orWhere('users.user_type', '<>', 'Admin');
-        })
+        // ->where(function ($query) {
+        //     $query->whereNull('users.user_type')
+        //         ->orWhere('users.user_type', '<>', 'Admin');
+        // })
         ->select(DB::raw('SUM(t.amount) as total_balance'))
         ->first()
         ->total_balance;
