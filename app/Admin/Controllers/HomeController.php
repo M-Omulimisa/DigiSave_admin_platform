@@ -663,6 +663,7 @@ private function formatCurrency($amount)
                     'October Users' => $novemberUsers->map(function ($user) {
                         return [
                             'first_name' => $user->first_name,
+                            'sacco_id' => $user->sacco_id,
                             'last_name' => $user->last_name,
                             'created_at' => $user->created_at,
                         ];
