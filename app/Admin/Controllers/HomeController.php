@@ -163,7 +163,7 @@ $filteredUserIds = $filteredUsers->pluck('id');
             })
             ->sum('transactions.amount');
 
-            dd('Total share sum for filtered users in specified SACCOs:', $totalShareSum, 'No gender sum:', $undefinedGenderSum, 'Female share sum:', $femaleShareSum, 'Male share sum:', $maleShareSum);
+            // dd('Total share sum for filtered users in specified SACCOs:', $totalShareSum, 'No gender sum:', $undefinedGenderSum, 'Female share sum:', $femaleShareSum, 'Male share sum:', $maleShareSum);
         }
 
 // dd('Filtered users count:', $filteredUsers->count(), 'Total users count:', $users->count());
@@ -631,7 +631,7 @@ private function formatCurrency($amount)
             $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
             ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
             ->whereIn('saccos.id', $saccoIds)
-            ->where('users.sex', 'Male')
+            // ->where('users.sex', 'Male')
             ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
             ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
             ->where(function ($query) {
