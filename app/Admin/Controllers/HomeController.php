@@ -98,10 +98,13 @@ class HomeController extends Controller
         });
         $pwdUsers = $filteredUsers->where('pwd', 'Yes');
 
+        $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id')->toArray();
+
         // Filter users based on creation date within the specified range
-$filteredUsersByDateRange = $users->filter(function ($user) use ($startDate, $endDate) {
-    return Carbon::parse($user->created_at)->between($startDate, $endDate);
-});
+        $filteredUsersByDateRange = $users->filter(function ($user) use ($startDate, $endDate, $deletedOrInactiveSaccoIds) {
+            return Carbon::parse($user->created_at)->between($startDate, $endDate)
+                && !in_array($user->sacco_id, $deletedOrInactiveSaccoIds);
+        });
 
 // Group filtered users by year and month
 $userRegistrationsByMonth = $filteredUsersByDateRange->groupBy(function ($user) {
@@ -642,39 +645,46 @@ private function formatCurrency($amount)
             }
 
             // Existing code to retrieve user registrations
-            $userRegistrations = $users->whereIn('sacco_id', $saccoIds)
-            ->where('user_type', '!=', 'Admin')
-            ->groupBy(function ($date) {
-                return Carbon::parse($date->created_at)->format('Y-m');
-            });
+            // $userRegistrations = $users->whereIn('sacco_id', $saccoIds)
+            // ->where('user_type', '!=', 'Admin')
+            // ->groupBy(function ($date) {
+            //     return Carbon::parse($date->created_at)->format('Y-m');
+            // });
 
             // Dump the months to see the keys
             // dd('Registration Months:', $userRegistrations->keys()->toArray());
 
             // Get users grouped under November 2024
-            $octoberUsers = $userRegistrations->get('2024-10', collect());
+            // $octoberUsers = $userRegistrations->get('2024-10', collect());
 
-            // Exclude users from deleted or inactive Saccos
-            $octoberUsers = $octoberUsers->reject(function ($user) use ($deletedOrInactiveSaccoIds) {
-                return in_array($user->sacco_id, $deletedOrInactiveSaccoIds->toArray());
-            });
+            // // Exclude users from deleted or inactive Saccos
+            // $octoberUsers = $octoberUsers->reject(function ($user) use ($deletedOrInactiveSaccoIds) {
+            //     return in_array($user->sacco_id, $deletedOrInactiveSaccoIds->toArray());
+            // });
 
-            // Check if there are users in October after filtering
-            if ($octoberUsers->isEmpty()) {
-                dd('No users registered in October 2024');
-            } else {
-                dd([
-                    'October Users Count' => $octoberUsers->count(),
-                    'October Users' => $octoberUsers->map(function ($user) {
-                        return [
-                            'first_name' => $user->first_name,
-                            'sacco_id' => $user->sacco_id,
-                            'last_name' => $user->last_name,
-                            'created_at' => $user->created_at->toDateTimeString(),
-                        ];
-                    })->values()->toArray(),
-                ]);
-            }
+            // // Check if there are users in October after filtering
+            // if ($octoberUsers->isEmpty()) {
+            //     dd('No users registered in October 2024');
+            // } else {
+            //     dd([
+            //         'October Users Count' => $octoberUsers->count(),
+            //         'October Users' => $octoberUsers->map(function ($user) {
+            //             return [
+            //                 'first_name' => $user->first_name,
+            //                 'sacco_id' => $user->sacco_id,
+            //                 'last_name' => $user->last_name,
+            //                 'created_at' => $user->created_at->toDateTimeString(),
+            //             ];
+            //         })->values()->toArray(),
+            //     ]);
+            // }
+
+            $userRegistrations = $users->whereIn('sacco_id', $saccoIds)
+                ->whereNotIn('sacco_id', $deletedOrInactiveSaccoIds)
+                ->whereNotIn('user_type', ['4', '5', 'Admin'])
+                ->groupBy(function ($user) {
+                    return $user->created_at->format('Y-m');
+                });
 
             $registrationDates = $userRegistrations->keys()->toArray();
             $registrationCounts = $userRegistrations->map(function ($item) {
