@@ -95,7 +95,7 @@ class HomeController extends Controller
         $pwdUsers = $filteredUsers->where('pwd', 'Yes');
 
         $statistics = [
-            'totalAccounts' => $this->getTotalAccounts($filteredUsers),
+            'totalAccounts' => $this->getTotalAccounts($filteredUsers, $startDate, $endDate),
             'totalMembers' => $filteredUsers->count(),
             'femaleMembersCount' => $femaleUsers->count(),
             'maleMembersCount' => $maleUsers->count(),
@@ -115,10 +115,17 @@ class HomeController extends Controller
         return $this->generateCsv($statistics, $startDate, $endDate);
     }
 
-    private function getTotalAccounts($filteredUsers)
+    private function getTotalAccounts($filteredUsers, $startDate, $endDate)
     {
-        // Calculate total accounts based on the same logic as the dashboard
-        // Add your logic here
+        // Get the distinct Sacco IDs from the filtered users
+        $saccoIds = $filteredUsers->pluck('sacco_id')->unique();
+
+        // Count Saccos registered within the specified date range
+        $totalAccounts = Sacco::whereIn('id', $saccoIds)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->count();
+
+        return $totalAccounts;
     }
 
 
