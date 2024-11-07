@@ -103,7 +103,37 @@ if (!$admin->isRole('admin')) {
         })
         ->sum('transactions.amount'); // Sum up the transaction amounts
 
-    dd('Total share sum for filtered users in specified SACCOs:', $totalShareSum);
+    // dd('Total share sum for filtered users in specified SACCOs:', $totalShareSum);
+
+// Total share sum for male users
+$maleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+    ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
+    ->where('transactions.type', 'SHARE')
+    ->whereIn('users.sacco_id', $saccoIds)
+    ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+    ->whereBetween('transactions.created_at', [$startDate, $endDate])
+    ->where('users.sex', 'Male') // Filter for male users
+    ->where(function ($query) {
+        $query->whereNull('users.user_type')
+              ->orWhere('users.user_type', '<>', 'Admin');
+    })
+    ->sum('transactions.amount');
+
+    $femaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+    ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
+    ->where('transactions.type', 'SHARE')
+    ->whereIn('users.sacco_id', $saccoIds)
+    ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+    ->whereBetween('transactions.created_at', [$startDate, $endDate])
+    ->where('users.sex', 'Female') // Filter for female users
+    ->where(function ($query) {
+        $query->whereNull('users.user_type')
+              ->orWhere('users.user_type', '<>', 'Admin');
+    })
+    ->sum('transactions.amount'); // Sum up the transaction amounts
+     // Sum up the transaction amounts
+
+// dd('Female share sum:', $femaleShareSum, 'Male share sum:', $maleShareSum);
 }
 
 // dd('Filtered users count:', $filteredUsers->count(), 'Total users count:', $users->count());
@@ -123,8 +153,8 @@ if (!$admin->isRole('admin')) {
             'maleMembersCount' => $maleUsers->count(),
             'youthMembersCount' => $youthUsers->count(),
             'pwdMembersCount' => $pwdUsers->count(),
-            'femaleTotalBalance' => $this->getTotalBalance($femaleUsers, 'SHARE', $startDate, $endDate),
-            'maleTotalBalance' => $this->getTotalBalance($maleUsers, 'SHARE', $startDate, $endDate),
+            'maleTotalBalance' => $maleShareSum,
+            'femaleTotalBalance' => $femaleShareSum,
             'youthTotalBalance' => $this->getTotalBalance($youthUsers, 'SHARE', $startDate, $endDate),
             'pwdTotalBalance' => $this->getTotalBalance($pwdUsers, 'SHARE', $startDate, $endDate),
             'totalLoanAmount' => $this->getTotalLoanAmount($filteredUsers, $startDate, $endDate),
