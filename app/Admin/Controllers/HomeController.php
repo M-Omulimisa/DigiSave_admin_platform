@@ -641,12 +641,36 @@ private function formatCurrency($amount)
                 }
             }
 
-            $userRegistrations = $users->whereIn('sacco_id', $saccoIds)->where('user_type', '!=', 'Admin')->groupBy(function ($date) {
+            // Existing code to retrieve user registrations
+            $userRegistrations = $users->whereIn('sacco_id', $saccoIds)
+            ->where('user_type', '!=', 'Admin')
+            ->groupBy(function ($date) {
                 return Carbon::parse($date->created_at)->format('Y-m');
             });
 
+            // Dump the months to see the keys
+            // dd('Registration Months:', $userRegistrations->keys()->toArray());
+
+            // Get users grouped under November 2024
+            $novemberUsers = $userRegistrations->get('2024-11', collect());
+
+            // Check if there are users in November
+            if ($novemberUsers->isEmpty()) {
+                dd('No users registered in November 2024');
+            } else {
+                dd([
+                    'November Users Count' => $novemberUsers->count(),
+                    'November Users' => $novemberUsers->map(function ($user) {
+                        return [
+                            'first_name' => $user->first_name,
+                            'last_name' => $user->last_name,
+                            'created_at' => $user->created_at,
+                        ];
+                    })->values()->toArray(),
+                ]);
+            }
+
             $registrationDates = $userRegistrations->keys()->toArray();
-            dd('Registration Months:', $userRegistrations->keys()->toArray());
             $registrationCounts = $userRegistrations->map(function ($item) {
                 return count($item);
             })->values()->toArray();
