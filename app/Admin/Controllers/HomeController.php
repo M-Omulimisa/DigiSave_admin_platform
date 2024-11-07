@@ -50,6 +50,8 @@ class HomeController extends Controller
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
 
+        dd('selected dates: ', $startDate, 'and: ', $endDate);
+
         // Validate date inputs
         if (!$startDate || !$endDate) {
             return redirect()->back()->withErrors(['error' => 'Both start and end dates are required.']);
@@ -59,15 +61,33 @@ class HomeController extends Controller
         $adminId = $admin->id;
 
         // Get all users, then apply filters
-        $users = User::all()->reject(function ($user) use ($adminId) {
-            return $user->id === $adminId && $user->user_type === 'Admin';
-        })->reject(function ($user) {
-            return in_array($user->user_type, ['4', '5', 'Admin']);
-        });
+        // $users = User::all()->reject(function ($user) use ($adminId) {
+        //     return $user->id === $adminId && $user->user_type === 'Admin';
+        // })->reject(function ($user) {
+        //     return in_array($user->user_type, ['4', '5', 'Admin']);
+        // });
+
+        $users = User::all();
 
         // Apply date filter
         $filteredUsers = $users->filter(function ($user) use ($startDate, $endDate) {
             return Carbon::parse($user->created_at)->between($startDate, $endDate);
+        });
+
+        $filteredUsers = $users->reject(function ($user) use ($adminId) {
+            return $user->id === $adminId && $user->user_type === 'Admin';
+        });
+
+        $filteredUsers = $filteredUsers->reject(function ($user) {
+            return $user->user_type === '4';
+        });
+
+        $filteredUsers = $filteredUsers->reject(function ($user) {
+            return $user->user_type === '5';
+        });
+
+        $filteredUsers = $filteredUsers->filter(function ($user) {
+            return $user->user_type === null || !in_array($user->user_type, ['Admin', '5']);
         });
 
         // Additional filters based on admin role
