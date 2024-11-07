@@ -652,20 +652,26 @@ private function formatCurrency($amount)
             // dd('Registration Months:', $userRegistrations->keys()->toArray());
 
             // Get users grouped under November 2024
-            $novemberUsers = $userRegistrations->get('2024-10', collect());
+            $ // Get the 'October Users' from the user registrations
+            $octoberUsers = $userRegistrations->get('2024-10', collect());
 
-            // Check if there are users in November
-            if ($novemberUsers->isEmpty()) {
-                dd('No users registered in November 2024');
+            // Exclude users from deleted or inactive Saccos
+            $octoberUsers = $octoberUsers->reject(function ($user) use ($deletedOrInactiveSaccoIds) {
+                return in_array($user->sacco_id, $deletedOrInactiveSaccoIds->toArray());
+            });
+
+            // Check if there are users in October after filtering
+            if ($octoberUsers->isEmpty()) {
+                dd('No users registered in October 2024');
             } else {
                 dd([
-                    'October Users Count' => $novemberUsers->count(),
-                    'October Users' => $novemberUsers->map(function ($user) {
+                    'October Users Count' => $octoberUsers->count(),
+                    'October Users' => $octoberUsers->map(function ($user) {
                         return [
                             'first_name' => $user->first_name,
                             'sacco_id' => $user->sacco_id,
                             'last_name' => $user->last_name,
-                            'created_at' => $user->created_at,
+                            'created_at' => $user->created_at->toDateTimeString(),
                         ];
                     })->values()->toArray(),
                 ]);
