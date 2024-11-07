@@ -90,13 +90,12 @@ if (!$admin->isRole('admin')) {
     $filteredUserIds = $filteredUsers->pluck('id');
 }
 
-// Retrieve and sum up transactions for filtered users
 $totalShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-    ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
-    ->whereIn('users.id', $filteredUserIds)
-    ->sum('transactions.amount'); // Sum up the transaction amounts
+->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
+->whereBetween('transactions.created_at', [$startDate, $endDate]) // Date range filter
+->sum('transactions.amount'); // Sum up the transaction amounts
 
-dd('Total share sum for filtered users:', $totalShareSum);
+dd('Total share sum for filtered users within date range:', $totalShareSum);
 
 // dd('Filtered users count:', $filteredUsers->count(), 'Total users count:', $users->count());
 
