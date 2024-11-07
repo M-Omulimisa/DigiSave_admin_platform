@@ -1140,8 +1140,8 @@ private function formatCurrency($amount)
                     ]) .
                     '</div>' .
                     view('widgets.chart_container', [
-                        'Female' => $femaleTotalBalance,
-                        'Male' => $maleTotalBalance,
+                        // 'Female' => $femaleTotalBalance,
+                        // 'Male' => $maleTotalBalance,
                         'monthYearList' => $monthYearList,
                         'totalSavingsList' => $totalSavingsList,
                     ]) .
