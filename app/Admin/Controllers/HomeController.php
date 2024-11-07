@@ -94,11 +94,7 @@ if (!$admin->isRole('admin')) {
 $totalShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
     ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
     ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
-    ->whereIn('users.id', $filteredUserIds) // Limit to filtered users
-    ->where(function ($query) {
-        $query->whereNull('users.user_type')
-              ->orWhere('users.user_type', '<>', 'Admin');
-    })
+    ->whereIn('users.id', $filteredUserIds)
     ->sum('transactions.amount'); // Sum up the transaction amounts
 
 dd('Total share sum for filtered users:', $totalShareSum);
