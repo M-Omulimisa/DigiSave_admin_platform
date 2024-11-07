@@ -645,9 +645,8 @@ private function formatCurrency($amount)
                 return Carbon::parse($date->created_at)->format('Y-m');
             });
 
-            dd('Registration Months:', $userRegistrations->keys()->toArray());
-
             $registrationDates = $userRegistrations->keys()->toArray();
+            dd('Registration Months:', $userRegistrations->keys()->toArray());
             $registrationCounts = $userRegistrations->map(function ($item) {
                 return count($item);
             })->values()->toArray();
