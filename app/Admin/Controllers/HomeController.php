@@ -122,18 +122,18 @@ $createdAts = $filteredUsersByDateRange->map(function ($user) {
 });
 
 // Now use dd() to display the data
-dd([
-    'Start Date' => $startDate,
-    'End Date' => $endDate,
-    'Filtered Users Count' => $filteredUsersByDateRange->count(),
-    'Users' => $filteredUsersByDateRange->map(function ($user) {
-        return [
-            'first_name' => $user->first_name,
-            'last_name' => $user->last_name,
-            'created_at' => $user->created_at
-        ];
-    })->values()->toArray(),
-]);
+// dd([
+//     'Start Date' => $startDate,
+//     'End Date' => $endDate,
+//     'Filtered Users Count' => $filteredUsersByDateRange->count(),
+//     'Users' => $filteredUsersByDateRange->map(function ($user) {
+//         return [
+//             'first_name' => $user->first_name,
+//             'last_name' => $user->last_name,
+//             'created_at' => $user->created_at
+//         ];
+//     })->values()->toArray(),
+// ]);
 
 // Optionally, sum the total members for the specified months
 $totalMembersForRange = array_sum(array_column($monthlyRegistrationCounts, 'count'));
@@ -644,6 +644,8 @@ private function formatCurrency($amount)
             $userRegistrations = $users->whereIn('sacco_id', $saccoIds)->where('user_type', '!=', 'Admin')->groupBy(function ($date) {
                 return Carbon::parse($date->created_at)->format('Y-m');
             });
+
+            dd('Registration Months:', $userRegistrations->keys()->toArray());
 
             $registrationDates = $userRegistrations->keys()->toArray();
             $registrationCounts = $userRegistrations->map(function ($item) {
