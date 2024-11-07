@@ -70,6 +70,8 @@ $filteredUsers = $users->filter(function ($user) use ($startDate, $endDate, $adm
            !in_array($user->user_type, ['Admin', '4', '5']);
 });
 
+$filteredUserIds = $filteredUsers->pluck('id');
+
 // Additional filters based on admin role
 if (!$admin->isRole('admin')) {
     $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
@@ -84,9 +86,9 @@ if (!$admin->isRole('admin')) {
     $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgAllocation->vsla_organisation_id)
                  ->pluck('sacco_id')->toArray();
     $filteredUsers = $filteredUsers->whereIn('sacco_id', $saccoIds);
-}
 
-$filteredUserIds = $filteredUsers->pluck('id');
+    $filteredUserIds = $filteredUsers->pluck('id');
+}
 
 // Retrieve and sum up transactions for filtered users
 $totalShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
