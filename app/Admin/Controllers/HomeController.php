@@ -47,66 +47,46 @@ class HomeController extends Controller
             ob_end_clean();
         }
 
-        $startDate = $request->input('start_date');
-        $endDate = $request->input('end_date');
+        $startDate = Carbon::parse($request->input('start_date'))->startOfDay();
+$endDate = Carbon::parse($request->input('end_date'))->endOfDay();
 
-        dd('selected dates: ', $startDate, 'and: ', $endDate);
+// dd('selected dates: ', $startDate->toDateString(), 'and: ', $endDate->toDateString());
 
-        // Validate date inputs
-        if (!$startDate || !$endDate) {
-            return redirect()->back()->withErrors(['error' => 'Both start and end dates are required.']);
-        }
+// Validate date inputs
+if (!$startDate || !$endDate) {
+    return redirect()->back()->withErrors(['error' => 'Both start and end dates are required.']);
+}
 
-        $admin = Admin::user();
-        $adminId = $admin->id;
+$admin = Admin::user();
+$adminId = $admin->id;
 
-        // Get all users, then apply filters
-        // $users = User::all()->reject(function ($user) use ($adminId) {
-        //     return $user->id === $adminId && $user->user_type === 'Admin';
-        // })->reject(function ($user) {
-        //     return in_array($user->user_type, ['4', '5', 'Admin']);
-        // });
+$users = User::all();
 
-        $users = User::all();
+// Apply date filter and other user type restrictions
+$filteredUsers = $users->filter(function ($user) use ($startDate, $endDate, $adminId) {
+    $createdAt = Carbon::parse($user->created_at);
+    return $createdAt->between($startDate, $endDate) &&
+           $user->id !== $adminId &&
+           !in_array($user->user_type, ['Admin', '4', '5']);
+});
 
-        // Apply date filter
-        $filteredUsers = $users->filter(function ($user) use ($startDate, $endDate) {
-            return Carbon::parse($user->created_at)->between($startDate, $endDate);
-        });
+// Additional filters based on admin role
+if (!$admin->isRole('admin')) {
+    $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+    if (!$orgAllocation) {
+        Auth::logout();
+        $message = "You are not allocated to any organization. Please contact M-Omulimisa Service Help for assistance.";
+        Session::flash('warning', $message);
+        admin_error($message);
+        return redirect('auth/logout');
+    }
 
-        $filteredUsers = $users->reject(function ($user) use ($adminId) {
-            return $user->id === $adminId && $user->user_type === 'Admin';
-        });
+    $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgAllocation->vsla_organisation_id)
+                 ->pluck('sacco_id')->toArray();
+    $filteredUsers = $filteredUsers->whereIn('sacco_id', $saccoIds);
+}
 
-        $filteredUsers = $filteredUsers->reject(function ($user) {
-            return $user->user_type === '4';
-        });
-
-        $filteredUsers = $filteredUsers->reject(function ($user) {
-            return $user->user_type === '5';
-        });
-
-        $filteredUsers = $filteredUsers->filter(function ($user) {
-            return $user->user_type === null || !in_array($user->user_type, ['Admin', '5']);
-        });
-
-        // Additional filters based on admin role
-        if (!$admin->isRole('admin')) {
-
-            $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
-            if (!$orgAllocation) {
-                Auth::logout();
-                $message = "You are not allocated to any organization. Please contact M-Omulimisa Service Help for assistance.";
-                Session::flash('warning', $message);
-                admin_error($message);
-                return redirect('auth/logout');
-            }
-
-            $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgAllocation->vsla_organisation_id)->pluck('sacco_id')->toArray();
-            $filteredUsers = $filteredUsers->whereIn('sacco_id', $saccoIds);
-
-            dd('Filtered users: ',$filteredUsers->count(), 'Actual Users: ',$users->count());
-        }
+dd('Filtered users count:', $filteredUsers->count(), 'Total users count:', $users->count());
 
         // Calculate statistics
         $femaleUsers = $filteredUsers->where('sex', 'Female');
