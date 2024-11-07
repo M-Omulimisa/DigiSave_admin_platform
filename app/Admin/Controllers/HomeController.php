@@ -133,7 +133,7 @@ $maleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', '
     ->sum('transactions.amount'); // Sum up the transaction amounts
      // Sum up the transaction amounts
 
-// dd('Female share sum:', $femaleShareSum, 'Male share sum:', $maleShareSum);
+dd('Total share sum for filtered users in specified SACCOs:', $totalShareSum, 'Female share sum:', $femaleShareSum, 'Male share sum:', $maleShareSum);
 }
 
 // dd('Filtered users count:', $filteredUsers->count(), 'Total users count:', $users->count());
@@ -153,8 +153,8 @@ $maleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', '
             'maleMembersCount' => $maleUsers->count(),
             'youthMembersCount' => $youthUsers->count(),
             'pwdMembersCount' => $pwdUsers->count(),
-            'maleTotalBalance' => $maleShareSum,
-            'femaleTotalBalance' => $femaleShareSum,
+            // 'maleTotalBalance' => $maleShareSum,
+            // 'femaleTotalBalance' => $femaleShareSum,
             'youthTotalBalance' => $this->getTotalBalance($youthUsers, 'SHARE', $startDate, $endDate),
             'pwdTotalBalance' => $this->getTotalBalance($pwdUsers, 'SHARE', $startDate, $endDate),
             'totalLoanAmount' => $this->getTotalLoanAmount($filteredUsers, $startDate, $endDate),
