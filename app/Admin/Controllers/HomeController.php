@@ -101,9 +101,8 @@ class HomeController extends Controller
         $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id')->toArray();
 
         // Filter users based on creation date within the specified range
-        $filteredUsersByDateRange = $users->filter(function ($user) use ($startDate, $endDate, $deletedOrInactiveSaccoIds) {
-            return Carbon::parse($user->created_at)->between($startDate, $endDate)
-                && !in_array($user->sacco_id, $deletedOrInactiveSaccoIds);
+        $filteredUsersByDateRange = $users->filter(function ($user) use ($startDate, $endDate) {
+            return Carbon::parse($user->created_at)->between($startDate, $endDate);
         });
 
 // Group filtered users by year and month
