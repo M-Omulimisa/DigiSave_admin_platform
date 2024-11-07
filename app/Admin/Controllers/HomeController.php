@@ -84,70 +84,25 @@ class HomeController extends Controller
 
             $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgAllocation->vsla_organisation_id)->pluck('sacco_id')->toArray();
             $filteredUsers = $filteredUsers->whereIn('sacco_id', $saccoIds);
-            $users = $users->whereIn('sacco_id', $saccoIds);
         }
 
         // Calculate statistics
         $femaleUsers = $filteredUsers->where('sex', 'Female');
         $maleUsers = $filteredUsers->where('sex', 'Male');
-        $allusers = User::all();
-        $male = $users->where('sex', 'Male');
-        $female = $users->where('sex', 'Female');
         $youthUsers = $filteredUsers->filter(function ($user) {
             return Carbon::parse($user->dob)->age < 35;
         });
         $pwdUsers = $filteredUsers->where('pwd', 'Yes');
 
-        // Filter users based on creation date within the specified range
-$filteredUsersByDateRange = $users->filter(function ($user) use ($startDate, $endDate) {
-    return Carbon::parse($user->created_at)->between($startDate, $endDate);
-});
-
-// Group filtered users by year and month
-$userRegistrationsByMonth = $filteredUsersByDateRange->groupBy(function ($user) {
-    return Carbon::parse($user->created_at)->format('Y-m'); // Extracts year and month
-});
-
-// Get the registration counts for each month
-$monthlyRegistrationCounts = $userRegistrationsByMonth->map(function ($item, $month) {
-    return [
-        'month' => $month, // e.g., '2023-11' for November 2023
-        'count' => count($item),
-    ];
-})->values()->toArray();
-
-// Use map to extract only the created_at dates
-$createdAts = $filteredUsersByDateRange->map(function ($user) {
-    return $user->created_at;
-});
-
-// Now use dd() to display the data
-// dd([
-//     'Start Date' => $startDate,
-//     'End Date' => $endDate,
-//     'Filtered Users Count' => $filteredUsersByDateRange->count(),
-//     'Users' => $filteredUsersByDateRange->map(function ($user) {
-//         return [
-//             'first_name' => $user->first_name,
-//             'last_name' => $user->last_name,
-//             'created_at' => $user->created_at
-//         ];
-//     })->values()->toArray(),
-// ]);
-
-// Optionally, sum the total members for the specified months
-$totalMembersForRange = array_sum(array_column($monthlyRegistrationCounts, 'count'));
-
-$statistics = [
-'totalAccounts' => $this->getTotalAccounts($filteredUsersByDateRange, $startDate, $endDate),
-'totalMembers' => $totalMembersForRange, // Member count for the specified date range
-            'femaleMembersCount' => $femaleUsers->count(),
+        $statistics = [
+            'totalAccounts' => $this->getTotalAccounts($filteredUsers),
+            'totalMembers' => $filteredUsers->count(),
             'femaleMembersCount' => $femaleUsers->count(),
             'maleMembersCount' => $maleUsers->count(),
             'youthMembersCount' => $youthUsers->count(),
             'pwdMembersCount' => $pwdUsers->count(),
-            'femaleTotalBalance' => $this->getTotalBalance($female, 'SHARE', $startDate, $endDate),
-            'maleTotalBalance' => $this->getTotalBalance($male, 'SHARE', $startDate, $endDate),
+            'femaleTotalBalance' => $this->getTotalBalance($femaleUsers, 'SHARE', $startDate, $endDate),
+            'maleTotalBalance' => $this->getTotalBalance($maleUsers, 'SHARE', $startDate, $endDate),
             'youthTotalBalance' => $this->getTotalBalance($youthUsers, 'SHARE', $startDate, $endDate),
             'pwdTotalBalance' => $this->getTotalBalance($pwdUsers, 'SHARE', $startDate, $endDate),
             'totalLoanAmount' => $this->getTotalLoanAmount($filteredUsers, $startDate, $endDate),
@@ -160,18 +115,13 @@ $statistics = [
         return $this->generateCsv($statistics, $startDate, $endDate);
     }
 
-    private function getTotalAccounts($filteredUsers, $startDate, $endDate)
+    private function getTotalAccounts($filteredUsers)
     {
-        // Get the distinct Sacco IDs from the filtered users
-        $saccoIds = $filteredUsers->pluck('sacco_id')->unique();
-
-        // Count Saccos registered within the specified date range
-        $totalAccounts = Sacco::whereIn('id', $saccoIds)
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->count();
-
-        return $totalAccounts;
+        // Calculate total accounts based on the same logic as the dashboard
+        // Add your logic here
     }
+
+
 
     private function getTotalBalance($users, $type, $startDate, $endDate)
 {
@@ -589,30 +539,6 @@ private function formatCurrency($amount)
 
             $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
 
-            $users = User::all()->reject(function ($user) use ($adminId) {
-                return $user->id === $adminId && $user->user_type === 'Admin';
-            })->reject(function ($user) {
-                return in_array($user->user_type, ['4', '5', 'Admin']);
-            });
-
-
-            // Additional filters based on admin role
-            if (!$admin->isRole('admin')) {
-
-                $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
-                if (!$orgAllocation) {
-                    Auth::logout();
-                    $message = "You are not allocated to any organization. Please contact M-Omulimisa Service Help for assistance.";
-                    Session::flash('warning', $message);
-                    admin_error($message);
-                    return redirect('auth/logout');
-                }
-
-                $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgAllocation->vsla_organisation_id)->pluck('sacco_id')->toArray();
-                $filteredUsers = $filteredUsers->whereIn('sacco_id', $saccoIds);
-                $users = $users->whereIn('sacco_id', $saccoIds);
-            }
-
             $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
             ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
             ->whereIn('saccos.id', $saccoIds) // Ensure this checks 'saccos.id' rather than 'sacco_id'
@@ -641,47 +567,9 @@ private function formatCurrency($amount)
                 }
             }
 
-            // Existing code to retrieve user registrations
-            // $userRegistrations = $users->whereIn('sacco_id', $saccoIds)
-            // ->where('user_type', '!=', 'Admin')
-            // ->groupBy(function ($date) {
-            //     return Carbon::parse($date->created_at)->format('Y-m');
-            // });
-
-            // Dump the months to see the keys
-            // dd('Registration Months:', $userRegistrations->keys()->toArray());
-
-            // Get users grouped under November 2024
-            // $octoberUsers = $userRegistrations->get('2024-10', collect());
-
-            // // Exclude users from deleted or inactive Saccos
-            // $octoberUsers = $octoberUsers->reject(function ($user) use ($deletedOrInactiveSaccoIds) {
-            //     return in_array($user->sacco_id, $deletedOrInactiveSaccoIds->toArray());
-            // });
-
-            // // Check if there are users in October after filtering
-            // if ($octoberUsers->isEmpty()) {
-            //     dd('No users registered in October 2024');
-            // } else {
-            //     dd([
-            //         'October Users Count' => $octoberUsers->count(),
-            //         'October Users' => $octoberUsers->map(function ($user) {
-            //             return [
-            //                 'first_name' => $user->first_name,
-            //                 'sacco_id' => $user->sacco_id,
-            //                 'last_name' => $user->last_name,
-            //                 'created_at' => $user->created_at->toDateTimeString(),
-            //             ];
-            //         })->values()->toArray(),
-            //     ]);
-            // }
-
-            $userRegistrations = $users->whereIn('sacco_id', $saccoIds)
-                ->whereNotIn('sacco_id', $deletedOrInactiveSaccoIds)
-                ->whereNotIn('user_type', ['4', '5', 'Admin'])
-                ->groupBy(function ($user) {
-                    return $user->created_at->format('Y-m');
-                });
+            $userRegistrations = $users->whereIn('sacco_id', $saccoIds)->where('user_type', '!=', 'Admin')->groupBy(function ($date) {
+                return Carbon::parse($date->created_at)->format('Y-m');
+            });
 
             $registrationDates = $userRegistrations->keys()->toArray();
             $registrationCounts = $userRegistrations->map(function ($item) {
@@ -903,12 +791,6 @@ private function formatCurrency($amount)
 
             $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
 
-            $users = User::all()->reject(function ($user) use ($adminId) {
-                return $user->id === $adminId && $user->user_type === 'Admin';
-            })->reject(function ($user) {
-                return in_array($user->user_type, ['4', '5', 'Admin']);
-            });
-
             $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
             ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
             ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
@@ -941,7 +823,6 @@ private function formatCurrency($amount)
             });
 
             $registrationDates = $userRegistrations->keys()->toArray();
-            dd('Registration Months:', $userRegistrations->keys()->toArray());
             $registrationCounts = $userRegistrations->map(function ($item) {
                 return count($item);
             })->values()->toArray();
