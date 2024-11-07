@@ -133,7 +133,19 @@ $maleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', '
     ->sum('transactions.amount'); // Sum up the transaction amounts
      // Sum up the transaction amounts
 
-dd('Total share sum for filtered users in specified SACCOs:', $totalShareSum, 'Female share sum:', $femaleShareSum, 'Male share sum:', $maleShareSum);
+     $undefinedGenderSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+     ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
+     ->where('transactions.type', 'SHARE')
+     ->whereIn('users.sacco_id', $saccoIds)
+     ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+     ->whereBetween('transactions.created_at', [$startDate, $endDate])
+     ->where(function ($query) {
+         $query->whereNull('users.sex') // Check for undefined gender
+               ->orWhereNotIn('users.sex', ['Male', 'Female']); // Check for unexpected values
+     })
+     ->sum('transactions.amount');
+
+dd('Total share sum for filtered users in specified SACCOs:', $totalShareSum, 'Undefined gender sum:', $undefinedGenderSum, 'Female share sum:', $femaleShareSum, 'Male share sum:', $maleShareSum);
 }
 
 // dd('Filtered users count:', $filteredUsers->count(), 'Total users count:', $users->count());
