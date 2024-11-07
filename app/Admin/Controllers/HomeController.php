@@ -90,9 +90,15 @@ $filteredUserIds = $filteredUsers->pluck('id');
             $genderDistribution = User::whereIn('sacco_id', $saccoIds)
             ->select('sex', DB::raw('count(*) as count'))
             ->groupBy('sex')
-            ->get();
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'sex' => $item->sex ?? 'Undefined',
+                    'count' => $item->count,
+                ];
+            });
 
-            dd('Gender distribution:', $genderDistribution);
+        dd('Gender distribution:', $genderDistribution->toArray());
 
             $filteredUserIds = $filteredUsers->pluck('id');
             $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
