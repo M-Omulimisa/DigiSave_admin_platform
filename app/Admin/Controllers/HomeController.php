@@ -86,7 +86,7 @@ if (!$admin->isRole('admin')) {
     $filteredUsers = $filteredUsers->whereIn('sacco_id', $saccoIds);
 }
 
-dd('Filtered users count:', $filteredUsers->count(), 'Total users count:', $users->count());
+// dd('Filtered users count:', $filteredUsers->count(), 'Total users count:', $users->count());
 
         // Calculate statistics
         $femaleUsers = $filteredUsers->where('sex', 'Female');
