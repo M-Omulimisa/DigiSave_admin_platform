@@ -904,6 +904,7 @@ private function formatCurrency($amount)
             });
 
             $registrationDates = $userRegistrations->keys()->toArray();
+            dd('Registration Months:', $userRegistrations->keys()->toArray());
             $registrationCounts = $userRegistrations->map(function ($item) {
                 return count($item);
             })->values()->toArray();
