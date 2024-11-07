@@ -630,7 +630,8 @@ private function formatCurrency($amount)
 
             $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
             ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
-            ->whereIn('saccos.id', $saccoIds) // Ensure this checks 'saccos.id' rather than 'sacco_id'
+            ->whereIn('saccos.id', $saccoIds)
+            ->where('users.sex', 'Male')
             ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
             ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
             ->where(function ($query) {
