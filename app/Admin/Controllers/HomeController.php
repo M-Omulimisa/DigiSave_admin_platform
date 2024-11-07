@@ -156,7 +156,7 @@ $filteredUserIds = $filteredUsers->pluck('id');
             ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
             ->whereBetween('transactions.created_at', [$startDate, $endDate])
             ->whereNull('users.sex')
-            ->orWhere('users.sex', 'null') // In case Undefined is stored explicitly
+            ->orWhere('users.sex', '') // In case Undefined is stored explicitly
             ->where(function ($query) {
                 $query->whereNull('users.user_type')
                       ->orWhere('users.user_type', '<>', 'Admin');
