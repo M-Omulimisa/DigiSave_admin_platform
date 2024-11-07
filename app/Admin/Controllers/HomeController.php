@@ -652,15 +652,15 @@ private function formatCurrency($amount)
             // dd('Registration Months:', $userRegistrations->keys()->toArray());
 
             // Get users grouped under November 2024
-            $novemberUsers = $userRegistrations->get('2024-11', collect());
+            $novemberUsers = $userRegistrations->get('2024-10', collect());
 
             // Check if there are users in November
             if ($novemberUsers->isEmpty()) {
                 dd('No users registered in November 2024');
             } else {
                 dd([
-                    'November Users Count' => $novemberUsers->count(),
-                    'November Users' => $novemberUsers->map(function ($user) {
+                    'October Users Count' => $novemberUsers->count(),
+                    'October Users' => $novemberUsers->map(function ($user) {
                         return [
                             'first_name' => $user->first_name,
                             'last_name' => $user->last_name,
