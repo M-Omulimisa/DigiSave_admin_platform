@@ -84,6 +84,8 @@ class HomeController extends Controller
 
             $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgAllocation->vsla_organisation_id)->pluck('sacco_id')->toArray();
             $filteredUsers = $filteredUsers->whereIn('sacco_id', $saccoIds);
+
+            dd('Filtered users: ',$filteredUsers->count());
         }
 
         // Calculate statistics
