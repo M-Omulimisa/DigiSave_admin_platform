@@ -123,8 +123,8 @@ $createdAts = $filteredUsersByDateRange->map(function ($user) {
 
 // Now use dd() to display the data
 dd([
-    'Start Date' => $startDate->toDateTimeString(),
-    'End Date' => $endDate->toDateTimeString(),
+    'Start Date' => $startDate,
+    'End Date' => $endDate,
     'Filtered Users Count' => $filteredUsersByDateRange->count(),
     'Users' => $filteredUsersByDateRange->map(function ($user) {
         return [
