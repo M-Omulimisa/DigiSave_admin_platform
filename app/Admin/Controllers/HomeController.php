@@ -61,14 +61,14 @@ class HomeController extends Controller
         // Get all users, then apply filters
         $users = User::all()->reject(function ($user) use ($adminId) {
             return $user->id === $adminId && $user->user_type === 'Admin';
-        })->reject(function ($user) {
-            return in_array($user->user_type, ['4', '5', 'Admin']);
         });
 
         // Apply date filter
         $filteredUsers = $users->filter(function ($user) use ($startDate, $endDate) {
             return Carbon::parse($user->created_at)->between($startDate, $endDate);
         });
+
+        dd('Filtered users: ',$filteredUsers->count());
 
         // Additional filters based on admin role
         if (!$admin->isRole('admin')) {
