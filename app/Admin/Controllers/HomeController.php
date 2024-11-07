@@ -85,37 +85,7 @@ class HomeController extends Controller
             $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgAllocation->vsla_organisation_id)->pluck('sacco_id')->toArray();
             $filteredUsers = $filteredUsers->whereIn('sacco_id', $saccoIds);
 
-            // dd('Filtered users: ',$filteredUsers->count());
-
-
-
-        // Calculate statistics
-        $femaleUsers = $filteredUsers->where('sex', 'Female');
-        $maleUsers = $filteredUsers->where('sex', 'Male');
-        $youthUsers = $filteredUsers->filter(function ($user) {
-            return Carbon::parse($user->dob)->age < 35;
-        });
-        $pwdUsers = $filteredUsers->where('pwd', 'Yes');
-
-        $statistics = [
-            'totalAccounts' => $this->getTotalAccounts($filteredUsers, $startDate, $endDate),
-            'totalMembers' => $filteredUsers->count(),
-            'femaleMembersCount' => $femaleUsers->count(),
-            'maleMembersCount' => $maleUsers->count(),
-            'youthMembersCount' => $youthUsers->count(),
-            'pwdMembersCount' => $pwdUsers->count(),
-            'femaleTotalBalance' => $this->getTotalBalance($femaleUsers, 'SHARE', $startDate, $endDate),
-            'maleTotalBalance' => $this->getTotalBalance($maleUsers, 'SHARE', $startDate, $endDate),
-            'youthTotalBalance' => $this->getTotalBalance($youthUsers, 'SHARE', $startDate, $endDate),
-            'pwdTotalBalance' => $this->getTotalBalance($pwdUsers, 'SHARE', $startDate, $endDate),
-            'totalLoanAmount' => $this->getTotalLoanAmount($filteredUsers, $startDate, $endDate),
-            'loanSumForWomen' => $this->getLoanSumForGender($filteredUsers, 'Female', $startDate, $endDate),
-            'loanSumForMen' => $this->getLoanSumForGender($filteredUsers, 'Male', $startDate, $endDate),
-            'loanSumForYouths' => $this->getLoanSumForYouths($filteredUsers, $startDate, $endDate),
-            'pwdTotalLoanBalance' => $this->getTotalLoanBalance($pwdUsers, $startDate, $endDate),
-        ];
-
-        return $this->generateCsv($statistics, $startDate, $endDate);
+            dd('Filtered users: ',$filteredUsers->count());
         }
 
         // Calculate statistics
