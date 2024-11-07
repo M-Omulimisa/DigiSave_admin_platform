@@ -92,7 +92,6 @@ if (!$admin->isRole('admin')) {
 
 // Retrieve and sum up transactions for filtered users
 $totalShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-    ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
     ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
     ->whereIn('users.id', $filteredUserIds)
     ->sum('transactions.amount'); // Sum up the transaction amounts
