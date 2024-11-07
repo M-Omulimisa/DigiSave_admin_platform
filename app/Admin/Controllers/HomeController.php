@@ -72,81 +72,92 @@ $filteredUsers = $users->filter(function ($user) use ($startDate, $endDate, $adm
 
 $filteredUserIds = $filteredUsers->pluck('id');
 
-// Additional filters based on admin role
-if (!$admin->isRole('admin')) {
-    $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
-    if (!$orgAllocation) {
-        Auth::logout();
-        $message = "You are not allocated to any organization. Please contact M-Omulimisa Service Help for assistance.";
-        Session::flash('warning', $message);
-        admin_error($message);
-        return redirect('auth/logout');
-    }
+        // Additional filters based on admin role
+        if (!$admin->isRole('admin')) {
+            $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+            if (!$orgAllocation) {
+                Auth::logout();
+                $message = "You are not allocated to any organization. Please contact M-Omulimisa Service Help for assistance.";
+                Session::flash('warning', $message);
+                admin_error($message);
+                return redirect('auth/logout');
+            }
 
-    $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgAllocation->vsla_organisation_id)
-                 ->pluck('sacco_id')->toArray();
-    $filteredUsers = $filteredUsers->whereIn('sacco_id', $saccoIds);
+            $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgAllocation->vsla_organisation_id)
+            ->pluck('sacco_id')->toArray();
+            $filteredUsers = $filteredUsers->whereIn('sacco_id', $saccoIds);
 
-    $filteredUserIds = $filteredUsers->pluck('id');
-    $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
+            $genderDistribution = User::whereIn('sacco_id', $saccoIds)
+            ->select('sex', DB::raw('count(*) as count'))
+            ->groupBy('sex')
+            ->get();
 
-    // Retrieve and sum up transactions for filtered users and specified SACCOs within the date range
-    $totalShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-        ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
-        ->where('transactions.type', 'SHARE')
-        ->whereIn('users.sacco_id', $saccoIds)
-        ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-        ->whereBetween('transactions.created_at', [$startDate, $endDate])
-        ->where(function ($query) {
-            $query->whereNull('users.user_type')
-                  ->orWhere('users.user_type', '<>', 'Admin');
-        })
-        ->sum('transactions.amount'); // Sum up the transaction amounts
+            dd('Gender distribution:', $genderDistribution);
 
-    // dd('Total share sum for filtered users in specified SACCOs:', $totalShareSum);
+            $filteredUserIds = $filteredUsers->pluck('id');
+            $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
 
-// Total share sum for male users
-$maleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-    ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
-    ->where('transactions.type', 'SHARE')
-    ->whereIn('users.sacco_id', $saccoIds)
-    ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-    ->whereBetween('transactions.created_at', [$startDate, $endDate])
-    ->where('users.sex', 'Male') // Filter for male users
-    ->where(function ($query) {
-        $query->whereNull('users.user_type')
-              ->orWhere('users.user_type', '<>', 'Admin');
-    })
-    ->sum('transactions.amount');
+            // Retrieve and sum up transactions for filtered users and specified SACCOs within the date range
+            $totalShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
+            ->where('transactions.type', 'SHARE')
+            ->whereIn('users.sacco_id', $saccoIds)
+            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+            ->whereBetween('transactions.created_at', [$startDate, $endDate])
+            ->where(function ($query) {
+                $query->whereNull('users.user_type')
+                ->orWhere('users.user_type', '<>', 'Admin');
+            })
+            ->sum('transactions.amount'); // Sum up the transaction amounts
 
-    $femaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-    ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
-    ->where('transactions.type', 'SHARE')
-    ->whereIn('users.sacco_id', $saccoIds)
-    ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-    ->whereBetween('transactions.created_at', [$startDate, $endDate])
-    ->where('users.sex', 'Female') // Filter for female users
-    ->where(function ($query) {
-        $query->whereNull('users.user_type')
-              ->orWhere('users.user_type', '<>', 'Admin');
-    })
-    ->sum('transactions.amount'); // Sum up the transaction amounts
-     // Sum up the transaction amounts
+            // dd('Total share sum for filtered users in specified SACCOs:', $totalShareSum);
 
-     $undefinedGenderSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-     ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
-     ->where('transactions.type', 'SHARE')
-     ->whereIn('users.sacco_id', $saccoIds)
-     ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-     ->whereBetween('transactions.created_at', [$startDate, $endDate])
-     ->where(function ($query) {
-         $query->whereNull('users.sex') // Check for undefined gender
-               ->orWhereNotIn('users.sex', ['Male', 'Female']); // Check for unexpected values
-     })
-     ->sum('transactions.amount');
+            // Total share sum for male users
+            $maleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->join('saccos', 'users.sacco_id', '=',
+                'saccos.id'
+            )
+            ->where('transactions.type', 'SHARE')
+            ->whereIn('users.sacco_id', $saccoIds)
+                ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+                ->whereBetween('transactions.created_at', [$startDate, $endDate])
+                ->where('users.sex', 'Male') // Filter for male users
+                ->where(function ($query) {
+                    $query->whereNull('users.user_type')
+                    ->orWhere('users.user_type', '<>', 'Admin');
+                })
+                ->sum('transactions.amount');
 
-dd('Total share sum for filtered users in specified SACCOs:', $totalShareSum, 'Undefined gender sum:', $undefinedGenderSum, 'Female share sum:', $femaleShareSum, 'Male share sum:', $maleShareSum);
-}
+            $femaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->join('saccos', 'users.sacco_id', '=',
+                'saccos.id'
+            )
+            ->where('transactions.type', 'SHARE')
+            ->whereIn('users.sacco_id', $saccoIds)
+                ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+                ->whereBetween('transactions.created_at', [$startDate, $endDate])
+                ->where('users.sex', 'Female') // Filter for female users
+                ->where(function ($query) {
+                    $query->whereNull('users.user_type')
+                    ->orWhere('users.user_type', '<>', 'Admin');
+                })
+                ->sum('transactions.amount'); // Sum up the transaction amounts
+            // Sum up the transaction amounts
+
+            $undefinedGenderSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
+            ->where('transactions.type', 'SHARE')
+                ->whereIn('users.sacco_id', $saccoIds)
+                ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+                ->whereBetween('transactions.created_at', [$startDate, $endDate])
+                ->where(function ($query) {
+                    $query->whereNull('users.sex') // Check for undefined gender
+                        ->orWhereNotIn('users.sex', ['Male', 'Female']); // Check for unexpected values
+                })
+                ->sum('transactions.amount');
+
+            dd('Total share sum for filtered users in specified SACCOs:', $totalShareSum, 'Undefined gender sum:', $undefinedGenderSum, 'Female share sum:', $femaleShareSum, 'Male share sum:', $maleShareSum);
+        }
 
 // dd('Filtered users count:', $filteredUsers->count(), 'Total users count:', $users->count());
 
