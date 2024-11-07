@@ -163,7 +163,7 @@ $filteredUserIds = $filteredUsers->pluck('id');
             })
             ->sum('transactions.amount');
 
-            dd('Total share sum for filtered users in specified SACCOs:', $totalShareSum, 'Undefined gender sum:', $undefinedGenderSum, 'Female share sum:', $femaleShareSum, 'Male share sum:', $maleShareSum);
+            dd('Total share sum for filtered users in specified SACCOs:', $totalShareSum, 'No gender sum:', $undefinedGenderSum, 'Female share sum:', $femaleShareSum, 'Male share sum:', $maleShareSum);
         }
 
 // dd('Filtered users count:', $filteredUsers->count(), 'Total users count:', $users->count());
