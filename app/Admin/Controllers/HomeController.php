@@ -98,7 +98,7 @@ $filteredUserIds = $filteredUsers->pluck('id');
                 ];
             });
 
-        dd('Gender distribution:', $genderDistribution->toArray());
+        // dd('Gender distribution:', $genderDistribution->toArray());
 
             $filteredUserIds = $filteredUsers->pluck('id');
             $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
@@ -147,20 +147,21 @@ $filteredUserIds = $filteredUsers->pluck('id');
                     $query->whereNull('users.user_type')
                     ->orWhere('users.user_type', '<>', 'Admin');
                 })
-                ->sum('transactions.amount'); // Sum up the transaction amounts
-            // Sum up the transaction amounts
+                ->sum('transactions.amount');
 
             $undefinedGenderSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
             ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
             ->where('transactions.type', 'SHARE')
-                ->whereIn('users.sacco_id', $saccoIds)
-                ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-                ->whereBetween('transactions.created_at', [$startDate, $endDate])
-                ->where(function ($query) {
-                    $query->whereNull('users.sex') // Check for undefined gender
-                        ->orWhereNotIn('users.sex', ['Male', 'Female']); // Check for unexpected values
-                })
-                ->sum('transactions.amount');
+            ->whereIn('users.sacco_id', $saccoIds)
+            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+            ->whereBetween('transactions.created_at', [$startDate, $endDate])
+            ->whereNull('users.sex')
+            ->orWhere('users.sex', 'Undefined') // In case Undefined is stored explicitly
+            ->where(function ($query) {
+                $query->whereNull('users.user_type')
+                      ->orWhere('users.user_type', '<>', 'Admin');
+            })
+            ->sum('transactions.amount');
 
             dd('Total share sum for filtered users in specified SACCOs:', $totalShareSum, 'Undefined gender sum:', $undefinedGenderSum, 'Female share sum:', $femaleShareSum, 'Male share sum:', $maleShareSum);
         }
