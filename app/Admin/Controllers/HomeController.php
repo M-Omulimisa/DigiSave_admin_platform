@@ -652,7 +652,6 @@ private function formatCurrency($amount)
             // dd('Registration Months:', $userRegistrations->keys()->toArray());
 
             // Get users grouped under November 2024
-            $ // Get the 'October Users' from the user registrations
             $octoberUsers = $userRegistrations->get('2024-10', collect());
 
             // Exclude users from deleted or inactive Saccos
