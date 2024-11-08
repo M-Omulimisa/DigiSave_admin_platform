@@ -474,6 +474,7 @@ private function getLoanSumForGender($users, $gender, $startDate, $endDate)
         fwrite($file, "\xEF\xBB\xBF");
 
         $data = [
+            // Counts
             ['Metric', 'Value (UGX)'],
             ['Total Number of Groups Registered', $statistics['totalAccounts']],
             ['Total Number of Members', $statistics['totalMembers']],
@@ -483,29 +484,33 @@ private function getLoanSumForGender($users, $gender, $startDate, $endDate)
             ['  Refugees', $statistics['refugesMemberCount']],
             ['Number of Youth Members', $statistics['youthMembersCount']],
             ['Number of PWDs', $statistics['pwdMembersCount']],
+
+            // Savings
+            ['Savings by Gender', ''],
+            ['  Female', $this->formatCurrency($statistics['femaleTotalBalance'])],
+            ['  Male', $this->formatCurrency($statistics['maleTotalBalance'])],
+            ['Savings by Youth', $this->formatCurrency($statistics['youthTotalBalance'])],
             ['Savings by Refugees', ''],
             ['  Female Refugees', $this->formatCurrency($statistics['refugeeFemaleSavings'])],
             ['  Male Refugees', $this->formatCurrency($statistics['refugeeMaleSavings'])],
             ['Savings by PWDs', ''],
             ['  Female PWDs', $this->formatCurrency($statistics['pwdFemaleSavings'])],
             ['  Male PWDs', $this->formatCurrency($statistics['pwdMaleSavings'])],
+            ['Savings by PWDs (Overall)', $this->formatCurrency($statistics['pwdTotalBalance'])],
+
+            // Loans
+            ['Total Loans', $this->formatCurrency($statistics['totalLoanAmount'])],
+            ['Loans by Gender', ''],
+            ['  Female', $this->formatCurrency($statistics['loanSumForWomen'])],
+            ['  Male', $this->formatCurrency($statistics['loanSumForMen'])],
+            ['Loans by Youth', $this->formatCurrency($statistics['loanSumForYouths'])],
             ['Loans by Refugees', ''],
             ['  Female Refugees', $this->formatCurrency($statistics['refugeeFemaleLoans'])],
             ['  Male Refugees', $this->formatCurrency($statistics['refugeeMaleLoans'])],
             ['Loans by PWDs', ''],
             ['  Female PWDs', $this->formatCurrency($statistics['pwdFemaleLoans'])],
             ['  Male PWDs', $this->formatCurrency($statistics['pwdMaleLoans'])],
-            ['Savings by Gender', ''],
-            ['  Female', $this->formatCurrency($statistics['femaleTotalBalance'])],
-            ['  Male', $this->formatCurrency($statistics['maleTotalBalance'])],
-            ['Savings by Youth', $this->formatCurrency($statistics['youthTotalBalance'])],
-            ['Savings by PWDs', $this->formatCurrency($statistics['pwdTotalBalance'])],
-            ['Total Loans', $this->formatCurrency($statistics['totalLoanAmount'])],
-            ['Loans by Gender', ''],
-            ['  Female', $this->formatCurrency($statistics['loanSumForWomen'])],
-            ['  Male', $this->formatCurrency($statistics['loanSumForMen'])],
-            ['Loans by Youth', $this->formatCurrency($statistics['loanSumForYouths'])],
-            ['Loans by PWDs', $this->formatCurrency($statistics['pwdTotalLoanBalance'])],
+            ['Loans by PWDs (Overall)', $this->formatCurrency($statistics['pwdTotalLoanBalance'])],
         ];
 
         foreach ($data as $row) {
