@@ -171,6 +171,7 @@ $filteredUserIds = $filteredUsers->pluck('id');
         // Calculate statistics
         $femaleUsers = $filteredUsers->where('sex', 'Female');
         $maleUsers = $filteredUsers->where('sex', 'Male');
+        $refuges = $filteredUsers->where('refugee_status', 'yes');
         $youthUsers = $filteredUsers->filter(function ($user) {
             return Carbon::parse($user->dob)->age < 35;
         });
@@ -180,6 +181,7 @@ $filteredUserIds = $filteredUsers->pluck('id');
             'totalAccounts' => $this->getTotalAccounts($filteredUsers, $startDate, $endDate),
             'totalMembers' => $filteredUsers->count(),
             'femaleMembersCount' => $femaleUsers->count(),
+            'refugesMemberCount' => $refuges->count(),
             'maleMembersCount' => $maleUsers->count(),
             'youthMembersCount' => $youthUsers->count(),
             'pwdMembersCount' => $pwdUsers->count(),
@@ -342,6 +344,7 @@ private function getLoanSumForGender($users, $gender, $startDate, $endDate)
             ['Number of Members by Gender', ''],
             ['  Female', $statistics['femaleMembersCount']],
             ['  Male', $statistics['maleMembersCount']],
+            ['  Refugees', $statistics['refugesMemberCount']],
             ['Number of Youth Members', $statistics['youthMembersCount']],
             ['Number of PWDs', $statistics['pwdMembersCount']],
             ['Savings by Gender', ''],
