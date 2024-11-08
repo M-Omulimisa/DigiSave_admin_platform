@@ -227,6 +227,70 @@ $filteredUserIds = $filteredUsers->pluck('id');
                             })
                             ->sum('transactions.amount');
 
+                            $refugeMaleLoanSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                            ->join('saccos', 'users.sacco_id', '=',
+                                'saccos.id'
+                            )
+                            ->where('transactions.type', 'LOAN')
+                            ->whereIn('users.sacco_id', $saccoIds)
+                                ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+                                ->whereBetween('transactions.created_at', [$startDate, $endDate])
+                                ->where('users.refugee_status', 'yes')
+                                ->where('users.sex', 'Male')
+                                ->where(function ($query) {
+                                    $query->whereNull('users.user_type')
+                                    ->orWhere('users.user_type', '<>', 'Admin');
+                                })
+                                ->sum('transactions.amount');
+
+                                $refugeFemaleLoanSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                                ->join('saccos', 'users.sacco_id', '=',
+                                    'saccos.id'
+                                )
+                                ->where('transactions.type', 'LOAN')
+                                ->whereIn('users.sacco_id', $saccoIds)
+                                    ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+                                    ->whereBetween('transactions.created_at', [$startDate, $endDate])
+                                    ->where('users.refugee_status', 'yes')
+                                    ->where('users.sex', 'Female')
+                                    ->where(function ($query) {
+                                        $query->whereNull('users.user_type')
+                                        ->orWhere('users.user_type', '<>', 'Admin');
+                                    })
+                                    ->sum('transactions.amount');
+
+                                    $pwdMaleLoanSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                                    ->join('saccos', 'users.sacco_id', '=',
+                                        'saccos.id'
+                                    )
+                                    ->where('transactions.type', 'LOAN')
+                                    ->whereIn('users.sacco_id', $saccoIds)
+                                        ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+                                        ->whereBetween('transactions.created_at', [$startDate, $endDate])
+                                        ->where('users.pwd', 'yes')
+                                        ->where('users.sex', 'Male')
+                                        ->where(function ($query) {
+                                            $query->whereNull('users.user_type')
+                                            ->orWhere('users.user_type', '<>', 'Admin');
+                                        })
+                                        ->sum('transactions.amount');
+
+                                        $pwdFemaleLoanSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                                        ->join('saccos', 'users.sacco_id', '=',
+                                            'saccos.id'
+                                        )
+                                        ->where('transactions.type', 'LOAN')
+                                        ->whereIn('users.sacco_id', $saccoIds)
+                                            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+                                            ->whereBetween('transactions.created_at', [$startDate, $endDate])
+                                            ->where('users.pwd', 'yes')
+                                            ->where('users.sex', 'Female')
+                                            ->where(function ($query) {
+                                                $query->whereNull('users.user_type')
+                                                ->orWhere('users.user_type', '<>', 'Admin');
+                                            })
+                                            ->sum('transactions.amount');
+
             // dd('Total share sum for filtered users in specified SACCOs:', $totalShareSum, 'No gender sum:', $undefinedGenderSum, 'Female share sum:', $femaleShareSum, 'Male share sum:', $maleShareSum);
         }
 
@@ -255,6 +319,10 @@ $filteredUserIds = $filteredUsers->pluck('id');
             'pwdFemaleSavings' => $pwdFemaleShareSum,
             'maleTotalBalance' => $maleShareSum,
             'femaleTotalBalance' => $femaleShareSum,
+            'refugeeMaleLoans' => $refugeMaleLoanSum,
+            'refugeeFemaleLoans' => $refugeFemaleLoanSum,
+            'pwdMaleLoans' => $pwdMaleLoanSum,
+            'pwdFemaleLoans' => $pwdFemaleLoanSum,
             'youthTotalBalance' => $this->getTotalBalance($youthUsers, 'SHARE', $startDate, $endDate),
             'pwdTotalBalance' => $this->getTotalBalance($pwdUsers, 'SHARE', $startDate, $endDate),
             'totalLoanAmount' => $this->getTotalLoanAmount($filteredUsers, $startDate, $endDate),
@@ -421,6 +489,12 @@ private function getLoanSumForGender($users, $gender, $startDate, $endDate)
             ['Savings by PWDs', ''],
             ['  Female PWDs', $this->formatCurrency($statistics['pwdFemaleSavings'])],
             ['  Male PWDs', $this->formatCurrency($statistics['pwdMaleSavings'])],
+            ['Loans by Refugees', ''],
+            ['  Female Refugees', $this->formatCurrency($statistics['refugeeFemaleLoans'])],
+            ['  Male Refugees', $this->formatCurrency($statistics['refugeeMaleLoans'])],
+            ['Loans by PWDs', ''],
+            ['  Female PWDs', $this->formatCurrency($statistics['pwdFemaleLoans'])],
+            ['  Male PWDs', $this->formatCurrency($statistics['pwdMaleLoans'])],
             ['Savings by Gender', ''],
             ['  Female', $this->formatCurrency($statistics['femaleTotalBalance'])],
             ['  Male', $this->formatCurrency($statistics['maleTotalBalance'])],
