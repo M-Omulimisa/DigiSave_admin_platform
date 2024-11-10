@@ -24,6 +24,7 @@ use App\Models\Job;
 use App\Models\Loan;
 use App\Models\LoanScheem;
 use App\Models\LoanTransaction;
+use App\Models\MeetingSchedule;
 use App\Models\NewsPost;
 use App\Models\Person;
 use App\Models\Product;
@@ -59,6 +60,61 @@ class ApiResurceController extends Controller
     public function policy()
     {
         return redirect('https://sites.google.com/view/m-omulimisaprivacypolicy?usp=sharing');
+    }
+
+    public function meetingSchedule(Request $request)
+    {
+        // Get the authenticated user
+        $user = auth('api')->user();
+        if ($user == null) {
+            return $this->error('User not found.');
+        }
+
+        $saccoId = $user->sacco_id;
+        $leaderName = $user->first_name . ' ' . $user->last_name;
+
+        // Create the meeting schedule
+        try {
+            $meetingSchedule = MeetingSchedule::create([
+                'event_name' => $request->event_name,
+                'location' => $request->location,
+                'district' => $request->district,
+                'meeting_date' => $request->meeting_date,
+                'start_time' => $request->start_time,
+                'end_time' => $request->end_time,
+                'repeat_option' => $request->repeat_option,
+                'notification' => $request->notification,
+                'notify_group_members' => $request->notify_group_members,
+                'leader_name' => $leaderName,
+                'sacco_id' => $saccoId,
+                'user_id' => $user->id,
+            ]);
+
+            // Message template
+            $formattedDate = Carbon::parse($request->meeting_date)->format('l, F j, Y');
+            $message = "Dear member, you have a scheduled meeting:\n\nEvent: {$request->event_name}\nDate: $formattedDate\nTime: {$request->start_time} - {$request->end_time}\nLocation: {$request->location}, {$request->district}.\n\nPlease attend promptly.";
+
+            // Get all members in the Sacco
+            $members = User::where('sacco_id', $saccoId)->get();
+
+            // Notify each member with a valid phone number
+            foreach ($members as $member) {
+                $phoneNumber = $member->phone_number;
+
+                if (Utils::phone_number_is_valid($phoneNumber)) {
+                    try {
+                        Utils::send_sms($phoneNumber, $message);
+                    } catch (Exception $e) {
+                        Log::error("Failed to send SMS to {$phoneNumber}: " . $e->getMessage());
+                    }
+                }
+            }
+
+            return $this->success($meetingSchedule, 'Meeting scheduled and members notified successfully.');
+        } catch (Exception $e) {
+            Log::error("Failed to schedule meeting: " . $e->getMessage());
+            return $this->error('Failed to schedule meeting.', 500);
+        }
     }
 
     public function getGroupLoan()

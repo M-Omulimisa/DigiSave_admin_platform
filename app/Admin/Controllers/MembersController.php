@@ -13,6 +13,7 @@ use Encore\Admin\Facades\Admin;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Encore\Admin\Show;
+use Illuminate\Support\Facades\Log;
 
 class MembersController extends AdminController
 {
@@ -155,6 +156,7 @@ class MembersController extends AdminController
         });
         $show->field('sex', __('Gender'));
         $show->field('phone_number', __('Phone Number'));
+        $show->field('sacco.name', __('Group Name'))->sortable();
         $show->field('created_at', __('Date Joined'))->as(function ($date) {
             return date('d M Y', strtotime($date));
         });
@@ -173,9 +175,8 @@ class MembersController extends AdminController
      */
     protected function form()
 {
-
     $form = new Form(new User());
-    $u = Admin::user();
+
     // Form fields for editing a user
     $form->text('first_name', __('First Name'))->rules('required');
     $form->text('last_name', __('Last Name'))->rules('required');
@@ -186,13 +187,57 @@ class MembersController extends AdminController
             'Female' => 'Female',
         ])->rules('required');
 
+    // Dropdown for selecting Sacco
+    $form->select('sacco_id', __('Group/Sacco'))
+        ->options(Sacco::all()->pluck('name', 'id'))
+        ->rules('required')
+        ->help('Select the group or Sacco the member belongs to');
+
+    // Dropdown for selecting Position
+    $form->select('position_id', __('Position'))
+        ->options(MemberPosition::all()->pluck('name', 'id'))
+        ->rules('required')
+        ->help('Select the position of the member within the Sacco');
+
+    // Validation logic to ensure no duplicate positions in the same Sacco, except for "Member" position
     $form->saving(function (Form $form) {
-        // Additional logic can go here if needed
+        // Get the selected position name
+        $position = MemberPosition::find($form->position_id);
+
+        if ($position && strtolower($position->name) !== 'member') {
+            $existingUser = User::where('sacco_id', $form->sacco_id)
+                                ->where('position_id', $form->position_id)
+                                ->where('id', '!=', $form->model()->id) // Exclude current user if updating
+                                ->first();
+
+            if ($existingUser) {
+                throw new \Exception("The selected position is already assigned to another user in this Sacco.");
+            }
+        }
+
+        // Fetch Admin user for the selected Sacco and set password for leaders
+        $adminUser = User::where('sacco_id', $form->sacco_id)->where('user_type', 'Admin')->first();
+
+        if ($adminUser && in_array(strtolower($position->name), ['chairperson', 'secretary', 'treasurer'])) {
+            // Use the Admin user's phone number as the password
+            $plainPassword = $adminUser->phone_number;
+            $form->password = bcrypt($plainPassword); // Hash the password for saving
+
+            $saccoName = Sacco::find($form->sacco_id)->name;
+
+            // Craft SMS message with login credentials and download link
+            $loginMessage = "Welcome to DigiSave! You have been registered as a {$position->name} in {$saccoName}. Use the following credentials to log in:\nPhone Number: {$form->phone_number}\nPassword: {$plainPassword}\nDownload the DigiSave app here: https://play.google.com/store/apps/details?id=ug.digisave";
+
+            // Log the message
+            Log::info('SMS sent to user:', ['message' => $loginMessage]);
+
+            // Send SMS
+            Utils::send_sms($form->phone_number, $loginMessage);
+        }
     });
 
     return $form;
 }
-
 
 }
 ?>

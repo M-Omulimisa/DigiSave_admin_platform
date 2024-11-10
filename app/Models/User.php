@@ -219,20 +219,45 @@ public function roles()
     }
 
     public function getProfitAttribute()
-    {
-        $user = User::find($this->id);
-        $savings = $user->balance;
-        $admin = User::where('user_type', 'admin')
+{
+    // Fetch the user and their savings balance
+    $user = User::find($this->id);
+    $savings = $user->balance;
+
+    // Find the Admin user associated with the same sacco_id
+    $admin = User::where('user_type', 'admin')
         ->where('sacco_id', $this->sacco_id)
         ->first();
+
+    // Check if an Admin user exists
+    if ($admin && $admin->balance > 0) {
         $admin_savings = $admin->balance;
         $admin_profits = $admin->LOAN_INTEREST + $admin->FINES + $admin->register;
-        if ($admin_savings > 0) {
-            $profit =($savings/$admin_savings)*$admin_profits;
-            return $profit;
-        };
-        return 0;
+
+        // Calculate and return the profit
+        $profit = ($savings / $admin_savings) * $admin_profits;
+        return $profit;
     }
+
+    // Return 0 if no Admin user or no balance
+    return 0;
+}
+
+    // public function getProfitAttribute()
+    // {
+    //     $user = User::find($this->id);
+    //     $savings = $user->balance;
+    //     $admin = User::where('user_type', 'admin')
+    //     ->where('sacco_id', $this->sacco_id)
+    //     ->first();
+    //     $admin_savings = $admin->balance;
+    //     $admin_profits = $admin->LOAN_INTEREST + $admin->FINES + $admin->register;
+    //     if ($admin_savings > 0) {
+    //         $profit =($savings/$admin_savings)*$admin_profits;
+    //         return $profit;
+    //     };
+    //     return 0;
+    // }
 
     public function getSHAREOUTSHAREPRICEAttribute()
     {

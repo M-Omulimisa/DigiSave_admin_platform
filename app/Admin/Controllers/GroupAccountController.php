@@ -3,6 +3,7 @@
 namespace App\Admin\Controllers;
 
 use App\Models\OrgAllocation;
+use App\Models\Sacco;
 use App\Models\User;
 use App\Models\VslaOrganisationSacco;
 use Encore\Admin\Controllers\AdminController;
@@ -168,27 +169,68 @@ class GroupAccountController extends AdminController
      * @return Form
      */
     protected function form()
-    {
-        $form = new Form(new User());
-        $u = Admin::user();
+{
+    $form = new Form(new User());
 
-        // Hide the creation option
-        // $form->disableCreating();
+    // Dropdown to select Sacco
+    $form->select('sacco_id', __('Select Group/Sacco'))
+        ->options(Sacco::all()->pluck('name', 'id'))
+        ->rules('required')
+        ->help('Select the group or Sacco the member belongs to');
 
-        // Combine first and last name into Account Name and disable editing
-        $form->text('name', __('Account Name'))
-            ->default(function ($form) {
-                return ucwords(strtolower($form->model()->first_name . ' ' . $form->model()->last_name));
-            })
-            ->readonly();
+    // Input field for account name
+    $form->text('name', __('Account Name'))
+        ->rules('required')
+        ->help('Enter the account name for this group');
 
-        // Form fields that are visible in the grid for editing
-        $form->text('phone_number', __('Group Code'))
-            ->rules('required');
-        $form->text('location_lat', __('Latitude'))->rules('required');
-        $form->text('location_long', __('Longitude'))->rules('required');
+    // Auto-generate 7-character alphanumeric Group Code as phone number
+    $form->text('phone_number', __('Group Code'))
+        ->default(function () {
+            return strtoupper(substr(md5(uniqid(mt_rand(), true)), 0, 7));
+        })
+        ->readonly()
+        ->help('A unique group code will be auto-generated');
 
-        return $form;
-    }
+    // Latitude and Longitude fields (nullable)
+    $form->text('location_lat', __('Latitude'))
+        ->help('Optional: Enter the latitude');
+
+    $form->text('location_long', __('Longitude'))
+        ->help('Optional: Enter the longitude');
+
+    // Hidden fields with default values
+    $form->hidden('user_type')->default('Admin');
+    $form->hidden('sacco_join_status')->default('Approved');
+    $form->hidden('processed')->default('Yes');
+    $form->hidden('process_status')->default('approved');
+
+    // First and last name (extracted from the name)
+    $form->hidden('first_name');
+    $form->hidden('last_name');
+
+    // Hidden field for username
+    $form->hidden('username');
+
+    // Before saving, validate and split the name into first and last names
+    $form->saving(function (Form $form) {
+        // Check for existing Admin in the selected Sacco
+        if (User::where('sacco_id', $form->sacco_id)->where('user_type', 'Admin')->exists()) {
+            throw new \Exception("An account already exists for this Group.");
+        }
+
+        // Set username to the generated phone number (Group Code)
+        $form->username = $form->phone_number;
+
+        // Split name into first and last names
+        if ($form->name) {
+            $nameParts = explode(' ', $form->name, 2);
+            $form->first_name = $nameParts[0];
+            $form->last_name = $nameParts[1] ?? ''; // Assign last name if available
+        }
+    });
+
+    return $form;
 }
+
+    }
 ?>

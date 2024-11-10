@@ -25,9 +25,13 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->job(new CalculateLoanBalance())->monthly();
-        // $schedule->command('inspire')->hourly();
+        $schedule->command('send:meeting-reminders')->everyMinute();
     }
+    // protected function schedule(Schedule $schedule)
+    // {
+    //     // $schedule->job(new CalculateLoanBalance())->monthly();
+    //     // $schedule->command('inspire')->hourly();
+    // }
 
     /**
      * Register the commands for the application.
@@ -36,7 +40,7 @@ class Kernel extends ConsoleKernel
      */
     protected function commands()
     {
-        $this->load(__DIR__.'/Commands');
+        $this->load(__DIR__ . '/Commands');
 
         require base_path('routes/console.php');
     }
