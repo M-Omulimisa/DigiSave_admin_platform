@@ -115,7 +115,7 @@ Route::POST("people", [ApiResurceController::class, "person_create"]);
 Route::get("jobs", [ApiResurceController::class, "jobs"]);
 Route::get('api/{model}', [ApiResurceController::class, 'index']);
 Route::get('groups', [ApiResurceController::class, 'groups']);
-Route::get('meetings', [ApiResurceController::class, 'meetings']);
+Route::get('meetings', [ApiResurceController::class, 'meetingSchedule']);
 Route::POST('meetings', [ApiResurceController::class, 'register_meeting']);
 Route::get('associations', [ApiResurceController::class, 'associations']);
 Route::get('institutions', [ApiResurceController::class, 'institutions']);
