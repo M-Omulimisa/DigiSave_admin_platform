@@ -23,15 +23,15 @@ class Kernel extends ConsoleKernel
      * @param  \Illuminate\Console\Scheduling\Schedule  $schedule
      * @return void
      */
-    protected function schedule(Schedule $schedule)
-    {
-        $schedule->command('send:meeting-reminders')->everyMinute();
-    }
     // protected function schedule(Schedule $schedule)
     // {
-    //     // $schedule->job(new CalculateLoanBalance())->monthly();
-    //     // $schedule->command('inspire')->hourly();
+    //     $schedule->command('send:meeting-reminders')->everyMinute();
     // }
+    protected function schedule(Schedule $schedule)
+    {
+        // $schedule->job(new CalculateLoanBalance())->monthly();
+        // $schedule->command('inspire')->hourly();
+    }
 
     /**
      * Register the commands for the application.
