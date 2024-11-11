@@ -31,6 +31,8 @@ class Kernel extends ConsoleKernel
 {
     $schedule->command('send:meeting-reminders')->everyMinute();
 }
+// php artisan schedule:work
+
     // protected function schedule(Schedule $schedule)
     // {
     //     // $schedule->job(new CalculateLoanBalance())->monthly();
