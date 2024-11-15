@@ -97,7 +97,7 @@ Route::POST("leader-login", [ApiAuthController::class, "login_leader"]);
 // Route::post("test-sms", [ApiResurceController::class], "send_SMS");
 Route::POST("login", [ApiAuthController::class, "login"]);
 Route::POST("schedule-meet", [ApiResurceController::class, "meetingSchedule"]);
-Route::POST("get-group", [ApiResurceController::class, "Group"]);
+Route::get("get-group", [ApiResurceController::class, "Group"]);
 Route::POST("admin/auth", [ApiAuthController::class, "verify_user"]);
 Route::POST("shareout", [ApiAuthController::class, "new_shareout"]);
 Route::get('org', [ApiAuthController::class, 'getOrganisationsForUser']);
