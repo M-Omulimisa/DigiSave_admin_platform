@@ -129,7 +129,7 @@ class ApiResurceController extends Controller
         $saccoId = $user->sacco_id;
 
         // Fetch the latest group loan for this sacco
-        $group = Sacco::where('sacco_id', $saccoId)
+        $group = Sacco::where('id', $saccoId)
             ->first();
 
         if (!$group) {
