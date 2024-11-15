@@ -118,6 +118,27 @@ class ApiResurceController extends Controller
         }
     }
 
+    public function Group()
+    {
+        // Get the authenticated user
+        $user = auth('api')->user();
+        if ($user == null) {
+            return $this->error('User not found.');
+        }
+
+        $saccoId = $user->sacco_id;
+
+        // Fetch the latest group loan for this sacco
+        $group = Sacco::where('sacco_id', $saccoId)
+            ->first();
+
+        if (!$group) {
+            return $this->error('No group found for this user.');
+        }
+
+        return $this->success($group, 'Group retrieved successfully.');
+    }
+
     public function getGroupLoan()
     {
         // Get the authenticated user
