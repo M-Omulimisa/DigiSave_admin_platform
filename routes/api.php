@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Route;
 Route::get("manifest", [ApiResurceController::class, "manifest"]);
 Route::get("loan-schemes", [ApiResurceController::class, "loan_schemes"]);
 Route::post("loan-schemes", [ApiAuthController::class, "create_scheme"]);
+Route::post("update-loan-schemes", [ApiAuthController::class, "update_scheme"]);
 Route::post("reset-password", [ApiAuthController::class, "resetPassword"]);
 Route::get("get-credit-loan", [ApiResurceController::class, "getGroupLoan"]);
 Route::post("credit-loan", [ApiResurceController::class, "createCreditLoan"]);

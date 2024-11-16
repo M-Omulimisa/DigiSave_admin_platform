@@ -861,6 +861,67 @@ class ApiAuthController extends Controller
         );
     }
 
+    public function update_scheme(Request $request)
+{
+    $admin = auth('api')->user();
+    if ($admin == null) {
+        return $this->error('User not found.');
+    }
+
+    $loggedIn = Administrator::find($admin->id);
+    if ($loggedIn == null) {
+        return $this->error('User not found.');
+    }
+
+    $sacco = Sacco::find($loggedIn->sacco_id);
+    if ($sacco == null) {
+        return $this->error('Sacco not found.');
+    }
+
+    // Get the ID from the request
+    $id = $request->input('id'); // Expecting 'id' to be part of the request body
+
+    // Find the loan scheme by ID
+    $loanScheme = LoanScheem::find($id);
+    if ($loanScheme == null) {
+        return $this->error('Loan scheme not found.');
+    }
+
+    // Ensure the loan scheme belongs to the authenticated user's Sacco
+    if ($loanScheme->sacco_id != $sacco->id) {
+        return $this->error('You are not authorized to update this loan scheme.');
+    }
+
+    // Update the fields from the request data
+    $loanScheme->name = $request->input('name', $loanScheme->name);
+    $loanScheme->description = $request->input('description', $loanScheme->description);
+    $loanScheme->initial_interest_type = $request->input('initial_interest_type', $loanScheme->initial_interest_type);
+    $loanScheme->initial_interest_flat_amount = $request->input('initial_interest_flat_amount', $loanScheme->initial_interest_flat_amount);
+    $loanScheme->initial_interest_percentage = $request->input('initial_interest_percentage', $loanScheme->initial_interest_percentage);
+    $loanScheme->savings_percentage = $request->input('savings_percentage', $loanScheme->savings_percentage);
+    $loanScheme->bill_periodically = $request->input('bill_periodically', $loanScheme->bill_periodically);
+    $loanScheme->billing_period = $request->input('billing_period', $loanScheme->billing_period);
+    $loanScheme->periodic_interest_type = $request->input('periodic_interest_type', $loanScheme->periodic_interest_type);
+    $loanScheme->periodic_interest_percentage = $request->input('periodic_interest_percentage', $loanScheme->periodic_interest_percentage);
+    $loanScheme->periodic_interest_flat_amount = $request->input('periodic_interest_flat_amount', $loanScheme->periodic_interest_flat_amount);
+    $loanScheme->min_amount = $request->input('min_amount', $loanScheme->min_amount);
+    $loanScheme->max_amount = $request->input('max_amount', $loanScheme->max_amount);
+    $loanScheme->min_balance = $request->input('min_balance', $loanScheme->min_balance);
+    $loanScheme->max_balance = $request->input('max_balance', $loanScheme->max_balance);
+
+    try {
+        $loanScheme->save();
+    } catch (\Throwable $th) {
+        return $this->error('Failed to update loan scheme: ' . $th->getMessage());
+    }
+
+    return $this->success(
+        $loanScheme,
+        $message = "Loan scheme updated successfully",
+        200
+    );
+}
+
     public function member_update(Request $request)
     {
         $admin = auth('api')->user();
