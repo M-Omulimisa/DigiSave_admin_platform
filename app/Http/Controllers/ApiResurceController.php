@@ -2762,7 +2762,7 @@ $fundSavingsCreditStatusFormatted = number_format($fundSavingsCreditStatus, 3);
 
 
             //create positive transaction for sacco
-        } else if ($r->type == 'SAVING') {
+        } else if ($r->type == 'SHARE') {
 
             $amount = abs($r->amount);
             try {
@@ -2772,8 +2772,8 @@ $fundSavingsCreditStatusFormatted = number_format($fundSavingsCreditStatus, 3);
                 $transaction_user->user_id = $u->id;
                 $transaction_user->source_user_id = $admin->id;
                 $transaction_user->sacco_id = $u->sacco_id;
-                $transaction_user->type = 'SAVING';
-                $transaction_user->source_type = 'SAVING';
+                $transaction_user->type = 'SHARE';
+                $transaction_user->source_type = 'SHARE';
                 $transaction_user->amount = $amount;
                 $transaction_user->details = $r->description;
                 $transaction_user->description =  "Saving of UGX " . number_format($amount) . " from {$u->phone_number} - $u->name.";
@@ -2789,8 +2789,8 @@ $fundSavingsCreditStatusFormatted = number_format($fundSavingsCreditStatus, 3);
                 $transaction_sacco->user_id = $admin->id;
                 $transaction_sacco->source_user_id = $u->id;
                 $transaction_sacco->sacco_id = $u->sacco_id;
-                $transaction_sacco->type = 'SAVING';
-                $transaction_sacco->source_type = 'SAVING';
+                $transaction_sacco->type = 'SHARE';
+                $transaction_sacco->source_type = 'SHARE';
                 $transaction_sacco->amount = $amount;
                 $transaction_user->details = $r->description;
                 $transaction_sacco->description = "Saving of UGX " . number_format($amount) . " from {$u->phone_number} - $u->name.";
