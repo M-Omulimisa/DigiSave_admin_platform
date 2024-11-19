@@ -1231,90 +1231,183 @@ private function formatCurrency($amount)
         // dd($cliff_group);
 
         return $content
-            ->header('<div style="text-align: center; color: #066703; font-size: 30px; font-weight: bold; padding-top: 20px;">' . $orgName . '</div>')
-            ->body(
-                $organizationContainer .
-                    '<div style="background-color: #F8E5E9; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-                    <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <div>
-                            <h2 style="margin: 0; font-size: 24px; font-weight: bold; color: #298803;">Welcome back, ' . $userName .
-                    '!</h2>
-                            <div id="quote-slider" style="margin: 5px 0 0; font-size: 16px; color: #666; height: 20px;">
-                                <p>' . $quotes[0] . '</p>
-                            </div>
-                        </div>
-                        <div>
-                            <img src="https://www.pngmart.com/files/21/Admin-Profile-PNG-Clipart.png" alt="Welcome Image" style="height: 100px;">
+        ->header('<div style="
+                    text-align: center;
+                    background: linear-gradient(120deg, #1a472a, #2e8b57);
+                    color: white;
+                    font-size: 32px;
+                    font-weight: bold;
+                    padding: 30px;
+                    border-radius: 20px;
+                    margin: 20px 0;
+                    box-shadow: 0 10px 25px rgba(46, 139, 87, 0.2);
+                    letter-spacing: 1px;">
+                    ' . $orgName . '
+                  </div>')
+        ->body(
+            $organizationContainer .
+            '<div style="
+                    background: linear-gradient(135deg, #fff, #f0f7f4);
+                    padding: 30px;
+                    border-radius: 20px;
+                    margin-bottom: 30px;
+                    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+                    border: 1px solid rgba(255, 255, 255, 0.8);">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <h2 style="
+                                margin: 0;
+                                font-size: 32px;
+                                font-weight: 800;
+                                background: linear-gradient(120deg, #1a472a, #2e8b57);
+                                -webkit-background-clip: text;
+                                -webkit-text-fill-color: transparent;">
+                            Welcome back, ' . $userName . '!
+                        </h2>
+                        <div id="quote-slider" style="
+                                margin: 12px 0 0;
+                                font-size: 18px;
+                                color: #4a5568;
+                                height: 28px;
+                                font-style: italic;">
+                            <p style="transition: all 0.5s ease;">' . $quotes[0] . '</p>
                         </div>
                     </div>
-                </div>' . '<div style="text-align: right; margin-bottom: 20px;">
-    <form action="' . route(config('admin.route.prefix') . '.export-data') . '" method="GET">
-        <input type="date" name="start_date" required>
-        <input type="date" name="end_date" required>
-        <button type="submit" class="btn btn-primary">Export Data</button>
+                    <div>
+                        <img src="https://www.pngmart.com/files/21/Admin-Profile-PNG-Clipart.png"
+                             alt="Welcome Image"
+                             style="
+                                height: 120px;
+                                border-radius: 50%;
+                                box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+                                border: 4px solid #fff;
+                                transition: transform 0.3s ease;"
+                             onmouseover="this.style.transform=\'scale(1.05)\'"
+                             onmouseout="this.style.transform=\'scale(1)\'">
+                    </div>
+                </div>
+            </div>' .
+            '<div style="text-align: right; margin-bottom: 30px;">
+                <form action="' . route(config('admin.route.prefix') . '.export-data') . '"
+                      method="GET"
+                      style="display: flex; gap: 15px; justify-content: flex-end; align-items: center;">
+                    <input type="date"
+                           name="start_date"
+                           required
+                           style="
+                                padding: 12px 20px;
+                                border: 2px solid #e2e8f0;
+                                border-radius: 12px;
+                                font-size: 16px;
+                                color: #4a5568;
+                                box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+                                transition: all 0.3s ease;">
+                    <input type="date"
+                           name="end_date"
+                           required
+                           style="
+                                padding: 12px 20px;
+                                border: 2px solid #e2e8f0;
+                                border-radius: 12px;
+                                font-size: 16px;
+                                color: #4a5568;
+                                box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+                                transition: all 0.3s ease;">
+                    <button type="submit"
+                            class="btn btn-primary"
+                            style="
+                                padding: 12px 30px;
+                                background: linear-gradient(120deg, #1a472a, #2e8b57);
+                                border: none;
+                                border-radius: 12px;
+                                color: white;
+                                font-weight: 600;
+                                font-size: 16px;
+                                box-shadow: 0 8px 15px rgba(46, 139, 87, 0.2);
+                                transition: all 0.3s ease;
+                                cursor: pointer;"
+                            onmouseover="this.style.transform=\'translateY(-2px)\'"
+                            onmouseout="this.style.transform=\'translateY(0)\'">
+                        Export Data
+                    </button>
                 </form>
-                  </div>'
-                    .
-                    '<div style="background-color: #E9F9E9; padding: 10px; padding-top: 5px; border-radius: 5px;">' .
-                    view('widgets.statistics', [
-                        'totalSaccos' => $totalAccounts,
-                        'villageAgents' => $villageAgents,
-                        'organisationCount' => $organisationCount,
-                        'totalMembers' => $totalMembers,
-                        'totalAccounts' => $totalAccounts,
-                        'totalOrgAdmins' => $totalOrgAdmins,
-                        'totalPwdMembers' => $pwdMembersCount,
-                        'youthMembersPercentage' => number_format($youthMembersPercentage, 2),
-                    ]) .
-                    view('widgets.card_set', [
-                        'femaleMembersCount' => $femaleMembersCount,
-                        'femaleTotalBalance' => number_format($femaleTotalBalance, 2),
-                        'maleMembersCount' => $maleMembersCount,
-                        'maleTotalBalance' => number_format($maleTotalBalance, 2),
-                        'youthMembersCount' => $youthMembersCount,
-                        'youthTotalBalance' => number_format($youthTotalBalance),
-                        'pwdMembersCount' => $pwdMembersCount,
-                        'pwdTotalBalance' => number_format($pwdTotalBalance),
-                    ]) .
-                    '<div style="background-color: #E9F9E9; padding: 10px; padding-top: 5px; border-radius: 5px;">' .
-                    view('widgets.category', [
-                        'loansDisbursedToWomen' => $loansDisbursedToWomen,
-                        'loansDisbursedToMen' => $loansDisbursedToMen,
-                        'loansDisbursedToYouths' => $loansDisbursedToYouths,
-                        'loanSumForWomen' => $loanSumForWomen,
-                        'loanSumForMen' => $loanSumForMen,
-                        'loanSumForYouths' => $loanSumForYouths,
-                        'pwdTotalLoanCount' => $pwdTotalLoanCount,
-                        'percentageLoansWomen' => $percentageLoansWomen,
-                        'percentageLoansMen' => $percentageLoansMen,
-                        'percentageLoansYouths' => $percentageLoansYouths,
-                        'percentageLoansPwd' => $percentageLoansPwd,
-                        'percentageLoanSumWomen' => $percentageLoanSumWomen,
-                        'percentageLoanSumMen' => $percentageLoanSumMen,
-                        // 'percentageLoanSumYouths' => $percentageLoanSumYouths,
-                        'pwdTotalLoanBalance' => $pwdTotalLoanBalance,
-                    ]) .
-                    '</div>' .
-                    view('widgets.chart_container', [
-                        // 'Female' => $femaleTotalBalance,
-                        // 'Male' => $maleTotalBalance,
-                        'monthYearList' => $monthYearList,
-                        'totalSavingsList' => $totalSavingsList,
-                    ]) .
-                    '<div class="row" style="padding-top: 35px;">
-                        <div class="col-md-6">
-                            ' . view('widgets.top_saving_groups', [
+            </div>' .
+            '<div style="
+                    background: linear-gradient(135deg, #f7faf9, #ffffff);
+                    padding: 30px;
+                    border-radius: 20px;
+                    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+                    border: 1px solid rgba(255, 255, 255, 0.8);">' .
+            view('widgets.statistics', [
+                'totalSaccos' => $totalAccounts,
+                'villageAgents' => $villageAgents,
+                'organisationCount' => $organisationCount,
+                'totalMembers' => $totalMembers,
+                'totalAccounts' => $totalAccounts,
+                'totalOrgAdmins' => $totalOrgAdmins,
+                'totalPwdMembers' => $pwdMembersCount,
+                'youthMembersPercentage' => number_format($youthMembersPercentage, 2),
+            ]) .
+            view('widgets.card_set', [
+                'femaleMembersCount' => $femaleMembersCount,
+                'femaleTotalBalance' => number_format($femaleTotalBalance, 2),
+                'maleMembersCount' => $maleMembersCount,
+                'maleTotalBalance' => number_format($maleTotalBalance, 2),
+                'youthMembersCount' => $youthMembersCount,
+                'youthTotalBalance' => number_format($youthTotalBalance),
+                'pwdMembersCount' => $pwdMembersCount,
+                'pwdTotalBalance' => number_format($pwdTotalBalance),
+            ]) .
+            '<div style="
+                    background: linear-gradient(135deg, #f7faf9, #ffffff);
+                    padding: 30px;
+                    border-radius: 20px;
+                    margin-top: 30px;
+                    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+                    border: 1px solid rgba(255, 255, 255, 0.8);">' .
+            view('widgets.category', [
+                'loansDisbursedToWomen' => $loansDisbursedToWomen,
+                'loansDisbursedToMen' => $loansDisbursedToMen,
+                'loansDisbursedToYouths' => $loansDisbursedToYouths,
+                'loanSumForWomen' => $loanSumForWomen,
+                'loanSumForMen' => $loanSumForMen,
+                'loanSumForYouths' => $loanSumForYouths,
+                'pwdTotalLoanCount' => $pwdTotalLoanCount,
+                'percentageLoansWomen' => $percentageLoansWomen,
+                'percentageLoansMen' => $percentageLoansMen,
+                'percentageLoansYouths' => $percentageLoansYouths,
+                'percentageLoansPwd' => $percentageLoansPwd,
+                'percentageLoanSumWomen' => $percentageLoanSumWomen,
+                'percentageLoanSumMen' => $percentageLoanSumMen,
+                'pwdTotalLoanBalance' => $pwdTotalLoanBalance,
+            ]) .
+            '</div>' .
+            view('widgets.chart_container', [
+                'monthYearList' => $monthYearList,
+                'totalSavingsList' => $totalSavingsList,
+            ]) .
+            '<div class="row" style="padding-top: 35px;">
+                <div class="col-md-6" style="
+                        background: white;
+                        padding: 25px;
+                        border-radius: 15px;
+                        box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                    ' . view('widgets.top_saving_groups', [
                         'topSavingGroups' => $topSavingGroups,
                     ]) . '
-                        </div>
-                        <div class="col-md-6">
-                            ' . view('widgets.bar_chart', [
+                </div>
+                <div class="col-md-6" style="
+                        background: white;
+                        padding: 25px;
+                        border-radius: 15px;
+                        box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                    ' . view('widgets.bar_chart', [
                         'registrationDates' => $registrationDates,
                         'registrationCounts' => $registrationCounts,
                     ]) . '
-                        </div>
-                    </div>'
-            );
+                </div>
+            </div>'
+        );
     }
 }
 ?>
@@ -1339,6 +1432,6 @@ private function formatCurrency($amount)
             });
         }
 
-        setInterval(showNextQuote, 3000); // Change quote every 3 seconds
+        setInterval(showNextQuote, 3000);
     });
 </script>
