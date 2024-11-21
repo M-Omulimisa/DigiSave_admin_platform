@@ -1230,6 +1230,73 @@ private function formatCurrency($amount)
 
         // dd($cliff_group);
 
+        $admin = Admin::user();
+    $adminId = $admin->id;
+
+    // Add organization selector for admin users
+    $organizationSelector = '';
+    if ($admin->isRole('admin')) {
+        $organizations = VslaOrganisation::all();
+        $organizationSelector = '
+        <div style="text-align: right; margin-bottom: 20px;">
+            <form id="orgSelectForm" method="GET" style="display: flex; gap: 15px; justify-content: flex-end; align-items: center;">
+                <select name="selected_org" id="orgSelect" style="
+                    padding: 12px 20px;
+                    border: 2px solid #e2e8f0;
+                    border-radius: 12px;
+                    font-size: 16px;
+                    color: #4a5568;
+                    min-width: 200px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+                    transition: all 0.3s ease;">
+                    <option value="">All Organizations</option>';
+
+        foreach ($organizations as $org) {
+            $selected = request()->get('selected_org') == $org->id ? 'selected' : '';
+            $organizationSelector .= '<option value="'.$org->id.'" '.$selected.'>'.$org->name.'</option>';
+        }
+
+        $organizationSelector .= '
+                </select>
+            </form>
+            <script>
+                document.getElementById("orgSelect").addEventListener("change", function() {
+                    document.getElementById("orgSelectForm").submit();
+                });
+            </script>
+        </div>';
+    }
+
+    // Modify the existing organization filtering logic
+    if (!$admin->isRole('admin')) {
+        // Existing non-admin logic...
+        $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+        if (!$orgAllocation) {
+            Auth::logout();
+            $message = "You are not allocated to any organization. Please contact M-Omulimisa Service Help for assistance.";
+            Session::flash('warning', $message);
+            admin_error($message);
+            return redirect('auth/logout');
+        }
+        $organization = VslaOrganisation::find($orgAllocation->vsla_organisation_id);
+        $orgIds = $orgAllocation->vsla_organisation_id;
+        $orgName = $organization->name;
+    } else {
+        // Modified admin logic to handle organization selection
+        $selectedOrgId = request()->get('selected_org');
+        if ($selectedOrgId) {
+            $organization = VslaOrganisation::find($selectedOrgId);
+            $orgIds = $selectedOrgId;
+            $orgName = $organization->name;
+            // Apply organization-specific filtering
+            $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgIds)->pluck('sacco_id')->toArray();
+            $filteredUsers = $filteredUsers->whereIn('sacco_id', $saccoIds);
+        } else {
+            $orgName = 'DigiSave VSLA Platform';
+            // Use existing all-organization logic...
+        }
+    }
+
         return $content
         ->header('<div style="
                     text-align: center;
@@ -1245,6 +1312,8 @@ private function formatCurrency($amount)
                     ' . $orgName . '
                   </div>')
         ->body(
+
+            $organizationSelector.
             $organizationContainer .
             '<div style="
                     background: linear-gradient(135deg, #fff, #f0f7f4);
