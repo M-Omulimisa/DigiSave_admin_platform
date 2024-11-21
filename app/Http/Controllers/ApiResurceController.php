@@ -32,6 +32,7 @@ use App\Models\Sacco;
 use App\Models\MemberPosition;
 use App\Models\Organization;
 use App\Models\Parish;
+use App\Models\Project;
 use App\Models\ServiceProvider;
 use Illuminate\Support\Facades\Http;
 use App\Models\Shareout;
@@ -62,7 +63,36 @@ class ApiResurceController extends Controller
         return redirect('https://sites.google.com/view/m-omulimisaprivacypolicy?usp=sharing');
     }
 
+    public function Projects(Request $request)
+{
+    $user = auth('api')->user();
 
+    if ($user == null) {
+        return $this->error('User not authenticated.');
+    }
+
+    $saccoId = $user->sacco_id;
+
+    if (!$saccoId) {
+        return $this->error('Group ID not found for the user.');
+    }
+
+    try {
+        // Get all projects related to the given sacco_id
+        $projects = Project::whereHas('saccos', function ($query) use ($saccoId) {
+            $query->where('sacco_id', $saccoId);
+        })->get();
+
+        if ($projects->isEmpty()) {
+            return $this->success('No projects found for this Group.', []);
+        }
+
+        return $this->success($projects, 'Projects retrieved successfully.');
+    } catch (Exception $e) {
+        Log::error('Error fetching projects: ' . $e->getMessage());
+        return $this->error('An error occurred while fetching projects.', 500);
+    }
+}
 
     public function meetingSchedule(Request $request)
     {
