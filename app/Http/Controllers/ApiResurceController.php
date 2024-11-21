@@ -90,7 +90,7 @@ class ApiResurceController extends Controller
         return $this->success($projects, 'Projects retrieved successfully.');
     } catch (Exception $e) {
         Log::error('Error fetching projects: ' . $e->getMessage());
-        return $this->error('An error occurred while fetching projects.', 500);
+        return $this->error($e, 'An error occurred while fetching projects.');
     }
 }
 
