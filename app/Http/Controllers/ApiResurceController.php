@@ -83,9 +83,9 @@ class ApiResurceController extends Controller
             $query->where('sacco_id', $saccoId);
         })->get();
 
-        if ($projects->isEmpty()) {
-            return $this->success([], 'No projects found for this Group.');
-        }
+        // if ($projects->isEmpty()) {
+        //     return $this->success([], 'No projects found for this Group.');
+        // }
 
         return $this->success($projects, 'Projects retrieved successfully.');
     } catch (Exception $e) {
