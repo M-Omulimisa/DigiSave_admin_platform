@@ -98,7 +98,7 @@ $filteredUserIds = $filteredUsers->pluck('id');
                 ];
             });
 
-        // dd('Gender distribution:', $genderDistribution->toArray());
+            // dd('Gender distribution:', $genderDistribution->toArray());
 
             $filteredUserIds = $filteredUsers->pluck('id');
             $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
@@ -291,10 +291,10 @@ $filteredUserIds = $filteredUsers->pluck('id');
                                             })
                                             ->sum('transactions.amount');
 
-            // dd('Total share sum for filtered users in specified SACCOs:', $totalShareSum, 'No gender sum:', $undefinedGenderSum, 'Female share sum:', $femaleShareSum, 'Male share sum:', $maleShareSum);
+                  // dd('Total share sum for filtered users in specified SACCOs:', $totalShareSum, 'No gender sum:', $undefinedGenderSum, 'Female share sum:', $femaleShareSum, 'Male share sum:', $maleShareSum);
         }
 
-// dd('Filtered users count:', $filteredUsers->count(), 'Total users count:', $users->count());
+                   // dd('Filtered users count:', $filteredUsers->count(), 'Total users count:', $users->count());
 
         // Calculate statistics
         $femaleUsers = $filteredUsers->where('sex', 'Female');
@@ -641,6 +641,10 @@ private function formatCurrency($amount)
             return $user->user_type === null || !in_array($user->user_type, ['Admin', '5']);
         });
 
+        $admin = Admin::user();
+        $adminId = $admin->id;
+        $selectedOrgId = request()->get('selected_org');
+
         if (!$admin->isRole('admin')) {
             $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
             if (!$orgAllocation) {
@@ -919,7 +923,273 @@ private function formatCurrency($amount)
             // dd(['male_total_balance' => $maleTotalBalance, 'female_total_balance' => $femaleTotalBalance]);;
 
             // $topSavingGroups = User::where('user_type', 'Admin')->whereIn('sacco_id', $saccoIds)->get()->sortByDesc('balance')->take(6);
-        } else {
+        } else
+        if ($selectedOrgId) {
+            // When an organization is selected, filter data accordingly
+            $organization = VslaOrganisation::find($selectedOrgId);
+            $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $selectedOrgId)
+                ->pluck('sacco_id')
+                ->toArray();
+
+            $organizationContainer='';
+
+            // Update filtered users to only include those from selected organization's SACCOs
+            $filteredUsers = $filteredUsers->whereIn('sacco_id', $saccoIds);
+            $orgName = $organization->name;
+
+            // Update other metrics for the selected organization
+            $totalSaccos = Sacco::whereIn('id', $saccoIds)->count();
+            $organisationCount = 1;
+            $totalMembers = $filteredUsers->whereIn('sacco_id', $saccoIds)->count();
+
+            $saccoIdsWithPositions = User::whereIn('sacco_id', $saccoIds)
+            ->whereHas('sacco', function ($query) {
+                $query->whereNotIn('status', ['deleted', 'inactive']);
+            })
+                ->whereHas('position', function ($query) {
+                    $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+                })
+                ->pluck('sacco_id')
+                ->unique()
+                ->toArray();
+
+            $totalAccounts = User::where('user_type', 'Admin')
+                ->whereIn('sacco_id', $saccoIdsWithPositions)
+                ->count();
+
+            $totalPwdMembers = $filteredUsers->whereIn('sacco_id', $saccoIds)->where('pwd', 'yes')->count();
+            $villageAgents = User::whereIn('sacco_id', $saccoIds)->where('user_type', '4')->count();
+            $youthMembersPercentage = ($totalMembers > 0) ? $filteredUsers->whereIn('sacco_id', $saccoIds)->filter(function ($user) {
+                return Carbon::parse($user->dob)->age < 35;
+            })->count() / $totalMembers * 100 : 0;
+
+            $filteredUsersForBalances = $filteredUsers->whereIn('sacco_id', $saccoIds);
+            $filteredUsersIds = $filteredUsers->pluck('id');
+            $pwdUsers = $filteredUsers->where('pwd', 'Yes');
+            $pwdMembersCount = $pwdUsers->count();
+            $pwdUserIds = $pwdUsers->pluck('id');
+
+            $pwdTotalBalance = Transaction::whereIn('sacco_id', $saccoIds)->where('type', 'SHARE')
+                ->whereIn('user_id', $pwdUserIds)
+                ->sum('balance');
+            $pwdTotalBalance = number_format($pwdTotalBalance, 2);
+
+            $loansDisbursedToWomen = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->whereIn('transactions.sacco_id', $saccoIds)
+                            ->where('transactions.type', 'LOAN')
+                ->where('users.sex', 'Female')
+                ->count();
+
+            $loansDisbursedToMen = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'LOAN')
+                ->where('users.sex', 'Male')
+                ->count();
+
+            // Get the IDs of youth users
+            $youthIds = User::whereIn('sacco_id', $saccoIds)
+                ->whereDate('dob', '>', now()->subYears(35))
+                ->pluck('id');
+
+            // Count the number of youths
+            $youthCount = $youthIds->count();
+
+            // dd($youthCount);
+
+            // Get the IDs of youth users
+            $youthIds = User::whereIn('sacco_id', $saccoIds)
+                ->whereDate('dob', '>', now()->subYears(35))
+                ->pluck('id');
+
+            // Count loans disbursed to youths
+            $loansDisbursedToYouths = Transaction::whereIn('sacco_id', $saccoIds)
+                ->whereIn('user_id', $youthIds)
+                ->where('type', 'LOAN')
+                ->count();
+
+            $loanSumForWomen = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'LOAN')
+                ->where('users.sex', 'Female')
+                ->sum('transactions.amount');
+
+            $loanSumForMen = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'LOAN')
+                ->where('users.sex', 'Male')
+                ->sum('transactions.amount');
+
+            $pwdTotalLoanBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'LOAN')
+                ->where('users.pwd', 'yes')
+                ->sum('transactions.amount');
+
+
+
+            // Count loans disbursed to youths
+            $loansDisbursedToYouths = Transaction::whereIn('sacco_id', $saccoIds)->whereIn('source_user_id', $youthIds)
+                ->where('type', 'LOAN')
+                ->count();
+
+            // Sum the loan amounts disbursed to youths
+            $loanSumForYouths = Transaction::whereIn('sacco_id', $saccoIds)
+                ->whereIn('source_user_id', $youthIds)
+                ->where('type', 'LOAN')
+                ->sum('amount');
+
+            $pwdTotalLoanCount = Transaction::whereIn('sacco_id', $saccoIds)->where('type', 'LOAN')
+                ->whereIn('source_user_id', $pwdUserIds)
+                ->count();
+
+            // $pwdTotalLoanBalance = Transaction::whereIn('sacco_id', $saccoIds)->where('type', 'LOAN')
+            //     ->whereIn('source_user_id', $pwdUserIds)
+            //     ->sum('balance');
+
+            $totalLoanAmount = Transaction::whereIn('sacco_id', $saccoIds)->whereIn('user_id', $filteredUsers->pluck('id'))
+                ->where('type', 'LOAN')
+                ->sum('amount');
+
+            $totalLoanBalance = Transaction::whereIn('sacco_id', $saccoIds)->whereIn('user_id', $filteredUsers->pluck('id'))
+                ->where('type', 'LOAN')
+                ->sum('balance');
+
+            $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
+
+            $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
+            ->whereIn('saccos.id', $saccoIds)
+            // ->where('users.sex', 'Male')
+            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+            ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
+            ->where(function ($query) {
+                $query->whereNull('users.user_type')
+                    ->orWhere('users.user_type', '<>', 'Admin');
+            })
+            ->select('transactions.*') // Select all transaction fields
+            ->get();
+            $monthYearList = [];
+            $totalSavingsList = [];
+
+            foreach ($transactions as $transaction) {
+                $monthYear = Carbon::parse($transaction->created_at)->format('F Y');
+
+                if (!in_array($monthYear, $monthYearList)) {
+                    $monthYearList[] = $monthYear;
+                }
+
+                if (array_key_exists($monthYear, $totalSavingsList)) {
+                    $totalSavingsList[$monthYear] += $transaction->amount;
+                } else {
+                    $totalSavingsList[$monthYear] = $transaction->amount;
+                }
+            }
+
+            $userRegistrations = $users->whereIn('sacco_id', $saccoIds)->where('user_type', '!=', 'Admin')->groupBy(function ($date) {
+                return Carbon::parse($date->created_at)->format('Y-m');
+            });
+
+            $registrationDates = $userRegistrations->keys()->toArray();
+            $registrationCounts = $userRegistrations->map(function ($item) {
+                return count($item);
+            })->values()->toArray();
+
+            $topSavingGroups = User::where('user_type', 'Admin')
+                ->whereIn('sacco_id', $saccoIds)
+                ->whereHas('sacco', function ($query) {
+                    $query->whereNotIn('status', ['deleted', 'inactive']);
+                })
+                ->get()
+                ->sortByDesc('balance')
+                ->take(6);
+
+
+            // Here
+
+            // Calculate total loans
+            $totalLoans = Transaction::whereIn('sacco_id', $saccoIds)
+                ->where('type', 'LOAN')
+                ->count();
+
+            // Calculate loans given to youths
+            $loansGivenToYouths = Transaction::whereIn('sacco_id', $saccoIds)
+                ->whereIn('source_user_id', $youthIds)
+                ->where('type', 'LOAN')
+                ->count();
+
+            // Calculate loans given to PWDs
+            $loansGivenToPwds = Transaction::whereIn('sacco_id', $saccoIds)
+                ->whereIn('source_user_id', $pwdUserIds)
+                ->where('type', 'LOAN')
+                ->count();
+
+            // Calculate percentages
+            $percentageLoansYouths = $totalLoans > 0 ? ($loansGivenToYouths / $totalLoans) * 100 : 0;
+            $percentageLoansPwd = $totalLoans > 0 ? ($loansGivenToPwds / $totalLoans) * 100 : 0;
+
+            $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
+
+            $youthTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
+            ->join('saccos as s', 'users.sacco_id', '=', 's.id')
+            ->whereIn('users.sacco_id', $saccoIds)
+            ->whereIn('users.id', $youthIds)
+            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+            ->where('t.type', 'SHARE')
+            ->where(function ($query) {
+                $query->whereNull('users.user_type')
+                ->orWhere('users.user_type', '<>', 'Admin');
+            })
+            ->select(DB::raw('SUM(t.amount) as total_balance'))
+            ->first()
+            ->total_balance;
+
+            $pwdTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
+            ->join('saccos as s', 'users.sacco_id', '=', 's.id')
+            ->whereIn('users.sacco_id', $saccoIds)
+            ->where('users.pwd', 'Yes')
+            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+            ->where('t.type', 'SHARE')
+            ->where(function ($query) {
+                $query->whereNull('users.user_type')
+                ->orWhere('users.user_type', '<>', 'Admin');
+            })
+            ->select(DB::raw('SUM(t.amount) as total_balance'))
+            ->first()
+            ->total_balance;
+
+            // Fetch total balances for male users across all groups (excluding deleted and inactive Saccos and Admins)
+            $maleTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
+            ->join('saccos as s', 'users.sacco_id', '=', 's.id')
+            ->whereIn('users.sacco_id', $saccoIds)
+            ->where('users.sex', 'Male')
+            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+            ->where('t.type', 'SHARE')
+            ->where(function ($query) {
+                $query->whereNull('users.user_type')
+                ->orWhere('users.user_type', '<>', 'Admin');
+            })
+            ->select(DB::raw('SUM(t.amount) as total_balance'))
+            ->first()
+            ->total_balance;
+
+            // Fetch total balances for female users across all groups (excluding deleted and inactive Saccos and Admins)
+            $femaleTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
+            ->join('saccos as s', 'users.sacco_id', '=', 's.id')
+            ->whereIn('users.sacco_id', $saccoIds)
+            ->where('users.sex', 'Female')
+            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+            ->where('t.type', 'SHARE')
+            ->where(function ($query) {
+                $query->whereNull('users.user_type')
+                ->orWhere('users.user_type', '<>', 'Admin');
+            })
+            ->select(DB::raw('SUM(t.amount) as total_balance'))
+            ->first()
+            ->total_balance;
+
+        }
+
+        else {
             $organizationContainer = '';
             $orgName = 'DigiSave VSLA Platform';
             $totalSaccos = Sacco::count();
