@@ -63,6 +63,26 @@ class ApiResurceController extends Controller
         return redirect('https://sites.google.com/view/m-omulimisaprivacypolicy?usp=sharing');
     }
 
+    public function AllProjects(Request $request)
+{
+    try {
+        // Retrieve all projects
+        $projects = Project::all();
+
+        // Check if projects exist
+        if ($projects->isEmpty()) {
+            return $this->success([], 'No projects found.');
+        }
+
+        // Return the projects
+        return $this->success($projects, 'Projects retrieved successfully.');
+    } catch (Exception $e) {
+        // Log the error and return an error response
+        Log::error('Error fetching projects: ' . $e->getMessage());
+        return $this->error('An error occurred while fetching projects.');
+    }
+}
+
     public function Projects(Request $request)
 {
     $user = auth('api')->user();
