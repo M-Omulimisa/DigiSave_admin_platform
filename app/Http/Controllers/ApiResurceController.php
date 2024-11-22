@@ -75,7 +75,7 @@ class ApiResurceController extends Controller
         }
 
         // Return the projects
-        return $this->success($projects, 'Projects retrieved successfully.');
+        return $this->success($projects, 'All projects retrieved successfully.');
     } catch (Exception $e) {
         // Log the error and return an error response
         Log::error('Error fetching projects: ' . $e->getMessage());
