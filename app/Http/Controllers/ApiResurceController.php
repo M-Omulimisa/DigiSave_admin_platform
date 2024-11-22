@@ -94,14 +94,16 @@ class ApiResurceController extends Controller
     }
 }
 
-    public function Projects(Request $request)
+public function Projects(Request $request)
 {
+    // Authenticate the user
     $user = auth('api')->user();
 
-    if ($user == null) {
+    if ($user === null) {
         return $this->error('User not authenticated.');
     }
 
+    // Check if the user has a Sacco ID
     $saccoId = $user->sacco_id;
 
     if (!$saccoId) {
@@ -109,21 +111,37 @@ class ApiResurceController extends Controller
     }
 
     try {
-        // Get all projects related to the given sacco_id
+        // Get all projects related to the user's sacco_id
         $projects = Project::whereHas('saccos', function ($query) use ($saccoId) {
             $query->where('sacco_id', $saccoId);
-        })->get();
+        })
+        ->with('saccos:id') // Eager load sacco IDs
+        ->get()
+        ->map(function ($project) {
+            return [
+                'project_id' => $project->id,
+                'name' => $project->name,
+                'description' => $project->description,
+                'start_date' => $project->start_date,
+                'end_date' => $project->end_date,
+                'sacco_ids' => $project->saccos->pluck('id'), // Extract sacco IDs
+            ];
+        });
 
-        // if ($projects->isEmpty()) {
-        //     return $this->success([], 'No projects found for this Group.');
-        // }
+        // Check if projects are found
+        if ($projects->isEmpty()) {
+            return $this->success([], 'No projects found for this Group.');
+        }
 
+        // Return the projects with structured data
         return $this->success($projects, 'Projects retrieved successfully.');
     } catch (Exception $e) {
+        // Log the error and return an error response
         Log::error('Error fetching projects: ' . $e->getMessage());
-        return $this->error($e, 'An error occurred while fetching projects.');
+        return $this->error('An error occurred while fetching projects.');
     }
 }
+
 
     public function meetingSchedule(Request $request)
     {
