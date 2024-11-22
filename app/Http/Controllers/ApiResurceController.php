@@ -66,15 +66,26 @@ class ApiResurceController extends Controller
     public function AllProjects(Request $request)
 {
     try {
-        // Retrieve all projects
-        $projects = Project::all();
+        // Retrieve all projects along with sacco IDs
+        $projects = Project::with('saccos:id') // Eager load saccos and only retrieve sacco IDs
+            ->get()
+            ->map(function ($project) {
+                return [
+                    'project_id' => $project->id,
+                    'name' => $project->name,
+                    'description' => $project->description,
+                    'start_date' => $project->start_date,
+                    'end_date' => $project->end_date,
+                    'sacco_ids' => $project->saccos->pluck('id'), // Extract sacco IDs
+                ];
+            });
 
         // Check if projects exist
         if ($projects->isEmpty()) {
             return $this->success([], 'No projects found.');
         }
 
-        // Return the projects
+        // Return the projects with sacco IDs
         return $this->success($projects, 'All projects retrieved successfully.');
     } catch (Exception $e) {
         // Log the error and return an error response
