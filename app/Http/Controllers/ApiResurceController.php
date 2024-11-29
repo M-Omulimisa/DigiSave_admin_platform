@@ -113,10 +113,10 @@ public function agentGroups(Request $r)
         ->get()
         ->map(function ($sacco) use ($user) {
             // Get admin user of the group
+
             $adminUser = User::where('sacco_id', $sacco->id)
-                ->where('user_type', 'admin');
-                })
-                ->first();
+            ->where('user_type', 'admin')
+            ->first();
 
             $chairperson = User::where('sacco_id', $sacco->id)
                 ->whereHas('position', function($query) {
