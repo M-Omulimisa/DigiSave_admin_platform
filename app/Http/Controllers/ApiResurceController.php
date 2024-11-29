@@ -103,17 +103,71 @@ public function agentGroups(Request $r)
         return $this->error('Agent not authenticated.');
     }
 
-    // Get agent's district name through district_id
+    // Get agent's district name
     $agentDistrict = District::where('id', $user->district_id)->value('name');
 
     if ($agentDistrict === null) {
         return $this->error('Agent district not found.');
     }
 
-    // Get SACCOs matching the agent's district name
+    // Get base SACCO data
     $saccos = Sacco::where('district', $agentDistrict)
         ->orderby('id', 'desc')
-        ->get();
+        ->get()
+        ->map(function ($sacco) {
+            // Get leadership positions
+            $chairperson = User::where('sacco_id', $sacco->id)
+                ->whereHas('position', function($query) {
+                    $query->where('name', 'Chairperson');
+                })
+                ->select('first_name', 'last_name', 'phone_number')
+                ->first();
+
+            $secretary = User::where('sacco_id', $sacco->id)
+                ->whereHas('position', function($query) {
+                    $query->where('name', 'Secretary');
+                })
+                ->select('first_name', 'last_name', 'phone_number')
+                ->first();
+
+            $treasurer = User::where('sacco_id', $sacco->id)
+                ->whereHas('position', function($query) {
+                    $query->where('name', 'Treasurer');
+                })
+                ->select('first_name', 'last_name', 'phone_number')
+                ->first();
+
+            return [
+                // Group ID and Registration
+                'registration_number' => $sacco->id,
+                'contact_number' => $sacco->phone_number,
+
+                // Location Information
+                'district' => $sacco->district,
+                'subcounty' => $sacco->subcounty,
+                'parish' => $sacco->parish,
+                'village' => $sacco->village,
+                'address' => $sacco->physical_address,
+
+                // Financial Information
+                'share_value' => $sacco->share_price,
+                'registration_fee' => $sacco->register_fee,
+
+                // Timestamps
+                'created_at' => $sacco->created_at,
+                'updated_at' => $sacco->updated_at,
+
+                // Leadership Information
+                'chairperson_name' => $chairperson ? $chairperson->first_name . ' ' . $chairperson->last_name : '',
+                'chairperson_contact' => $chairperson ? $chairperson->phone_number : '',
+
+                'secretary_name' => $secretary ? $secretary->first_name . ' ' . $secretary->last_name : '',
+                'secretary_contact' => $secretary ? $secretary->phone_number : '',
+
+                'treasurer_name' => $treasurer ? $treasurer->first_name . ' ' . $treasurer->last_name : '',
+                'treasurer_contact' => $treasurer ? $treasurer->phone_number : '',
+            ];
+        });
 
     return $this->success(
         $saccos,
@@ -121,6 +175,34 @@ public function agentGroups(Request $r)
         200
     );
 }
+
+// public function agentGroups(Request $r)
+// {
+//     // Authenticate the user
+//     $user = auth('api')->user();
+
+//     if ($user === null) {
+//         return $this->error('Agent not authenticated.');
+//     }
+
+//     // Get agent's district name through district_id
+//     $agentDistrict = District::where('id', $user->district_id)->value('name');
+
+//     if ($agentDistrict === null) {
+//         return $this->error('Agent district not found.');
+//     }
+
+//     // Get SACCOs matching the agent's district name
+//     $saccos = Sacco::where('district', $agentDistrict)
+//         ->orderby('id', 'desc')
+//         ->get();
+
+//     return $this->success(
+//         $saccos,
+//         "Successfully retrieved " . $saccos->count() . " VSLA groups in " . $agentDistrict . " district",
+//         200
+//     );
+// }
 
 public function Projects(Request $request)
 {
