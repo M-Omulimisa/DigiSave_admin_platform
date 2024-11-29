@@ -28,6 +28,49 @@ class AgentController extends AdminController
 {
     protected $title = 'Agents';
 
+    protected function grid()
+    {
+        $grid = new Grid(new User());
+
+        $admin = Admin::user();
+        $adminId = $admin->id;
+
+        $grid->id('ID')->sortable();
+        $grid->addColumn('full_name', 'Full Name')->display(function () {
+            return $this->first_name . ' ' . $this->last_name;
+        })->sortable();
+        $grid->phone_number('Phone Number')->sortable();
+        $grid->dob('Date of Birth')->sortable();
+        $grid->sex('Gender')->sortable();
+
+        // Filter users by user type ID based on AdminRole name 'agent'
+        $agentRoleId = AdminRole::where('name', 'agent')->value('id');
+        $grid->model()->where('user_type', '=', $agentRoleId);
+
+        return $grid;
+    }
+
+    protected function detail($id)
+    {
+        $show = new Show(User::findOrFail($id));
+
+        $show->field('id', 'ID');
+        $show->field('first_name', 'First Name');
+        $show->field('last_name', 'Last Name');
+        $show->field('phone_number', 'Phone Number');
+        $show->field('email', 'Email');
+        $show->field('dob', 'Date of Birth');
+        $show->field('sex', 'Gender');
+        $show->field('district.name', 'District');
+        $show->field('subcounty.sub_county', 'Subcounty');
+        $show->field('parish.parish_name', 'Parish');
+        $show->field('village.village_name', 'Village');
+        $show->field('created_at', 'Created At');
+        $show->field('updated_at', 'Updated At');
+
+        return $show;
+    }
+
     protected function form()
     {
         $form = new Form(new User());
@@ -152,11 +195,11 @@ class AgentController extends AdminController
                     $form->password_confirmation = $password;
                 }
 
-                // Hash the password
-                $form->input('password', Hash::make($form->password));
-
                 // Store the unhashed password for notifications
                 $plainPassword = $form->password;
+
+                // Hash the password
+                $form->input('password', Hash::make($form->password));
 
                 // Prepare notification content
                 $platformLink = "https://digisave.m-omulimisa.com/";
