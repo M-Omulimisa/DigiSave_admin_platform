@@ -142,6 +142,10 @@ class AgentController extends AdminController
     $form->tab('Location Details', function ($form) {
         // District dropdown
         $districtOptions = District::pluck('name', 'id');
+        $subcountyOptions = Subcounty::pluck('sub_county', 'id');
+        $parishOptions = Parish::pluck('parish_name', 'parish_id');
+        $villageOptions = Village::pluck('village_name', 'village_id');
+
         $form->select('district_id', 'District')
             ->options($districtOptions)
             ->rules('required')
@@ -149,17 +153,20 @@ class AgentController extends AdminController
 
         // Subcounty dropdown (dynamically loaded)
         $form->select('subcounty_id', 'Subcounty')
-            ->rules('required')
+            ->options($subcountyOptions)
+            // ->rules('required')
             ->load('parish_id', '/api/parishes');
 
         // Parish dropdown (dynamically loaded)
         $form->select('parish_id', 'Parish')
-            ->rules('required')
+        ->options($parishOptions)
+            // ->rules('required')
             ->load('village_id', '/api/villages');
 
         // Village dropdown (dynamically loaded)
         $form->select('village_id', 'Village')
-            ->rules('required');
+        ->options($villageOptions)
+            // ->rules('required');
     });
 
     // Account Credentials
