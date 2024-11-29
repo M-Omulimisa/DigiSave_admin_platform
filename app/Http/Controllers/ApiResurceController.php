@@ -114,8 +114,7 @@ public function agentGroups(Request $r)
         ->map(function ($sacco) use ($user) {
             // Get admin user of the group
             $adminUser = User::where('sacco_id', $sacco->id)
-                ->whereHas('roles', function($query) {
-                    $query->where('name', 'admin');
+                ->where('user_type', 'admin');
                 })
                 ->first();
 
