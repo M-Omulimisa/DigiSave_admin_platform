@@ -198,8 +198,6 @@ public function agentGroups(Request $r)
                     'total_loans' => $adminUser ? $adminUser->LOAN_BALANCE : '0'
                 ];
             }
-
-            return null;
         })
         ->filter()
         ->values();
