@@ -209,7 +209,7 @@ class AgentController extends AdminController
                 "password" => $form->password,
                 "platformLink" => $platformLink,
                 "org" => "Agent",
-                "email" => $form->email ?? 'dninsiima@m-omulimisa.com'
+                "email" => $form->email ?? 'info@m-omulimisa.com'
             ];
 
             try {
