@@ -423,15 +423,14 @@ class ApiAuthController extends Controller
         $password = trim($request->password);
 
         $user = User::where(function ($query) use ($username) {
-            $query->where('username', $username)
-                ->orWhere('phone_number', $username)
+            $query->where('phone_number', $username)
                 ->orWhere('email', $username);
         })
             ->where('user_type', 'agent')
             ->first();
 
         if (!$user) {
-            return $this->error('Agent account not found or invalid credentials.');
+            return $this->error($user,'Agent account not found or invalid credentials.');
         }
 
         if (!Hash::check($password, $user->password)) {
