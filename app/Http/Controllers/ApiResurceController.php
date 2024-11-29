@@ -111,8 +111,7 @@ public function agentGroups(Request $r)
     $saccos = Sacco::where('district', $agentDistrict)
         ->orderby('id', 'desc')
         ->get()
-        ->map(function ($sacco) {
-            // Get leadership positions
+        ->map(function ($sacco) use ($user) {
             $chairperson = User::where('sacco_id', $sacco->id)
                 ->whereHas('position', function($query) {
                     $query->where('name', 'Chairperson');
@@ -134,33 +133,74 @@ public function agentGroups(Request $r)
                 ->select('first_name', 'last_name', 'phone_number')
                 ->first();
 
-            // Only return data if at least one leader exists
+            // Get member count
+            $memberCount = User::where('sacco_id', $sacco->id)->count();
+
+            // Get projects
+            $projects = Project::whereHas('saccos', function($query) use ($sacco) {
+                $query->where('sacco_id', $sacco->id);
+            })->get()->map(function($project) {
+                return [
+                    'name' => $project->name,
+                    'description' => $project->description,
+                    'start_date' => $project->start_date,
+                    'end_date' => $project->end_date
+                ];
+            });
+
+            // Get latest meeting
+            $latestMeeting = MeetingSchedule::where('sacco_id', $sacco->id)
+                ->where('meeting_date', '>=', now())
+                ->orderBy('meeting_date', 'asc')
+                ->first();
+
             if ($chairperson || $secretary || $treasurer) {
                 return [
+                    // Basic Info
                     'registration_number' => $sacco->id,
                     'contact_number' => $sacco->phone_number,
+
+                    // Location Info
                     'district' => $sacco->district,
                     'subcounty' => $sacco->subcounty,
                     'parish' => $sacco->parish,
                     'village' => $sacco->village,
                     'address' => $sacco->physical_address,
+
+                    // Financial Info
                     'share_value' => $sacco->share_price,
                     'registration_fee' => $sacco->register_fee,
+
+                    // Timestamps
                     'created_at' => $sacco->created_at,
                     'updated_at' => $sacco->updated_at,
+
+                    // Leadership
                     'chairperson_name' => $chairperson ? $chairperson->first_name . ' ' . $chairperson->last_name : '',
                     'chairperson_contact' => $chairperson ? $chairperson->phone_number : '',
                     'secretary_name' => $secretary ? $secretary->first_name . ' ' . $secretary->last_name : '',
                     'secretary_contact' => $secretary ? $secretary->phone_number : '',
                     'treasurer_name' => $treasurer ? $treasurer->first_name . ' ' . $treasurer->last_name : '',
                     'treasurer_contact' => $treasurer ? $treasurer->phone_number : '',
+
+                    // Additional Info
+                    'member_count' => $memberCount,
+                    'description' => $sacco->about,
+                    'agent_id' => $user->id,
+                    'projects' => $projects,
+
+                    // Meeting Info
+                    'meeting_day' => $latestMeeting ? Carbon::parse($latestMeeting->meeting_date)->format('l') : '',
+                    'meeting_time' => $latestMeeting ? $latestMeeting->start_time : '',
+                    'meeting_venue' => $latestMeeting ? $latestMeeting->location : '',
+                    'next_meeting_date' => $latestMeeting ? $latestMeeting->meeting_date : '',
                 ];
             }
 
             return null;
         })
-        ->filter() // Remove null values (groups without leaders)
-        ->values(); // Reset array keys
+        ->filter()
+        ->values();
 
     return $this->success(
         $saccos,
