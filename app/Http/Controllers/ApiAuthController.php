@@ -412,6 +412,50 @@ class ApiAuthController extends Controller
     //     return $this->success($u, 'Logged in successfully.');
     // }
 
+    public function agentLogin(Request $request)
+    {
+        $request->validate([
+            'username' => 'required|string',
+            'password' => 'required|string',
+        ]);
+
+        $username = trim($request->username);
+        $password = trim($request->password);
+
+        $user = User::where(function ($query) use ($username) {
+            $query->where('username', $username)
+                ->orWhere('phone_number', $username)
+                ->orWhere('email', $username);
+        })
+            ->where('user_type', 'agent')
+            ->first();
+
+        if (!$user) {
+            return $this->error('Agent account not found or invalid credentials.');
+        }
+
+        if (!Hash::check($password, $user->password)) {
+            return $this->error('Wrong credentials.');
+        }
+
+        // Generate JWT token
+        JWTAuth::factory()->setTTL(60 * 24 * 30 * 365);
+
+        $token = auth('api')->attempt([
+            'username' => $user->username,
+            'password' => $request->password,
+        ]);
+
+        if ($token == null) {
+            return $this->error('Failed to authenticate agent.');
+        }
+
+        $user->token = $token;
+        $user->remember_token = $token;
+
+        return $this->success($user, 'Agent logged in successfully.');
+    }
+
     public function login(Request $r)
     {
         if ($r->username == null) {
