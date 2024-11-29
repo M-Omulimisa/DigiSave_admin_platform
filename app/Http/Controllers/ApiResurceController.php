@@ -94,6 +94,34 @@ class ApiResurceController extends Controller
     }
 }
 
+public function agentGroups(Request $r)
+{
+    // Authenticate the user
+    $user = auth('api')->user();
+
+    if ($user === null) {
+        return $this->error('Agent not authenticated.');
+    }
+
+    // Get agent's district name through district_id
+    $agentDistrict = District::where('id', $user->district_id)->value('name');
+
+    if ($agentDistrict === null) {
+        return $this->error('Agent district not found.');
+    }
+
+    // Get SACCOs matching the agent's district name
+    $saccos = Sacco::where('district', $agentDistrict)
+        ->orderby('id', 'desc')
+        ->get();
+
+    return $this->success(
+        $saccos,
+        "Successfully retrieved " . $saccos->count() . " VSLA groups in " . $agentDistrict . " district",
+        200
+    );
+}
+
 public function Projects(Request $request)
 {
     // Authenticate the user

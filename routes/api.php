@@ -53,6 +53,7 @@ Route::get("transactions", [ApiResurceController::class, "transactions"]);
 Route::post("reverse-transaction", [ApiResurceController::class, "reverseTransaction"]);
 Route::get("loan-transactions", [ApiResurceController::class, "loan_transactions"]);
 Route::get("saccos", [ApiResurceController::class, "saccos"]);
+Route::get("group_info", [ApiResurceController::class, "agentGroups"])
 Route::get("agent-allocation", [ApiResurceController::class, "agent_allocations"]);
 Route::get("eligibleMembers", [ApiResurceController::class, "eligible_members"]);
 Route::post("sacco-join-request", [ApiResurceController::class, "sacco_join_request"]);
