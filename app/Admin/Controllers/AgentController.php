@@ -165,7 +165,7 @@ class AgentController extends AdminController
 
         // Village dropdown (dynamically loaded)
         $form->select('village_id', 'Village')
-        ->options($villageOptions)
+        ->options($villageOptions);
             // ->rules('required');
     });
 
