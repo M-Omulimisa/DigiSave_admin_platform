@@ -27,6 +27,7 @@ Route::group([
     $router->resource('inactive-saccos', SaccoDeletedActiveController::class);
     $router->resource('scheme', LoanScheemController::class);
     $router->resource('districts', DistrictsController::class);
+    $router->resource('agent-group-allocations', AgentGroupAllocationController::class);
     $router->resource('projects', ProjectController::class);
     $router->resource('subcounties', SubcountiesController::class);
     $router->resource('parishes', ParishesController::class);
