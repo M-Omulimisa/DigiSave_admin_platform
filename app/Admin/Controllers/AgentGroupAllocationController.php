@@ -12,6 +12,7 @@ use Encore\Admin\Grid;
 use Encore\Admin\Show;
 use Encore\Admin\Facades\Admin;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class AgentGroupAllocationController extends AdminController
 {
@@ -21,25 +22,54 @@ class AgentGroupAllocationController extends AdminController
     {
         $grid = new Grid(new AgentGroupAllocation());
 
-        $grid->column('id', 'ID')->sortable();
+        // Add JavaScript for modal functionality first
+        Admin::script($this->modalScript());
+
+        $grid->model()->select('agent_id', DB::raw('COUNT(*) as group_count'),
+                             DB::raw('MAX(allocated_at) as latest_allocation'))
+            ->whereNotNull('agent_id')
+            ->groupBy('agent_id');
+
         $grid->column('agent.first_name', 'First Name')->sortable();
         $grid->column('agent.last_name', 'Last Name')->sortable();
         $grid->column('agent.phone_number', 'Phone Number');
-        $grid->column('sacco.name', 'Group Name')->sortable();
-        $grid->column('sacco.district.name', 'District')->sortable();
 
-        $grid->column('Groups Count')->display(function () {
-            return AgentGroupAllocation::where('agent_id', $this->agent_id)
-                ->where('status', 'active')
-                ->count();
+        $grid->column('group_count', 'Assigned Groups')->sortable();
+
+        $grid->column('latest_allocation', 'Latest Allocation')->display(function ($date) {
+            return Carbon::parse($date)->format('Y-m-d H:i:s');
+        })->sortable();
+
+        $grid->column('Groups')->display(function () {
+            // Get agent details
+            $agent = User::find($this->agent_id);
+
+            // Get all allocations for this agent
+            $allocations = AgentGroupAllocation::with('sacco')
+                ->where('agent_id', $this->agent_id)
+                ->get();
+
+            // Build table HTML
+            $tableHtml = "<table class='table table-bordered' style='margin-bottom: 0;'><thead><tr>";
+            $tableHtml .= "<th>Group Name</th><th>District</th><th>Action</th></tr></thead><tbody>";
+
+            foreach ($allocations as $allocation) {
+                $tableHtml .= "<tr>";
+                $tableHtml .= "<td>{$allocation->sacco->name}</td>";
+                $tableHtml .= "<td>{$allocation->sacco->district}</td>";
+                $tableHtml .= "<td><button class='btn btn-xs btn-danger deassign-group' data-id='{$allocation->id}'>Deassign</button></td>";
+                $tableHtml .= "</tr>";
+            }
+
+            $tableHtml .= "</tbody></table>";
+
+            // Create a data attribute to store the HTML
+            return "<div class='group-allocation-btn'
+                       data-agent-name='{$agent->first_name} {$agent->last_name}'
+                       data-groups-html='" . htmlspecialchars($tableHtml, ENT_QUOTES) . "'>
+                    <a href='javascript:void(0);' class='btn btn-sm btn-info show-groups'>View Groups</a>
+                   </div>";
         });
-
-        $grid->column('status', 'Status')->display(function ($status) {
-            $color = $status === 'active' ? 'success' : 'danger';
-            return "<span class='label label-$color'>$status</span>";
-        });
-
-        $grid->column('allocated_at', 'Allocated Date')->sortable();
 
         $grid->filter(function ($filter) {
             $filter->disableIdFilter();
@@ -53,15 +83,9 @@ class AgentGroupAllocationController extends AdminController
                     ];
                 })->pluck('name', 'id');
             $filter->equal('agent_id', 'Agent')->select($agents);
-
-            $districts = DB::table('districts')->pluck('name', 'id');
-            $filter->equal('sacco.district_id', 'District')->select($districts);
-
-            $filter->equal('status', 'Status')->select([
-                'active' => 'Active',
-                'inactive' => 'Inactive'
-            ]);
         });
+
+        $grid->disableBatchActions();
 
         return $grid;
     }
@@ -81,14 +105,13 @@ class AgentGroupAllocationController extends AdminController
             })->pluck('name', 'id');
 
         // Get available Groups (Saccos)
-        $allocatedSaccoIds = AgentGroupAllocation::where('status', 'active')->pluck('sacco_id')->toArray();
+        $allocatedSaccoIds = AgentGroupAllocation::pluck('sacco_id')->toArray();
         $saccos = Sacco::whereNotIn('id', $allocatedSaccoIds)
-            ->orWhereIn('id', $allocatedSaccoIds)
             ->get()
             ->map(function ($sacco) {
                 return [
                     'id' => $sacco->id,
-                    'name' => $sacco->name . ' (' . ($sacco->district->name ?? 'Unknown District') . ')'
+                    'name' => $sacco->name . ' (' . ($sacco->district) . ')'
                 ];
             })
             ->pluck('name', 'id');
@@ -97,24 +120,16 @@ class AgentGroupAllocationController extends AdminController
             ->options($agents)
             ->rules('required');
 
-        $form->listbox('sacco_id', 'Groups')  // Changed to listbox for better multiple selection handling
+        $form->listbox('sacco_id', 'Groups')
             ->options($saccos)
             ->rules('required')
             ->help('You can select multiple groups to allocate to this agent');
 
-        $form->radio('status', 'Status')
-            ->options([
-                'active' => 'Active',
-                'inactive' => 'Inactive'
-            ])
-            ->default('active');
-
-        $form->ignore(['sacco_id']);  // Ignore the field from default form processing
+        $form->ignore(['sacco_id']);
 
         $form->saving(function (Form $form) {
             $agentId = $form->agent_id;
-            $saccoIds = array_filter((array)request()->input('sacco_id', []));  // Get and filter sacco IDs
-            $status = $form->status;
+            $saccoIds = array_filter((array)request()->input('sacco_id', []));
 
             if (empty($saccoIds)) {
                 return back()->withInput()->withErrors(['sacco_id' => 'Please select at least one group to allocate.']);
@@ -124,9 +139,8 @@ class AgentGroupAllocationController extends AdminController
                 DB::beginTransaction();
 
                 foreach ($saccoIds as $saccoId) {
-                    // Check for existing active allocation
+                    // Check for existing allocation
                     $existingAllocation = AgentGroupAllocation::where('sacco_id', $saccoId)
-                        ->where('status', 'active')
                         ->first();
 
                     if ($existingAllocation && $form->isCreating()) {
@@ -138,7 +152,6 @@ class AgentGroupAllocationController extends AdminController
                     AgentGroupAllocation::create([
                         'agent_id' => $agentId,
                         'sacco_id' => $saccoId,
-                        'status' => $status,
                         'allocated_at' => now(),
                         'allocated_by' => Admin::user()->id
                     ]);
@@ -157,6 +170,68 @@ class AgentGroupAllocationController extends AdminController
         return $form;
     }
 
+    protected function modalScript()
+    {
+        return <<<EOT
+        $(document).ready(function () {
+            // Add modal HTML if it doesn't exist
+            if ($('#group-modal').length === 0) {
+                $('body').append(`
+                    <div class="modal fade" id="group-modal" tabindex="-1" role="dialog">
+                        <div class="modal-dialog modal-lg" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                    <h4 class="modal-title">Assigned Groups</h4>
+                                </div>
+                                <div class="modal-body"></div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `);
+            }
+
+            // Bind click event to View Groups buttons
+            $(document).on('click', '.show-groups', function() {
+                var container = $(this).closest('.group-allocation-btn');
+                var agentName = container.data('agent-name');
+                var groupsHtml = container.data('groups-html');
+
+                $('#group-modal .modal-title').text(agentName + "'s Groups");
+                $('#group-modal .modal-body').html(groupsHtml);
+                $('#group-modal').modal('show');
+            });
+
+            // Bind click event to Deassign buttons
+            $(document).on('click', '.deassign-group', function() {
+                var allocationId = $(this).data('id');
+                if(confirm('Are you sure you want to deassign this group?')) {
+                    $.ajax({
+                        method: 'DELETE',
+                        url: 'agent-group-allocations/' + allocationId,
+                        data: {
+                            _token: LA.token
+                        },
+                        success: function(response) {
+                            toastr.success('Group deassigned successfully');
+                            $.pjax.reload('#pjax-container');
+                            $('#group-modal').modal('hide');
+                        },
+                        error: function(response) {
+                            toastr.error('Error deassigning group');
+                        }
+                    });
+                }
+            });
+        });
+EOT;
+    }
+
     protected function detail($id)
     {
         $show = new Show(AgentGroupAllocation::findOrFail($id));
@@ -166,9 +241,8 @@ class AgentGroupAllocationController extends AdminController
         $show->field('agent.last_name', 'Last Name');
         $show->field('agent.phone_number', 'Phone Number');
         $show->field('sacco.name', 'Group Name');
-        $show->field('sacco.district.name', 'District');
-        $show->field('status', 'Status');
-        $show->field('allocated_at', 'Allocated Date');
+        $show->field('sacco.district', 'District');
+        $show->field('allocated_at', 'Allocation Date');
         $show->field('allocator.name', 'Allocated By');
 
         return $show;
