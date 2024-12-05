@@ -111,9 +111,9 @@ class AgentGroupAllocationController extends AdminController
 
         $form->ignore(['sacco_id']);  // Ignore the field from default form processing
 
-        $$form->saving(function (Form $form) {
+        $form->saving(function (Form $form) {
             $agentId = $form->agent_id;
-            $saccoIds = array_filter((array)request()->input('sacco_id', []));
+            $saccoIds = array_filter((array)request()->input('sacco_id', []));  // Get and filter sacco IDs
             $status = $form->status;
 
             if (empty($saccoIds)) {
@@ -122,10 +122,6 @@ class AgentGroupAllocationController extends AdminController
 
             try {
                 DB::beginTransaction();
-
-                // Get agent name for the success message
-                $agent = User::find($agentId);
-                $allocatedGroups = [];
 
                 foreach ($saccoIds as $saccoId) {
                     // Check for existing active allocation
@@ -138,10 +134,6 @@ class AgentGroupAllocationController extends AdminController
                         throw new \Exception("Group '{$sacco->name}' is already allocated to another agent.");
                     }
 
-                    // Store group name for success message
-                    $sacco = Sacco::find($saccoId);
-                    $allocatedGroups[] = $sacco->name;
-
                     // Create new allocation
                     AgentGroupAllocation::create([
                         'agent_id' => $agentId,
@@ -153,22 +145,7 @@ class AgentGroupAllocationController extends AdminController
                 }
 
                 DB::commit();
-
-                // Create detailed success message
-                $groupNames = implode(', ', $allocatedGroups);
-                $agentName = $agent->first_name . ' ' . $agent->last_name;
-                admin_success(
-                    'Groups Allocated Successfully',
-                    "Successfully allocated the following groups to {$agentName}:<br>" .
-                    "<ul><li>" . implode('</li><li>', $allocatedGroups) . "</li></ul>"
-                );
-
-                // Store success message in session for grid view
-                session()->flash('success', [
-                    'title' => 'Groups Allocated Successfully',
-                    'message' => "Groups have been allocated to {$agentName}"
-                ]);
-
+                admin_success('Success', 'Groups allocated successfully.');
                 return redirect(admin_url('agent-group-allocations'));
 
             } catch (\Exception $e) {
