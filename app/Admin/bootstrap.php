@@ -87,7 +87,7 @@ Encore\Admin\Grid::init(function (Encore\Admin\Grid $grid) {
     //get current segment
     $current_segment = request()->segment(1);
 
-    $exclude = ['saccos', 
+    $exclude = ['saccos',
     'organisation',
     'social', 'gens', 'loan-scheems', 'trainings','loans', 'meetings', 'crops', 'crop-protocols', 'gardens', 'garden-activities',  'service-providers', 'groups', 'associations', 'people', 'disabilities', 'institutions', 'counselling-centres', 'jobs', 'job-applications', 'course-categories', 'courses', 'settings', 'participants', 'members', 'post-categories', 'news-posts', 'events', 'event-bookings', 'products', 'product-orders', ];
 
@@ -108,3 +108,4 @@ Encore\Admin\Show::init(function (Encore\Admin\Show $show) {
     //     });
     // }
 });
+
