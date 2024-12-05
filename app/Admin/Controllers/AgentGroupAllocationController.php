@@ -52,9 +52,9 @@ class AgentGroupAllocationController extends AdminController
             $filter->disableIdFilter();
 
             // Agent filter
-            $agents = User::whereHas('roles', function($q) {
-                $q->where('name', 'agent');
-            })->get()->map(function ($user) {
+            $agents = User::where('user_type', '4')
+            ->get()
+            ->map(function ($user) {
                 return [
                     'id' => $user->id,
                     'name' => $user->first_name . ' ' . $user->last_name
@@ -81,9 +81,9 @@ class AgentGroupAllocationController extends AdminController
         $form = new Form(new AgentGroupAllocation());
 
         // Get agents
-        $agents = User::whereHas('roles', function($q) {
-            $q->where('name', 'agent');
-        })->get()->map(function ($user) {
+        $agents = User::where('user_type', '4')
+        ->get()
+        ->map(function ($user) {
             return [
                 'id' => $user->id,
                 'name' => $user->first_name . ' ' . $user->last_name
