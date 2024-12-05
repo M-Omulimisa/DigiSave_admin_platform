@@ -24,22 +24,28 @@ class AgentGroupAllocationController extends AdminController
         // Add columns
         $grid->column('id', 'ID')->sortable();
 
-        // Agent information
-        $grid->column('agent.full_name', 'Agent Name')->sortable();
-        $grid->column('agent.phone_number', 'Agent Phone');
+        // Agent information with relationship
+        $grid->column('agent.first_name', 'First Name')->sortable();
+        $grid->column('agent.last_name', 'Last Name')->sortable();
+        $grid->column('agent.phone_number', 'Phone Number');
 
-        // Group information
+        // Group information with nested relationships
         $grid->column('sacco.name', 'Group Name')->sortable();
         $grid->column('sacco.district.name', 'District')->sortable();
-        $grid->column('sacco.subcounty.sub_county', 'Subcounty');
 
-        // Allocation details
+        // Count groups per agent
+        $grid->column('Groups Count')->display(function () {
+            return AgentGroupAllocation::where('agent_id', $this->agent_id)
+                ->where('status', 'active')
+                ->count();
+        });
+
         $grid->column('status', 'Status')->display(function ($status) {
             $color = $status === 'active' ? 'success' : 'danger';
             return "<span class='label label-$color'>$status</span>";
         });
+
         $grid->column('allocated_at', 'Allocated Date')->sortable();
-        $grid->column('allocator.name', 'Allocated By');
 
         // Filter options
         $grid->filter(function ($filter) {
@@ -48,7 +54,12 @@ class AgentGroupAllocationController extends AdminController
             // Agent filter
             $agents = User::whereHas('roles', function($q) {
                 $q->where('name', 'agent');
-            })->pluck('first_name', 'id');
+            })->get()->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'name' => $user->first_name . ' ' . $user->last_name
+                ];
+            })->pluck('name', 'id');
             $filter->equal('agent_id', 'Agent')->select($agents);
 
             // District filter
@@ -62,15 +73,6 @@ class AgentGroupAllocationController extends AdminController
             ]);
         });
 
-        // Add row actions
-        $grid->actions(function ($actions) {
-            $actions->disableView();
-            if (!Admin::user()->isRole('admin')) {
-                $actions->disableDelete();
-                $actions->disableEdit();
-            }
-        });
-
         return $grid;
     }
 
@@ -81,20 +83,36 @@ class AgentGroupAllocationController extends AdminController
         // Get agents
         $agents = User::whereHas('roles', function($q) {
             $q->where('name', 'agent');
-        })->get()->pluck('full_name', 'id');
+        })->get()->map(function ($user) {
+            return [
+                'id' => $user->id,
+                'name' => $user->first_name . ' ' . $user->last_name
+            ];
+        })->pluck('name', 'id');
 
-        // Get unallocated Groups (Saccos)
+        // Get available Groups (Saccos)
         $allocatedSaccoIds = AgentGroupAllocation::where('status', 'active')->pluck('sacco_id')->toArray();
-        $saccos = Sacco::whereNotIn('id', $allocatedSaccoIds)->pluck('name', 'id');
+        $saccos = Sacco::whereNotIn('id', $allocatedSaccoIds)
+            ->orWhereIn('id', $allocatedSaccoIds) // Include already allocated groups
+            ->get()
+            ->map(function ($sacco) {
+                return [
+                    'id' => $sacco->id,
+                    'name' => $sacco->name . ' (' . ($sacco->district->name ?? 'Unknown District') . ')'
+                ];
+            })
+            ->pluck('name', 'id');
 
         // Add fields
         $form->select('agent_id', 'Agent')
             ->options($agents)
             ->rules('required');
 
-        $form->select('sacco_id', 'Group')
+        // Multiple group selection
+        $form->multipleSelect('sacco_id', 'Groups')
             ->options($saccos)
-            ->rules('required');
+            ->rules('required')
+            ->help('You can select multiple groups to allocate to this agent');
 
         $form->radio('status', 'Status')
             ->options([
@@ -103,19 +121,45 @@ class AgentGroupAllocationController extends AdminController
             ])
             ->default('active');
 
-        // Handle saving
+        // Handle saving multiple allocations
         $form->saving(function (Form $form) {
-            if ($form->isCreating()) {
-                // Check if Group is already allocated
-                $existingAllocation = AgentGroupAllocation::where('sacco_id', $form->sacco_id)
+            // Convert single sacco_id to array if necessary
+            $saccoIds = is_array($form->sacco_id) ? $form->sacco_id : [$form->sacco_id];
+
+            // Store original form data
+            $agentId = $form->agent_id;
+            $status = $form->status;
+
+            // Remove sacco_id as we'll handle it manually
+            unset($form->input['sacco_id']);
+
+            // Create allocations for each selected group
+            foreach ($saccoIds as $saccoId) {
+                // Check if allocation already exists
+                $existingAllocation = AgentGroupAllocation::where('sacco_id', $saccoId)
                     ->where('status', 'active')
                     ->first();
 
-                if ($existingAllocation) {
-                    $error = new \Exception('This group is already allocated to another agent.');
+                if ($existingAllocation && $form->isCreating()) {
+                    $sacco = Sacco::find($saccoId);
+                    $error = new \Exception("Group '{$sacco->name}' is already allocated to another agent.");
                     return back()->withInput()->withErrors(['error' => $error->getMessage()]);
                 }
+
+                // Create new allocation
+                if ($form->isCreating()) {
+                    AgentGroupAllocation::create([
+                        'agent_id' => $agentId,
+                        'sacco_id' => $saccoId,
+                        'status' => $status,
+                        'allocated_at' => now(),
+                        'allocated_by' => Admin::user()->id
+                    ]);
+                }
             }
+
+            // Prevent the original form submission
+            return false;
         });
 
         return $form;
@@ -126,11 +170,11 @@ class AgentGroupAllocationController extends AdminController
         $show = new Show(AgentGroupAllocation::findOrFail($id));
 
         $show->field('id', 'ID');
-        $show->field('agent.full_name', 'Agent Name');
-        $show->field('agent.phone_number', 'Agent Phone');
+        $show->field('agent.first_name', 'First Name');
+        $show->field('agent.last_name', 'Last Name');
+        $show->field('agent.phone_number', 'Phone Number');
         $show->field('sacco.name', 'Group Name');
         $show->field('sacco.district.name', 'District');
-        $show->field('sacco.subcounty.sub_county', 'Subcounty');
         $show->field('status', 'Status');
         $show->field('allocated_at', 'Allocated Date');
         $show->field('allocator.name', 'Allocated By');
