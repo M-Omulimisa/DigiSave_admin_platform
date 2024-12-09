@@ -22,578 +22,439 @@ class CreditScoreController extends AdminController
 {
     protected $title = 'Credit Scores';
 
-    private function calculateAverageAttendance(int $saccoId): string
-    {
-        // Get total meetings for the sacco
-        $totalMeetings = Meeting::where('sacco_id', $saccoId)->count();
+    protected function grid()
+{
+    $admin = Admin::user();
+    $adminId = $admin->id;
 
-        // Avoid division by zero
-        if ($totalMeetings === 0) {
-            return "0.00";
+    // Get the SACCO data based on permissions
+    $query = Sacco::query();
+
+    if (!$admin->isRole('admin')) {
+        $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+        if ($orgAllocation) {
+            $orgId = $orgAllocation->vsla_organisation_id;
+            $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)
+                ->pluck('sacco_id')->toArray();
+            $query->whereIn('id', $saccoIds);
         }
-
-        // Fetch all meetings for the sacco
-        $meetings = Meeting::where('sacco_id', $saccoId)->get();
-        $totalPresent = 0; // Initialize total present counter
-
-        foreach ($meetings as $meeting) {
-            // Debugging: Check meeting members data
-            $membersJson = $meeting->members;
-            $attendanceData = json_decode($membersJson, true); // Decode JSON string as an associative array
-
-            // Debugging output
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                dd('JSON Decode Error: ', json_last_error_msg());
-            }
-
-            // Debugging: Display the present count for this meeting
-            if (isset($attendanceData['present'])) {
-                // dd('Present Count for Meeting:', $attendanceData['present']);
-                $totalPresent += $attendanceData['present'];
-            }
-        }
-
-        // Debugging: Check total present count after loop
-        // dd('Total Present:', $totalPresent);
-
-        // Calculate the average attendance per meeting
-        $averageAttendance = $totalPresent / $totalMeetings;
-
-        dd($averageAttendance);
-
-        // Return the average attendance, formatted with two decimal places
-        return $averageAttendance;
     }
 
-    protected function grid()
+    $saccos = $query->whereNotIn('status', ['deleted', 'inactive'])
+        ->whereHas('users', function ($query) {
+            $query->whereIn('position_id', function ($subQuery) {
+                $subQuery->select('id')
+                    ->from('positions')
+                    ->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+            })
+            ->whereNotNull('phone_number')
+            ->whereNotNull('name');
+        })
+        ->whereHas('meetings')
+        ->with(['users', 'meetings', 'transactions'])
+        ->get();
+
+    // Map the saccos to include all required data
+    $processedSaccos = $saccos->map(function ($sacco) {
+        return $this->prepareSaccoData($sacco);
+    });
+
+    // Return the view with both the processed collection and individual sacco data
+    return view('admin.sacco.analysis', [
+        'saccos' => $processedSaccos,  // All SACCOs data
+        'sacco' => $processedSaccos->first()  // First SACCO for backward compatibility
+    ]);
+}
+
+    private function prepareSaccoData($sacco)
     {
-        $grid = new Grid(new Sacco());
+        return [
+            // Basic Information
+            'id' => $sacco->id,
+            'name' => $sacco->name,
+            'created_at' => $sacco->created_at,
+            'status' => $sacco->status,
 
-        $admin = Admin::user();
-        $adminId = $admin->id;
+            // Membership Demographics
+            'totalMembers' => $this->calculateTotalMembers($sacco),
+            'maleMembers' => $this->calculateMaleMembers($sacco),
+            'femaleMembers' => $this->calculateFemaleMembers($sacco),
+            'youthMembers' => $this->calculateYouthMembers($sacco),
 
-        // Default sort order
-        $sortOrder = request()->get('_sort', 'desc');
-        if (!in_array($sortOrder, ['asc', 'desc'])) {
-            $sortOrder = 'desc';
-        }
+            // Meeting Statistics
+            'totalMeetings' => $this->calculateTotalMeetings($sacco),
+            'averageAttendance' => $this->calculateAverageAttendance($sacco),
 
-        if (!$admin->isRole('admin')) {
-            $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
-            if ($orgAllocation) {
-                $orgId = $orgAllocation->vsla_organisation_id;
-                $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)
-                    ->pluck('sacco_id')->toArray();
-                $grid->model()
-                    ->whereIn('id', $saccoIds)
-                    ->whereNotIn('status', ['deleted', 'inactive'])
-                    ->whereHas('users', function ($query) {
-                        $query->whereIn('position_id', function ($subQuery) {
-                            $subQuery->select('id')
-                                ->from('positions')
-                                ->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
-                        })
-                            ->whereNotNull('phone_number')
-                            ->whereNotNull('name');
-                    })
-                    ->whereHas('meetings', function ($query) {
-                        $query->havingRaw('COUNT(*) > 0');
-                    })
-                    ->with('users') // Eager loading users
-                    ->orderBy('created_at', $sortOrder);
-                $grid->disableCreateButton();
-            }
-        } else {
-            // For admins, display all records ordered by created_at
-            $grid->model()
-                ->whereNotIn('status', ['deleted', 'inactive'])
-                ->whereHas('users', function ($query) {
-                    $query->whereIn('position_id', function ($subQuery) {
-                        $subQuery->select('id')
-                            ->from('positions')
-                            ->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
-                    })
-                        ->whereNotNull('phone_number')
-                        ->whereNotNull('name');
-                })
-                ->whereHas('meetings', function ($query) {
-                    $query->havingRaw('COUNT(*) > 0');
-                })
-                ->with('users') // Eager loading users
-                ->orderBy('created_at', $sortOrder);
-        }
+            // Loan Statistics
+            'loanStats' => [
+                'total' => $this->calculateTotalLoans($sacco),
+                'principal' => $this->calculateTotalPrincipal($sacco),
+                'interest' => $this->calculateTotalInterest($sacco),
+                'repayments' => $this->calculateTotalRepayments($sacco),
 
-        $grid->showExportBtn();
-        $grid->disableBatchActions();
-        $grid->quickSearch('name')->placeholder('Search by name');
+                // Gender-based statistics
+                'male' => [
+                    'count' => $this->calculateMaleLoans($sacco),
+                    'amount' => $this->calculateMaleLoanAmount($sacco)
+                ],
+                'female' => [
+                    'count' => $this->calculateFemaleLoans($sacco),
+                    'amount' => $this->calculateFemaleLoanAmount($sacco)
+                ],
+                'youth' => [
+                    'count' => $this->calculateYouthLoans($sacco),
+                    'amount' => $this->calculateYouthLoanAmount($sacco)
+                ]
+            ],
 
-        $grid->column('id', __('id'))->sortable()->display(function ($name) {
-            return ucwords(strtolower($name));
-        });
+            // Savings Statistics
+            'savingsStats' => [
+                'totalAccounts' => $this->calculateTotalSavingsAccounts($sacco),
+                'totalBalance' => $this->calculateTotalSavingsBalance($sacco),
+                'averageSavings' => $this->calculateAverageSavings($sacco),
 
-        $grid->column('created_at', __('created_at'))->sortable()->display(function ($date) {
-            return date('d M Y', strtotime($date));
-        });
+                // Gender-based statistics
+                'male' => [
+                    'accounts' => $this->calculateMaleSavingsAccounts($sacco),
+                    'balance' => $this->calculateMaleSavingsBalance($sacco)
+                ],
+                'female' => [
+                    'accounts' => $this->calculateFemaleSavingsAccounts($sacco),
+                    'balance' => $this->calculateFemaleSavingsBalance($sacco)
+                ],
+                'youth' => [
+                    'accounts' => $this->calculateYouthSavingsAccounts($sacco),
+                    'balance' => $this->calculateYouthSavingsBalance($sacco)
+                ]
+            ],
 
-        $grid->column('name', __('name'))->sortable()->display(function ($name) {
-            return ucwords(strtolower($name));
-        });
+            // Credit Score
+            'creditScore' => $this->calculateCreditScore($sacco)
+        ];
+    }
 
-        $grid->column('total_group_members', __('number_of_members'))->display(function () {
-            return User::where('sacco_id', $this->id)
-                ->where(function ($query) {
-                    $query->whereNull('user_type')
-                        ->orWhere('user_type', '<>', 'Admin');
-                })
-                ->count();
-        });
+    // Calculation Methods
 
-        // Column for the number of male members
-    $grid->column('num_men', __('number_of_men'))->display(function () {
-        return User::where('sacco_id', $this->id)
+    private function calculateTotalMembers($sacco)
+    {
+        return $sacco->users()
+            ->where(function ($query) {
+                $query->whereNull('user_type')
+                    ->orWhere('user_type', '<>', 'Admin');
+            })->count();
+    }
+
+    private function calculateMaleMembers($sacco)
+    {
+        return $sacco->users()
             ->where('sex', 'Male')
             ->where(function ($query) {
                 $query->whereNull('user_type')
                     ->orWhere('user_type', '<>', 'Admin');
-            })
-            ->count();
-    });
+            })->count();
+    }
 
-    // Column for the number of female members
-    $grid->column('num_women', __('number_of_women'))->display(function () {
-        return User::where('sacco_id', $this->id)
+    private function calculateFemaleMembers($sacco)
+    {
+        return $sacco->users()
             ->where('sex', 'Female')
             ->where(function ($query) {
                 $query->whereNull('user_type')
                     ->orWhere('user_type', '<>', 'Admin');
-            })
-            ->count();
-    });
+            })->count();
+    }
 
-    // Column for the number of youth members
-    $grid->column('num_youth', __('number_of_youths'))->display(function () {
-        return User::where('sacco_id', $this->id)
+    private function calculateYouthMembers($sacco)
+    {
+        return $sacco->users()
             ->whereRaw('TIMESTAMPDIFF(YEAR, dob, CURDATE()) < 35')
             ->where(function ($query) {
                 $query->whereNull('user_type')
                     ->orWhere('user_type', '<>', 'Admin');
-            })
-            ->count();
-    });
+            })->count();
+    }
 
-        $grid->column('total_meetings', __('total_meetings'))->display(function () {
-            return Meeting::where('sacco_id', $this->id)->count();
-        });
+    private function calculateTotalMeetings($sacco)
+    {
+        return $sacco->meetings()->count();
+    }
 
-        $grid->column('total_member_names', __('average_meeting_attendance'))->display(function () {
-            $meetings = $this->meetings; // Fetch all meetings for the sacco
-            $allMemberNames = [];
+    private function calculateAverageAttendance($sacco)
+    {
+        $meetings = $sacco->meetings;
+        $totalAttendance = 0;
+        $totalMeetings = $meetings->count();
 
-            foreach ($meetings as $meeting) {
-                $membersJson = $meeting->members;
-                // dd($membersJson);
-                $attendanceData = json_decode($membersJson, true); // Decode JSON string as an associative array
-
-                if (json_last_error() === JSON_ERROR_NONE) {
-                    // Check if 'presentMembersIds' exists and is an array
-                    if (isset($attendanceData['presentMembersIds']) && is_array($attendanceData['presentMembersIds'])) {
-                        // Iterate over present members and collect their names
-                        foreach ($attendanceData['presentMembersIds'] as $member) {
-                            if (isset($member['name'])) {
-                                $allMemberNames[] = $member['name']; // Collect names
-                            }
-                        }
-                    }
-                }
+        foreach ($meetings as $meeting) {
+            $membersData = json_decode($meeting->members, true);
+            if (isset($membersData['present'])) {
+                $totalAttendance += $membersData['present'];
             }
+        }
 
-            $meetingCount = count($meetings);
-            $totalPresent = count(array_unique($allMemberNames));
-
-
-            // Calculate the average attendance
-$averageAttendance = $meetingCount > 0 ? $totalPresent / $meetingCount : 0;
-
-$averageAttendanceRounded = round($averageAttendance);
-
-// Use dd() to output both the meeting count and the average attendance
-// dd(['meeting_count' => $meetingCount, 'member_count' => count(array_unique($allMemberNames)), 'average_attendance' => $averageAttendance]);
-
-            // dd(['meeting_count' => $meetingCount, 'member_count' => count(array_unique($allMemberNames))]);
-
-            // dd(count(array_unique($allMemberNames)));
-            // Return the count of unique member names
-            return $averageAttendanceRounded; // Return the count of unique names
-        });
-
-        $grid->column('total_loans', __('number_of_loans'))->display(function () {
-            return $this->transactions()
-                ->where('type', 'LOAN')
-                ->whereHas('user', function ($query) {
-                    $query->where('user_type', 'admin');
-                })
-                ->count();
-        });
-
-        $grid->column('total_loan_amount', __('total_principal'))->display(function () {
-            // Calculate the total principal for loans
-            $totalPrincipal = $this->transactions()
-                ->where('type', 'LOAN')
-                ->whereHas('user', function ($query) {
-                    $query->where('user_type', 'admin');
-                })
-                ->sum('amount');
-
-            // Format the total principal as a positive number with commas
-            return number_format(abs($totalPrincipal), 2, '.', ',');
-        });
-
-        // Add dynamic data columns for loans to specific demographics
-        $grid->column('loans_to_males', __('number_of_loans_to_men'))->display(function () {
-            return $this->transactions()
-                ->join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->where('transactions.type', 'LOAN')
-                ->where('users.sex', 'Male')
-                ->count();
-        });
-
-        // Add dynamic data columns for loans to specific demographics
-        $grid->column('loans_amount_to_males', __('total_loans_disbursed_to_men'))->display(function () {
-            // Calculate the total loan amount to males
-            $totalPrincipal = $this->transactions()
-                ->join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->where('transactions.type', 'LOAN')
-                ->where('users.sex', 'Male')
-                ->sum('transactions.amount');
-
-            // Format the total principal as a positive number with commas
-            return number_format(abs($totalPrincipal), 2, '.', ',');
-        });
-
-        $grid->column('loans_to_females', __('number_of_loans_to_female'))->display(function () {
-            return $this->transactions()
-                ->join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->where('transactions.type', 'LOAN')
-                ->where('users.sex', 'Female')
-                ->count();
-        });
-
-        // Add dynamic data columns for loans to specific demographics
-        $grid->column('loans_amount_to_females', __('total_loans_disbursed_to_females'))->display(function () {
-            // Calculate the total loan amount to females
-            $totalPrincipal = $this->transactions()
-                ->join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->where('transactions.type', 'LOAN')
-                ->where('users.sex', 'Female')
-                ->sum('transactions.amount');
-
-            // Format the total principal as a positive number with commas
-            return number_format(abs($totalPrincipal), 2, '.', ',');
-        });
-
-        $grid->column('loans_to_youth', __('number_of_loans_to_youth'))->display(function () {
-            return $this->transactions()
-                ->join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->where('transactions.type', 'LOAN')
-                ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
-                ->count();
-        });
-
-        $grid->column('loans_amount_to_youth', __('total_loans_disbursed_to_youth'))->display(function () {
-            // Calculate the total loan amount to youth
-            $totalPrincipal = $this->transactions()
-                ->join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->where('transactions.type', 'LOAN')
-                ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
-                ->sum('transactions.amount');
-
-            // Format the total principal as a positive number with commas
-            return number_format(abs($totalPrincipal), 2, '.', ',');
-        });
-
-        $grid->column('total_principal', __('total_principal'))->display(function () {
-            $totalPrincipal = $this->transactions()
-                ->where('type', 'LOAN')
-                ->whereHas('user', function ($query) {
-                    $query->where('user_type', 'admin');
-                })
-                ->sum('amount');
-
-            return number_format(abs($totalPrincipal), 2, '.', ',');
-        });
-
-        $grid->column('total_loan_repayments', __("total_lamount_loans Paid"))->display(function () {
-            $totalPrincipal = $this->transactions()
-                ->where('type', 'LOAN_REPAYMENT')
-                ->whereHas('user', function ($query) {
-                    $query->where('user_type', 'admin');
-                })
-                ->sum('amount');
-
-            return number_format(abs($totalPrincipal), 2, '.', ',');
-        });
-
-        $grid->column('total_interest', __('total_interest'))->display(function () {
-            $totalInterest = $this->transactions()
-                ->where('type', 'LOAN_INTEREST')
-                ->sum('amount');
-
-            return number_format(abs($totalInterest), 2, '.', ',');
-        });
-
-        $grid->column('total_savings_made', __('total_savings_accounts'))->display(function () {
-            $maleTotalCount = $this->transactions()
-                ->join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->where('transactions.type', 'SHARE')
-                ->where('users.sex', 'Male')
-                ->where(function ($query) {
-                    $query->whereNull('users.user_type')
-                        ->orWhere('users.user_type', '<>', 'Admin');
-                })
-                ->count(); // Ensure count() is called here
-
-            $femaleTotalCount = $this->transactions()
-                ->join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->where('transactions.type', 'SHARE')
-                ->where('users.sex', 'Female')
-                ->where(function ($query) {
-                    $query->whereNull('users.user_type')
-                        ->orWhere('users.user_type', '<>', 'Admin');
-                })
-                ->count(); // Ensure count() is called here
-
-            $totalCount = $maleTotalCount + $femaleTotalCount; // This should now be a valid integer addition
-            return number_format(abs($totalCount), 2, '.', ',');
-        });
-
-        // Add column for total savings balance
-        $grid->column('total_savings_balance', __('total_savings_balance'))->display(function () {
-            $maleTotalBalance = $this->transactions()
-                ->join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->where('transactions.type', 'SHARE')
-                ->where('users.sex', 'Male')
-                ->where(function ($query) {
-                    $query->whereNull('users.user_type')
-                        ->orWhere('users.user_type', '<>', 'Admin');
-                })
-                ->sum('transactions.amount');
-
-            $femaleTotalBalance = $this->transactions()
-                ->join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->where('transactions.type', 'SHARE')
-                ->where('users.sex', 'Female')
-                ->where(function ($query) {
-                    $query->whereNull('users.user_type')
-                        ->orWhere('users.user_type', '<>', 'Admin');
-                })
-                ->sum('transactions.amount');
-
-            $totalBalance = $maleTotalBalance + $femaleTotalBalance;
-            return number_format(abs($totalBalance), 2, '.', ',');
-        });
-
-        // Add dynamic data columns for loans to specific demographics
-        $grid->column('Savings_to_males', __('total_savings_accounts_for_men'))->display(function () {
-            return $this->transactions()
-                ->join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->where('transactions.type', 'SHARE')
-                ->where('users.sex', 'Male')
-                ->count();
-        });
-
-        // Add dynamic data columns for loans to specific demographics
-        $grid->column('Savings_amount_to_males', __('total_savings_balance_for_men'))->display(function () {
-            return $this->transactions()
-                ->join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->where('transactions.type', 'SHARE')
-                ->where('users.sex', 'Male')
-                ->sum('amount');
-
-            return number_format(abs($totalPrincipal), 2, '.', ',');
-        });
-
-        $grid->column('Savings_to_females', __('total_savings_accounts_for_women'))->display(function () {
-            return $this->transactions()
-                ->join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->where('transactions.type', 'SHARE')
-                ->where('users.sex', 'Female')
-                ->count();
-        });
-
-        // Add dynamic data columns for loans to specific demographics
-        $grid->column('Savings_to_amount_females', __('total_savings_balance_for_females'))->display(function () {
-            return $this->transactions()
-                ->join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->where('transactions.type', 'SHARE')
-                ->where('users.sex', 'Female')
-                ->sum('amount');
-
-            return number_format(abs($totalPrincipal), 2, '.', ',');
-        });
-
-        $grid->column('Savings_to_youth', __('total_savings_accounts_for_youth'))->display(function () {
-            return $this->transactions()
-                ->join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->where('transactions.type', 'SHARE')
-                ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
-                ->count();
-        });
-
-        $grid->column('Savings_amount_to_youth', __('total_savings_balance_for_youth'))->display(function () {
-            return $this->transactions()
-                ->join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->where('transactions.type', 'SHARE')
-                ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
-                ->sum('amount');
-
-            return number_format(abs($totalPrincipal), 2, '.', ',');
-        });
-
-        $grid->column('average_savings_per_member', __('average_savings'))->display(function () {
-            // Calculate total savings
-            $totalSavings = $this->transactions()
-                ->join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->where('transactions.type', 'SHARE')
-                ->where(function ($query) {
-                    $query->whereNull('users.user_type')
-                        ->orWhere('users.user_type', '<>', 'Admin');
-                })
-                ->sum('transactions.amount');
-
-            // Calculate the number of distinct members with savings
-            $distinctMembers = $this->transactions()
-                ->join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->where('transactions.type', 'SHARE')
-                ->where(function ($query) {
-                    $query->whereNull('users.user_type')
-                        ->orWhere('users.user_type', '<>', 'Admin');
-                })
-                ->distinct('users.id')
-                ->count('users.id');
-
-            $averageSavings = $distinctMembers > 0 ? $totalSavings / $distinctMembers : 0;
-            return number_format(abs($averageSavings), 2, '.', ',');
-        });
-
-        return $grid;
+        return $totalMeetings > 0 ? round($totalAttendance / $totalMeetings) : 0;
     }
 
-
-    public function transactions()
+    // Loan Calculations
+    private function calculateTotalLoans($sacco)
     {
-        return $this->hasMany(Transaction::class);
+        return $sacco->transactions()
+            ->where('type', 'LOAN')
+            ->whereHas('user', function ($query) {
+                $query->where('user_type', 'admin');
+            })->count();
     }
 
-
-
-    protected function detail($id)
+    private function calculateTotalPrincipal($sacco)
     {
-        $show = new Show(Sacco::findOrFail($id));
-
-        $show->field('name', __('Group Name'));
-
-        // Hardcoded values
-        $show->field('number_of_loans', __('Number of Loans'))->as(function () {
-            return 3;
-        });
-        $show->field('total_principal', __('Total Principal'))->as(function () {
-            return 15000.0;
-        });
-        $show->field('total_interest', __('Total Interest'))->as(function () {
-            return 1500.0;
-        });
-        $show->field('total_principal_paid', __('Total Principal Paid'))->as(function () {
-            return 12000.0;
-        });
-        $show->field('total_interest_paid', __('Total Interest Paid'))->as(function () {
-            return 1200.0;
-        });
-        $show->field('number_of_savings_accounts', __('Number of Savings Accounts'))->as(function () {
-            return 2;
-        });
-        $show->field('total_savings_balance', __('Total Savings Balance'))->as(function () {
-            return 5000.0;
-        });
-        $show->field('total_principal_outstanding', __('Total Principal Outstanding'))->as(function () {
-            return 3000.0;
-        });
-        $show->field('total_interest_outstanding', __('Total Interest Outstanding'))->as(function () {
-            return 300.0;
-        });
-        $show->field('number_of_loans_to_men', __('Number of Loans to Men'))->as(function () {
-            return 2;
-        });
-        $show->field('total_disbursed_to_men', __('Total Disbursed to Men'))->as(function () {
-            return 10000.0;
-        });
-        $show->field('total_savings_accounts_for_men', __('Total Savings Accounts for Men'))->as(function () {
-            return 1;
-        });
-        $show->field('number_of_loans_to_women', __('Number of Loans to Women'))->as(function () {
-            return 1;
-        });
-        $show->field('total_disbursed_to_women', __('Total Disbursed to Women'))->as(function () {
-            return 5000.0;
-        });
-        $show->field('total_savings_accounts_for_women', __('Total Savings Accounts for Women'))->as(function () {
-            return 1;
-        });
-        $show->field('total_savings_balance_for_women', __('Total Savings Balance for Women'))->as(function () {
-            return 2500.0;
-        });
-        $show->field('number_of_loans_to_youth', __('Number of Loans to Youth'))->as(function () {
-            return 1;
-        });
-        $show->field('total_disbursed_to_youth', __('Total Disbursed to Youth'))->as(function () {
-            return 5000.0;
-        });
-        $show->field('total_savings_balance_for_youth', __('Total Savings Balance for Youth'))->as(function () {
-            return 1000.0;
-        });
-
-        // Columns for credit score and description
-        $show->field('credit_score', __('Credit Score'))->as(function () {
-            return '<i class="fa fa-spinner fa-spin"></i>';
-        })->unescape();
-
-        $show->field('credit_description', __('Credit Score Description'))->as(function () {
-            return '<i class="fa fa-spinner fa-spin"></i>';
-        })->unescape();
-
-        return $show;
+        return abs($sacco->transactions()
+            ->where('type', 'LOAN')
+            ->whereHas('user', function ($query) {
+                $query->where('user_type', 'admin');
+            })->sum('amount'));
     }
 
-    public function fetchCreditScores()
+    private function calculateTotalInterest($sacco)
     {
-        $creditScoreData = [
-            "number_of_loans" => 3,
-            "total_principal" => 15000.0,
-            "total_interest" => 1500.0,
-            "total_principal_paid" => 12000.0,
-            "total_interest_paid" => 1200.0,
-            "number_of_savings_accounts" => 2,
-            "total_savings_balance" => 5000.0,
-            "total_principal_outstanding" => 3000.0,
-            "total_interest_outstanding" => 300.0,
-            "number_of_loans_to_men" => 2,
-            "total_disbursed_to_men" => 10000.0,
-            "total_savings_accounts_for_men" => 1,
-            "number_of_loans_to_women" => 1,
-            "total_disbursed_to_women" => 5000.0,
-            "total_savings_accounts_for_women" => 1,
-            "total_savings_balance_for_women" => 2500.0,
-            "number_of_loans_to_youth" => 1,
-            "total_disbursed_to_youth" => 5000.0,
-            "total_savings_balance_for_youth" => 1000.0,
-            "savings_per_member" => 2000.0,
-            "youth_support_rate" => 0.2,
-            "savings_credit_mobilization" => 0.5,
-            "fund_savings_credit_status" => 1,
-            "cluster_principal_interest" => 3,
-            "cluster_loans_principal" => 1
+        return abs($sacco->transactions()
+            ->where('type', 'LOAN_INTEREST')
+            ->sum('amount'));
+    }
+
+    private function calculateTotalRepayments($sacco)
+    {
+        return abs($sacco->transactions()
+            ->where('type', 'LOAN_REPAYMENT')
+            ->whereHas('user', function ($query) {
+                $query->where('user_type', 'admin');
+            })->sum('amount'));
+    }
+
+    private function calculateMaleLoans($sacco)
+    {
+        return $sacco->transactions()
+            ->join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'LOAN')
+            ->where('users.sex', 'Male')
+            ->count();
+    }
+
+    private function calculateMaleLoanAmount($sacco)
+    {
+        return abs($sacco->transactions()
+            ->join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'LOAN')
+            ->where('users.sex', 'Male')
+            ->sum('transactions.amount'));
+    }
+
+    private function calculateFemaleLoans($sacco)
+    {
+        return $sacco->transactions()
+            ->join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'LOAN')
+            ->where('users.sex', 'Female')
+            ->count();
+    }
+
+    private function calculateFemaleLoanAmount($sacco)
+    {
+        return abs($sacco->transactions()
+            ->join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'LOAN')
+            ->where('users.sex', 'Female')
+            ->sum('transactions.amount'));
+    }
+
+    private function calculateYouthLoans($sacco)
+    {
+        return $sacco->transactions()
+            ->join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'LOAN')
+            ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
+            ->count();
+    }
+
+    private function calculateYouthLoanAmount($sacco)
+    {
+        return abs($sacco->transactions()
+            ->join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'LOAN')
+            ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
+            ->sum('transactions.amount'));
+    }
+
+    // Savings Calculations
+    private function calculateTotalSavingsAccounts($sacco)
+    {
+        return $sacco->transactions()
+            ->where('type', 'SHARE')
+            ->distinct('source_user_id')
+            ->count();
+    }
+
+    private function calculateTotalSavingsBalance($sacco)
+    {
+        return abs($sacco->transactions()
+            ->where('type', 'SHARE')
+            ->sum('amount'));
+    }
+
+    private function calculateAverageSavings($sacco)
+    {
+        $totalSavings = $this->calculateTotalSavingsBalance($sacco);
+        $totalAccounts = $this->calculateTotalSavingsAccounts($sacco);
+
+        return $totalAccounts > 0 ? $totalSavings / $totalAccounts : 0;
+    }
+
+    private function calculateMaleSavingsAccounts($sacco)
+    {
+        return $sacco->transactions()
+            ->join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'SHARE')
+            ->where('users.sex', 'Male')
+            ->distinct('source_user_id')
+            ->count();
+    }
+
+    private function calculateMaleSavingsBalance($sacco)
+    {
+        return abs($sacco->transactions()
+            ->join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'SHARE')
+            ->where('users.sex', 'Male')
+            ->sum('transactions.amount'));
+    }
+
+    private function calculateFemaleSavingsAccounts($sacco)
+    {
+        return $sacco->transactions()
+            ->join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'SHARE')
+            ->where('users.sex', 'Female')
+            ->distinct('source_user_id')
+            ->count();
+    }
+
+    private function calculateFemaleSavingsBalance($sacco)
+    {
+        return abs($sacco->transactions()
+            ->join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'SHARE')
+            ->where('users.sex', 'Female')
+            ->sum('transactions.amount'));
+    }
+
+    private function calculateYouthSavingsAccounts($sacco)
+    {
+        return $sacco->transactions()
+            ->join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'SHARE')
+            ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
+            ->distinct('source_user_id')
+            ->count();
+    }
+
+    private function calculateYouthSavingsBalance($sacco)
+    {
+        return abs($sacco->transactions()
+            ->join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->where('transactions.type', 'SHARE')
+            ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
+            ->sum('transactions.amount'));
+    }
+
+//     private function calculateCreditScore($sacco)
+// {
+//     // Calculate a score based on savings and loan metrics
+//     $score = 0;
+
+//     // Get total savings and loan metrics
+//     $totalSavings = abs($this->calculateTotalSavingsBalance($sacco));
+//     $totalLoans = abs($this->calculateTotalLoans($sacco));
+//     $loanRepayments = abs($this->calculateTotalRepayments($sacco));
+//     $numberOfMembers = $this->calculateTotalMembers($sacco);
+
+//     // Basic scoring logic
+//     if ($totalSavings > 0) {
+//         // Add points for savings per member
+//         $savingsPerMember = $totalSavings / ($numberOfMembers ?: 1);
+//         if ($savingsPerMember > 100000) $score += 30;
+//         else if ($savingsPerMember > 50000) $score += 20;
+//         else $score += 10;
+
+//         // Add points for loan repayment rate
+//         if ($totalLoans > 0) {
+//             $repaymentRate = ($loanRepayments / $totalLoans) * 100;
+//             if ($repaymentRate > 90) $score += 40;
+//             else if ($repaymentRate > 70) $score += 30;
+//             else if ($repaymentRate > 50) $score += 20;
+//             else $score += 10;
+//         }
+
+//         // Add points for member participation
+//         if ($numberOfMembers > 20) $score += 30;
+//         else if ($numberOfMembers > 10) $score += 20;
+//         else $score += 10;
+//     }
+
+//     // Ensure score is between 0 and 100
+//     $score = min(100, max(0, $score));
+
+//     // Generate description based on score
+//     $description = $this->getCreditScoreDescription($score);
+
+//     return [
+//         'score' => $score,
+//         'description' => $description
+//     ];
+// }
+
+private function getCreditScoreDescription($score)
+{
+    if ($score >= 80) {
+        return "Excellent credit standing. The group demonstrates strong savings culture and reliable loan repayment history.";
+    } else if ($score >= 60) {
+        return "Good credit standing. The group shows consistent savings and satisfactory loan management.";
+    } else if ($score >= 40) {
+        return "Fair credit standing. There's room for improvement in savings and loan repayment patterns.";
+    } else {
+        return "Needs improvement. The group should focus on increasing savings and improving loan repayment rates.";
+    }
+}
+
+    private function calculateCreditScore($sacco)
+    {
+        $data = [
+            "number_of_loans" => $this->calculateTotalLoans($sacco),
+            "total_principal" => $this->calculateTotalPrincipal($sacco),
+            "total_interest" => $this->calculateTotalInterest($sacco),
+            "total_principal_paid" => $this->calculateTotalRepayments($sacco),
+            "number_of_savings_accounts" => $this->calculateTotalSavingsAccounts($sacco),
+            "total_savings_balance" => $this->calculateTotalSavingsBalance($sacco),
+            "number_of_loans_to_men" => $this->calculateMaleLoans($sacco),
+            "total_disbursed_to_men" => $this->calculateMaleLoanAmount($sacco),
+            "number_of_loans_to_women" => $this->calculateFemaleLoans($sacco),
+            "total_disbursed_to_women" => $this->calculateFemaleLoanAmount($sacco),
+            "number_of_loans_to_youth" => $this->calculateYouthLoans($sacco),
+            "total_disbursed_to_youth" => $this->calculateYouthLoanAmount($sacco),
+            "savings_per_member" => $this->calculateAverageSavings($sacco)
         ];
 
-        $response = Http::post('http://51.8.253.127:8080/predict', $creditScoreData);
-        return response()->json($response->json());
+        try {
+            $response = Http::post('https://vslacreditv2-brdqanfsfnd6fbfc.canadacentral-01.azurewebsites.net/predict', $data);
+            $result = $response->json();
+
+            return [
+                'score' => $result['credit_score'] ?? null,
+                'description' => $result['description'] ?? null
+            ];
+        } catch (\Exception $e) {
+            return [
+                'score' => null,
+                'description' => 'Unable to calculate credit score at this time.'
+            ];
+        }
     }
 }
