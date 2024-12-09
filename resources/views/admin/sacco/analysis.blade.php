@@ -328,7 +328,7 @@
     <div class="dashboard-header">
         <div class="container">
             <div class="d-flex justify-content-between align-items-center">
-                <h1>SACCO Groups</h1>
+                <h1>VSLA Credit Score</h1>
                 <div class="search-container">
                     <input type="text" class="search-input" placeholder="Search groups..." id="searchInput">
                 </div>
