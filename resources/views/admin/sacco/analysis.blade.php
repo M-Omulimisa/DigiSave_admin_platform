@@ -1,9 +1,11 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SACCO Groups Dashboard</title>
+    <title>VSLA Credit Score Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
             --primary: #2c3e50;
@@ -37,6 +39,74 @@
             padding: 0 1rem;
         }
 
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .search-container {
+            background: white;
+            padding: 0.5rem;
+            border-radius: 8px;
+            max-width: 250px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        /* Filters Styles */
+        .filters-bar {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .filters-row {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-item {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .filter-label {
+            display: block;
+            margin-bottom: 0.3rem;
+            color: var(--secondary);
+            font-size: 0.9rem;
+        }
+
+        .filter-select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            background-color: white;
+        }
+
+        .actions-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
+        }
+
+        /* Grid Layout */
         .row {
             display: flex;
             flex-wrap: wrap;
@@ -55,22 +125,7 @@
             padding: 0.5rem;
         }
 
-        .search-container {
-            background: white;
-            padding: 0.5rem;
-            border-radius: 8px;
-            max-width: 250px;
-            margin-left: auto;
-        }
-
-        .search-input {
-            width: 100%;
-            padding: 0.5rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-
+        /* SACCO Card Styles */
         .sacco-card {
             background: white;
             border-radius: 8px;
@@ -142,35 +197,6 @@
             font-size: 0.8rem;
         }
 
-        .demographics {
-            display: flex;
-            justify-content: space-between;
-            padding-top: 0.5rem;
-            border-top: 1px solid #eee;
-        }
-
-        .demographic-item {
-            text-align: center;
-            flex: 1;
-        }
-
-        .demographic-item h5 {
-            margin: 0;
-            font-size: 0.9rem;
-            color: var(--primary);
-        }
-
-        .demographic-item small {
-            color: #666;
-            font-size: 0.8rem;
-        }
-
-        .button-container {
-            display: flex;
-            gap: 0.5rem;
-            margin-top: 1rem;
-        }
-
         .btn {
             padding: 0.5rem 1rem;
             border: none;
@@ -194,7 +220,31 @@
             transform: translateY(-1px);
         }
 
-        /* Custom Modal Styles */
+        /* Demographics */
+        .demographics {
+            display: flex;
+            justify-content: space-between;
+            padding-top: 0.5rem;
+            border-top: 1px solid #eee;
+        }
+
+        .demographic-item {
+            text-align: center;
+            flex: 1;
+        }
+
+        .demographic-item h5 {
+            margin: 0;
+            font-size: 0.9rem;
+            color: var(--primary);
+        }
+
+        .demographic-item small {
+            color: #666;
+            font-size: 0.8rem;
+        }
+
+        /* Modal Styles */
         .custom-modal {
             display: none;
             position: fixed;
@@ -275,6 +325,7 @@
             border-radius: 8px;
             padding: 1rem;
             height: 100%;
+            margin-bottom: 1rem;
         }
 
         .metric-title {
@@ -309,17 +360,31 @@
                 max-width: 100%;
             }
 
-            .stats-grid {
-                grid-template-columns: 1fr;
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
             }
 
-            .demographics {
+            .search-container {
+                width: 100%;
+                max-width: none;
+            }
+
+            .filters-row {
+                flex-direction: column;
+            }
+
+            .filter-item {
+                width: 100%;
+            }
+
+            .actions-row {
                 flex-direction: column;
                 gap: 0.5rem;
             }
 
-            .modal-content {
-                margin: 10px;
+            .btn {
+                width: 100%;
             }
         }
     </style>
@@ -327,7 +392,7 @@
 <body>
     <div class="dashboard-header">
         <div class="container">
-            <div class="d-flex justify-content-between align-items-center">
+            <div class="header-content">
                 <h1>VSLA Credit Score</h1>
                 <div class="search-container">
                     <input type="text" class="search-input" placeholder="Search groups..." id="searchInput">
@@ -337,10 +402,61 @@
     </div>
 
     <div class="container">
+        <!-- Filters Bar -->
+        <div class="filters-bar">
+            <div class="filters-row">
+                <div class="filter-item">
+                    <label class="filter-label">Meeting Attendance</label>
+                    <select class="filter-select" id="attendanceFilter">
+                        <option value="">All</option>
+                        <option value="80">Above 80%</option>
+                        <option value="60">Above 60%</option>
+                        <option value="40">Above 40%</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label class="filter-label">Total Savings</label>
+                    <select class="filter-select" id="savingsFilter">
+                        <option value="">All</option>
+                        <option value="1000000">Above 1M</option>
+                        <option value="500000">Above 500K</option>
+                        <option value="100000">Above 100K</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label class="filter-label">Active Loans</label>
+                    <select class="filter-select" id="loansFilter">
+                        <option value="">All</option>
+                        <option value="10">10+ Loans</option>
+                        <option value="5">5+ Loans</option>
+                        <option value="3">3+ Loans</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label class="filter-label">Members</label>
+                    <select class="filter-select" id="membersFilter">
+                        <option value="">All</option>
+                        <option value="30">30+ Members</option>
+                        <option value="20">20+ Members</option>
+                        <option value="10">10+ Members</option>
+                    </select>
+                </div>
+            </div>
+            <div class="actions-row">
+                <button class="btn btn-secondary" onclick="resetFilters()">
+                    <i class="fas fa-refresh"></i> Reset Filters
+                </button>
+                <button class="btn btn-success" onclick="exportAllData()">
+                    <i class="fas fa-download"></i> Export All Data
+                </button>
+            </div>
+        </div>
+
+        <!-- SACCO Cards Grid -->
         <div class="row">
             @foreach($saccos as $sacco)
             <div class="col-md-6 col-lg-4 sacco-item">
-                <div class="sacco-card">
+                <div class="sacco-card" data-sacco="{{ json_encode($sacco) }}">
                     <div class="sacco-header">
                         <h3>{{ $sacco['name'] }}</h3>
                         <span class="credit-badge {{ $sacco['creditScore']['score'] >= 80 ? 'credit-high' : ($sacco['creditScore']['score'] >= 60 ? 'credit-medium' : 'credit-low') }}">
@@ -383,11 +499,11 @@
                         </div>
 
                         <div class="button-container">
-                            <button class="btn btn-primary" onclick="viewDetails({{ json_encode($sacco) }})">
-                                <i class="fa fa-eye"></i> View Details
+                            <button class="btn btn-primary" onclick="viewDetails(this)">
+                                <i class="fas fa-eye"></i> View Details
                             </button>
-                            <button class="btn btn-success" onclick="exportData({{ json_encode($sacco) }})">
-                                <i class="fa fa-download"></i> Export
+                            <button class="btn btn-success" onclick="exportData(this)">
+                                <i class="fas fa-download"></i> Export
                             </button>
                         </div>
                     </div>
@@ -397,7 +513,7 @@
         </div>
     </div>
 
-    <!-- Custom Modal -->
+    <!-- Modal -->
     <div id="saccoDetails" class="custom-modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -438,18 +554,68 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeModal()">Close</button>
                 <button type="button" class="btn btn-success" onclick="exportCurrentSaccoData()">
-                    <i class="fa fa-download"></i> Export Data
+                    <i class="fas fa-download"></i> Export Data
                 </button>
             </div>
         </div>
     </div>
 
     <script>
+        let allSaccoData = [];
         let currentSaccoData = null;
 
-        function viewDetails(sacco) {
+        // Initialize data on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Collect all SACCO data from the DOM
+            document.querySelectorAll('.sacco-card').forEach(card => {
+                const saccoData = JSON.parse(card.dataset.sacco);
+                allSaccoData.push({
+                    element: card.closest('.sacco-item'),
+                    data: saccoData,
+                    attendance: saccoData.averageAttendance,
+                    savings: saccoData.savingsStats.totalBalance,
+                    loans: saccoData.loanStats.total,
+                    members: saccoData.totalMembers
+                });
+            });
+        });
+
+        function applyFilters() {
+            const attendance = document.getElementById('attendanceFilter').value;
+            const savings = document.getElementById('savingsFilter').value;
+            const loans = document.getElementById('loansFilter').value;
+            const members = document.getElementById('membersFilter').value;
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+
+            allSaccoData.forEach(sacco => {
+                let show = true;
+
+                if (attendance && sacco.attendance < parseFloat(attendance)) show = false;
+                if (savings && sacco.savings < parseFloat(savings)) show = false;
+                if (loans && sacco.loans < parseInt(loans)) show = false;
+                if (members && sacco.members < parseInt(members)) show = false;
+                if (searchTerm && !sacco.data.name.toLowerCase().includes(searchTerm)) show = false;
+
+                sacco.element.style.display = show ? 'block' : 'none';
+            });
+        }
+
+        function resetFilters() {
+            document.getElementById('attendanceFilter').value = '';
+            document.getElementById('savingsFilter').value = '';
+            document.getElementById('loansFilter').value = '';
+            document.getElementById('membersFilter').value = '';
+            document.getElementById('searchInput').value = '';
+
+            allSaccoData.forEach(sacco => {
+                sacco.element.style.display = 'block';
+            });
+        }
+
+        function viewDetails(button) {
+            const saccoCard = button.closest('.sacco-card');
+            const sacco = JSON.parse(saccoCard.dataset.sacco);
             currentSaccoData = sacco;
-            const modal = document.getElementById('saccoDetails');
 
             document.getElementById('modalTitle').textContent = sacco.name;
             document.getElementById('creditScore').textContent = sacco.creditScore.score;
@@ -475,7 +641,7 @@
                 { label: 'Average per Member', value: 'UGX ' + formatNumber(sacco.savingsStats.totalBalance / sacco.totalMembers) }
             ]);
 
-            modal.style.display = 'block';
+            document.getElementById('saccoDetails').style.display = 'block';
             document.body.style.overflow = 'hidden';
         }
 
@@ -489,12 +655,53 @@
         }
 
         function closeModal() {
-            const modal = document.getElementById('saccoDetails');
-            modal.style.display = 'none';
+            document.getElementById('saccoDetails').style.display = 'none';
             document.body.style.overflow = '';
         }
 
-        function exportData(sacco) {
+        function exportData(button) {
+            const saccoCard = button.closest('.sacco-card');
+            const sacco = JSON.parse(saccoCard.dataset.sacco);
+            generateExport(sacco);
+        }
+
+        function exportCurrentSaccoData() {
+            if (currentSaccoData) {
+                generateExport(currentSaccoData);
+            }
+        }
+
+        function exportAllData() {
+            const visibleSaccos = allSaccoData.filter(sacco =>
+                sacco.element.style.display !== 'none'
+            );
+
+            const combinedData = [
+                ['VSLA Groups Credit Score Report'],
+                ['Generated on:', new Date().toLocaleString()],
+                ['Number of Groups:', visibleSaccos.length],
+                [''],
+                ['Group Name,Credit Score,Total Members,Male,Female,Youth,Total Savings,Active Loans,Attendance Rate']
+            ];
+
+            visibleSaccos.forEach(sacco => {
+                combinedData.push([
+                    sacco.data.name,
+                    sacco.data.creditScore.score,
+                    sacco.data.totalMembers,
+                    sacco.data.maleMembers,
+                    sacco.data.femaleMembers,
+                    sacco.data.youthMembers,
+                    sacco.data.savingsStats.totalBalance,
+                    sacco.data.loanStats.total,
+                    sacco.data.averageAttendance + '%'
+                ].join(','));
+            });
+
+            downloadCSV(combinedData.join('\n'), 'vsla_groups_report.csv');
+        }
+
+        function generateExport(sacco) {
             const csvContent = [
                 ['SACCO Credit Score Report'],
                 ['Generated on:', new Date().toLocaleString()],
@@ -520,37 +727,32 @@
                 ['Performance Metrics'],
                 ['Average Attendance:', `${sacco.averageAttendance}%`],
                 ['Savings per Member:', `UGX ${formatNumber(sacco.savingsStats.totalBalance / sacco.totalMembers)}`],
-                ['Loan to Savings Ratio:', `${((sacco.loanStats.principal / sacco.savingsStats.totalBalance) * 100).toFixed(2)}%`]
             ].map(row => row.join(',')).join('\n');
 
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            downloadCSV(csvContent, `${sacco.name}_credit_report.csv`);
+        }
+
+        function downloadCSV(content, filename) {
+            const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = `${sacco.name}_credit_report.csv`;
+            link.download = filename;
             link.style.display = 'none';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
         }
 
-        function exportCurrentSaccoData() {
-            if (currentSaccoData) {
-                exportData(currentSaccoData);
-            }
-        }
-
         function formatNumber(number) {
             return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         }
 
-        // Search functionality
-        document.getElementById('searchInput').addEventListener('input', function(e) {
-            const searchTerm = e.target.value.toLowerCase();
-            document.querySelectorAll('.sacco-item').forEach(item => {
-                const name = item.querySelector('.sacco-header h3').textContent.toLowerCase();
-                item.style.display = name.includes(searchTerm) ? 'block' : 'none';
-            });
-        });
+        // Event Listeners
+        document.getElementById('searchInput').addEventListener('input', applyFilters);
+        document.getElementById('attendanceFilter').addEventListener('change', applyFilters);
+        document.getElementById('savingsFilter').addEventListener('change', applyFilters);
+        document.getElementById('loansFilter').addEventListener('change', applyFilters);
+        document.getElementById('membersFilter').addEventListener('change', applyFilters);
 
         // Close modal when clicking outside
         window.onclick = function(event) {
@@ -558,7 +760,7 @@
             if (event.target === modal) {
                 closeModal();
             }
-        }
+        };
 
         // Close modal on escape key
         document.addEventListener('keydown', function(event) {
