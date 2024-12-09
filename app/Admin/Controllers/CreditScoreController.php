@@ -365,52 +365,6 @@ class CreditScoreController extends AdminController
             ->sum('transactions.amount'));
     }
 
-//     private function calculateCreditScore($sacco)
-// {
-//     // Calculate a score based on savings and loan metrics
-//     $score = 0;
-
-//     // Get total savings and loan metrics
-//     $totalSavings = abs($this->calculateTotalSavingsBalance($sacco));
-//     $totalLoans = abs($this->calculateTotalLoans($sacco));
-//     $loanRepayments = abs($this->calculateTotalRepayments($sacco));
-//     $numberOfMembers = $this->calculateTotalMembers($sacco);
-
-//     // Basic scoring logic
-//     if ($totalSavings > 0) {
-//         // Add points for savings per member
-//         $savingsPerMember = $totalSavings / ($numberOfMembers ?: 1);
-//         if ($savingsPerMember > 100000) $score += 30;
-//         else if ($savingsPerMember > 50000) $score += 20;
-//         else $score += 10;
-
-//         // Add points for loan repayment rate
-//         if ($totalLoans > 0) {
-//             $repaymentRate = ($loanRepayments / $totalLoans) * 100;
-//             if ($repaymentRate > 90) $score += 40;
-//             else if ($repaymentRate > 70) $score += 30;
-//             else if ($repaymentRate > 50) $score += 20;
-//             else $score += 10;
-//         }
-
-//         // Add points for member participation
-//         if ($numberOfMembers > 20) $score += 30;
-//         else if ($numberOfMembers > 10) $score += 20;
-//         else $score += 10;
-//     }
-
-//     // Ensure score is between 0 and 100
-//     $score = min(100, max(0, $score));
-
-//     // Generate description based on score
-//     $description = $this->getCreditScoreDescription($score);
-
-//     return [
-//         'score' => $score,
-//         'description' => $description
-//     ];
-// }
-
 private function getCreditScoreDescription($score)
 {
     if ($score >= 80) {
