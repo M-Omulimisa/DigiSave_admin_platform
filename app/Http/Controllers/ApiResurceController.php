@@ -1717,292 +1717,257 @@ public function Projects(Request $request)
     }
 
     public function getSaccoDetailsForUser()
-    {
-        // Get the authenticated user
-        $u = auth('api')->user();
-        if ($u == null) {
-            return $this->error('User not found.');
-        }
+{
+    // Get the authenticated user
+    $u = auth('api')->user();
+    if ($u == null) {
+        return $this->error('User not found.');
+    }
 
-        // Find the Sacco associated with the user
-        $sacco = Sacco::find($u->sacco_id);
-        if ($sacco == null) {
-            return $this->error('Sacco not found.');
-        }
+    // Find the Sacco associated with the user
+    $sacco = Sacco::find($u->sacco_id);
+    if ($sacco == null) {
+        return $this->error('Sacco not found.');
+    }
 
-        // Fetch the active cycle associated with the Sacco
-        $activeCycle = Cycle::where('sacco_id', $sacco->id)
-        ->where('status', 'Active')
-        ->first();
+    // Fetch the active cycle associated with the Sacco
+    $activeCycle = Cycle::where('sacco_id', $sacco->id)
+    ->where('status', 'Active')
+    ->first();
 
-        if ($activeCycle == null) {
-            return $this->error('No active cycle found.');
-        }
+    if ($activeCycle == null) {
+        return $this->error('No active cycle found.');
+    }
 
-        $activeCycleId = $activeCycle->id;
+    $activeCycleId = $activeCycle->id;
 
-        // Total Group Members
-        $numberOfMembers = User::where('sacco_id', $sacco->id)
-            ->where(function ($query) {
-                $query->whereNull('user_type')
-                ->orWhere('user_type', '<>', 'Admin');
-            })
-            ->count();
+    // Total Group Members
+    $numberOfMembers = User::where('sacco_id', $sacco->id)
+        ->where(function ($query) {
+            $query->whereNull('user_type')
+            ->orWhere('user_type', '<>', 'Admin');
+        })
+        ->count();
 
-        // Number of Male Members
-        $numberOfMen = User::where('sacco_id', $sacco->id)
-            ->where('sex', 'Male')
-            ->where(function ($query) {
-                $query->whereNull('user_type')
-                ->orWhere('user_type', '<>', 'Admin');
-            })
-            ->count();
+    // Number of Male Members
+    $numberOfMen = User::where('sacco_id', $sacco->id)
+        ->where('sex', 'Male')
+        ->where(function ($query) {
+            $query->whereNull('user_type')
+            ->orWhere('user_type', '<>', 'Admin');
+        })
+        ->count();
 
-        // Number of Female Members
-        $numberOfWomen = User::where('sacco_id', $sacco->id)
-            ->where('sex', 'Female')
-            ->where(function ($query) {
-                $query->whereNull('user_type')
-                ->orWhere('user_type', '<>', 'Admin');
-            })
-            ->count();
+    // Number of Female Members
+    $numberOfWomen = User::where('sacco_id', $sacco->id)
+        ->where('sex', 'Female')
+        ->where(function ($query) {
+            $query->whereNull('user_type')
+            ->orWhere('user_type', '<>', 'Admin');
+        })
+        ->count();
 
-        // Number of Youth Members
-        $numberOfYouth = User::where('sacco_id', $sacco->id)
-            ->whereRaw('TIMESTAMPDIFF(YEAR, dob, CURDATE()) < 35')
-            ->where(function ($query) {
-                $query->whereNull('user_type')
-                ->orWhere('user_type', '<>', 'Admin');
-            })
-            ->count();
+    // Number of Youth Members
+    $numberOfYouth = User::where('sacco_id', $sacco->id)
+        ->whereRaw('TIMESTAMPDIFF(YEAR, dob, CURDATE()) < 35')
+        ->where(function ($query) {
+            $query->whereNull('user_type')
+            ->orWhere('user_type', '<>', 'Admin');
+        })
+        ->count();
 
-        // Total Meetings
-        $totalMeetings = Meeting::where('sacco_id', $sacco->id)->count();
+    // Total Meetings
+    $totalMeetings = Meeting::where('sacco_id', $sacco->id)->count();
 
-        // Total Member Names (Average Meeting Attendance)
-        $meetings = $sacco->meetings;
-        $allMemberNames = [];
-        foreach ($meetings as $meeting) {
-            $membersJson = $meeting->members;
-            $attendanceData = json_decode($membersJson, true);
+    // Total Member Names (Average Meeting Attendance)
+    $meetings = $sacco->meetings;
+    $allMemberNames = [];
+    foreach ($meetings as $meeting) {
+        $membersJson = $meeting->members;
+        $attendanceData = json_decode($membersJson, true);
 
-            if (json_last_error() === JSON_ERROR_NONE) {
-                if (isset($attendanceData['presentMembersIds']) && is_array($attendanceData['presentMembersIds'])) {
-                    foreach ($attendanceData['presentMembersIds'] as $member) {
-                        if (isset($member['name'])) {
-                            $allMemberNames[] = $member['name'];
-                        }
+        if (json_last_error() === JSON_ERROR_NONE) {
+            if (isset($attendanceData['presentMembersIds']) && is_array($attendanceData['presentMembersIds'])) {
+                foreach ($attendanceData['presentMembersIds'] as $member) {
+                    if (isset($member['name'])) {
+                        $allMemberNames[] = $member['name'];
                     }
                 }
             }
         }
+    }
 
-        $meetingCount = count($meetings);
-        $totalPresent = count(array_unique($allMemberNames));
-        $averageAttendance = $meetingCount > 0 ? $totalPresent / $meetingCount : 0;
-        $averageAttendanceRounded = round($averageAttendance);
+    $meetingCount = count($meetings);
+    $totalPresent = count(array_unique($allMemberNames));
+    $averageAttendance = $meetingCount > 0 ? $totalPresent / $meetingCount : 0;
+    $averageAttendanceRounded = round($averageAttendance);
 
-        // Total Loans
-        $numberOfLoans = $sacco->transactions()
-        ->where('cycle_id', $activeCycleId)
-            ->where('type', 'LOAN')
-            ->count();
-
-        // Total Loan Amount (Principal)
-        $totalPrincipal = $sacco->transactions()
-        ->where('cycle_id', $activeCycleId)
-            ->where('type', 'LOAN')
-            ->sum('amount');
-
-        // Total Interest
-        $totalInterest = $sacco->transactions()
-        ->where('cycle_id', $activeCycleId)
-            ->where('type', 'LOAN_INTEREST')
-            ->sum('amount');
-
-        // Total Loan Repayments
-        $totalLoanRepayments = $sacco->transactions()
-            ->where('cycle_id', $activeCycleId)
-            ->where('type', 'LOAN_REPAYMENT')
-            ->sum('amount');
-
-        // Loans to Males
-        $numberOfLoansToMen = $sacco->transactions()
-        ->where('cycle_id', $activeCycleId)
-            ->join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->where('transactions.type', 'LOAN')
-            ->where('users.sex', 'Male')
-            ->count();
-
-        // Total Loans Disbursed to Males
-        $totalDisbursedToMen = $sacco->transactions()
-        ->where('cycle_id', $activeCycleId)
-            ->join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->where('transactions.type', 'LOAN')
-            ->where('users.sex', 'Male')
-            ->sum('transactions.amount');
-
-        // Loans to Females
-        $numberOfLoansToWomen = $sacco->transactions()
-        ->where('cycle_id', $activeCycleId)
-            ->join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->where('transactions.type', 'LOAN')
-            ->where('users.sex', 'Female')
-            ->count();
-
-        // Total Loans Disbursed to Females
-        $totalDisbursedToWomen = $sacco->transactions()
-        ->where('cycle_id', $activeCycleId)
-            ->join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->where('transactions.type', 'LOAN')
-            ->where('users.sex', 'Female')
-            ->sum('transactions.amount');
-
-        // Loans to Youth
-        $numberOfLoansToYouth = $sacco->transactions()
-        ->where('cycle_id', $activeCycleId)
-            ->join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->where('transactions.type', 'LOAN')
-            ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
-            ->count();
-
-        // Total Loans Disbursed to Youth
-        $totalDisbursedToYouth = $sacco->transactions()
-        ->where('cycle_id', $activeCycleId)
-            ->join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->where('transactions.type', 'LOAN')
-            ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
-            ->sum('transactions.amount');
-
-        // Number of Savings Accounts (Only relevant for the Sacco)
-        $numberOfSavingsAccounts = User::where('sacco_id', $sacco->id)
-            ->where(function ($query) {
-                $query->whereNull('user_type')
-                ->orWhere('user_type', '<>', 'Admin');
-            })
-            ->count();
-
-        // Total Savings Balance
-        $totalSavingsBalance = $sacco->transactions()
-        ->where('cycle_id', $activeCycleId)
-            ->join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->where('transactions.type', 'SHARE')
-            ->sum('transactions.amount');
-
-        // Savings to Males
-        $savingsAccountsForMen = $sacco->transactions()
-        ->where('cycle_id', $activeCycleId)
-            ->join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->where('transactions.type', 'SHARE')
-            ->where('users.sex', 'Male')
-            ->count();
-
-        // Total Savings Balance for Males
-        $totalSavingsBalanceForMen = $sacco->transactions()
-        ->where('cycle_id', $activeCycleId)
-            ->join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->where('transactions.type', 'SHARE')
-            ->where('users.sex', 'Male')
-            ->sum('transactions.amount');
-
-        // Savings to Females
-        $savingsAccountsForWomen = $sacco->transactions()
-        ->where('cycle_id', $activeCycleId)
-            ->join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->where('transactions.type', 'SHARE')
-            ->where('users.sex', 'Female')
-            ->count();
-
-        // Total Savings Balance for Females
-        $totalSavingsBalanceForWomen = $sacco->transactions()
-        ->where('cycle_id', $activeCycleId)
-            ->join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->where('transactions.type', 'SHARE')
-            ->where('users.sex', 'Female')
-            ->sum('transactions.amount');
-
-        // Savings to Youth
-        $savingsAccountsForYouth = $sacco->transactions()
-        ->where('cycle_id', $activeCycleId)
-            ->join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->where('transactions.type', 'SHARE')
-            ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
-            ->count();
-
-        // Total Savings Balance for Youth
-        $totalSavingsBalanceForYouth = $sacco->transactions()
-             ->where('cycle_id', $activeCycleId)
-            ->join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->where('transactions.type', 'SHARE')
-            ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
-            ->sum('transactions.amount');
-
-        // Average Monthly Savings by Admin Members
-        $adminSavings = $sacco->transactions()
-            ->join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->where('cycle_id', $activeCycleId)
-            ->where('transactions.type', 'SHARE')
-            ->where('users.user_type', 'Admin')
-            ->selectRaw('SUM(transactions.amount) as total_savings, MONTH(transactions.created_at) as month, YEAR(transactions.created_at) as year')
-            ->groupBy('month', 'year')
-            ->get();
-
-        // Calculate the total number of months where savings were made
-        $numberOfMonths = $adminSavings->count();
-
-        $totalSavingsByAdmin = $adminSavings->sum('total_savings');
-
-        $averageMonthlySavingsByAdmin = $numberOfMonths > 0 ? $totalSavingsByAdmin / $numberOfMonths : 0;
-
-        // Format the average monthly savings
-        // $average_monthly_savings = number_format(abs($averageMonthlySavingsByAdmin), 2, '.', ',');
-
-
-        $averageSavingsPerMember = $numberOfMembers > 0 ? $totalSavingsBalance / $numberOfMembers : 0;
-
-        $average_monthly_savings = abs($averageMonthlySavingsByAdmin); // No number_format here
-
-        $maxLoanAmountResponse = Http::withHeaders([
-            'Content-Type' => 'application/json'
-        ])->post('https://vsla-credit-scoring-bde4afgbgyesgheu.canadacentral-01.azurewebsites.net/max_loan_amount', [
-            "Multiplier" => 6,
-            "Average Monthly Savings" => $average_monthly_savings // Pass the plain numeric value
-        ]);
-
-        if ($maxLoanAmountResponse->successful()) {
-            $maxLoanAmountData = $maxLoanAmountResponse->json();
-            $maxLoanAmount = $maxLoanAmountData['max_loan_amount'];
-        } else {
-            // Capture the error details
-            $statusCode = $maxLoanAmountResponse->status();
-            $errorMessage = $maxLoanAmountResponse->body();
-
-            // Log the error if needed for debugging
-            \Log::error("Max Loan Amount API error: Status Code: $statusCode, Message: $errorMessage");
-
-            // Handle the error if the max loan amount call failed
-            return $this->error("Max Loan Amount API call failed. Status Code: $statusCode, Message: $errorMessage");
-        };
-
-        $totalLoans = abs($sacco->transactions()
+    // Total Loans
+    $numberOfLoans = $sacco->transactions()
     ->where('cycle_id', $activeCycleId)
-    ->where('type', 'LOAN')
-    ->sum('amount'));
+        ->where('type', 'LOAN')
+        ->count();
 
-        // Calculate Total Principal Paid
+    // Total Loan Amount (Principal)
+    $totalPrincipal = $sacco->transactions()
+    ->where('cycle_id', $activeCycleId)
+        ->where('type', 'LOAN')
+        ->sum('amount');
 
-        // 4. Calculate Interest Paid (20% of repayments, but capped at total interest)
-        $calculatedInterestPaid = $totalLoanRepayments * 0.20;
-        $totalInterestPaid = min($calculatedInterestPaid, $totalInterest); // Ensure you don't pay more interest than owed
+    // Total Interest
+    $totalInterest = $sacco->transactions()
+    ->where('cycle_id', $activeCycleId)
+        ->where('type', 'LOAN_INTEREST')
+        ->sum('amount');
 
-        // 5. Calculate Principal Paid (remaining after interest is paid)
-        $totalPrincipalPaid = $totalLoanRepayments - $totalInterestPaid;
+    // Total Loan Repayments
+    $totalLoanRepayments = $sacco->transactions()
+        ->where('cycle_id', $activeCycleId)
+        ->where('type', 'LOAN_REPAYMENT')
+        ->sum('amount');
 
-        // 6. Total Principal Outstanding (Principal minus what has been repaid)
-        $totalPrincipalOutstanding = $totalLoans - $totalPrincipalPaid;
+    // Loans to Males
+    $numberOfLoansToMen = $sacco->transactions()
+    ->where('cycle_id', $activeCycleId)
+        ->join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.type', 'LOAN')
+        ->where('users.sex', 'Male')
+        ->count();
 
-        // 7. Outstanding Interest (Interest minus what has been repaid)
-        $outstandingInterest = $totalInterest - $totalInterestPaid;
+    // Total Loans Disbursed to Males
+    $totalDisbursedToMen = $sacco->transactions()
+    ->where('cycle_id', $activeCycleId)
+        ->join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.type', 'LOAN')
+        ->where('users.sex', 'Male')
+        ->sum('transactions.amount');
+
+    // Loans to Females
+    $numberOfLoansToWomen = $sacco->transactions()
+    ->where('cycle_id', $activeCycleId)
+        ->join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.type', 'LOAN')
+        ->where('users.sex', 'Female')
+        ->count();
+
+    // Total Loans Disbursed to Females
+    $totalDisbursedToWomen = $sacco->transactions()
+    ->where('cycle_id', $activeCycleId)
+        ->join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.type', 'LOAN')
+        ->where('users.sex', 'Female')
+        ->sum('transactions.amount');
+
+    // Loans to Youth
+    $numberOfLoansToYouth = $sacco->transactions()
+    ->where('cycle_id', $activeCycleId)
+        ->join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.type', 'LOAN')
+        ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
+        ->count();
+
+    // Total Loans Disbursed to Youth
+    $totalDisbursedToYouth = $sacco->transactions()
+    ->where('cycle_id', $activeCycleId)
+        ->join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.type', 'LOAN')
+        ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
+        ->sum('transactions.amount');
+
+    // Number of Savings Accounts
+    $numberOfSavingsAccounts = User::where('sacco_id', $sacco->id)
+        ->where(function ($query) {
+            $query->whereNull('user_type')
+            ->orWhere('user_type', '<>', 'Admin');
+        })
+        ->count();
+
+    // Total Savings Balance
+    $totalSavingsBalance = $sacco->transactions()
+    ->where('cycle_id', $activeCycleId)
+        ->join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.type', 'SHARE')
+        ->sum('transactions.amount');
+
+    // Calculate monthly savings
+    $monthlyTransactions = $sacco->transactions()
+        ->where('cycle_id', $activeCycleId)
+        ->where('type', 'SHARE')
+        ->selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, SUM(amount) as total')
+        ->groupBy('year', 'month')
+        ->get();
+
+    $totalMonths = $monthlyTransactions->count();
+    $totalSavings = $monthlyTransactions->sum('total');
+    $average_monthly_savings = $totalMonths > 0 ? abs($totalSavings / $totalMonths) : 0;
+
+    // Savings to Males
+    $savingsAccountsForMen = $sacco->transactions()
+    ->where('cycle_id', $activeCycleId)
+        ->join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.type', 'SHARE')
+        ->where('users.sex', 'Male')
+        ->count();
+
+    // Total Savings Balance for Males
+    $totalSavingsBalanceForMen = $sacco->transactions()
+    ->where('cycle_id', $activeCycleId)
+        ->join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.type', 'SHARE')
+        ->where('users.sex', 'Male')
+        ->sum('transactions.amount');
+
+    // Savings to Females
+    $savingsAccountsForWomen = $sacco->transactions()
+    ->where('cycle_id', $activeCycleId)
+        ->join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.type', 'SHARE')
+        ->where('users.sex', 'Female')
+        ->count();
+
+    // Total Savings Balance for Females
+    $totalSavingsBalanceForWomen = $sacco->transactions()
+    ->where('cycle_id', $activeCycleId)
+        ->join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.type', 'SHARE')
+        ->where('users.sex', 'Female')
+        ->sum('transactions.amount');
+
+    // Savings to Youth
+    $savingsAccountsForYouth = $sacco->transactions()
+    ->where('cycle_id', $activeCycleId)
+        ->join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.type', 'SHARE')
+        ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
+        ->count();
+
+    // Total Savings Balance for Youth
+    $totalSavingsBalanceForYouth = $sacco->transactions()
+         ->where('cycle_id', $activeCycleId)
+        ->join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->where('transactions.type', 'SHARE')
+        ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
+        ->sum('transactions.amount');
+
+    $averageSavingsPerMember = $numberOfMembers > 0 ? $totalSavingsBalance / $numberOfMembers : 0;
+
+    $totalLoans = abs($sacco->transactions()
+        ->where('cycle_id', $activeCycleId)
+        ->where('type', 'LOAN')
+        ->sum('amount'));
+
+    // Calculate Interest Paid
+    $calculatedInterestPaid = $totalLoanRepayments * 0.20;
+    $totalInterestPaid = min($calculatedInterestPaid, $totalInterest);
+
+    // Calculate Principal Paid
+    $totalPrincipalPaid = $totalLoanRepayments - $totalInterestPaid;
+
+    // Total Principal Outstanding
+    $totalPrincipalOutstanding = $totalLoans - $totalPrincipalPaid;
+
+    // Outstanding Interest
+    $outstandingInterest = $totalInterest - $totalInterestPaid;
 
     $monthsSinceCreation = $sacco->created_at->diffInMonths(now());
 
@@ -2010,115 +1975,125 @@ public function Projects(Request $request)
     $savingsCreditMobilization = $monthsSinceCreation > 0 ? $totalSavingsBalance / ($monthsSinceCreation * 4) : 0;
 
     $youthSupportRate = $totalDisbursedToYouth / $totalPrincipal;
-$youthSupportRate = ($youthSupportRate < 0.001) ? 0 : $youthSupportRate; // Avoid extremely small values being formatted as zero
+    $youthSupportRate = ($youthSupportRate < 0.001) ? 0 : $youthSupportRate;
 
-$totalPrincipalPaid = $totalPrincipalPaid;
-$cleanTotalPrincipal = str_replace(',', '', $totalPrincipal);
-$numericTotalPrincipal = floatval($cleanTotalPrincipal);
+    $cleanTotalPrincipal = str_replace(',', '', $totalPrincipal);
+    $numericTotalPrincipal = floatval($cleanTotalPrincipal);
+    $fundSavingsCreditStatus = $totalPrincipalPaid / abs($numericTotalPrincipal);
 
-$fundSavingsCreditStatus =  $totalPrincipalPaid / abs($numericTotalPrincipal);
+    // Calculate credit score based on actual performance
+    $creditScore = min(300, round(
+        ($totalLoanRepayments / max(1, $totalPrincipal)) * 100 +
+        ($savingsCreditMobilization * 100) +
+        (($averageAttendance / max(1, $numberOfMembers)) * 100)
+    ));
 
-// $fundSavingsCreditStatus = abs($totalPrincipalPaid);
+    // Make the max loan amount API call with actual values
+    $maxLoanAmountResponse = Http::withHeaders([
+        'Content-Type' => 'application/json'
+    ])->post('https://vslacreditplus-fte2h3dhc5hcc0e5.canadacentral-01.azurewebsites.net/max_loan_amount', [
+        "credit_score" => $creditScore,
+        "average_savings" => $average_monthly_savings
+    ]);
 
-// Format to three decimal places for consistency in the response
-$fundSavingsCreditStatusFormatted = $fundSavingsCreditStatus;
-
-        // Prepare the request data
-
-        $requestData = [
-            "number_of_loans" => $numberOfLoans,
-            "total_principal" => abs($totalPrincipal),
-            "total_interest" => abs($totalInterest),
-            "total_principal_paid" => $totalPrincipalPaid,
-            "total_interest_paid" => $totalInterestPaid,
-            "number_of_savings_accounts" => $numberOfSavingsAccounts,
-            "total_savings_balance" => abs($totalSavingsBalance),
-            "total_principal_outstanding" => $totalPrincipalOutstanding,
-            "total_interest_outstanding" => $outstandingInterest,
-            "number_of_loans_to_men" => $numberOfLoansToMen,
-            "total_disbursed_to_men" => abs($totalDisbursedToMen),
-            "total_savings_accounts_for_men" => $savingsAccountsForMen,
-            "number_of_loans_to_women" => $numberOfLoansToWomen,
-            "total_disbursed_to_women" => abs($totalDisbursedToWomen),
-            "total_savings_accounts_for_women" => $savingsAccountsForWomen,
-            "total_savings_balance_for_women" => abs($totalSavingsBalanceForWomen),
-            "number_of_loans_to_youth" => $numberOfLoansToYouth,
-            "total_disbursed_to_youth" => abs($totalDisbursedToYouth),
-            "total_savings_balance_for_youth" => abs($totalSavingsBalanceForYouth),
-            "savings_per_member" => abs($averageSavingsPerMember),
-            'youth_support_rate' => $youthSupportRate,
-            'savings_credit_mobilization' => $savingsCreditMobilization,
-            'fund_savings_credit_status' => $fundSavingsCreditStatus
-        ];
-
-        $requestData['fund_savings_credit_status'] = intval(round($requestData['fund_savings_credit_status']));
-
-        // Make the prediction API call
-        $predictionResponse = Http::withHeaders([
-            'Content-Type' => 'application/json'
-        ])->post('https://vslacreditv2-brdqanfsfnd6fbfc.canadacentral-01.azurewebsites.net/predict', $requestData);
-
-        // Check if the prediction API call was successful
-        if ($predictionResponse->successful()) {
-            // Extract the prediction data from the response
-            $predictionData = $predictionResponse->json();
-        } else {
-            // Capture the error details
-            $statusCode = $predictionResponse->status();
-            $errorMessage = $predictionResponse->body();
-
-            // Log the error if needed for debugging
-            \Log::error("Prediction API error: Status Code: $statusCode, Message: $errorMessage");
-
-            // Handle the error if the prediction call failed
-            return $this->error("Prediction API call failed. Status Code: $statusCode, Message: $errorMessage");
-        };
-
-
-$youthSupportRateFormatted = number_format($youthSupportRate, 3);
-$fundSavingsCreditStatusFormatted = number_format($fundSavingsCreditStatus, 3);
-
-        $saccoDetails = [
-            "number_of_loans" => $numberOfLoans,
-            "total_principal" => number_format(abs($totalPrincipal), 2, '.', ','),
-            "total_interest" => number_format(abs($totalInterest), 2, '.', ','),
-            "total_loan_repayments" => number_format(abs($totalLoanRepayments), 2, '.', ','),
-            "average_monthly_savings" => $average_monthly_savings,
-            "number_of_members" => $numberOfMembers,
-            "number_of_men" => $numberOfMen,
-            "number_of_women" => $numberOfWomen,
-            "number_of_youth" => $numberOfYouth,
-            "total_meetings" => $totalMeetings,
-            "max_loan_amount" => $maxLoanAmount,
-            "prediction_response" => $predictionData,
-            "average_meeting_attendance" => $averageAttendanceRounded,
-            "number_of_loans_to_men" => $numberOfLoansToMen,
-            "total_disbursed_to_men" => number_format(abs($totalDisbursedToMen), 2, '.', ','),
-            "number_of_loans_to_women" => $numberOfLoansToWomen,
-            "total_disbursed_to_women" => number_format(abs($totalDisbursedToWomen), 2, '.', ','),
-            "number_of_loans_to_youth" => $numberOfLoansToYouth,
-            "total_disbursed_to_youth" => number_format(abs($totalDisbursedToYouth), 2, '.', ','),
-            "number_of_savings_accounts" => $numberOfSavingsAccounts,
-            "total_savings_balance" => number_format(abs($totalSavingsBalance), 2, '.', ','),
-            "savings_accounts_for_men" => $savingsAccountsForMen,
-            "total_savings_balance_for_men" => number_format(abs($totalSavingsBalanceForMen), 2, '.', ','),
-            "savings_accounts_for_women" => $savingsAccountsForWomen,
-            "total_savings_balance_for_women" => number_format(abs($totalSavingsBalanceForWomen), 2, '.', ','),
-            "savings_accounts_for_youth" => $savingsAccountsForYouth,
-            "total_savings_balance_for_youth" => number_format(abs($totalSavingsBalanceForYouth), 2, '.', ','),
-            "average_savings_per_member" => number_format(abs($averageSavingsPerMember), 2, '.', ','),
-            'savings_credit_mobilization' => $savingsCreditMobilization,
-            'youth_support_rate' => $youthSupportRateFormatted,
-            'fund_savings_credit_status' => $fundSavingsCreditStatusFormatted,
-            "total_principal_paid" => number_format(abs($totalPrincipalPaid), 2, '.', ','),
-            "total_interest_paid" => number_format(abs($totalInterestPaid), 2, '.', ','),
-            "total_principal_outstanding" => number_format(abs( $totalPrincipalOutstanding), 2, '.', ','),
-            "total_interest_outstanding" => number_format(abs($outstandingInterest), 2, '.', ','),
-            "savings_per_member" => "2000.0"
-        ];
-
-        return $this->success($saccoDetails, "Success");
+    if ($maxLoanAmountResponse->successful()) {
+        $maxLoanAmountData = $maxLoanAmountResponse->json();
+        $maxLoanAmount = $maxLoanAmountData['max_loan_amount'];
+    } else {
+        $statusCode = $maxLoanAmountResponse->status();
+        $errorMessage = $maxLoanAmountResponse->body();
+        \Log::error("Max Loan Amount API error: Status Code: $statusCode, Message: $errorMessage");
+        return $this->error("Max Loan Amount API call failed. Status Code: $statusCode, Message: $errorMessage");
     }
+
+    // Prepare prediction request data
+    $requestData = [
+        "number_of_loans" => $numberOfLoans,
+        "total_principal" => abs($totalPrincipal),
+        "total_interest" => abs($totalInterest),
+        "total_principal_paid" => $totalPrincipalPaid,
+        "total_interest_paid" => $totalInterestPaid,
+        "number_of_savings_accounts" => $numberOfSavingsAccounts,
+        "total_savings_balance" => abs($totalSavingsBalance),
+        "total_principal_outstanding" => $totalPrincipalOutstanding,
+        "total_interest_outstanding" => $outstandingInterest,
+        "number_of_loans_to_men" => $numberOfLoansToMen,
+        "total_disbursed_to_men" => abs($totalDisbursedToMen),
+        "total_savings_accounts_for_men" => $savingsAccountsForMen,
+        "number_of_loans_to_women" => $numberOfLoansToWomen,
+        "total_disbursed_to_women" => abs($totalDisbursedToWomen),
+        "total_savings_accounts_for_women" => $savingsAccountsForWomen,
+        "total_savings_balance_for_women" => abs($totalSavingsBalanceForWomen),
+        "number_of_loans_to_youth" => $numberOfLoansToYouth,
+        "total_disbursed_to_youth" => abs($totalDisbursedToYouth),
+        "total_savings_balance_for_youth" => abs($totalSavingsBalanceForYouth),
+        "savings_per_member" => abs($averageSavingsPerMember),
+        'youth_support_rate' => $youthSupportRate,
+        'savings_credit_mobilization' => $savingsCreditMobilization,
+        'fund_savings_credit_status' => $fundSavingsCreditStatus
+    ];
+
+    $requestData['fund_savings_credit_status'] = intval(round($requestData['fund_savings_credit_status']));
+
+    // Make the prediction API call
+    $predictionResponse = Http::withHeaders([
+        'Content-Type' => 'application/json'
+    ])->post('https://vslacreditplus-fte2h3dhc5hcc0e5.canadacentral-01.azurewebsites.net/predict', $requestData);
+
+    // Check if the prediction API call was successful
+    if ($predictionResponse->successful()) {
+        $predictionData = $predictionResponse->json();
+    } else {
+        $statusCode = $predictionResponse->status();
+        $errorMessage = $predictionResponse->body();
+        \Log::error("Prediction API error: Status Code: $statusCode, Message: $errorMessage");
+        return $this->error("Prediction API call failed. Status Code: $statusCode, Message: $errorMessage");
+    }
+
+    $youthSupportRateFormatted = number_format($youthSupportRate, 3);
+    $fundSavingsCreditStatusFormatted = number_format($fundSavingsCreditStatus, 3);
+
+    $saccoDetails = [
+        "number_of_loans" => $numberOfLoans,
+        "total_principal" => number_format(abs($totalPrincipal), 2, '.', ','),
+        "total_interest" => number_format(abs($totalInterest), 2, '.', ','),
+        "total_loan_repayments" => number_format(abs($totalLoanRepayments), 2, '.', ','),
+        "average_monthly_savings" => $average_monthly_savings,
+        "number_of_members" => $numberOfMembers,
+        "number_of_men" => $numberOfMen,
+        "number_of_women" => $numberOfWomen,
+        "number_of_youth" => $numberOfYouth,
+        "total_meetings" => $totalMeetings,
+        "max_loan_amount" => $maxLoanAmount,
+        "prediction_response" => $predictionData,
+        "average_meeting_attendance" => $averageAttendanceRounded,
+        "number_of_loans_to_men" => $numberOfLoansToMen,
+        "total_disbursed_to_men" => number_format(abs($totalDisbursedToMen), 2, '.', ','),
+        "number_of_loans_to_women" => $numberOfLoansToWomen,
+        "total_disbursed_to_women" => number_format(abs($totalDisbursedToWomen), 2, '.', ','),
+        "number_of_loans_to_youth" => $numberOfLoansToYouth,
+        "total_disbursed_to_youth" => number_format(abs($totalDisbursedToYouth), 2, '.', ','),
+        "number_of_savings_accounts" => $numberOfSavingsAccounts,
+        "total_savings_balance" => number_format(abs($totalSavingsBalance), 2, '.', ','),
+        "savings_accounts_for_men" => $savingsAccountsForMen,
+        "total_savings_balance_for_men" => number_format(abs($totalSavingsBalanceForMen), 2, '.', ','),
+        "savings_accounts_for_women" => $savingsAccountsForWomen,
+        "total_savings_balance_for_women" => number_format(abs($totalSavingsBalanceForWomen), 2, '.', ','),
+        "savings_accounts_for_youth" => $savingsAccountsForYouth,
+        "total_savings_balance_for_youth" => number_format(abs($totalSavingsBalanceForYouth), 2, '.', ','),
+        "average_savings_per_member" => number_format(abs($averageSavingsPerMember), 2, '.', ','),
+        'savings_credit_mobilization' => $savingsCreditMobilization,
+        'youth_support_rate' => $youthSupportRateFormatted,
+        'fund_savings_credit_status' => $fundSavingsCreditStatusFormatted,
+        "total_principal_paid" => number_format(abs($totalPrincipalPaid), 2, '.', ','),
+        "total_interest_paid" => number_format(abs($totalInterestPaid), 2, '.', ','),
+        "total_principal_outstanding" => number_format(abs($totalPrincipalOutstanding), 2, '.', ','),
+        "total_interest_outstanding" => number_format(abs($outstandingInterest), 2, '.', ','),
+        "savings_per_member" => "2000.0"
+    ];
+
+    return $this->success($saccoDetails, "Success");
+}
 
 
     //     public function getSaccoDetailsForUser()
