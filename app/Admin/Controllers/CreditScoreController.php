@@ -397,7 +397,7 @@ private function getCreditScoreDescription($score)
         ];
 
         try {
-            $response = Http::post('https://vslacreditv2-brdqanfsfnd6fbfc.canadacentral-01.azurewebsites.net/predict', $data);
+            $response = Http::post('https://vslacreditplus-fte2h3dhc5hcc0e5.canadacentral-01.azurewebsites.net/predict', $data);
             $result = $response->json();
 
             return [
