@@ -1789,6 +1789,12 @@ class HomeController extends Controller
             }
         }
 
+        $refugeeFemaleLoanAmount = (float) $refugeeFemaleLoanAmount;
+        $refugeeMaleLoanAmount = (float) $refugeeMaleLoanAmount;
+        $loanSumForMen = (float) $loanSumForMen;
+        $loanSumForYouths = (float) $loanSumForYouths;
+        $pwdTotalLoanBalance = (float) $pwdTotalLoanBalance;
+
         return $content
             ->header('<div style="
                     text-align: center;
