@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -566,6 +565,13 @@
 
         // Initialize data on page load
         document.addEventListener('DOMContentLoaded', function() {
+            // Capitalize group names
+            document.querySelectorAll('.sacco-header h3').forEach(groupNameElement => {
+                let groupName = groupNameElement.textContent;
+                // Capitalize the first letter of each word
+                groupNameElement.textContent = groupName.replace(/\b\w/g, char => char.toUpperCase());
+            });
+
             // Collect all SACCO data from the DOM
             document.querySelectorAll('.sacco-card').forEach(card => {
                 const saccoData = JSON.parse(card.dataset.sacco);
