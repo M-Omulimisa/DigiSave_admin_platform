@@ -1960,8 +1960,8 @@ class HomeController extends Controller
                         'pwdTotalLoanBalance' => $pwdTotalLoanBalance,
                         'refugeeMaleLoanCount' => $refugeeMaleLoanCount,
                         'refugeeFemaleLoanCount' => $refugeeFemaleLoanCount,
-                        'refugeeMaleLoanAmount' => number_format($refugeeMaleLoanAmount, 2),
-                        'refugeeFemaleLoanAmount' => number_format($refugeeFemaleLoanAmount, 2)
+                        'refugeeMaleLoanAmount' => $refugeeMaleLoanAmount,
+                        'refugeeFemaleLoanAmount' => $refugeeFemaleLoanAmount
                     ]) .
                     '</div>' .
                     view('widgets.chart_container', [
