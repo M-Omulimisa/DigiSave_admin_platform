@@ -59,7 +59,6 @@
             font-size: 14px;
         }
 
-        /* Filters Styles */
         .filters-bar {
             background: white;
             padding: 1rem;
@@ -105,7 +104,6 @@
             border-top: 1px solid #eee;
         }
 
-        /* Grid Layout */
         .row {
             display: flex;
             flex-wrap: wrap;
@@ -124,7 +122,6 @@
             padding: 0.5rem;
         }
 
-        /* SACCO Card Styles */
         .sacco-card {
             background: white;
             border-radius: 8px;
@@ -219,7 +216,6 @@
             transform: translateY(-1px);
         }
 
-        /* Demographics */
         .demographics {
             display: flex;
             justify-content: space-between;
@@ -243,7 +239,14 @@
             font-size: 0.8rem;
         }
 
-        /* Modal Styles */
+        /* Buttons container style */
+        .button-container {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            justify-content: flex-start;
+        }
+
         .custom-modal {
             display: none;
             position: fixed;
@@ -352,7 +355,6 @@
             color: var(--primary);
         }
 
-        /* Responsive Styles */
         @media (max-width: 768px) {
             .col-md-6, .col-lg-4 {
                 flex: 0 0 100%;
@@ -458,7 +460,7 @@
                 <div class="sacco-card" data-sacco="{{ json_encode($sacco) }}">
                     <div class="sacco-header">
                         <h3>{{ $sacco['name'] }}</h3>
-                        <span class="credit-badge {{ $sacco['creditScore']['score'] >= 80 ? 'credit-high' : ($sacco['creditScore']['score'] >= 60 ? 'credit-medium' : 'credit-low') }}">
+                        <span class="credit-badge {{ ($sacco['creditScore']['score'] ?? 0) >= 80 ? 'credit-high' : ((($sacco['creditScore']['score'] ?? 0) >= 60) ? 'credit-medium' : 'credit-low') }}">
                             Score: {{ $sacco['creditScore']['score'] ?? 'N/A' }}
                         </span>
                     </div>
@@ -495,6 +497,12 @@
                                 <h5>{{ number_format($sacco['youthMembers']) }}</h5>
                                 <small>Youth</small>
                             </div>
+                        </div>
+
+                        <!-- Max Loan Amount display -->
+                        <div class="stat-box" style="margin-top: 1rem; background: #eef9f0; text-align:center; border-radius: 6px;">
+                            <h4>UGX {{ number_format($sacco['maxLoanAmount'] ?? 0) }}</h4>
+                            <p>Max Loan Amount</p>
                         </div>
 
                         <div class="button-container">
@@ -638,13 +646,15 @@
                 { label: 'Active Loans', value: sacco.loanStats.total },
                 { label: 'Total Principal', value: 'UGX ' + formatNumber(sacco.loanStats.principal) },
                 { label: 'Total Interest', value: 'UGX ' + formatNumber(sacco.loanStats.interest) },
-                { label: 'Repayments', value: 'UGX ' + formatNumber(sacco.loanStats.repayments) }
+                { label: 'Repayments', value: 'UGX ' + formatNumber(sacco.loanStats.repayments) },
+                // Add Max Loan Amount to Loan Metrics
+                { label: 'Max Loan Amount', value: 'UGX ' + formatNumber(sacco.maxLoanAmount) }
             ]);
 
             document.getElementById('savingsMetrics').innerHTML = generateMetricsList([
                 { label: 'Total Savings', value: 'UGX ' + formatNumber(sacco.savingsStats.totalBalance) },
                 { label: 'Total Accounts', value: sacco.savingsStats.totalAccounts },
-                { label: 'Average per Member', value: 'UGX ' + formatNumber(sacco.savingsStats.totalBalance / sacco.totalMembers) }
+                { label: 'Average per Member', value: sacco.totalMembers > 0 ? 'UGX ' + formatNumber(sacco.savingsStats.totalBalance / sacco.totalMembers) : 'N/A' }
             ]);
 
             document.getElementById('saccoDetails').style.display = 'block';
@@ -729,10 +739,12 @@
                 ['Total Principal:', `UGX ${formatNumber(sacco.loanStats.principal)}`],
                 ['Total Interest:', `UGX ${formatNumber(sacco.loanStats.interest)}`],
                 ['Total Repayments:', `UGX ${formatNumber(sacco.loanStats.repayments)}`],
+                // Include Max Loan Amount in export
+                ['Max Loan Amount:', `UGX ${formatNumber(sacco.maxLoanAmount)}`],
                 [''],
                 ['Performance Metrics'],
                 ['Average Attendance:', `${sacco.averageAttendance}%`],
-                ['Savings per Member:', `UGX ${formatNumber(sacco.savingsStats.totalBalance / sacco.totalMembers)}`],
+                ['Savings per Member:', sacco.totalMembers > 0 ? `UGX ${formatNumber(sacco.savingsStats.totalBalance / sacco.totalMembers)}` : 'N/A']
             ].map(row => row.join(',')).join('\n');
 
             downloadCSV(csvContent, `${sacco.name}_credit_report.csv`);
