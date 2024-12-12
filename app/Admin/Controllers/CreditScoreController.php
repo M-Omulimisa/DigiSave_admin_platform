@@ -272,8 +272,10 @@ class CreditScoreController extends AdminController
             ->sum('transactions.amount');
 
         // Calculate monthly savings
+        $cycle = Cycle::find($activeCycleId); // Replace with your actual cycle retrieval method
+
         $monthlyTransactions = $sacco->transactions()
-            ->where('cycle_id', $activeCycleId)
+            ->whereBetween('created_at', [$cycle->start_date, $cycle->end_date])
             ->where('type', 'SHARE')
             ->selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, SUM(amount) as total')
             ->groupBy('year', 'month')
@@ -368,30 +370,13 @@ class CreditScoreController extends AdminController
         $fundSavingsCreditStatus = (int)($fundSavingsCreditStatus * 100);
 
         // Calculate credit score based on actual performance
-        $creditScore = min(300, round(
-            ($totalLoanRepayments / max(1, abs($totalPrincipal))) * 100 + // Repayment Rate
-            ($savingsCreditMobilization * 100) + // Savings Credit Mobilization
-            (($averageAttendance / max(1, $numberOfMembers)) * 100) // Attendance Rate
-        ));
+        // $creditScore = min(300, round(
+        //     ($totalLoanRepayments / max(1, abs($totalPrincipal))) * 100 + // Repayment Rate
+        //     ($savingsCreditMobilization * 100) + // Savings Credit Mobilization
+        //     (($averageAttendance / max(1, $numberOfMembers)) * 100) // Attendance Rate
+        // ));
 
         // Make the max loan amount API call with actual values
-        $maxLoanAmountResponse = Http::withOptions(['verify' => false])
-    ->withHeaders(['Content-Type' => 'application/json'])
-    ->post('https://vslacreditplus-fte2h3dhc5hcc0e5.canadacentral-01.azurewebsites.net/max_loan_amount', [
-        "credit_score" => $creditScore,
-        "average_savings" => $average_monthly_savings
-    ]);
-
-        if ($maxLoanAmountResponse->successful()) {
-            $maxLoanAmountData = $maxLoanAmountResponse->json();
-            $maxLoanAmount = $maxLoanAmountData['max_loan_amount'] ?? null;
-        } else {
-            $statusCode = $maxLoanAmountResponse->status();
-            $errorMessage = $maxLoanAmountResponse->body();
-            Log::error("Max Loan Amount API error: Status Code: $statusCode, Message: $errorMessage");
-            // You might choose to handle this differently based on your application's needs
-            $maxLoanAmount = null;
-        }
 
         // Prepare prediction request data
         $requestData = [
@@ -446,6 +431,27 @@ class CreditScoreController extends AdminController
             $creditScoreValue = null;
             $creditScoreDescription = 'Unable to calculate credit score at this time.';
         }
+
+        $maxLoanAmountResponse = Http::withOptions(['verify' => false])
+        ->withHeaders(['Content-Type' => 'application/json'])
+        ->post('https://vslacreditplus-fte2h3dhc5hcc0e5.canadacentral-01.azurewebsites.net/max_loan_amount', [
+            "credit_score" => $creditScoreValue *0.8,
+            "average_savings" => $average_monthly_savings
+        ]);
+
+        $resp = $maxLoanAmountResponse->json();
+        // dd($average_monthly_savings);
+
+            if ($maxLoanAmountResponse->successful()) {
+                $maxLoanAmountData = $maxLoanAmountResponse->json();
+                $maxLoanAmount = $maxLoanAmountData['max_loan_amount'] ?? null;
+            } else {
+                $statusCode = $maxLoanAmountResponse->status();
+                $errorMessage = $maxLoanAmountResponse->body();
+                Log::error("Max Loan Amount API error: Status Code: $statusCode, Message: $errorMessage");
+                // You might choose to handle this differently based on your application's needs
+                $maxLoanAmount = null;
+            };
 
         return [
             // Basic Information
