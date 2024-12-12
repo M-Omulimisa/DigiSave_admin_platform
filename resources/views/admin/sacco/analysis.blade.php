@@ -709,7 +709,7 @@
 
         function generateExport(sacco) {
             const csvContent = [
-                ['SACCO Credit Score Report'],
+                ['VSLA Credit Score Report'],
                 ['Generated on:', new Date().toLocaleString()],
                 [''],
                 ['Basic Information'],
