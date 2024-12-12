@@ -1789,18 +1789,18 @@ class HomeController extends Controller
             }
         }
 
-        $loanSumForWomen = (float)($loanSumForWomen ?? 0);
-        $loanSumForMen = (float)($loanSumForMen ?? 0);
-        $loanSumForYouths = (float)($loanSumForYouths ?? 0);
-        $pwdTotalLoanBalance = (float)($pwdTotalLoanBalance ?? 0);
-        $refugeeMaleLoanAmount = (float)($refugeeMaleLoanAmount ?? 0);
-        $refugeeFemaleLoanAmount = (float)($refugeeFemaleLoanAmount ?? 0);
-        $femaleTotalBalance = (float)($femaleTotalBalance ?? 0);
-        $maleTotalBalance = (float)($maleTotalBalance ?? 0);
-        $youthTotalBalance = (float)($youthTotalBalance ?? 0);
-        $pwdTotalBalance = (float)($pwdTotalBalance ?? 0);
-        $refugeMaleShareSum = (float)($refugeMaleShareSum ?? 0);
-        $refugeFemaleShareSum = (float)($refugeFemaleShareSum ?? 0);
+        // $loanSumForWomen = (float)($loanSumForWomen ?? 0);
+        // $loanSumForMen = (float)($loanSumForMen ?? 0);
+        // $loanSumForYouths = (float)($loanSumForYouths ?? 0);
+        // $pwdTotalLoanBalance = (float)($pwdTotalLoanBalance ?? 0);
+        // $refugeeMaleLoanAmount = (float)($refugeeMaleLoanAmount ?? 0);
+        // $refugeeFemaleLoanAmount = (float)($refugeeFemaleLoanAmount ?? 0);
+        // $femaleTotalBalance = (float)($femaleTotalBalance ?? 0);
+        // $maleTotalBalance = (float)($maleTotalBalance ?? 0);
+        // $youthTotalBalance = (float)($youthTotalBalance ?? 0);
+        // $pwdTotalBalance = (float)($pwdTotalBalance ?? 0);
+        // $refugeMaleShareSum = (float)($refugeMaleShareSum ?? 0);
+        // $refugeFemaleShareSum = (float)($refugeFemaleShareSum ?? 0);
 
         return $content
             ->header('<div style="
