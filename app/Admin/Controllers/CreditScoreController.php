@@ -2,69 +2,60 @@
 
 namespace App\Admin\Controllers;
 
-use App\Models\Meeting;
-use App\Models\MemberPosition;
+use App\Http\Controllers\Controller;
 use App\Models\OrgAllocation;
-use App\Models\Transaction;
 use App\Models\Sacco;
 use App\Models\User;
 use App\Models\VslaOrganisationSacco;
-use Encore\Admin\Auth\Database\Administrator;
-use Encore\Admin\Controllers\AdminController;
 use Encore\Admin\Facades\Admin;
-use Encore\Admin\Form;
-use Encore\Admin\Grid;
-use Encore\Admin\Show;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Str;
 
-class CreditScoreController extends AdminController
+class CreditScoreController extends Controller
 {
     protected $title = 'Credit Scores';
 
-    protected function grid()
-{
-    $admin = Admin::user();
-    $adminId = $admin->id;
+    public function grid()
+    {
+        $admin = Admin::user();
+        $adminId = $admin->id;
 
-    // Get the SACCO data based on permissions
-    $query = Sacco::query();
+        // Get the SACCO data based on permissions
+        $query = Sacco::query();
 
-    if (!$admin->isRole('admin')) {
-        $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
-        if ($orgAllocation) {
-            $orgId = $orgAllocation->vsla_organisation_id;
-            $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)
-                ->pluck('sacco_id')->toArray();
-            $query->whereIn('id', $saccoIds);
+        if (!$admin->isRole('admin')) {
+            $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+            if ($orgAllocation) {
+                $orgId = $orgAllocation->vsla_organisation_id;
+                $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)
+                    ->pluck('sacco_id')->toArray();
+                $query->whereIn('id', $saccoIds);
+            }
         }
-    }
 
-    $saccos = $query->whereNotIn('status', ['deleted', 'inactive'])
-        ->whereHas('users', function ($query) {
-            $query->whereIn('position_id', function ($subQuery) {
-                $subQuery->select('id')
-                    ->from('positions')
-                    ->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+        $saccos = $query->whereNotIn('status', ['deleted', 'inactive'])
+            ->whereHas('users', function ($query) {
+                $query->whereIn('position_id', function ($subQuery) {
+                    $subQuery->select('id')
+                        ->from('positions')
+                        ->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+                })
+                ->whereNotNull('phone_number')
+                ->whereNotNull('name');
             })
-            ->whereNotNull('phone_number')
-            ->whereNotNull('name');
-        })
-        ->whereHas('meetings')
-        ->with(['users', 'meetings', 'transactions'])
-        ->get();
+            ->whereHas('meetings')
+            ->with(['users', 'meetings', 'transactions'])
+            ->get();
 
-    // Map the saccos to include all required data
-    $processedSaccos = $saccos->map(function ($sacco) {
-        return $this->prepareSaccoData($sacco);
-    });
+        // Map the saccos to include all required data except credit score
+        $processedSaccos = $saccos->map(function ($sacco) {
+            return $this->prepareSaccoData($sacco);
+        });
 
-    // Return the view with both the processed collection and individual sacco data
-    return view('admin.sacco.analysis', [
-        'saccos' => $processedSaccos,  // All SACCOs data
-        'sacco' => $processedSaccos->first()  // First SACCO for backward compatibility
-    ]);
-}
+        return view('admin.sacco.analysis', [
+            'saccos' => $processedSaccos,  // All SACCOs data
+            'sacco' => $processedSaccos->first()  // First SACCO for backward compatibility
+        ]);
+    }
 
     private function prepareSaccoData($sacco)
     {
@@ -126,15 +117,24 @@ class CreditScoreController extends AdminController
                     'accounts' => $this->calculateYouthSavingsAccounts($sacco),
                     'balance' => $this->calculateYouthSavingsBalance($sacco)
                 ]
-            ],
+            ]
 
-            // Credit Score
-            'creditScore' => $this->calculateCreditScore($sacco)
+            // Note: We no longer include 'creditScore' here, it will be fetched via AJAX.
         ];
     }
 
-    // Calculation Methods
+    public function getCreditScoreData($saccoId)
+    {
+        $sacco = Sacco::find($saccoId);
+        if (!$sacco) {
+            return response()->json(['error' => 'Sacco not found'], 404);
+        }
 
+        $scoreData = $this->calculateCreditScore($sacco);
+        return response()->json($scoreData);
+    }
+
+    // Calculation Methods (unchanged)
     private function calculateTotalMembers($sacco)
     {
         return $sacco->users()
@@ -195,7 +195,6 @@ class CreditScoreController extends AdminController
         return $totalMeetings > 0 ? round($totalAttendance / $totalMeetings) : 0;
     }
 
-    // Loan Calculations
     private function calculateTotalLoans($sacco)
     {
         return $sacco->transactions()
@@ -284,13 +283,12 @@ class CreditScoreController extends AdminController
             ->sum('transactions.amount'));
     }
 
-    // Savings Calculations
     private function calculateTotalSavingsAccounts($sacco)
     {
         return $sacco->transactions()
             ->where('type', 'SHARE')
             ->distinct('source_user_id')
-            ->count();
+            ->count('source_user_id');
     }
 
     private function calculateTotalSavingsBalance($sacco)
@@ -315,7 +313,7 @@ class CreditScoreController extends AdminController
             ->where('transactions.type', 'SHARE')
             ->where('users.sex', 'Male')
             ->distinct('source_user_id')
-            ->count();
+            ->count('source_user_id');
     }
 
     private function calculateMaleSavingsBalance($sacco)
@@ -334,7 +332,7 @@ class CreditScoreController extends AdminController
             ->where('transactions.type', 'SHARE')
             ->where('users.sex', 'Female')
             ->distinct('source_user_id')
-            ->count();
+            ->count('source_user_id');
     }
 
     private function calculateFemaleSavingsBalance($sacco)
@@ -353,7 +351,7 @@ class CreditScoreController extends AdminController
             ->where('transactions.type', 'SHARE')
             ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
             ->distinct('source_user_id')
-            ->count();
+            ->count('source_user_id');
     }
 
     private function calculateYouthSavingsBalance($sacco)
@@ -364,19 +362,6 @@ class CreditScoreController extends AdminController
             ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
             ->sum('transactions.amount'));
     }
-
-private function getCreditScoreDescription($score)
-{
-    if ($score >= 80) {
-        return "Excellent credit standing. The group demonstrates strong savings culture and reliable loan repayment history.";
-    } else if ($score >= 60) {
-        return "Good credit standing. The group shows consistent savings and satisfactory loan management.";
-    } else if ($score >= 40) {
-        return "Fair credit standing. There's room for improvement in savings and loan repayment patterns.";
-    } else {
-        return "Needs improvement. The group should focus on increasing savings and improving loan repayment rates.";
-    }
-}
 
     private function calculateCreditScore($sacco)
     {
@@ -402,7 +387,7 @@ private function getCreditScoreDescription($score)
 
             return [
                 'score' => $result['credit_score'] ?? null,
-                'description' => $result['description'] ?? null
+                'description' => $result['description'] ?? 'No description available'
             ];
         } catch (\Exception $e) {
             return [

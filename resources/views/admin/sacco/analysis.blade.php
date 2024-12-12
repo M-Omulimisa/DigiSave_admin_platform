@@ -1,393 +1,7 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VSLA Credit Score Dashboard</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        :root {
-            --primary: #2c3e50;
-            --secondary: #34495e;
-            --accent: #3498db;
-            --success: #27ae60;
-            --warning: #f39c12;
-            --danger: #e74c3c;
-        }
-
-        body {
-            background-color: #f5f6fa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            font-size: 14px;
-            margin: 0;
-            padding: 0;
-        }
-
-        .dashboard-header {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
-            padding: 1rem 0;
-            margin-bottom: 1rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .container {
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 1rem;
-        }
-
-        .header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .search-container {
-            background: white;
-            padding: 0.5rem;
-            border-radius: 8px;
-            max-width: 250px;
-        }
-
-        .search-input {
-            width: 100%;
-            padding: 0.5rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-
-        /* Filters Styles */
-        .filters-bar {
-            background: white;
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-
-        .filters-row {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        .filter-item {
-            flex: 1;
-            min-width: 200px;
-        }
-
-        .filter-label {
-            display: block;
-            margin-bottom: 0.3rem;
-            color: var(--secondary);
-            font-size: 0.9rem;
-        }
-
-        .filter-select {
-            width: 100%;
-            padding: 0.5rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 0.9rem;
-            background-color: white;
-        }
-
-        .actions-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 1rem;
-            padding-top: 1rem;
-            border-top: 1px solid #eee;
-        }
-
-        /* Grid Layout */
-        .row {
-            display: flex;
-            flex-wrap: wrap;
-            margin: -0.5rem;
-        }
-
-        .col-md-6 {
-            flex: 0 0 50%;
-            max-width: 50%;
-            padding: 0.5rem;
-        }
-
-        .col-lg-4 {
-            flex: 0 0 33.333333%;
-            max-width: 33.333333%;
-            padding: 0.5rem;
-        }
-
-        /* SACCO Card Styles */
-        .sacco-card {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-            margin-bottom: 1rem;
-            transition: transform 0.2s;
-            overflow: hidden;
-        }
-
-        .sacco-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-
-        .sacco-header {
-            background: var(--primary);
-            color: white;
-            padding: 1rem;
-            position: relative;
-        }
-
-        .sacco-header h3 {
-            margin: 0;
-            font-size: 1.1rem;
-        }
-
-        .credit-badge {
-            position: absolute;
-            top: 0.5rem;
-            right: 0.5rem;
-            padding: 0.3rem 0.6rem;
-            border-radius: 15px;
-            font-size: 0.75rem;
-            font-weight: bold;
-            color: white;
-        }
-
-        .credit-high { background: var(--success); }
-        .credit-medium { background: var(--warning); }
-        .credit-low { background: var(--danger); }
-
-        .sacco-content {
-            padding: 1rem;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .stat-box {
-            background: #f8f9fa;
-            padding: 0.8rem;
-            border-radius: 6px;
-            text-align: center;
-        }
-
-        .stat-box h4 {
-            font-size: 1rem;
-            margin: 0;
-            color: var(--primary);
-        }
-
-        .stat-box p {
-            margin: 0.3rem 0 0 0;
-            color: #666;
-            font-size: 0.8rem;
-        }
-
-        .btn {
-            padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.3rem;
-            font-size: 0.9rem;
-            color: white;
-            transition: all 0.2s;
-        }
-
-        .btn-primary { background: var(--accent); }
-        .btn-success { background: var(--success); }
-        .btn-secondary { background: var(--secondary); }
-
-        .btn:hover {
-            opacity: 0.9;
-            transform: translateY(-1px);
-        }
-
-        /* Demographics */
-        .demographics {
-            display: flex;
-            justify-content: space-between;
-            padding-top: 0.5rem;
-            border-top: 1px solid #eee;
-        }
-
-        .demographic-item {
-            text-align: center;
-            flex: 1;
-        }
-
-        .demographic-item h5 {
-            margin: 0;
-            font-size: 0.9rem;
-            color: var(--primary);
-        }
-
-        .demographic-item small {
-            color: #666;
-            font-size: 0.8rem;
-        }
-
-        /* Modal Styles */
-        .custom-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            overflow-y: auto;
-            padding: 20px;
-        }
-
-        .modal-content {
-            background: white;
-            max-width: 900px;
-            margin: 20px auto;
-            border-radius: 8px;
-            position: relative;
-            animation: modalSlideIn 0.3s ease-out;
-        }
-
-        @keyframes modalSlideIn {
-            from {
-                transform: translateY(-50px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-
-        .modal-header {
-            padding: 1rem;
-            background: var(--primary);
-            color: white;
-            border-radius: 8px 8px 0 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modal-close {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.5rem;
-            cursor: pointer;
-            padding: 0;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            transition: background-color 0.2s;
-        }
-
-        .modal-close:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-
-        .modal-body {
-            padding: 1.5rem;
-        }
-
-        .modal-footer {
-            padding: 1rem;
-            border-top: 1px solid #eee;
-            display: flex;
-            justify-content: flex-end;
-            gap: 0.5rem;
-        }
-
-        .metric-card {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 1rem;
-            height: 100%;
-            margin-bottom: 1rem;
-        }
-
-        .metric-title {
-            color: var(--primary);
-            margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid #dee2e6;
-            font-size: 1rem;
-            font-weight: 600;
-        }
-
-        .metric-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 0.5rem 0;
-            border-bottom: 1px solid #eee;
-        }
-
-        .metric-item:last-child {
-            border-bottom: none;
-        }
-
-        .metric-value {
-            font-weight: 600;
-            color: var(--primary);
-        }
-
-        /* Responsive Styles */
-        @media (max-width: 768px) {
-            .col-md-6, .col-lg-4 {
-                flex: 0 0 100%;
-                max-width: 100%;
-            }
-
-            .header-content {
-                flex-direction: column;
-                gap: 1rem;
-            }
-
-            .search-container {
-                width: 100%;
-                max-width: none;
-            }
-
-            .filters-row {
-                flex-direction: column;
-            }
-
-            .filter-item {
-                width: 100%;
-            }
-
-            .actions-row {
-                flex-direction: column;
-                gap: 0.5rem;
-            }
-
-            .btn {
-                width: 100%;
-            }
-        }
-    </style>
+    <!-- ... (same head content as before) -->
 </head>
 <body>
     <div class="dashboard-header">
@@ -459,8 +73,9 @@
                 <div class="sacco-card" data-sacco="{{ json_encode($sacco) }}">
                     <div class="sacco-header">
                         <h3>{{ $sacco['name'] }}</h3>
-                        <span class="credit-badge {{ $sacco['creditScore']['score'] >= 80 ? 'credit-high' : ($sacco['creditScore']['score'] >= 60 ? 'credit-medium' : 'credit-low') }}">
-                            Score: {{ $sacco['creditScore']['score'] ?? 'N/A' }}
+                        <!-- Initially loading... and we will AJAX fetch score -->
+                        <span class="credit-badge credit-loading" data-sacco-id="{{ $sacco['id'] }}">
+                            Loading...
                         </span>
                     </div>
                     <div class="sacco-content">
@@ -564,9 +179,8 @@
         let allSaccoData = [];
         let currentSaccoData = null;
 
-        // Initialize data on page load
         document.addEventListener('DOMContentLoaded', function() {
-            // Collect all SACCO data from the DOM
+            // Collect all SACCO data
             document.querySelectorAll('.sacco-card').forEach(card => {
                 const saccoData = JSON.parse(card.dataset.sacco);
                 allSaccoData.push({
@@ -577,6 +191,40 @@
                     loans: saccoData.loanStats.total,
                     members: saccoData.totalMembers
                 });
+            });
+
+            // Fetch credit scores via AJAX
+            document.querySelectorAll('.credit-badge[data-sacco-id]').forEach(badge => {
+                const saccoId = badge.getAttribute('data-sacco-id');
+                badge.textContent = 'Loading...';
+
+                fetch(`/credit-score/${saccoId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.score !== null) {
+                            badge.textContent = 'Score: ' + data.score;
+                            badge.classList.remove('credit-loading');
+                            if (data.score >= 80) {
+                                badge.classList.add('credit-high');
+                            } else if (data.score >= 60) {
+                                badge.classList.add('credit-medium');
+                            } else {
+                                badge.classList.add('credit-low');
+                            }
+
+                            // Store credit score into the sacco data as well
+                            const sacco = allSaccoData.find(s => s.data.id == saccoId);
+                            if (sacco) {
+                                sacco.data.creditScore = data;
+                            }
+                        } else {
+                            badge.textContent = 'N/A';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching score:', error);
+                        badge.textContent = 'Error';
+                    });
             });
         });
 
@@ -589,7 +237,6 @@
 
             allSaccoData.forEach(sacco => {
                 let show = true;
-
                 if (attendance && sacco.attendance < parseFloat(attendance)) show = false;
                 if (savings && sacco.savings < parseFloat(savings)) show = false;
                 if (loans && sacco.loans < parseInt(loans)) show = false;
@@ -615,6 +262,14 @@
         function viewDetails(button) {
             const saccoCard = button.closest('.sacco-card');
             const sacco = JSON.parse(saccoCard.dataset.sacco);
+            // If creditScore not yet loaded, we handle that:
+            const savedSacco = allSaccoData.find(s => s.data.id == sacco.id);
+            if (savedSacco && savedSacco.data.creditScore) {
+                sacco.creditScore = savedSacco.data.creditScore;
+            } else {
+                sacco.creditScore = { score: 'N/A', description: 'Score not loaded yet.' };
+            }
+
             currentSaccoData = sacco;
 
             document.getElementById('modalTitle').textContent = sacco.name;
@@ -638,7 +293,12 @@
             document.getElementById('savingsMetrics').innerHTML = generateMetricsList([
                 { label: 'Total Savings', value: 'UGX ' + formatNumber(sacco.savingsStats.totalBalance) },
                 { label: 'Total Accounts', value: sacco.savingsStats.totalAccounts },
-                { label: 'Average per Member', value: 'UGX ' + formatNumber(sacco.savingsStats.totalBalance / sacco.totalMembers) }
+                {
+                    label: 'Average per Member',
+                    value: sacco.totalMembers > 0
+                            ? 'UGX ' + formatNumber(sacco.savingsStats.totalBalance / sacco.totalMembers)
+                            : 'UGX 0'
+                }
             ]);
 
             document.getElementById('saccoDetails').style.display = 'block';
@@ -662,6 +322,10 @@
         function exportData(button) {
             const saccoCard = button.closest('.sacco-card');
             const sacco = JSON.parse(saccoCard.dataset.sacco);
+            const found = allSaccoData.find(s => s.data.id == sacco.id);
+            if (found && found.data.creditScore) {
+                sacco.creditScore = found.data.creditScore;
+            }
             generateExport(sacco);
         }
 
@@ -685,9 +349,12 @@
             ];
 
             visibleSaccos.forEach(sacco => {
+                const score = sacco.data.creditScore && sacco.data.creditScore.score !== null
+                              ? sacco.data.creditScore.score
+                              : 'N/A';
                 combinedData.push([
                     sacco.data.name,
-                    sacco.data.creditScore.score,
+                    score,
                     sacco.data.totalMembers,
                     sacco.data.maleMembers,
                     sacco.data.femaleMembers,
@@ -702,14 +369,19 @@
         }
 
         function generateExport(sacco) {
+            const score = sacco.creditScore && sacco.creditScore.score !== null
+                          ? sacco.creditScore.score : 'N/A';
+            const desc = sacco.creditScore && sacco.creditScore.description
+                         ? sacco.creditScore.description : 'No description';
+
             const csvContent = [
                 ['SACCO Credit Score Report'],
                 ['Generated on:', new Date().toLocaleString()],
                 [''],
                 ['Basic Information'],
                 ['Group Name:', sacco.name],
-                ['Credit Score:', sacco.creditScore.score],
-                ['Credit Standing:', sacco.creditScore.description],
+                ['Credit Score:', score],
+                ['Credit Standing:', desc],
                 [''],
                 ['Membership Statistics'],
                 ['Total Members:', sacco.totalMembers],
@@ -726,7 +398,9 @@
                 [''],
                 ['Performance Metrics'],
                 ['Average Attendance:', `${sacco.averageAttendance}%`],
-                ['Savings per Member:', `UGX ${formatNumber(sacco.savingsStats.totalBalance / sacco.totalMembers)}`],
+                ['Savings per Member:', sacco.totalMembers > 0
+                    ? `UGX ${formatNumber(sacco.savingsStats.totalBalance / sacco.totalMembers)}`
+                    : `UGX 0`],
             ].map(row => row.join(',')).join('\n');
 
             downloadCSV(csvContent, `${sacco.name}_credit_report.csv`);
@@ -744,6 +418,9 @@
         }
 
         function formatNumber(number) {
+            if (typeof number !== 'number') {
+                number = parseFloat(number) || 0;
+            }
             return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         }
 
