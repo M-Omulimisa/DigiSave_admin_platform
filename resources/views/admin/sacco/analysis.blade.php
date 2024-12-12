@@ -239,7 +239,6 @@
             font-size: 0.8rem;
         }
 
-        /* Buttons container style */
         .button-container {
             display: flex;
             gap: 0.5rem;
@@ -571,16 +570,15 @@
         let allSaccoData = [];
         let currentSaccoData = null;
 
-        // Initialize data on page load
         document.addEventListener('DOMContentLoaded', function() {
             // Capitalize group names
             document.querySelectorAll('.sacco-header h3').forEach(groupNameElement => {
                 let groupName = groupNameElement.textContent;
-                // Capitalize the first letter of each word
+                // Capitalize first letter of each word
                 groupNameElement.textContent = groupName.replace(/\b\w/g, char => char.toUpperCase());
             });
 
-            // Collect all SACCO data from the DOM
+            // Collect SACCO data from the DOM
             document.querySelectorAll('.sacco-card').forEach(card => {
                 const saccoData = JSON.parse(card.dataset.sacco);
                 allSaccoData.push({
@@ -647,7 +645,6 @@
                 { label: 'Total Principal', value: 'UGX ' + formatNumber(sacco.loanStats.principal) },
                 { label: 'Total Interest', value: 'UGX ' + formatNumber(sacco.loanStats.interest) },
                 { label: 'Repayments', value: 'UGX ' + formatNumber(sacco.loanStats.repayments) },
-                // Add Max Loan Amount to Loan Metrics
                 { label: 'Max Loan Amount', value: 'UGX ' + formatNumber(sacco.maxLoanAmount) }
             ]);
 
@@ -739,7 +736,6 @@
                 ['Total Principal:', `UGX ${formatNumber(sacco.loanStats.principal)}`],
                 ['Total Interest:', `UGX ${formatNumber(sacco.loanStats.interest)}`],
                 ['Total Repayments:', `UGX ${formatNumber(sacco.loanStats.repayments)}`],
-                // Include Max Loan Amount in export
                 ['Max Loan Amount:', `UGX ${formatNumber(sacco.maxLoanAmount)}`],
                 [''],
                 ['Performance Metrics'],
@@ -765,14 +761,12 @@
             return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         }
 
-        // Event Listeners
         document.getElementById('searchInput').addEventListener('input', applyFilters);
         document.getElementById('attendanceFilter').addEventListener('change', applyFilters);
         document.getElementById('savingsFilter').addEventListener('change', applyFilters);
         document.getElementById('loansFilter').addEventListener('change', applyFilters);
         document.getElementById('membersFilter').addEventListener('change', applyFilters);
 
-        // Close modal when clicking outside
         window.onclick = function(event) {
             const modal = document.getElementById('saccoDetails');
             if (event.target === modal) {
@@ -780,7 +774,6 @@
             }
         };
 
-        // Close modal on escape key
         document.addEventListener('keydown', function(event) {
             if (event.key === 'Escape') {
                 closeModal();
