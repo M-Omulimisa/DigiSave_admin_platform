@@ -55,37 +55,19 @@
         right: 20px;
     }
 
-    .stat-card.blue {
-        background-color: #e7f3ff;
-    }
+    .stat-card.blue { background-color: #e7f3ff; }
+    .stat-card.yellow { background-color: #fffbe7; }
+    .stat-card.orange { background-color: #fff0e7; }
+    .stat-card.purple { background-color: #f4e7ff; }
+    .stat-card.green { background-color: #e7ffe9; }
+    .stat-card.red { background-color: #ffe7e7; }
 
-    .stat-card.yellow {
-        background-color: #fffbe7;
-    }
-
-    .stat-card.orange {
-        background-color: #fff0e7;
-    }
-
-    .stat-card.purple {
-        background-color: #f4e7ff;
-    }
-
-    .icon-blue {
-        color: #007bff;
-    }
-
-    .icon-yellow {
-        color: #ffc107;
-    }
-
-    .icon-orange {
-        color: #fd7e14;
-    }
-
-    .icon-purple {
-        color: #6f42c1;
-    }
+    .icon-blue { color: #007bff; }
+    .icon-yellow { color: #ffc107; }
+    .icon-orange { color: #fd7e14; }
+    .icon-purple { color: #6f42c1; }
+    .icon-green { color: #28a745; }
+    .icon-red { color: #dc3545; }
 </style>
 
 <div class="stat-card-container">
@@ -95,22 +77,39 @@
         <div class="count">{{ $femaleMembersCount }}</div>
         <div class="description">Total Savings: {{ $femaleTotalBalance }} UGX</div>
     </div>
+
     <div class="stat-card yellow">
         <div class="title">Male Members</div>
         <div class="icon icon-yellow"><i class="fas fa-male"></i></div>
         <div class="count">{{ $maleMembersCount }}</div>
         <div class="description">Total Savings: {{ $maleTotalBalance }} UGX</div>
     </div>
+
     <div class="stat-card orange">
         <div class="title">Youth Members</div>
         <div class="icon icon-orange"><i class="fas fa-users"></i></div>
         <div class="count">{{ $youthMembersCount }}</div>
         <div class="description">Total Savings: {{ $youthTotalBalance }} UGX</div>
     </div>
+
     <div class="stat-card purple">
         <div class="title">PWD Members</div>
         <div class="icon icon-purple"><i class="fas fa-wheelchair"></i></div>
         <div class="count">{{ $pwdMembersCount }}</div>
         <div class="description">Total Savings: {{ $pwdTotalBalance }} UGX</div>
+    </div>
+
+    <div class="stat-card green">
+        <div class="title">Male Refugees</div>
+        <div class="icon icon-green"><i class="fas fa-user-shield"></i></div>
+        <div class="count">{{ $refugeeMaleMembersCount }}</div>
+        <div class="description">Total Savings: {{ $refugeeMaleSavings }} UGX</div>
+    </div>
+
+    <div class="stat-card red">
+        <div class="title">Female Refugees</div>
+        <div class="icon icon-red"><i class="fas fa-user-shield"></i></div>
+        <div class="count">{{ $refugeeFemaleMembersCount }}</div>
+        <div class="description">Total Savings: {{ $refugeeFemaleSavings }} UGX</div>
     </div>
 </div>

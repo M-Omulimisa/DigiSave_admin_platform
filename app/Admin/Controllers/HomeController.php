@@ -695,6 +695,29 @@ private function formatCurrency($amount)
                 return Carbon::parse($user->dob)->age < 35;
             })->count() / $totalMembers * 100 : 0;
 
+            // Get refugee users by gender
+            $refugeMaleUsers = $filteredUsers->whereIn('sacco_id', $saccoIds)
+            ->where('refugee_status', 'yes')
+            ->where('sex', 'Male');
+            $refugeFemaleUsers = $filteredUsers->whereIn('sacco_id', $saccoIds)
+            ->where('refugee_status', 'yes')
+            ->where('sex', 'Female');
+
+            // Get refugee savings by gender
+            $refugeMaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->whereIn('transactions.sacco_id', $saccoIds)
+            ->where('transactions.type', 'SHARE')
+            ->where('users.refugee_status', 'yes')
+            ->where('users.sex', 'Male')
+            ->sum('transactions.amount');
+
+            $refugeFemaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->whereIn('transactions.sacco_id', $saccoIds)
+            ->where('transactions.type', 'SHARE')
+            ->where('users.refugee_status', 'yes')
+            ->where('users.sex', 'Female')
+            ->sum('transactions.amount');
+
             $filteredUsersForBalances = $filteredUsers->whereIn('sacco_id', $saccoIds);
             $filteredUsersIds = $filteredUsers->pluck('id');
             $pwdUsers = $filteredUsers->where('pwd', 'Yes');
@@ -963,6 +986,28 @@ private function formatCurrency($amount)
                 return Carbon::parse($user->dob)->age < 35;
             })->count() / $totalMembers * 100 : 0;
 
+            $refugeMaleUsers = $filteredUsers->whereIn('sacco_id', $saccoIds)
+            ->where('refugee_status', 'yes')
+            ->where('sex', 'Male');
+            $refugeFemaleUsers = $filteredUsers->whereIn('sacco_id', $saccoIds)
+            ->where('refugee_status', 'yes')
+            ->where('sex', 'Female');
+
+            // Get refugee savings by gender
+            $refugeMaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->whereIn('transactions.sacco_id', $saccoIds)
+            ->where('transactions.type', 'SHARE')
+            ->where('users.refugee_status', 'yes')
+            ->where('users.sex', 'Male')
+            ->sum('transactions.amount');
+
+            $refugeFemaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->whereIn('transactions.sacco_id', $saccoIds)
+            ->where('transactions.type', 'SHARE')
+            ->where('users.refugee_status', 'yes')
+            ->where('users.sex', 'Female')
+            ->sum('transactions.amount');
+
             $filteredUsersForBalances = $filteredUsers->whereIn('sacco_id', $saccoIds);
             $filteredUsersIds = $filteredUsers->pluck('id');
             $pwdUsers = $filteredUsers->where('pwd', 'Yes');
@@ -1200,6 +1245,26 @@ private function formatCurrency($amount)
             $youthMembersPercentage = ($totalMembers > 0) ? $filteredUsers->filter(function ($user) {
                 return Carbon::parse($user->dob)->age < 35;
             })->count() / $totalMembers * 100 : 0;
+
+            $refugeMaleUsers = $filteredUsers->where('refugee_status', 'yes')
+            ->where('sex', 'Male');
+            $refugeFemaleUsers = $filteredUsers->where('refugee_status', 'yes')
+            ->where('sex', 'Female');
+
+            // Get refugee savings by gender
+            $refugeMaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            // ->whereIn('transactions.sacco_id', $saccoIds)
+            ->where('transactions.type', 'SHARE')
+            ->where('users.refugee_status', 'yes')
+            ->where('users.sex', 'Male')
+            ->sum('transactions.amount');
+
+            $refugeFemaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            // ->whereIn('transactions.sacco_id', $saccoIds)
+            ->where('transactions.type', 'SHARE')
+            ->where('users.refugee_status', 'yes')
+            ->where('users.sex', 'Female')
+            ->sum('transactions.amount');
 
             $filteredUsersForBalances = $filteredUsers;
             $pwdUsers = $filteredUsers->where('pwd', 'Yes');
@@ -1696,6 +1761,10 @@ private function formatCurrency($amount)
                 'youthTotalBalance' => number_format($youthTotalBalance),
                 'pwdMembersCount' => $pwdMembersCount,
                 'pwdTotalBalance' => number_format($pwdTotalBalance),
+                'refugeeMaleMembersCount' => $refugeMaleUsers->count(),
+                'refugeeFemaleMembersCount' => $refugeFemaleUsers->count(),
+                'refugeeMaleSavings' => number_format($refugeMaleShareSum, 2),
+                'refugeeFemaleSavings' => number_format($refugeFemaleShareSum, 2)
             ]) .
             '<div style="
                     background: linear-gradient(135deg, #f7faf9, #ffffff);
