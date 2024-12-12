@@ -1520,28 +1520,28 @@ private function formatCurrency($amount)
         $refugeFemaleUsers = $femaleUsers->where('refugee_status', 'Yes');
         $refugeFemaleUsersCount = $refugeFemaleUsers->count();
 
-        dd([
-            'all_male_count' => $maleUsers->count(),
-            'all_female_count' => $femaleUsers->count(),
-            'refugee_male_count' => $refugeMaleUsers->count(),
-            'refugee_female_count' => $refugeFemaleUsers->count(),
-            'refugee_male_details' => $refugeMaleUsers->map(function($user) {
-                return [
-                    'first_name' => $user->first_name,
-                    'last_name' => $user->last_name,
-                    'refugee_status' => $user->refugee_status,
-                    'sex' => $user->sex
-                ];
-            }),
-            'refugee_female_details' => $refugeFemaleUsers->map(function($user) {
-                return [
-                    'first_name' => $user->first_name,
-                    'last_name' => $user->last_name,
-                    'refugee_status' => $user->refugee_status,
-                    'sex' => $user->sex
-                ];
-            })
-        ]);
+        // dd([
+        //     'all_male_count' => $maleUsers->count(),
+        //     'all_female_count' => $femaleUsers->count(),
+        //     'refugee_male_count' => $refugeMaleUsers->count(),
+        //     'refugee_female_count' => $refugeFemaleUsers->count(),
+        //     'refugee_male_details' => $refugeMaleUsers->map(function($user) {
+        //         return [
+        //             'first_name' => $user->first_name,
+        //             'last_name' => $user->last_name,
+        //             'refugee_status' => $user->refugee_status,
+        //             'sex' => $user->sex
+        //         ];
+        //     }),
+        //     'refugee_female_details' => $refugeFemaleUsers->map(function($user) {
+        //         return [
+        //             'first_name' => $user->first_name,
+        //             'last_name' => $user->last_name,
+        //             'refugee_status' => $user->refugee_status,
+        //             'sex' => $user->sex
+        //         ];
+        //     })
+        // ]);
 
         $youthUsers = $filteredUsersForBalances->filter(function ($user) {
             return Carbon::parse($user->dob)->age < 35;
@@ -1800,7 +1800,7 @@ private function formatCurrency($amount)
                 'pwdMembersCount' => $pwdMembersCount,
                 'pwdTotalBalance' => number_format($pwdTotalBalance),
                 'refugeeMaleMembersCount' => $refugeMaleUsersCount,
-                'refugeeFemaleMembersCount' => $refugeMaleUsersCount,
+                'refugeeFemaleMembersCount' => $refugeFemaleUsersCount,
                 'refugeeMaleSavings' => number_format($refugeMaleShareSum, 2),
                 'refugeeFemaleSavings' => number_format($refugeFemaleShareSum, 2)
             ]) .
