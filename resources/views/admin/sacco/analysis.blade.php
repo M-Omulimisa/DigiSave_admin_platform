@@ -642,10 +642,10 @@
 
             document.getElementById('loanMetrics').innerHTML = generateMetricsList([
                 { label: 'Active Loans', value: sacco.loanStats.total },
-                { label: 'Total Principal', value: 'UGX ' + formatNumber(sacco.loanStats.principal) },
-                { label: 'Total Interest', value: 'UGX ' + formatNumber(sacco.loanStats.interest) },
-                { label: 'Repayments', value: 'UGX ' + formatNumber(sacco.loanStats.repayments) },
-                { label: 'Max Loan Amount', value: 'UGX ' + formatNumber(sacco.maxLoanAmount) }
+                { label: 'Total Principal', value: 'UGX ' + formatNumber(sacco.loanStats.principal ?? 0) },
+                { label: 'Total Interest', value: 'UGX ' + formatNumber(sacco.loanStats.interest ?? 0) },
+                { label: 'Repayments', value: 'UGX ' + formatNumber(sacco.loanStats.repayments ?? 0) },
+                { label: 'Max Loan Amount', value: 'UGX ' + formatNumber(sacco.maxLoanAmount ?? 0) }
             ]);
 
             document.getElementById('savingsMetrics').innerHTML = generateMetricsList([
