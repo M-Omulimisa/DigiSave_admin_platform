@@ -59,9 +59,9 @@
         background-color: #4bc0c0;
     }
 
-.progress-bar.pwds {
-    background-color: #716802;
-}
+    .progress-bar.pwds {
+        background-color: #716802;
+    }
 
     .loan-category .row {
         display: flex;
@@ -87,6 +87,7 @@
         </div>
     </div>
 
+    <!-- Existing Loan Categories: Women, Men, Youth, PWD -->
     <div class="row">
         <div class="col-12">
             <div class="loan-category">
@@ -105,7 +106,7 @@
                             <div class="progress-bar men" role="progressbar" style="width: {{ $percentageLoansMen }}%;" aria-valuenow="{{ $percentageLoansMen }}" aria-valuemin="0" aria-valuemax="100">{{ number_format($percentageLoansMen, 2) }}%</div>
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-4 column-divider">
                         <p>Number of Loans Disbursed to Youths</p>
                         <h4>{{ $loansDisbursedToYouths }}</h4>
                         <div class="progress">
@@ -122,6 +123,22 @@
                 </div>
             </div>
 
+            <!-- New Section: Refugee Loans by Gender -->
+            <div class="loan-category">
+                <div class="row">
+                    <div class="col-md-6 column-divider">
+                        <p>Number of Loans Disbursed to Refugee Women</p>
+                        <h4>{{ $refugeeFemaleLoanCount }}</h4>
+                        <!-- If you want progress bars, compute percentage and add similar as above -->
+                    </div>
+                    <div class="col-md-6">
+                        <p>Number of Loans Disbursed to Refugee Men</p>
+                        <h4>{{ $refugeeMaleLoanCount }}</h4>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Existing Loan Amount Categories: Women, Men, Youth, PWD -->
             <div class="loan-category">
                 <div class="row">
                     <div class="col-md-4 column-divider">
@@ -132,13 +149,27 @@
                         <p>Loan Amount Disbursed to Men</p>
                         <h4>{{ number_format(abs($loanSumForMen), 2) }} UGX</h4>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-4 column-divider">
                         <p>Loan Amount Disbursed to Youth</p>
                         <h4>{{ number_format(abs($loanSumForYouths), 2) }} UGX</h4>
                     </div>
                     <div class="col-md-4">
                         <p>Loan Amount Disbursed to PWDs</p>
                         <h4>{{ number_format(abs($pwdTotalLoanBalance), 2) }} UGX</h4>
+                    </div>
+                </div>
+            </div>
+
+            <!-- New Section: Refugee Loan Amounts by Gender -->
+            <div class="loan-category">
+                <div class="row">
+                    <div class="col-md-6 column-divider">
+                        <p>Loan Amount Disbursed to Refugee Women</p>
+                        <h4>{{ number_format(abs($refugeeFemaleLoanAmount), 2) }} UGX</h4>
+                    </div>
+                    <div class="col-md-6">
+                        <p>Loan Amount Disbursed to Refugee Men</p>
+                        <h4>{{ number_format(abs($refugeeMaleLoanAmount), 2) }} UGX</h4>
                     </div>
                 </div>
             </div>
