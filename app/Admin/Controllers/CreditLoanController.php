@@ -8,7 +8,8 @@ use Encore\Admin\Controllers\AdminController;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Encore\Admin\Show;
-use Encore\Admin\Actions\RowAction;
+use App\Admin\Actions\ApproveLoan;
+use App\Admin\Actions\RejectLoan;
 
 class CreditLoanController extends AdminController
 {
@@ -20,54 +21,54 @@ class CreditLoanController extends AdminController
      * @return Grid
      */
     protected function grid()
-{
-    $grid = new Grid(new CreditLoan());
+    {
+        $grid = new Grid(new CreditLoan());
 
-    // Display basic fields in the grid
-    $grid->column('id', __('ID'))->sortable();
-    $grid->column('sacco.name', __('Sacco'))->sortable();
+        // Display basic fields in the grid
+        $grid->column('id', __('ID'))->sortable();
+        $grid->column('sacco.name', __('Sacco'))->sortable();
 
-    // Format loan amount in UGX
-    $grid->column('loan_amount', __('Loan Amount'))->display(function ($value) {
-        return 'UGX ' . number_format(round($value), 0, '.', ',');
-    })->sortable();
+        // Format loan amount in UGX
+        $grid->column('loan_amount', __('Loan Amount'))->display(function ($value) {
+            return 'UGX ' . number_format(round($value), 0, '.', ',');
+        })->sortable();
 
-    $grid->column('loan_term', __('Loan Term (months)'))->sortable();
+        $grid->column('loan_term', __('Loan Term (months)'))->sortable();
 
-    // Format total interest in UGX
-    $grid->column('total_interest', __('Total Interest'))->display(function ($value) {
-        return 'UGX ' . number_format(round($value), 0, '.', ',');
-    })->sortable();
+        // Format total interest in UGX
+        $grid->column('total_interest', __('Total Interest'))->display(function ($value) {
+            return 'UGX ' . number_format(round($value), 0, '.', ',');
+        })->sortable();
 
-    // Format monthly payment in UGX
-    $grid->column('monthly_payment', __('Monthly Payment'))->display(function ($value) {
-        return 'UGX ' . number_format(round($value), 0, '.', ',');
-    })->sortable();
+        // Format monthly payment in UGX
+        $grid->column('monthly_payment', __('Monthly Payment'))->display(function ($value) {
+            return 'UGX ' . number_format(round($value), 0, '.', ',');
+        })->sortable();
 
-    $grid->column('loan_purpose', __('Loan Purpose'))->sortable();
-    $grid->column('billing_address', __('Billing Address'))->sortable();
-    $grid->column('selected_method', __('Payment Method'))->sortable();
+        $grid->column('loan_purpose', __('Loan Purpose'))->sortable();
+        $grid->column('billing_address', __('Billing Address'))->sortable();
+        $grid->column('selected_method', __('Payment Method'))->sortable();
 
-    // Display loan status with button-style background color
-    $grid->column('loan_status', __('Loan Status'))->display(function ($status) {
-        $color = $status === 'approved' ? 'green' : ($status === 'rejected' ? 'red' : 'orange');
-        return "<button style='background-color: {$color}; color: white; padding: 5px 10px; border: none; border-radius: 5px;'>{$status}</button>";
-    })->sortable();
+        // Display loan status with button-style background color
+        $grid->column('loan_status', __('Loan Status'))->display(function ($status) {
+            $color = $status === 'approved' ? 'green' : ($status === 'rejected' ? 'red' : 'orange');
+            return "<button style='background-color: {$color}; color: white; padding: 5px 10px; border: none; border-radius: 5px;'>{$status}</button>";
+        })->sortable();
 
-    // Add approve, reject, and other actions in each row
-    $grid->actions(function ($actions) {
-        // Add Approve and Reject buttons
-        $actions->add(new ApproveLoan);
-        $actions->add(new RejectLoan);
-    });
+        // Add approve, reject, and other actions in each row
+        $grid->actions(function ($actions) {
+            // Add Approve and Reject buttons
+            $actions->add(new ApproveLoan);
+            $actions->add(new RejectLoan);
+        });
 
-    // Format the date to show clear date
-    $grid->column('created_at', __('Created At'))->display(function ($value) {
-        return date('F d, Y h:i A', strtotime($value));
-    })->sortable();
+        // Format the date to show clear date
+        $grid->column('created_at', __('Created At'))->display(function ($value) {
+            return date('F d, Y h:i A', strtotime($value));
+        })->sortable();
 
-    return $grid;
-}
+        return $grid;
+    }
 
     /**
      * Create the detail view for CreditLoan.
@@ -81,16 +82,26 @@ class CreditLoanController extends AdminController
 
         $show->field('id', __('ID'));
         $show->field('sacco.name', __('Sacco'));
-        $show->field('loan_amount', __('Loan Amount'));
+        $show->field('loan_amount', __('Loan Amount'))->as(function ($value) {
+            return 'UGX ' . number_format(round($value), 0, '.', ',');
+        });
         $show->field('loan_term', __('Loan Term (months)'));
-        $show->field('total_interest', __('Total Interest'));
-        $show->field('monthly_payment', __('Monthly Payment'));
+        $show->field('total_interest', __('Total Interest'))->as(function ($value) {
+            return 'UGX ' . number_format(round($value), 0, '.', ',');
+        });
+        $show->field('monthly_payment', __('Monthly Payment'))->as(function ($value) {
+            return 'UGX ' . number_format(round($value), 0, '.', ',');
+        });
         $show->field('loan_purpose', __('Loan Purpose'));
         $show->field('billing_address', __('Billing Address'));
         $show->field('selected_method', __('Payment Method'));
         $show->field('loan_status', __('Loan Status'));
-        $show->field('created_at', __('Created At'));
-        $show->field('updated_at', __('Updated At'));
+        $show->field('created_at', __('Created At'))->as(function ($value) {
+            return date('F d, Y h:i A', strtotime($value));
+        });
+        $show->field('updated_at', __('Updated At'))->as(function ($value) {
+            return date('F d, Y h:i A', strtotime($value));
+        });
 
         return $show;
     }
@@ -146,45 +157,5 @@ class CreditLoanController extends AdminController
         $form->switch('use_current_address', __('Use Current Address'))->default(0);
 
         return $form;
-    }
-}
-
-/**
- * Action class for approving a loan.
- */
-class ApproveLoan extends RowAction
-{
-    public $name = 'Approve';
-
-    public function handle(CreditLoan $loan)
-    {
-        // Call the approveLoan method from the model
-        $result = $loan->approveLoan();
-
-        if ($result['status'] === 'success') {
-            return $this->response()->success($result['message'])->refresh();
-        }
-
-        return $this->response()->error($result['message'])->refresh();
-    }
-}
-
-/**
- * Action class for rejecting a loan.
- */
-class RejectLoan extends RowAction
-{
-    public $name = 'Reject';
-
-    public function handle(CreditLoan $loan)
-    {
-        // Call the rejectLoan method from the model
-        $result = $loan->rejectLoan();
-
-        if ($result['status'] === 'success') {
-            return $this->response()->success($result['message'])->refresh();
-        }
-
-        return $this->response()->error($result['message'])->refresh();
     }
 }
