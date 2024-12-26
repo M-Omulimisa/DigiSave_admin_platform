@@ -61,6 +61,8 @@
     .stat-card.purple { background-color: #f4e7ff; }
     .stat-card.green { background-color: #e7ffe9; }
     .stat-card.red { background-color: #ffe7e7; }
+    .stat-card.teal { background-color: #e7fffc; }
+    .stat-card.pink { background-color: #ffe7f9; }
 
     .icon-blue { color: #007bff; }
     .icon-yellow { color: #ffc107; }
@@ -68,6 +70,8 @@
     .icon-purple { color: #6f42c1; }
     .icon-green { color: #28a745; }
     .icon-red { color: #dc3545; }
+    .icon-teal { color: #20c997; }
+    .icon-pink { color: #e83e8c; }
 </style>
 
 <div class="stat-card-container">
@@ -111,5 +115,20 @@
         <div class="icon icon-red"><i class="fas fa-user-shield"></i></div>
         <div class="count">{{ $refugeeFemaleMembersCount }}</div>
         <div class="description">Total Savings: {{ $refugeeFemaleSavings }} UGX</div>
+    </div>
+
+    <!-- New PWD Gender Cards -->
+    <div class="stat-card teal">
+        <div class="title">Male PWDs</div>
+        <div class="icon icon-teal"><i class="fas fa-wheelchair"></i></div>
+        <div class="count">{{ $pwdMaleMembersCount }}</div>
+        <div class="description">Total Savings: {{ $pwdMaleSavings }} UGX</div>
+    </div>
+
+    <div class="stat-card pink">
+        <div class="title">Female PWDs</div>
+        <div class="icon icon-pink"><i class="fas fa-wheelchair"></i></div>
+        <div class="count">{{ $pwdFemaleMembersCount }}</div>
+        <div class="description">Total Savings: {{ $pwdFemaleSavings }} UGX</div>
     </div>
 </div>

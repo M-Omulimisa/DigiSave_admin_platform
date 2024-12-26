@@ -87,7 +87,7 @@
         </div>
     </div>
 
-    <!-- Existing Loan Categories: Women, Men, Youth, PWD -->
+    <!-- Main Loan Categories: Women, Men, Youth, PWD -->
     <div class="row">
         <div class="col-12">
             <div class="loan-category">
@@ -96,50 +96,168 @@
                         <p>Number of Loans Disbursed to Women</p>
                         <h4>{{ $loansDisbursedToWomen }}</h4>
                         <div class="progress">
-                            <div class="progress-bar women" role="progressbar" style="width: {{ $percentageLoansWomen }}%;" aria-valuenow="{{ $percentageLoansWomen }}" aria-valuemin="0" aria-valuemax="100">{{ number_format($percentageLoansWomen, 2) }}%</div>
+                            <div class="progress-bar women" role="progressbar"
+                                style="width: {{ $percentageLoansWomen }}%;"
+                                aria-valuenow="{{ $percentageLoansWomen }}"
+                                aria-valuemin="0"
+                                aria-valuemax="100">{{ number_format($percentageLoansWomen, 2) }}%</div>
                         </div>
                     </div>
                     <div class="col-md-4 column-divider">
                         <p>Number of Loans Disbursed to Men</p>
                         <h4>{{ $loansDisbursedToMen }}</h4>
                         <div class="progress">
-                            <div class="progress-bar men" role="progressbar" style="width: {{ $percentageLoansMen }}%;" aria-valuenow="{{ $percentageLoansMen }}" aria-valuemin="0" aria-valuemax="100">{{ number_format($percentageLoansMen, 2) }}%</div>
+                            <div class="progress-bar men" role="progressbar"
+                                style="width: {{ $percentageLoansMen }}%;"
+                                aria-valuenow="{{ $percentageLoansMen }}"
+                                aria-valuemin="0"
+                                aria-valuemax="100">{{ number_format($percentageLoansMen, 2) }}%</div>
                         </div>
                     </div>
                     <div class="col-md-4 column-divider">
                         <p>Number of Loans Disbursed to Youths</p>
                         <h4>{{ $loansDisbursedToYouths }}</h4>
                         <div class="progress">
-                            <div class="progress-bar youths" role="progressbar" style="width: {{ $percentageLoansYouths }}%;" aria-valuenow="{{ $percentageLoansYouths }}" aria-valuemin="0" aria-valuemax="100">{{ number_format($percentageLoansYouths, 2) }}%</div>
+                            <div class="progress-bar youths" role="progressbar"
+                                style="width: {{ $percentageLoansYouths }}%;"
+                                aria-valuenow="{{ $percentageLoansYouths }}"
+                                aria-valuemin="0"
+                                aria-valuemax="100">{{ number_format($percentageLoansYouths, 2) }}%</div>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <p>Number of Loans Disbursed to PWDs</p>
                         <h4>{{ $pwdTotalLoanCount }}</h4>
                         <div class="progress">
-                            <div class="progress-bar pwds" role="progressbar" style="width: {{ $percentageLoansPwd }}%;" aria-valuenow="{{ $percentageLoansPwd }}" aria-valuemin="0" aria-valuemax="100">{{ number_format($percentageLoansPwd, 2) }}%</div>
+                            <div class="progress-bar pwds" role="progressbar"
+                                style="width: {{ $percentageLoansPwd }}%;"
+                                aria-valuenow="{{ $percentageLoansPwd }}"
+                                aria-valuemin="0"
+                                aria-valuemax="100">{{ number_format($percentageLoansPwd, 2) }}%</div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- New Section: Refugee Loans by Gender -->
+            <!-- PWD Loans by Gender -->
             <div class="loan-category">
+                <h3>PWD Loan Distribution by Gender</h3>
                 <div class="row">
                     <div class="col-md-6 column-divider">
-                        <p>Number of Loans Disbursed to Refugee Women</p>
-                        <h4>{{ $refugeeFemaleLoanCount }}</h4>
-                        <!-- If you want progress bars, compute percentage and add similar as above -->
+                        <p>Number of Loans Disbursed to PWD Women</p>
+                        <h4>{{ $pwdFemaleLoanCount }}</h4>
+                        <div class="progress">
+                            <div class="progress-bar women" role="progressbar"
+                                style="width: {{ $pwdFemaleLoanCount > 0 ? ($pwdFemaleLoanCount / $pwdTotalLoanCount * 100) : 0 }}%;">
+                                {{ $pwdFemaleLoanCount > 0 ? number_format($pwdFemaleLoanCount / $pwdTotalLoanCount * 100, 2) : 0 }}%
+                            </div>
+                        </div>
                     </div>
                     <div class="col-md-6">
-                        <p>Number of Loans Disbursed to Refugee Men</p>
-                        <h4>{{ $refugeeMaleLoanCount }}</h4>
+                        <p>Number of Loans Disbursed to PWD Men</p>
+                        <h4>{{ $pwdMaleLoanCount }}</h4>
+                        <div class="progress">
+                            <div class="progress-bar men" role="progressbar"
+                                style="width: {{ $pwdMaleLoanCount > 0 ? ($pwdMaleLoanCount / $pwdTotalLoanCount * 100) : 0 }}%;">
+                                {{ $pwdMaleLoanCount > 0 ? number_format($pwdMaleLoanCount / $pwdTotalLoanCount * 100, 2) : 0 }}%
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Existing Loan Amount Categories: Women, Men, Youth, PWD -->
+            <!-- PWD Loan Amounts by Gender -->
             <div class="loan-category">
+                <h3>PWD Loan Amount Distribution by Gender</h3>
+                <div class="row">
+                    <div class="col-md-6 column-divider">
+                        <p>Loan Amount Disbursed to PWD Women</p>
+                        <h4>{{ number_format(abs($pwdFemaleLoanAmount), 2) }} UGX</h4>
+                        <div class="progress">
+                            <div class="progress-bar women" role="progressbar"
+                                style="width: {{ $pwdTotalLoanBalance > 0 ? ($pwdFemaleLoanAmount / $pwdTotalLoanBalance * 100) : 0 }}%;">
+                                {{ $pwdTotalLoanBalance > 0 ? number_format($pwdFemaleLoanAmount / $pwdTotalLoanBalance * 100, 2) : 0 }}%
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p>Loan Amount Disbursed to PWD Men</p>
+                        <h4>{{ number_format(abs($pwdMaleLoanAmount), 2) }} UGX</h4>
+                        <div class="progress">
+                            <div class="progress-bar men" role="progressbar"
+                                style="width: {{ $pwdTotalLoanBalance > 0 ? ($pwdMaleLoanAmount / $pwdTotalLoanBalance * 100) : 0 }}%;">
+                                {{ $pwdTotalLoanBalance > 0 ? number_format($pwdMaleLoanAmount / $pwdTotalLoanBalance * 100, 2) : 0 }}%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Refugee Loans by Gender -->
+            <div class="loan-category">
+                <h3>Refugee Loan Distribution by Gender</h3>
+                <div class="row">
+                    <div class="col-md-6 column-divider">
+                        <p>Number of Loans Disbursed to Refugee Women</p>
+                        <h4>{{ $refugeeFemaleLoanCount }}</h4>
+                        <div class="progress">
+                            <div class="progress-bar women" role="progressbar"
+                                style="width: {{ ($refugeeFemaleLoanCount + $refugeeMaleLoanCount) > 0 ?
+                                    ($refugeeFemaleLoanCount / ($refugeeFemaleLoanCount + $refugeeMaleLoanCount) * 100) : 0 }}%;">
+                                {{ ($refugeeFemaleLoanCount + $refugeeMaleLoanCount) > 0 ?
+                                    number_format($refugeeFemaleLoanCount / ($refugeeFemaleLoanCount + $refugeeMaleLoanCount) * 100, 2) : 0 }}%
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p>Number of Loans Disbursed to Refugee Men</p>
+                        <h4>{{ $refugeeMaleLoanCount }}</h4>
+                        <div class="progress">
+                            <div class="progress-bar men" role="progressbar"
+                                style="width: {{ ($refugeeFemaleLoanCount + $refugeeMaleLoanCount) > 0 ?
+                                    ($refugeeMaleLoanCount / ($refugeeFemaleLoanCount + $refugeeMaleLoanCount) * 100) : 0 }}%;">
+                                {{ ($refugeeFemaleLoanCount + $refugeeMaleLoanCount) > 0 ?
+                                    number_format($refugeeMaleLoanCount / ($refugeeFemaleLoanCount + $refugeeMaleLoanCount) * 100, 2) : 0 }}%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Refugee Loan Amounts by Gender -->
+            <div class="loan-category">
+                <h3>Refugee Loan Amount Distribution by Gender</h3>
+                <div class="row">
+                    <div class="col-md-6 column-divider">
+                        <p>Loan Amount Disbursed to Refugee Women</p>
+                        <h4>{{ number_format(abs($refugeeFemaleLoanAmount), 2) }} UGX</h4>
+                        <div class="progress">
+                            <div class="progress-bar women" role="progressbar"
+                                style="width: {{ ($refugeeFemaleLoanAmount + $refugeeMaleLoanAmount) > 0 ?
+                                    ($refugeeFemaleLoanAmount / ($refugeeFemaleLoanAmount + $refugeeMaleLoanAmount) * 100) : 0 }}%;">
+                                {{ ($refugeeFemaleLoanAmount + $refugeeMaleLoanAmount) > 0 ?
+                                    number_format($refugeeFemaleLoanAmount / ($refugeeFemaleLoanAmount + $refugeeMaleLoanAmount) * 100, 2) : 0 }}%
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p>Loan Amount Disbursed to Refugee Men</p>
+                        <h4>{{ number_format(abs($refugeeMaleLoanAmount), 2) }} UGX</h4>
+                        <div class="progress">
+                            <div class="progress-bar men" role="progressbar"
+                                style="width: {{ ($refugeeFemaleLoanAmount + $refugeeMaleLoanAmount) > 0 ?
+                                    ($refugeeMaleLoanAmount / ($refugeeFemaleLoanAmount + $refugeeMaleLoanAmount) * 100) : 0 }}%;">
+                                {{ ($refugeeFemaleLoanAmount + $refugeeMaleLoanAmount) > 0 ?
+                                    number_format($refugeeMaleLoanAmount / ($refugeeFemaleLoanAmount + $refugeeMaleLoanAmount) * 100, 2) : 0 }}%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- General Loan Amounts -->
+            <div class="loan-category">
+                <h3>General Loan Amount Distribution</h3>
                 <div class="row">
                     <div class="col-md-4 column-divider">
                         <p>Loan Amount Disbursed to Women</p>
@@ -156,20 +274,6 @@
                     <div class="col-md-4">
                         <p>Loan Amount Disbursed to PWDs</p>
                         <h4>{{ number_format(abs($pwdTotalLoanBalance), 2) }} UGX</h4>
-                    </div>
-                </div>
-            </div>
-
-            <!-- New Section: Refugee Loan Amounts by Gender -->
-            <div class="loan-category">
-                <div class="row">
-                    <div class="col-md-6 column-divider">
-                        <p>Loan Amount Disbursed to Refugee Women</p>
-                        <h4>{{ number_format(abs($refugeeFemaleLoanAmount), 2) }} UGX</h4>
-                    </div>
-                    <div class="col-md-6">
-                        <p>Loan Amount Disbursed to Refugee Men</p>
-                        <h4>{{ number_format(abs($refugeeMaleLoanAmount), 2) }} UGX</h4>
                     </div>
                 </div>
             </div>
