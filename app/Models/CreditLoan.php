@@ -89,4 +89,39 @@ class CreditLoan extends Model
                 return 'No payment details available';
         }
     }
+
+    public function repayments()
+{
+    return $this->hasMany(LoanRepayment::class, 'credit_loan_id');
+}
+
+public function getTotalPaidAttribute()
+{
+    return $this->repayments()
+        ->where('status', 'confirmed')
+        ->sum('amount_paid');
+}
+
+public function getRemainingBalanceAttribute()
+{
+    $totalPaid = $this->repayments()
+        ->where('status', 'confirmed')
+        ->sum('principal_paid');
+
+    return $this->loan_amount - $totalPaid;
+}
+
+public function getIsFullyPaidAttribute()
+{
+    return $this->remaining_balance <= 0;
+}
+
+public function getPaymentProgressAttribute()
+{
+    if ($this->loan_amount > 0) {
+        $progress = ($this->total_paid / ($this->loan_amount + $this->total_interest)) * 100;
+        return round($progress, 2);
+    }
+    return 0;
+}
 }
