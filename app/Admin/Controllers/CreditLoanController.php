@@ -10,19 +10,46 @@ use Encore\Admin\Grid;
 use Encore\Admin\Show;
 use App\Admin\Actions\ApproveLoan;
 use App\Admin\Actions\RejectLoan;
+use App\Admin\Actions\DisburseLoan;
 
 class CreditLoanController extends AdminController
 {
     protected $title = 'Credit Loans';
 
-    /**
-     * Create the grid view for CreditLoan.
-     *
-     * @return Grid
-     */
     protected function grid()
     {
         $grid = new Grid(new CreditLoan());
+
+        // Add filter buttons at the top
+        $grid->filter(function($filter) {
+            // Remove the default id filter
+            $filter->disableIdFilter();
+
+            // Add a filter for loan status
+            $filter->equal('loan_status', 'Loan Status')->select([
+                'approved' => 'Approved',
+                'pending' => 'Pending',
+                'rejected' => 'Rejected'
+            ]);
+
+            // Add a filter for disbursement status
+            $filter->equal('disbursement_status', 'Disbursement Status')->select([
+                'pending' => 'Pending',
+                'disbursed' => 'Disbursed'
+            ]);
+
+            // Add a filter for sacco
+            $filter->equal('sacco_id', 'Sacco')->select(Sacco::all()->pluck('name', 'id'));
+        });
+
+        // Add quick filter buttons
+        $grid->header(function ($query) {
+            return "<div style='margin-bottom: 10px;'>
+                <a href='?' class='btn btn-sm btn-default' style='margin-right: 10px;'>All</a>
+                <a href='?loan_status=approved' class='btn btn-sm btn-success' style='margin-right: 10px;'>Approved Loans</a>
+                <a href='?disbursement_status=disbursed' class='btn btn-sm btn-info'>Disbursed Loans</a>
+            </div>";
+        });
 
         // Display basic fields in the grid
         $grid->column('id', __('ID'))->sortable();
@@ -55,14 +82,32 @@ class CreditLoanController extends AdminController
             return "<button style='background-color: {$color}; color: white; padding: 5px 10px; border: none; border-radius: 5px;'>{$status}</button>";
         })->sortable();
 
-        // Add approve, reject, and other actions in each row
-        $grid->actions(function ($actions) {
-            // Add Approve and Reject buttons
-            $actions->add(new ApproveLoan);
-            $actions->add(new RejectLoan);
+        // Add disbursement status column
+        $grid->column('disbursement_status', __('Disbursement'))->display(function ($status) {
+            $color = $status === 'disbursed' ? 'green' : 'blue';
+            return "<button style='background-color: {$color}; color: white; padding: 5px 10px; border: none; border-radius: 5px;'>{$status}</button>";
+        })->sortable();
+
+        // Add payment details column for disbursed loans
+        $grid->column('payment_details', __('Payment Details'))->display(function () {
+            if ($this->disbursement_status === 'disbursed') {
+                return nl2br(e($this->payment_details));
+            }
+            return '-';
         });
 
-        // Format the date to show clear date
+        $grid->column('disbursed_at', __('Disbursed At'))->display(function ($value) {
+            return $value ? date('F d, Y h:i A', strtotime($value)) : '-';
+        })->sortable();
+
+        // Add actions
+        $grid->actions(function ($actions) {
+            $actions->add(new ApproveLoan);
+            $actions->add(new RejectLoan);
+            $actions->add(new DisburseLoan);
+        });
+
+        // Format the created_at date
         $grid->column('created_at', __('Created At'))->display(function ($value) {
             return date('F d, Y h:i A', strtotime($value));
         })->sortable();
@@ -70,12 +115,6 @@ class CreditLoanController extends AdminController
         return $grid;
     }
 
-    /**
-     * Create the detail view for CreditLoan.
-     *
-     * @param mixed $id
-     * @return Show
-     */
     protected function detail($id)
     {
         $show = new Show(CreditLoan::findOrFail($id));
@@ -96,6 +135,14 @@ class CreditLoanController extends AdminController
         $show->field('billing_address', __('Billing Address'));
         $show->field('selected_method', __('Payment Method'));
         $show->field('loan_status', __('Loan Status'));
+        $show->field('disbursement_status', __('Disbursement Status'));
+        $show->field('disbursed_at', __('Disbursed At'))->as(function ($value) {
+            return $value ? date('F d, Y h:i A', strtotime($value)) : '-';
+        });
+        $show->field('disbursement_reference', __('Disbursement Reference'));
+        $show->field('payment_details', __('Payment Details'))->as(function () {
+            return nl2br(e($this->payment_details));
+        });
         $show->field('created_at', __('Created At'))->as(function ($value) {
             return date('F d, Y h:i A', strtotime($value));
         });
@@ -106,11 +153,6 @@ class CreditLoanController extends AdminController
         return $show;
     }
 
-    /**
-     * Create the form for creating/editing CreditLoan.
-     *
-     * @return Form
-     */
     protected function form()
     {
         $form = new Form(new CreditLoan());
@@ -149,6 +191,12 @@ class CreditLoanController extends AdminController
             'approved' => 'Approved',
             'rejected' => 'Rejected'
         ])->default('pending');
+
+        // Disbursement status field (readonly)
+        $form->select('disbursement_status', __('Disbursement Status'))->options([
+            'pending' => 'Pending',
+            'disbursed' => 'Disbursed'
+        ])->default('pending')->readonly();
 
         // Whether terms were accepted
         $form->switch('terms_accepted', __('Terms Accepted'))->default(0);

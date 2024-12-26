@@ -9,7 +9,7 @@ class CreditLoan extends Model
 {
     use HasFactory;
 
-    // Define the table name (optional, Laravel automatically assumes the plural form of the model name)
+    // Define the table name (optional)
     protected $table = 'credit_loans';
 
     // Define which attributes are mass assignable
@@ -29,6 +29,15 @@ class CreditLoan extends Model
         'terms_accepted',
         'use_current_address',
         'loan_status',
+        'disbursement_status',
+        'disbursed_at',
+        'disbursement_reference'
+    ];
+
+    protected $dates = [
+        'created_at',
+        'updated_at',
+        'disbursed_at'
     ];
 
     // Relationships
@@ -65,5 +74,19 @@ class CreditLoan extends Model
     public function isPending()
     {
         return $this->loan_status === 'pending';
+    }
+
+    // Get formatted payment details
+    public function getPaymentDetailsAttribute()
+    {
+        switch ($this->selected_method) {
+            case 'bank':
+                return "Bank: {$this->selected_bank}\nAccount: {$this->account_number}\nName: {$this->account_name}";
+            case 'airtel':
+            case 'mtn':
+                return "Phone: {$this->phone_number}\nName: {$this->account_name}";
+            default:
+                return 'No payment details available';
+        }
     }
 }
