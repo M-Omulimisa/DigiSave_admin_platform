@@ -20,37 +20,54 @@ class CreditLoanController extends AdminController
      * @return Grid
      */
     protected function grid()
-    {
-        $grid = new Grid(new CreditLoan());
+{
+    $grid = new Grid(new CreditLoan());
 
-        // Display basic fields in the grid
-        $grid->column('id', __('ID'))->sortable();
-        $grid->column('sacco.name', __('Sacco'))->sortable();
-        $grid->column('loan_amount', __('Loan Amount'))->sortable();
-        $grid->column('loan_term', __('Loan Term (months)'))->sortable();
-        $grid->column('total_interest', __('Total Interest'))->sortable();
-        $grid->column('monthly_payment', __('Monthly Payment'))->sortable();
-        $grid->column('loan_purpose', __('Loan Purpose'))->sortable();
-        $grid->column('billing_address', __('Billing Address'))->sortable();
-        $grid->column('selected_method', __('Payment Method'))->sortable();
+    // Display basic fields in the grid
+    $grid->column('id', __('ID'))->sortable();
+    $grid->column('sacco.name', __('Sacco'))->sortable();
 
-        // Display loan status with button-style background color
-        $grid->column('loan_status', __('Loan Status'))->display(function ($status) {
-            $color = $status === 'approved' ? 'green' : ($status === 'rejected' ? 'red' : 'orange');
-            return "<button style='background-color: {$color}; color: white; padding: 5px 10px; border: none; border-radius: 5px;'>{$status}</button>";
-        })->sortable();
+    // Format loan amount in UGX
+    $grid->column('loan_amount', __('Loan Amount'))->display(function ($value) {
+        return 'UGX ' . number_format(round($value), 0, '.', ',');
+    })->sortable();
 
-        // Add approve, reject, and other actions in each row
-        $grid->actions(function ($actions) {
-            // Add Approve and Reject buttons
-            $actions->add(new ApproveLoan);
-            $actions->add(new RejectLoan);
-        });
+    $grid->column('loan_term', __('Loan Term (months)'))->sortable();
 
-        $grid->column('created_at', __('Created At'))->sortable();
+    // Format total interest in UGX
+    $grid->column('total_interest', __('Total Interest'))->display(function ($value) {
+        return 'UGX ' . number_format(round($value), 0, '.', ',');
+    })->sortable();
 
-        return $grid;
-    }
+    // Format monthly payment in UGX
+    $grid->column('monthly_payment', __('Monthly Payment'))->display(function ($value) {
+        return 'UGX ' . number_format(round($value), 0, '.', ',');
+    })->sortable();
+
+    $grid->column('loan_purpose', __('Loan Purpose'))->sortable();
+    $grid->column('billing_address', __('Billing Address'))->sortable();
+    $grid->column('selected_method', __('Payment Method'))->sortable();
+
+    // Display loan status with button-style background color
+    $grid->column('loan_status', __('Loan Status'))->display(function ($status) {
+        $color = $status === 'approved' ? 'green' : ($status === 'rejected' ? 'red' : 'orange');
+        return "<button style='background-color: {$color}; color: white; padding: 5px 10px; border: none; border-radius: 5px;'>{$status}</button>";
+    })->sortable();
+
+    // Add approve, reject, and other actions in each row
+    $grid->actions(function ($actions) {
+        // Add Approve and Reject buttons
+        $actions->add(new ApproveLoan);
+        $actions->add(new RejectLoan);
+    });
+
+    // Format the date to show clear date
+    $grid->column('created_at', __('Created At'))->display(function ($value) {
+        return date('F d, Y h:i A', strtotime($value));
+    })->sortable();
+
+    return $grid;
+}
 
     /**
      * Create the detail view for CreditLoan.
