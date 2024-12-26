@@ -1785,9 +1785,9 @@ class HomeController extends Controller
 
         // PWDs disermination by gender
         $pwdMaleUsers = $maleUsers->where('pwd', 'Yes');
-        $pwdMaleUsersCount = $refugeMaleUsers->count();
+        $pwdMaleUsersCount = $pwdMaleUsers->count();
         $pwdFemaleUsers = $femaleUsers->where('pwd', 'Yes');
-        $pwdFemaleUsersCount = $refugeFemaleUsers->count();
+        $pwdFemaleUsersCount = $pwdFemaleUsers->count();
 
         // dd([
         //     'all_male_count' => $maleUsers->count(),
