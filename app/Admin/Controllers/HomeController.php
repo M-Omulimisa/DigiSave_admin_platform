@@ -2080,7 +2080,7 @@ class HomeController extends Controller
                         'youthMembersCount' => $youthMembersCount,
                         'youthTotalBalance' => number_format($youthTotalBalance),
                         'pwdMembersCount' => $pwdMembersCount,
-                        'pwdTotalBalance' => number_format($pwdTotalBalance),
+                        // 'pwdTotalBalance' => number_format($pwdTotalBalance),
                         'refugeeMaleMembersCount' => $refugeMaleUsersCount,
                         'refugeeFemaleMembersCount' => $refugeFemaleUsersCount,
                         'refugeeMaleSavings' => number_format($refugeMaleShareSum, 2),

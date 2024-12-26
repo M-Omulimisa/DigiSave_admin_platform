@@ -96,12 +96,12 @@
         <div class="description">Total Savings: {{ $youthTotalBalance }} UGX</div>
     </div>
 
-    <div class="stat-card purple">
+    {{-- <div class="stat-card purple">
         <div class="title">PWD Members</div>
         <div class="icon icon-purple"><i class="fas fa-wheelchair"></i></div>
         <div class="count">{{ $pwdMembersCount }}</div>
         <div class="description">Total Savings: {{ $pwdTotalBalance }} UGX</div>
-    </div>
+    </div> --}}
 
     <div class="stat-card green">
         <div class="title">Male Refugees</div>
