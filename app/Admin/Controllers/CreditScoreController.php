@@ -180,9 +180,24 @@ class CreditScoreController extends AdminController
         }
 
         $meetingCount = count($meetings);
-        $totalPresent = count(array_unique($allMemberNames));
-        $averageAttendance = $meetingCount > 0 ? ($totalPresent / $meetingCount) * 100 : 0;
-        $averageAttendanceRounded = round($averageAttendance, 2);
+        // Calculate average number of members present per meeting
+        $totalMembersPerMeeting = [];
+        foreach ($meetings as $meeting) {
+            $membersJson = $meeting->members;
+            $attendanceData = json_decode($membersJson, true);
+
+            if (json_last_error() === JSON_ERROR_NONE && isset($attendanceData['presentMembersIds'])) {
+                $totalMembersPerMeeting[] = count($attendanceData['presentMembersIds']);
+            }
+        }
+
+        $averageAttendanceRounded = $meetingCount > 0 ?
+            round(array_sum($totalMembersPerMeeting) / $meetingCount, 2) : 0;
+
+        // $meetingCount = count($meetings);
+        // $totalPresent = count(array_unique($allMemberNames));
+        // $averageAttendance = $meetingCount > 0 ? ($totalPresent / $meetingCount) * 100 : 0;
+        // $averageAttendanceRounded = round($averageAttendance, 2);
 
         // Total Loans
         $numberOfLoans = $sacco->transactions()
