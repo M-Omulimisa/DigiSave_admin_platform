@@ -479,7 +479,7 @@
                             </div>
                             <!-- Renamed label and kept the percentage display -->
                             <div class="stat-box">
-                                <h4>{{ $sacco['averageAttendance'] }}%</h4>
+                                <h4>{{ $sacco['averageAttendance'] }}</h4>
                                 <p>Average Attendance</p>
                             </div>
                         </div>
