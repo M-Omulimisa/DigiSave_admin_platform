@@ -224,7 +224,7 @@ class CreditScoreController extends AdminController
         }
 
         $averageAttendanceRounded = $meetingCount > 0
-            ? round(array_sum($totalMembersPerMeeting) / $meetingCount, 2)
+            ? round(array_sum($totalMembersPerMeeting) / $meetingCount, 0)
             : 0;
 
         // $meetingCount = count($meetings);
