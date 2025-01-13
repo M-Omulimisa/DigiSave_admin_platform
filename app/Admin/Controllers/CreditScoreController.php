@@ -183,10 +183,11 @@ class CreditScoreController extends AdminController
         // Calculate average number of members present per meeting
         $totalMembersPerMeeting = [];
         foreach ($meetings as $meeting) {
-            $membersJson = $meeting->members;
-            $attendanceData = json_decode($membersJson, true);
+            $membersData = $meeting->members;
+            // Handle both JSON string and array cases
+            $attendanceData = is_string($membersData) ? json_decode($membersData, true) : $membersData;
 
-            if (json_last_error() === JSON_ERROR_NONE && isset($attendanceData['presentMembersIds'])) {
+            if (isset($attendanceData['presentMembersIds'])) {
                 $totalMembersPerMeeting[] = count($attendanceData['presentMembersIds']);
             }
         }
