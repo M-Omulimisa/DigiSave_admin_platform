@@ -84,6 +84,8 @@ class CreditScoreController extends AdminController
             ->where('status', 'Active')
             ->first();
 
+        $totalMeetings = Meeting::where('sacco_id', $sacco->id)->count();
+
         if ($activeCycle == null) {
             // If no active cycle is found, return minimal data with error in creditScore
             return [
@@ -96,6 +98,7 @@ class CreditScoreController extends AdminController
                 'femaleMembers' => 0,
                 'youthMembers' => 0,
                 'totalMeetings' => 0,
+                'totalMeetings' => $totalMeetings,
                 'averageAttendance' => 0.0,
                 'loanStats' => [
                     'total' => 0,

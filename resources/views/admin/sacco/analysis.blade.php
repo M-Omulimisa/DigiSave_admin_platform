@@ -167,6 +167,9 @@
             padding: 1rem;
         }
 
+        /* If you want a cleaner layout, you can adjust columns to 3.
+           e.g., grid-template-columns: repeat(3, 1fr);
+           For now, we'll keep it 2 columns but add a 5th item. */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -477,10 +480,14 @@
                                 <h4>{{ number_format($sacco['loanStats']['total']) }}</h4>
                                 <p>Active Loans</p>
                             </div>
-                            <!-- Renamed label and kept the percentage display -->
                             <div class="stat-box">
                                 <h4>{{ $sacco['averageAttendance'] }}</h4>
                                 <p>Average Attendance</p>
+                            </div>
+                            <!-- NEW: Display the number of meetings -->
+                            <div class="stat-box">
+                                <h4>{{ number_format($sacco['totalMeetings']) }}</h4>
+                                <p>Total Meetings</p>
                             </div>
                         </div>
 
@@ -634,23 +641,25 @@
             document.getElementById('creditScore').textContent = sacco.creditScore.score;
             document.getElementById('creditDescription').textContent = sacco.creditScore.description;
 
+            // Add "Total Meetings" to membership overview
             document.getElementById('membershipMetrics').innerHTML = generateMetricsList([
-                { label: 'Total Members', value: sacco.totalMembers },
-                { label: 'Male Members', value: sacco.maleMembers },
+                { label: 'Total Members',  value: sacco.totalMembers },
+                { label: 'Male Members',   value: sacco.maleMembers },
                 { label: 'Female Members', value: sacco.femaleMembers },
-                { label: 'Youth Members', value: sacco.youthMembers }
+                { label: 'Youth Members',  value: sacco.youthMembers },
+                { label: 'Total Meetings', value: sacco.totalMeetings }
             ]);
 
             document.getElementById('loanMetrics').innerHTML = generateMetricsList([
-                { label: 'Active Loans', value: sacco.loanStats.total },
-                { label: 'Total Principal', value: 'UGX ' + formatNumber(sacco.loanStats.principal ?? 0) },
-                { label: 'Total Interest', value: 'UGX ' + formatNumber(sacco.loanStats.interest ?? 0) },
-                { label: 'Repayments', value: 'UGX ' + formatNumber(sacco.loanStats.repayments ?? 0) },
-                { label: 'Max Loan Amount', value: 'UGX ' + formatNumber(sacco.maxLoanAmount ?? 0) }
+                { label: 'Active Loans',       value: sacco.loanStats.total },
+                { label: 'Total Principal',    value: 'UGX ' + formatNumber(sacco.loanStats.principal ?? 0) },
+                { label: 'Total Interest',     value: 'UGX ' + formatNumber(sacco.loanStats.interest ?? 0) },
+                { label: 'Repayments',         value: 'UGX ' + formatNumber(sacco.loanStats.repayments ?? 0) },
+                { label: 'Max Loan Amount',    value: 'UGX ' + formatNumber(sacco.maxLoanAmount ?? 0) }
             ]);
 
             document.getElementById('savingsMetrics').innerHTML = generateMetricsList([
-                { label: 'Total Savings', value: 'UGX ' + formatNumber(sacco.savingsStats.totalBalance) },
+                { label: 'Total Savings',  value: 'UGX ' + formatNumber(sacco.savingsStats.totalBalance) },
                 { label: 'Total Accounts', value: sacco.savingsStats.totalAccounts },
                 {
                   label: 'Average per Member',
@@ -700,8 +709,8 @@
                 ['Generated on:', new Date().toLocaleString()],
                 ['Number of Groups:', visibleSaccos.length],
                 [''],
-                // Renamed "Attendance Rate" to "Average Attendance" in CSV header
-                ['Group Name,Credit Score,Total Members,Male,Female,Youth,Total Savings,Active Loans,Average Attendance']
+                // Added "Total Meetings" to the CSV columns
+                ['Group Name,Credit Score,Total Members,Male,Female,Youth,Total Savings,Active Loans,Average Attendance,Total Meetings']
             ];
 
             visibleSaccos.forEach(sacco => {
@@ -714,7 +723,8 @@
                     sacco.data.youthMembers,
                     sacco.data.savingsStats.totalBalance,
                     sacco.data.loanStats.total,
-                    sacco.data.averageAttendance + '%'
+                    sacco.data.averageAttendance + '%',
+                    sacco.data.totalMeetings
                 ].join(','));
             });
 
@@ -722,6 +732,7 @@
         }
 
         function generateExport(sacco) {
+            // Add "Total Meetings" to the single SACCO export as well.
             const csvContent = [
                 ['VSLA Credit Score Report'],
                 ['Generated on:', new Date().toLocaleString()],
@@ -736,6 +747,7 @@
                 ['Male Members:', sacco.maleMembers],
                 ['Female Members:', sacco.femaleMembers],
                 ['Youth Members:', sacco.youthMembers],
+                ['Total Meetings:', sacco.totalMeetings],
                 [''],
                 ['Financial Statistics'],
                 ['Total Savings Balance:', `UGX ${formatNumber(sacco.savingsStats.totalBalance)}`],
@@ -746,7 +758,6 @@
                 ['Max Loan Amount:', `UGX ${formatNumber(sacco.maxLoanAmount)}`],
                 [''],
                 ['Performance Metrics'],
-                // Renamed label here as well
                 ['Average Attendance:', `${sacco.averageAttendance}%`],
                 [
                   'Savings per Member:',
