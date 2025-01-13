@@ -477,9 +477,10 @@
                                 <h4>{{ number_format($sacco['loanStats']['total']) }}</h4>
                                 <p>Active Loans</p>
                             </div>
+                            <!-- Renamed label and kept the percentage display -->
                             <div class="stat-box">
                                 <h4>{{ $sacco['averageAttendance'] }}%</h4>
-                                <p>Attendance Rate</p>
+                                <p>Average Attendance</p>
                             </div>
                         </div>
 
@@ -651,7 +652,12 @@
             document.getElementById('savingsMetrics').innerHTML = generateMetricsList([
                 { label: 'Total Savings', value: 'UGX ' + formatNumber(sacco.savingsStats.totalBalance) },
                 { label: 'Total Accounts', value: sacco.savingsStats.totalAccounts },
-                { label: 'Average per Member', value: sacco.totalMembers > 0 ? 'UGX ' + formatNumber(sacco.savingsStats.totalBalance / sacco.totalMembers) : 'N/A' }
+                {
+                  label: 'Average per Member',
+                  value: sacco.totalMembers > 0
+                        ? 'UGX ' + formatNumber(sacco.savingsStats.totalBalance / sacco.totalMembers)
+                        : 'N/A'
+                }
             ]);
 
             document.getElementById('saccoDetails').style.display = 'block';
@@ -694,7 +700,8 @@
                 ['Generated on:', new Date().toLocaleString()],
                 ['Number of Groups:', visibleSaccos.length],
                 [''],
-                ['Group Name,Credit Score,Total Members,Male,Female,Youth,Total Savings,Active Loans,Attendance Rate']
+                // Renamed "Attendance Rate" to "Average Attendance" in CSV header
+                ['Group Name,Credit Score,Total Members,Male,Female,Youth,Total Savings,Active Loans,Average Attendance']
             ];
 
             visibleSaccos.forEach(sacco => {
@@ -739,8 +746,14 @@
                 ['Max Loan Amount:', `UGX ${formatNumber(sacco.maxLoanAmount)}`],
                 [''],
                 ['Performance Metrics'],
+                // Renamed label here as well
                 ['Average Attendance:', `${sacco.averageAttendance}%`],
-                ['Savings per Member:', sacco.totalMembers > 0 ? `UGX ${formatNumber(sacco.savingsStats.totalBalance / sacco.totalMembers)}` : 'N/A']
+                [
+                  'Savings per Member:',
+                  sacco.totalMembers > 0
+                    ? `UGX ${formatNumber(sacco.savingsStats.totalBalance / sacco.totalMembers)}`
+                    : 'N/A'
+                ]
             ].map(row => row.join(',')).join('\n');
 
             downloadCSV(csvContent, `${sacco.name}_credit_report.csv`);
