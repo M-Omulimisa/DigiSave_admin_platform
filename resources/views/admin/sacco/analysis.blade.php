@@ -129,6 +129,7 @@
             margin-bottom: 1rem;
             transition: transform 0.2s;
             overflow: hidden;
+            position: relative; /* for overlay */
         }
 
         .sacco-card:hover {
@@ -167,9 +168,6 @@
             padding: 1rem;
         }
 
-        /* If you want a cleaner layout, you can adjust columns to 3.
-           e.g., grid-template-columns: repeat(3, 1fr);
-           For now, we'll keep it 2 columns but add a 5th item. */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -247,6 +245,24 @@
             gap: 0.5rem;
             margin-top: 1rem;
             justify-content: flex-start;
+        }
+
+        /* OVERLAY for "Not qualify for crediting" */
+        .not-qualified-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 1.1rem;
+            padding: 1rem;
         }
 
         .custom-modal {
@@ -456,16 +472,38 @@
         </div>
 
         <!-- SACCO Cards Grid -->
-        <div class="row">
+        <div class="row" id="saccoGrid">
             @foreach($saccos as $sacco)
             <div class="col-md-6 col-lg-4 sacco-item">
-                <div class="sacco-card" data-sacco="{{ json_encode($sacco) }}">
+                <!--
+                  We pass extra data in JSON:
+                  "qualified" => whether totalMeetings >= 10 & totalBalance > 0
+                -->
+                @php
+                    $qualified = ($sacco['totalMeetings'] >= 10 && $sacco['savingsStats']['totalBalance'] > 0);
+                    $saccoData = array_merge($sacco, [
+                        'qualified' => $qualified
+                    ]);
+                @endphp
+                <div class="sacco-card" data-sacco="{{ json_encode($saccoData) }}">
                     <div class="sacco-header">
                         <h3>{{ $sacco['name'] }}</h3>
-                        <span class="credit-badge {{ ($sacco['creditScore']['score'] ?? 0) >= 80 ? 'credit-high' : ((($sacco['creditScore']['score'] ?? 0) >= 60) ? 'credit-medium' : 'credit-low') }}">
-                            Score: {{ $sacco['creditScore']['score'] ?? 'N/A' }}
-                        </span>
+                        @if($qualified)
+                            <!-- Show credit badge only if qualified -->
+                            <span class="credit-badge
+                                {{ ($sacco['creditScore']['score'] ?? 0) >= 80 ? 'credit-high'
+                                   : ((($sacco['creditScore']['score'] ?? 0) >= 60) ? 'credit-medium' : 'credit-low') }}">
+                                Score: {{ $sacco['creditScore']['score'] ?? 'N/A' }}
+                            </span>
+                        @endif
                     </div>
+                    <!-- If not qualified, add the overlay -->
+                    @if(!$qualified)
+                        <div class="not-qualified-overlay">
+                            Not qualify for crediting
+                        </div>
+                    @endif
+
                     <div class="sacco-content">
                         <div class="stats-grid">
                             <div class="stat-box">
@@ -476,15 +514,23 @@
                                 <h4>UGX {{ number_format($sacco['savingsStats']['totalBalance']) }}</h4>
                                 <p>Total Savings</p>
                             </div>
+                            @if($qualified)
+                            <!-- Show "Active Loans" only if qualified -->
                             <div class="stat-box">
                                 <h4>{{ number_format($sacco['loanStats']['total']) }}</h4>
                                 <p>Active Loans</p>
                             </div>
+                            @else
+                            <div class="stat-box">
+                                <h4>--</h4>
+                                <p>Active Loans</p>
+                            </div>
+                            @endif
+
                             <div class="stat-box">
                                 <h4>{{ $sacco['averageAttendance'] }}</h4>
                                 <p>Average Attendance</p>
                             </div>
-                            <!-- NEW: Display the number of meetings -->
                             <div class="stat-box">
                                 <h4>{{ number_format($sacco['totalMeetings']) }}</h4>
                                 <p>Total Meetings</p>
@@ -506,13 +552,18 @@
                             </div>
                         </div>
 
-                        <!-- Max Loan Amount display -->
                         <div class="stat-box" style="margin-top: 1rem; background: #eef9f0; text-align:center; border-radius: 6px;">
-                            <h4>UGX {{ number_format($sacco['maxLoanAmount'] ?? 0) }}</h4>
-                            <p>Max Loan Amount</p>
+                            @if($qualified)
+                                <h4>UGX {{ number_format($sacco['maxLoanAmount'] ?? 0) }}</h4>
+                                <p>Max Loan Amount</p>
+                            @else
+                                <h4>--</h4>
+                                <p>Max Loan Amount</p>
+                            @endif
                         </div>
 
                         <div class="button-container">
+                            <!-- If not qualified, we can disable the button or hide it. Let's just show it but if they click, they won't see a credit score. -->
                             <button class="btn btn-primary" onclick="viewDetails(this)">
                                 <i class="fas fa-eye"></i> View Details
                             </button>
@@ -582,38 +633,62 @@
             // Capitalize group names
             document.querySelectorAll('.sacco-header h3').forEach(groupNameElement => {
                 let groupName = groupNameElement.textContent;
-                // Capitalize first letter of each word
                 groupNameElement.textContent = groupName.replace(/\b\w/g, char => char.toUpperCase());
             });
 
             // Collect SACCO data from the DOM
             document.querySelectorAll('.sacco-card').forEach(card => {
                 const saccoData = JSON.parse(card.dataset.sacco);
+
+                // We'll store a "qualified" boolean on each object
+                // (Already done in Blade, but let's be sure we have it in JS)
+                saccoData.qualified = saccoData.qualified ?? (
+                    saccoData.totalMeetings >= 10 && saccoData.savingsStats.totalBalance > 0
+                );
+
                 allSaccoData.push({
                     element: card.closest('.sacco-item'),
                     data: saccoData,
+                    // used for filtering
                     attendance: saccoData.averageAttendance,
                     savings: saccoData.savingsStats.totalBalance,
                     loans: saccoData.loanStats.total,
                     members: saccoData.totalMembers
                 });
             });
+
+            // After collecting all, we sort so that not-qualified appear last
+            sortSaccoData();
         });
+
+        function sortSaccoData() {
+            // Move all not-qualified to the bottom
+            allSaccoData.sort((a, b) => {
+                if (a.data.qualified && !b.data.qualified) return -1; // a first
+                if (!a.data.qualified && b.data.qualified) return 1;  // b first
+                return 0; // both same => no change
+            });
+
+            // Re-append the items in sorted order
+            const saccoGrid = document.getElementById('saccoGrid');
+            allSaccoData.forEach(sacco => {
+                saccoGrid.appendChild(sacco.element);
+            });
+        }
 
         function applyFilters() {
             const attendance = document.getElementById('attendanceFilter').value;
-            const savings = document.getElementById('savingsFilter').value;
-            const loans = document.getElementById('loansFilter').value;
-            const members = document.getElementById('membersFilter').value;
+            const savings    = document.getElementById('savingsFilter').value;
+            const loans      = document.getElementById('loansFilter').value;
+            const members    = document.getElementById('membersFilter').value;
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
 
             allSaccoData.forEach(sacco => {
                 let show = true;
-
                 if (attendance && sacco.attendance < parseFloat(attendance)) show = false;
                 if (savings && sacco.savings < parseFloat(savings)) show = false;
                 if (loans && sacco.loans < parseInt(loans)) show = false;
-                if (members && sacco.members < parseInt(members)) show = false;
+                if (members && sacco.data.totalMembers < parseInt(members)) show = false;
                 if (searchTerm && !sacco.data.name.toLowerCase().includes(searchTerm)) show = false;
 
                 sacco.element.style.display = show ? 'block' : 'none';
@@ -638,10 +713,16 @@
             currentSaccoData = sacco;
 
             document.getElementById('modalTitle').textContent = sacco.name;
-            document.getElementById('creditScore').textContent = sacco.creditScore.score;
-            document.getElementById('creditDescription').textContent = sacco.creditScore.description;
 
-            // Add "Total Meetings" to membership overview
+            // If not qualified => no credit score displayed
+            if (!sacco.qualified) {
+                document.getElementById('creditScore').textContent = 'N/A';
+                document.getElementById('creditDescription').textContent = 'Not qualify for crediting';
+            } else {
+                document.getElementById('creditScore').textContent = sacco.creditScore.score ?? 'N/A';
+                document.getElementById('creditDescription').textContent = sacco.creditScore.description;
+            }
+
             document.getElementById('membershipMetrics').innerHTML = generateMetricsList([
                 { label: 'Total Members',  value: sacco.totalMembers },
                 { label: 'Male Members',   value: sacco.maleMembers },
@@ -650,12 +731,19 @@
                 { label: 'Total Meetings', value: sacco.totalMeetings }
             ]);
 
+            // If not qualified => hide total loans (or set it to '--')
+            const loansVal  = sacco.qualified ? sacco.loanStats.total : '--';
+            const principal = sacco.qualified ? formatNumber(sacco.loanStats.principal ?? 0) : '--';
+            const interest  = sacco.qualified ? formatNumber(sacco.loanStats.interest  ?? 0) : '--';
+            const repay     = sacco.qualified ? formatNumber(sacco.loanStats.repayments ?? 0) : '--';
+            const maxLoan   = sacco.qualified ? formatNumber(sacco.maxLoanAmount ?? 0) : '--';
+
             document.getElementById('loanMetrics').innerHTML = generateMetricsList([
-                { label: 'Active Loans',       value: sacco.loanStats.total },
-                { label: 'Total Principal',    value: 'UGX ' + formatNumber(sacco.loanStats.principal ?? 0) },
-                { label: 'Total Interest',     value: 'UGX ' + formatNumber(sacco.loanStats.interest ?? 0) },
-                { label: 'Repayments',         value: 'UGX ' + formatNumber(sacco.loanStats.repayments ?? 0) },
-                { label: 'Max Loan Amount',    value: 'UGX ' + formatNumber(sacco.maxLoanAmount ?? 0) }
+                { label: 'Active Loans',    value: loansVal },
+                { label: 'Total Principal', value: sacco.qualified ? 'UGX ' + principal : '--' },
+                { label: 'Total Interest',  value: sacco.qualified ? 'UGX ' + interest : '--' },
+                { label: 'Repayments',      value: sacco.qualified ? 'UGX ' + repay : '--' },
+                { label: 'Max Loan Amount', value: sacco.qualified ? 'UGX ' + maxLoan : '--' }
             ]);
 
             document.getElementById('savingsMetrics').innerHTML = generateMetricsList([
@@ -704,27 +792,41 @@
                 sacco.element.style.display !== 'none'
             );
 
+            // Example CSV columns with "Qualified" indicator
             const combinedData = [
                 ['VSLA Groups Credit Score Report'],
                 ['Generated on:', new Date().toLocaleString()],
                 ['Number of Groups:', visibleSaccos.length],
                 [''],
-                // Added "Total Meetings" to the CSV columns
-                ['Group Name,Credit Score,Total Members,Male,Female,Youth,Total Savings,Active Loans,Average Attendance,Total Meetings']
+                [
+                    'Group Name',
+                    'Qualified?',
+                    'Credit Score',
+                    'Total Members',
+                    'Male',
+                    'Female',
+                    'Youth',
+                    'Total Savings',
+                    'Active Loans',
+                    'Avg Attendance',
+                    'Total Meetings'
+                ].join(',')
             ];
 
             visibleSaccos.forEach(sacco => {
+                const d = sacco.data;
                 combinedData.push([
-                    sacco.data.name,
-                    sacco.data.creditScore.score,
-                    sacco.data.totalMembers,
-                    sacco.data.maleMembers,
-                    sacco.data.femaleMembers,
-                    sacco.data.youthMembers,
-                    sacco.data.savingsStats.totalBalance,
-                    sacco.data.loanStats.total,
-                    sacco.data.averageAttendance + '%',
-                    sacco.data.totalMeetings
+                    d.name,
+                    d.qualified ? 'Yes' : 'No',
+                    d.qualified ? (d.creditScore.score ?? 'N/A') : 'N/A',
+                    d.totalMembers,
+                    d.maleMembers,
+                    d.femaleMembers,
+                    d.youthMembers,
+                    d.savingsStats.totalBalance,
+                    d.qualified ? d.loanStats.total : '--',
+                    d.averageAttendance + '%',
+                    d.totalMeetings
                 ].join(','));
             });
 
@@ -732,15 +834,16 @@
         }
 
         function generateExport(sacco) {
-            // Add "Total Meetings" to the single SACCO export as well.
+            const isQual = sacco.qualified;
             const csvContent = [
                 ['VSLA Credit Score Report'],
                 ['Generated on:', new Date().toLocaleString()],
                 [''],
                 ['Basic Information'],
                 ['Group Name:', sacco.name],
-                ['Credit Score:', sacco.creditScore.score],
-                ['Credit Standing:', sacco.creditScore.description],
+                ['Qualified?:', isQual ? 'Yes' : 'No'],
+                ['Credit Score:', isQual ? (sacco.creditScore.score ?? 'N/A') : 'N/A'],
+                ['Credit Standing:', isQual ? sacco.creditScore.description : 'Not qualify for crediting'],
                 [''],
                 ['Membership Statistics'],
                 ['Total Members:', sacco.totalMembers],
@@ -750,19 +853,34 @@
                 ['Total Meetings:', sacco.totalMeetings],
                 [''],
                 ['Financial Statistics'],
-                ['Total Savings Balance:', `UGX ${formatNumber(sacco.savingsStats.totalBalance)}`],
-                ['Active Loans:', sacco.loanStats.total],
-                ['Total Principal:', `UGX ${formatNumber(sacco.loanStats.principal)}`],
-                ['Total Interest:', `UGX ${formatNumber(sacco.loanStats.interest)}`],
-                ['Total Repayments:', `UGX ${formatNumber(sacco.loanStats.repayments)}`],
-                ['Max Loan Amount:', `UGX ${formatNumber(sacco.maxLoanAmount)}`],
+                [
+                  'Total Savings Balance:',
+                  'UGX ' + formatNumber(sacco.savingsStats.totalBalance)
+                ],
+                ['Active Loans:', isQual ? sacco.loanStats.total : '--'],
+                [
+                  'Total Principal:',
+                  isQual ? 'UGX ' + formatNumber(sacco.loanStats.principal) : '--'
+                ],
+                [
+                  'Total Interest:',
+                  isQual ? 'UGX ' + formatNumber(sacco.loanStats.interest) : '--'
+                ],
+                [
+                  'Total Repayments:',
+                  isQual ? 'UGX ' + formatNumber(sacco.loanStats.repayments) : '--'
+                ],
+                [
+                  'Max Loan Amount:',
+                  isQual ? 'UGX ' + formatNumber(sacco.maxLoanAmount) : '--'
+                ],
                 [''],
                 ['Performance Metrics'],
-                ['Average Attendance:', `${sacco.averageAttendance}%`],
+                ['Average Attendance:', sacco.averageAttendance + '%'],
                 [
                   'Savings per Member:',
                   sacco.totalMembers > 0
-                    ? `UGX ${formatNumber(sacco.savingsStats.totalBalance / sacco.totalMembers)}`
+                    ? 'UGX ' + formatNumber(sacco.savingsStats.totalBalance / sacco.totalMembers)
                     : 'N/A'
                 ]
             ].map(row => row.join(',')).join('\n');
@@ -782,9 +900,11 @@
         }
 
         function formatNumber(number) {
+            if (!number || isNaN(number)) return '0';
             return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         }
 
+        // Filter event listeners
         document.getElementById('searchInput').addEventListener('input', applyFilters);
         document.getElementById('attendanceFilter').addEventListener('change', applyFilters);
         document.getElementById('savingsFilter').addEventListener('change', applyFilters);
