@@ -14,7 +14,6 @@
             --warning: #f39c12;
             --danger: #e74c3c;
         }
-
         body {
             background-color: #f5f6fa;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -22,7 +21,6 @@
             margin: 0;
             padding: 0;
         }
-
         .dashboard-header {
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             color: white;
@@ -30,27 +28,23 @@
             margin-bottom: 1rem;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-
         .container {
             width: 100%;
             max-width: 1200px;
             margin: 0 auto;
             padding: 0 1rem;
         }
-
         .header-content {
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-
         .search-container {
             background: white;
             padding: 0.5rem;
             border-radius: 8px;
             max-width: 250px;
         }
-
         .search-input {
             width: 100%;
             padding: 0.5rem;
@@ -58,7 +52,6 @@
             border-radius: 4px;
             font-size: 14px;
         }
-
         .filters-bar {
             background: white;
             padding: 1rem;
@@ -66,26 +59,22 @@
             margin-bottom: 1.5rem;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
-
         .filters-row {
             display: flex;
             gap: 1rem;
             flex-wrap: wrap;
             align-items: center;
         }
-
         .filter-item {
             flex: 1;
             min-width: 200px;
         }
-
         .filter-label {
             display: block;
             margin-bottom: 0.3rem;
             color: var(--secondary);
             font-size: 0.9rem;
         }
-
         .filter-select {
             width: 100%;
             padding: 0.5rem;
@@ -94,7 +83,6 @@
             font-size: 0.9rem;
             background-color: white;
         }
-
         .actions-row {
             display: flex;
             justify-content: space-between;
@@ -103,25 +91,21 @@
             padding-top: 1rem;
             border-top: 1px solid #eee;
         }
-
         .row {
             display: flex;
             flex-wrap: wrap;
             margin: -0.5rem;
         }
-
         .col-md-6 {
             flex: 0 0 50%;
             max-width: 50%;
             padding: 0.5rem;
         }
-
         .col-lg-4 {
             flex: 0 0 33.333333%;
             max-width: 33.333333%;
             padding: 0.5rem;
         }
-
         .sacco-card {
             background: white;
             border-radius: 8px;
@@ -129,26 +113,22 @@
             margin-bottom: 1rem;
             transition: transform 0.2s;
             overflow: hidden;
-            position: relative; /* for overlay */
+            position: relative;
         }
-
         .sacco-card:hover {
             transform: translateY(-3px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
-
         .sacco-header {
             background: var(--primary);
             color: white;
             padding: 1rem;
             position: relative;
         }
-
         .sacco-header h3 {
             margin: 0;
             font-size: 1.1rem;
         }
-
         .credit-badge {
             position: absolute;
             top: 0.5rem;
@@ -159,41 +139,34 @@
             font-weight: bold;
             color: white;
         }
-
         .credit-high { background: var(--success); }
         .credit-medium { background: var(--warning); }
         .credit-low { background: var(--danger); }
-
         .sacco-content {
             padding: 1rem;
         }
-
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 0.5rem;
             margin-bottom: 1rem;
         }
-
         .stat-box {
             background: #f8f9fa;
             padding: 0.8rem;
             border-radius: 6px;
             text-align: center;
         }
-
         .stat-box h4 {
             font-size: 1rem;
             margin: 0;
             color: var(--primary);
         }
-
         .stat-box p {
             margin: 0.3rem 0 0 0;
             color: #666;
             font-size: 0.8rem;
         }
-
         .btn {
             padding: 0.5rem 1rem;
             border: none;
@@ -207,47 +180,38 @@
             color: white;
             transition: all 0.2s;
         }
-
         .btn-primary { background: var(--accent); }
         .btn-success { background: var(--success); }
         .btn-secondary { background: var(--secondary); }
-
         .btn:hover {
             opacity: 0.9;
             transform: translateY(-1px);
         }
-
         .demographics {
             display: flex;
             justify-content: space-between;
             padding-top: 0.5rem;
             border-top: 1px solid #eee;
         }
-
         .demographic-item {
             text-align: center;
             flex: 1;
         }
-
         .demographic-item h5 {
             margin: 0;
             font-size: 0.9rem;
             color: var(--primary);
         }
-
         .demographic-item small {
             color: #666;
             font-size: 0.8rem;
         }
-
         .button-container {
             display: flex;
             gap: 0.5rem;
             margin-top: 1rem;
             justify-content: flex-start;
         }
-
-        /* OVERLAY for "Not qualify for crediting" */
         .not-qualified-overlay {
             position: absolute;
             top: 0;
@@ -264,7 +228,6 @@
             font-size: 1.1rem;
             padding: 1rem;
         }
-
         .custom-modal {
             display: none;
             position: fixed;
@@ -277,7 +240,6 @@
             overflow-y: auto;
             padding: 20px;
         }
-
         .modal-content {
             background: white;
             max-width: 900px;
@@ -286,7 +248,6 @@
             position: relative;
             animation: modalSlideIn 0.3s ease-out;
         }
-
         @keyframes modalSlideIn {
             from {
                 transform: translateY(-50px);
@@ -297,7 +258,6 @@
                 opacity: 1;
             }
         }
-
         .modal-header {
             padding: 1rem;
             background: var(--primary);
@@ -307,7 +267,6 @@
             justify-content: space-between;
             align-items: center;
         }
-
         .modal-close {
             background: none;
             border: none;
@@ -323,15 +282,12 @@
             border-radius: 50%;
             transition: background-color 0.2s;
         }
-
         .modal-close:hover {
             background-color: rgba(255, 255, 255, 0.1);
         }
-
         .modal-body {
             padding: 1.5rem;
         }
-
         .modal-footer {
             padding: 1rem;
             border-top: 1px solid #eee;
@@ -339,7 +295,6 @@
             justify-content: flex-end;
             gap: 0.5rem;
         }
-
         .metric-card {
             background: #f8f9fa;
             border-radius: 8px;
@@ -347,7 +302,6 @@
             height: 100%;
             margin-bottom: 1rem;
         }
-
         .metric-title {
             color: var(--primary);
             margin-bottom: 1rem;
@@ -356,52 +310,42 @@
             font-size: 1rem;
             font-weight: 600;
         }
-
         .metric-item {
             display: flex;
             justify-content: space-between;
             padding: 0.5rem 0;
             border-bottom: 1px solid #eee;
         }
-
         .metric-item:last-child {
             border-bottom: none;
         }
-
         .metric-value {
             font-weight: 600;
             color: var(--primary);
         }
-
         @media (max-width: 768px) {
             .col-md-6, .col-lg-4 {
                 flex: 0 0 100%;
                 max-width: 100%;
             }
-
             .header-content {
                 flex-direction: column;
                 gap: 1rem;
             }
-
             .search-container {
                 width: 100%;
                 max-width: none;
             }
-
             .filters-row {
                 flex-direction: column;
             }
-
             .filter-item {
                 width: 100%;
             }
-
             .actions-row {
                 flex-direction: column;
                 gap: 0.5rem;
             }
-
             .btn {
                 width: 100%;
             }
@@ -474,22 +418,19 @@
         <!-- SACCO Cards Grid -->
         <div class="row" id="saccoGrid">
             @foreach($saccos as $sacco)
+            @php
+                // Determine if group is qualified
+                $qualified = ($sacco['totalMeetings'] >= 10 && $sacco['savingsStats']['totalBalance'] > 0);
+                // Merge that flag into the $sacco data
+                $saccoData = array_merge($sacco, [
+                    'qualified' => $qualified
+                ]);
+            @endphp
             <div class="col-md-6 col-lg-4 sacco-item">
-                <!--
-                  We pass extra data in JSON:
-                  "qualified" => whether totalMeetings >= 10 & totalBalance > 0
-                -->
-                @php
-                    $qualified = ($sacco['totalMeetings'] >= 10 && $sacco['savingsStats']['totalBalance'] > 0);
-                    $saccoData = array_merge($sacco, [
-                        'qualified' => $qualified
-                    ]);
-                @endphp
                 <div class="sacco-card" data-sacco="{{ json_encode($saccoData) }}">
                     <div class="sacco-header">
                         <h3>{{ $sacco['name'] }}</h3>
                         @if($qualified)
-                            <!-- Show credit badge only if qualified -->
                             <span class="credit-badge
                                 {{ ($sacco['creditScore']['score'] ?? 0) >= 80 ? 'credit-high'
                                    : ((($sacco['creditScore']['score'] ?? 0) >= 60) ? 'credit-medium' : 'credit-low') }}">
@@ -497,7 +438,6 @@
                             </span>
                         @endif
                     </div>
-                    <!-- If not qualified, add the overlay -->
                     @if(!$qualified)
                         <div class="not-qualified-overlay">
                             Not qualify for crediting
@@ -514,19 +454,17 @@
                                 <h4>UGX {{ number_format($sacco['savingsStats']['totalBalance']) }}</h4>
                                 <p>Total Savings</p>
                             </div>
-                            @if($qualified)
-                            <!-- Show "Active Loans" only if qualified -->
+                            <!-- If qualified => show real total loans, else "--" -->
                             <div class="stat-box">
-                                <h4>{{ number_format($sacco['loanStats']['total']) }}</h4>
+                                <h4>
+                                    @if($qualified)
+                                        {{ number_format($sacco['loanStats']['total']) }}
+                                    @else
+                                        --
+                                    @endif
+                                </h4>
                                 <p>Active Loans</p>
                             </div>
-                            @else
-                            <div class="stat-box">
-                                <h4>--</h4>
-                                <p>Active Loans</p>
-                            </div>
-                            @endif
-
                             <div class="stat-box">
                                 <h4>{{ $sacco['averageAttendance'] }}</h4>
                                 <p>Average Attendance</p>
@@ -563,7 +501,6 @@
                         </div>
 
                         <div class="button-container">
-                            <!-- If not qualified, we can disable the button or hide it. Let's just show it but if they click, they won't see a credit score. -->
                             <button class="btn btn-primary" onclick="viewDetails(this)">
                                 <i class="fas fa-eye"></i> View Details
                             </button>
@@ -639,17 +576,13 @@
             // Collect SACCO data from the DOM
             document.querySelectorAll('.sacco-card').forEach(card => {
                 const saccoData = JSON.parse(card.dataset.sacco);
-
-                // We'll store a "qualified" boolean on each object
-                // (Already done in Blade, but let's be sure we have it in JS)
-                saccoData.qualified = saccoData.qualified ?? (
-                    saccoData.totalMeetings >= 10 && saccoData.savingsStats.totalBalance > 0
-                );
+                // Double-check qualification logic in JS
+                saccoData.qualified = saccoData.qualified ??
+                    (saccoData.totalMeetings >= 10 && saccoData.savingsStats.totalBalance > 0);
 
                 allSaccoData.push({
                     element: card.closest('.sacco-item'),
                     data: saccoData,
-                    // used for filtering
                     attendance: saccoData.averageAttendance,
                     savings: saccoData.savingsStats.totalBalance,
                     loans: saccoData.loanStats.total,
@@ -657,19 +590,30 @@
                 });
             });
 
-            // After collecting all, we sort so that not-qualified appear last
+            // Sort so that:
+            // - Qualified groups first
+            // - Among qualified, by totalMeetings DESC
+            // - Then by averageAttendance DESC
             sortSaccoData();
         });
 
         function sortSaccoData() {
-            // Move all not-qualified to the bottom
             allSaccoData.sort((a, b) => {
-                if (a.data.qualified && !b.data.qualified) return -1; // a first
-                if (!a.data.qualified && b.data.qualified) return 1;  // b first
-                return 0; // both same => no change
+                const aData = a.data;
+                const bData = b.data;
+
+                // 1) qualified first
+                if (aData.qualified && !bData.qualified) return -1;
+                if (!aData.qualified && bData.qualified) return 1;
+
+                // 2) among same qualification, bigger totalMeetings first
+                if (bData.totalMeetings !== aData.totalMeetings) {
+                    return bData.totalMeetings - aData.totalMeetings;
+                }
+                // 3) if same meetings, bigger attendance first
+                return bData.averageAttendance - aData.averageAttendance;
             });
 
-            // Re-append the items in sorted order
             const saccoGrid = document.getElementById('saccoGrid');
             allSaccoData.forEach(sacco => {
                 saccoGrid.appendChild(sacco.element);
@@ -713,8 +657,6 @@
             currentSaccoData = sacco;
 
             document.getElementById('modalTitle').textContent = sacco.name;
-
-            // If not qualified => no credit score displayed
             if (!sacco.qualified) {
                 document.getElementById('creditScore').textContent = 'N/A';
                 document.getElementById('creditDescription').textContent = 'Not qualify for crediting';
@@ -731,15 +673,14 @@
                 { label: 'Total Meetings', value: sacco.totalMeetings }
             ]);
 
-            // If not qualified => hide total loans (or set it to '--')
-            const loansVal  = sacco.qualified ? sacco.loanStats.total : '--';
             const principal = sacco.qualified ? formatNumber(sacco.loanStats.principal ?? 0) : '--';
             const interest  = sacco.qualified ? formatNumber(sacco.loanStats.interest  ?? 0) : '--';
             const repay     = sacco.qualified ? formatNumber(sacco.loanStats.repayments ?? 0) : '--';
             const maxLoan   = sacco.qualified ? formatNumber(sacco.maxLoanAmount ?? 0) : '--';
+            const activeLoansVal = sacco.qualified ? sacco.loanStats.total : '--';
 
             document.getElementById('loanMetrics').innerHTML = generateMetricsList([
-                { label: 'Active Loans',    value: loansVal },
+                { label: 'Active Loans',    value: activeLoansVal },
                 { label: 'Total Principal', value: sacco.qualified ? 'UGX ' + principal : '--' },
                 { label: 'Total Interest',  value: sacco.qualified ? 'UGX ' + interest : '--' },
                 { label: 'Repayments',      value: sacco.qualified ? 'UGX ' + repay : '--' },
@@ -792,7 +733,6 @@
                 sacco.element.style.display !== 'none'
             );
 
-            // Example CSV columns with "Qualified" indicator
             const combinedData = [
                 ['VSLA Groups Credit Score Report'],
                 ['Generated on:', new Date().toLocaleString()],
