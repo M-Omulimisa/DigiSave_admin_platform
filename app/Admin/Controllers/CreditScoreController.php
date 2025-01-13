@@ -158,42 +158,71 @@ class CreditScoreController extends AdminController
             })
             ->count();
 
-        // Total Meetings
         $totalMeetings = Meeting::where('sacco_id', $sacco->id)->count();
 
-        // Total Member Names (Average Meeting Attendance)
+        // --- Meeting Attendance & Average ---
         $meetings = $sacco->meetings;
         $allMemberNames = [];
-        foreach ($meetings as $meeting) {
-            $membersJson = $meeting->members;
-            $attendanceData = json_decode($membersJson, true);
 
-            if (json_last_error() === JSON_ERROR_NONE) {
-                if (isset($attendanceData['presentMembersIds']) && is_array($attendanceData['presentMembersIds'])) {
-                    foreach ($attendanceData['presentMembersIds'] as $member) {
-                        if (isset($member['name'])) {
-                            $allMemberNames[] = $member['name'];
-                        }
+        foreach ($meetings as $meeting) {
+            $membersData = $meeting->members;
+
+            // 1) If it's a JSON string
+            if (is_string($membersData)) {
+                $attendanceData = json_decode($membersData, true);
+            }
+            // 2) If it's an object (stdClass)
+            elseif (is_object($membersData)) {
+                $attendanceData = json_decode(json_encode($membersData), true);
+            }
+            // 3) Otherwise, assume array
+            else {
+                $attendanceData = $membersData;
+            }
+
+            // If decoding is successful and presentMembersIds exists
+            if (
+                json_last_error() === JSON_ERROR_NONE &&
+                isset($attendanceData['presentMembersIds']) &&
+                is_array($attendanceData['presentMembersIds'])
+            ) {
+                foreach ($attendanceData['presentMembersIds'] as $member) {
+                    // Each $member is presumably an array with 'name'
+                    if (isset($member['name'])) {
+                        $allMemberNames[] = $member['name'];
                     }
                 }
             }
         }
 
+        $totalMeetings = Meeting::where('sacco_id', $sacco->id)->count();
         $meetingCount = count($meetings);
-        // Calculate average number of members present per meeting
         $totalMembersPerMeeting = [];
+
         foreach ($meetings as $meeting) {
             $membersData = $meeting->members;
-            // Handle both JSON string and array cases
-            $attendanceData = is_string($membersData) ? json_decode($membersData, true) : $membersData;
 
-            if (isset($attendanceData['presentMembersIds'])) {
+            // Same consistent approach to decode
+            if (is_string($membersData)) {
+                $attendanceData = json_decode($membersData, true);
+            } elseif (is_object($membersData)) {
+                $attendanceData = json_decode(json_encode($membersData), true);
+            } else {
+                $attendanceData = $membersData;
+            }
+
+            if (
+                json_last_error() === JSON_ERROR_NONE &&
+                isset($attendanceData['presentMembersIds']) &&
+                is_array($attendanceData['presentMembersIds'])
+            ) {
                 $totalMembersPerMeeting[] = count($attendanceData['presentMembersIds']);
             }
         }
 
-        $averageAttendanceRounded = $meetingCount > 0 ?
-            round(array_sum($totalMembersPerMeeting) / $meetingCount, 2) : 0;
+        $averageAttendanceRounded = $meetingCount > 0
+            ? round(array_sum($totalMembersPerMeeting) / $meetingCount, 2)
+            : 0;
 
         // $meetingCount = count($meetings);
         // $totalPresent = count(array_unique($allMemberNames));
