@@ -9,7 +9,7 @@ class AgentGroup extends Model
 {
     use HasFactory;
 
-    protected $table = 'agent_groups';
+    protected $table = 'agent_groups_users';
 
     protected $fillable = [
         'user_id',
