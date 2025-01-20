@@ -41,7 +41,12 @@ class DistrictAgentController extends AdminController
             return $this->first_name . ' ' . $this->last_name;
         })->sortable();
         $grid->column('phone_number', __('Phone Number'))->sortable();
-        $grid->column('email', __('Email'))->sortable();
+        // Add new column for group count
+        $grid->column('groups_count', 'Groups Created')->display(function () {
+            // Count groups from agent_groups table where user_id matches
+            return \App\Models\AgentGroup::where('user_id', $this->id)->count();
+        })->sortable();
+        // $grid->column('email', __('Email'))->sortable();
         $grid->column('district.name', __('District'))->sortable();
         $grid->column('created_at', __('Created At'))->sortable();
         $grid->column('updated_at', __('Updated At'))->sortable();
