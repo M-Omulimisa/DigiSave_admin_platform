@@ -44,7 +44,7 @@ class AgentController extends AdminController
         $grid->sex('Gender')->sortable();
 
         // Add new column for group count
-        $grid->column('groups_count', 'Groups Created')->display(function () {
+        $grid->column('groups_count', 'Agent Groups')->display(function () {
             // Count groups from agent_groups table where user_id matches
             return \App\Models\AgentGroup::where('user_id', $this->id)->count();
         })->sortable();
