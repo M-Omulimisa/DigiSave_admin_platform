@@ -23,6 +23,12 @@ class MeetingController extends AdminController
 {
     $grid = new Grid(new Meeting());
 
+    $grid->model()->whereHas('sacco', function ($query) {
+        $query->whereNotNull('name')
+              ->where('name', '!=', '')
+              ->whereNotIn('status', ['deleted', 'inactive']);
+    });
+
     $u = Auth::user();
     $adminId = $u->id;
 
@@ -62,12 +68,6 @@ class MeetingController extends AdminController
         })
         ->orderBy('created_at', $sortOrder);
     }
-
-    $grid->model()->whereHas('sacco', function ($query) {
-        $query->whereNotNull('name')
-              ->where('name', '!=', '')
-              ->whereNotIn('status', ['deleted', 'inactive']);
-    });
 
     $grid->model()
          ->whereHas('cycle', function ($query) {
