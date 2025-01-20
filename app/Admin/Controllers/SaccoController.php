@@ -31,6 +31,8 @@ class SaccoController extends AdminController
         $sortOrder = 'desc';
     }
 
+    $grid->model()->whereNotNull('name')->where('name', '!=', '');
+
     // Apply filters based on user's role
     if (!$admin->isRole('admin')) {
         $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
