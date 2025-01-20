@@ -43,6 +43,12 @@ class AgentController extends AdminController
         $grid->dob('Date of Birth')->sortable();
         $grid->sex('Gender')->sortable();
 
+        // Add new column for group count
+        $grid->column('groups_count', 'Groups Created')->display(function () {
+            // Count groups from agent_groups table where user_id matches
+            return \App\Models\AgentGroup::where('user_id', $this->id)->count();
+        })->sortable();
+
         // Filter users by user type ID based on AdminRole name 'agent'
         $agentRoleId = AdminRole::where('name', 'agent')->value('id');
         $grid->model()->where('user_type', '=', $agentRoleId);
