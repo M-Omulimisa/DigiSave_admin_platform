@@ -63,6 +63,12 @@ class MeetingController extends AdminController
         ->orderBy('created_at', $sortOrder);
     }
 
+    $grid->model()->whereHas('sacco', function ($query) {
+        $query->whereNotNull('name')
+              ->where('name', '!=', '')
+              ->whereNotIn('status', ['deleted', 'inactive']);
+    });
+
     $grid->model()
          ->whereHas('cycle', function ($query) {
             $query->where('status', 'active');
@@ -89,7 +95,14 @@ class MeetingController extends AdminController
         $cycle = Cycle::find($cycleId);
         return $cycle ? $cycle->name : 'Unknown';
     });
-    $grid->column('name', __('Meeting'))->editable()->sortable();
+    $grid->column('name', __('Meeting'))->display(function ($name) {
+        $parts = explode(' ', $name);
+        if (count($parts) >= 2) {
+            // Keep 'Meeting' and the first number only
+            return $parts[0] . ' ' . $parts[1];
+        }
+        return $name;
+    })->editable()->sortable();
     $grid->column('date', __('Date'));
     $grid->column('chairperson_name', __('Chairperson Name'))
         ->sortable()
