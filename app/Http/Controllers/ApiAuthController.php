@@ -2269,7 +2269,7 @@ class ApiAuthController extends Controller
                 'subcounty' => 'nullable|string|max:255',
                 'parish' => 'nullable|string|max:255',
                 'village' => 'nullable|string|max:255',
-                'user_id' => 'required|numeric|exists:admin_users,id',
+                'user_id' => 'required|numeric|exists:users,id',
             ]);
 
             // Create a new group record in the database
