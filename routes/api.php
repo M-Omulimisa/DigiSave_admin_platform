@@ -48,7 +48,7 @@ Route::post("share-records", [ApiResurceController::class, "share_record_create"
 Route::get("social-funds", [ApiResurceController::class, "socialFundRecords"]);
 Route::post("social-funds", [ApiResurceController::class, "socialFundCreate"]);
 Route::post("request-agent-otp-sms", [ApiResurceController::class, "request_otp_sms"]);
-Route::post("request-otp-sms", [ApiResurceController::class, "request_otp_sms"]);
+Route::post("request-otp-sms", [ApiResurceController::class, "requestAdminOtp"]);
 Route::get("transactions", [ApiResurceController::class, "transactions"]);
 Route::post("reverse-transaction", [ApiResurceController::class, "reverseTransaction"]);
 Route::get("loan-transactions", [ApiResurceController::class, "loan_transactions"]);

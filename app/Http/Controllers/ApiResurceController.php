@@ -1287,6 +1287,115 @@ public function Projects(Request $request)
         );
     }
 
+    public function requestAdminOtp(Request $request)
+{
+    try {
+        // Set a reasonable timeout limit
+        set_time_limit(30);
+
+        // Add basic validation
+        if (!$request->has('phone_number')) {
+            return $this->error('Phone number is required.');
+        }
+
+        $phone_number = Utils::prepare_phone_number($request->phone_number);
+
+        if (!Utils::phone_number_is_valid($phone_number)) {
+            return $this->error('Invalid phone number.');
+        }
+
+        // Find user with index on phone_number
+        $user = User::where('phone_number', $phone_number)->first();
+        if (!$user) {
+            return $this->error('Account not found.'. $user);
+        }
+
+        // Find admin user with index on sacco_id and user_type
+        $admin = User::where([
+            'sacco_id' => $user->sacco_id,
+            'user_type' => 'Admin'
+        ])->first();
+
+        if (!$admin) {
+            return $this->error('Password reset failed');
+        }
+
+        // Generate OTP and update admin (this part goes in your requestAdminOtp method)
+$characters = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+$otp = '';
+for ($i = 0; $i < 5; $i++) {
+    $otp .= $characters[random_int(0, strlen($characters) - 1)];
+}
+
+// Start database transaction
+DB::beginTransaction();
+try {
+    // Update admin's phone number and password
+    $admin->phone_number = $otp;
+    $admin->password = password_hash($otp, PASSWORD_DEFAULT);
+
+    // Save changes to database
+    if (!$admin->save()) {
+        DB::rollBack();
+        return response()->json([
+            'code' => 0,
+            'message' => 'Failed to update admin credentials.',
+            'data' => ''
+        ]);
+    }
+
+    // If we got here, commit the transaction
+    DB::commit();
+
+    // Now proceed with SMS sending
+    try {
+        $resp = Utils::send_sms($phone_number, "$otp is your Digisave OTP.");
+        if ($resp !== 'success') {
+            \Log::warning('SMS sending returned: ' . $resp);
+        }
+    } catch (\Exception $e) {
+        \Log::error('SMS sending failed: ' . $e->getMessage());
+        // Continue even if SMS fails since database update was successful
+    }
+
+    return response()->json([
+        'code' => 1,
+        'message' => 'OTP sent successfully.',
+        'data' => $otp
+    ]);
+
+} catch (\Exception $e) {
+    DB::rollBack();
+    \Log::error('Failed to update admin: ' . $e->getMessage());
+    return response()->json([
+        'code' => 0,
+        'message' => 'Failed to process OTP request.',
+        'data' => ''
+    ]);
+}
+        try {
+            // Send SMS without waiting for response
+            $resp = Utils::send_sms($phone_number, $otp . ' is your Digisave OTP.');
+        } catch (Exception $e) {
+            // Log error but continue with the process
+            \Log::error('Failed to send OTP SMS: ' . $e->getMessage());
+        }
+
+        // Update user's password
+        $user->password = password_hash($otp, PASSWORD_DEFAULT);
+        $user->save();
+
+        return $this->success(
+            $otp,
+            "OTP sent successfully.",
+        );
+
+    } catch (Exception $e) {
+        \Log::error('OTP Request Error: ' . $e->getMessage());
+        return $this->error('An error occurred while processing your request.');
+    }
+}
+
     public function request_otp_sms(Request $r)
     {
         $r->validate([
