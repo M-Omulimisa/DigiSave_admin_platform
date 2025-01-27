@@ -108,15 +108,20 @@ public function agentGroups(Request $r)
         return $this->error('Agent district not found.');
     }
 
+    // Get the IDs of SACCOs allocated to this agent
+    $allocatedSaccoIds = AgentGroupAllocation::where('agent_id', $user->id)
+        ->where('status', 'active')
+        ->pluck('sacco_id');
+
     $saccos = Sacco::where('district', $agentDistrict)
+        ->whereIn('id', $allocatedSaccoIds)  // Only get allocated SACCOs
         ->orderby('id', 'desc')
         ->get()
         ->map(function ($sacco) use ($user) {
             // Get admin user of the group
-
             $adminUser = User::where('sacco_id', $sacco->id)
-            ->where('user_type', 'admin')
-            ->first();
+                ->where('user_type', 'admin')
+                ->first();
 
             $chairperson = User::where('sacco_id', $sacco->id)
                 ->whereHas('position', function($query) {
@@ -190,11 +195,7 @@ public function agentGroups(Request $r)
                     'meeting_time' => $latestMeeting ? $latestMeeting->start_time : '',
                     'meeting_venue' => $latestMeeting ? $latestMeeting->location : '',
                     'next_meeting_date' => $latestMeeting ? $latestMeeting->meeting_date : '',
-
-                    // Total savings (admin's balance)
                     'total_savings' => $adminUser ? $adminUser->balance : '0',
-
-                    // Total loans (admin's LOAN_BALANCE)
                     'total_loans' => $adminUser ? $adminUser->LOAN_BALANCE : '0'
                 ];
             }
@@ -206,10 +207,127 @@ public function agentGroups(Request $r)
 
     return $this->success(
         $saccos,
-        "Successfully retrieved " . $saccos->count() . " VSLA groups with assigned leaders in " . $agentDistrict . " district",
+        "Successfully retrieved " . $saccos->count() . " allocated VSLA groups with assigned leaders in " . $agentDistrict . " district",
         200
     );
 }
+
+// public function agentGroups(Request $r)
+// {
+//     $user = auth('api')->user();
+
+//     if ($user === null) {
+//         return $this->error('Agent not authenticated.');
+//     }
+
+//     $agentDistrict = District::where('id', $user->district_id)->value('name');
+
+//     if ($agentDistrict === null) {
+//         return $this->error('Agent district not found.');
+//     }
+
+//     $saccos = Sacco::where('district', $agentDistrict)
+//         ->orderby('id', 'desc')
+//         ->get()
+//         ->map(function ($sacco) use ($user) {
+//             // Get admin user of the group
+
+//             $adminUser = User::where('sacco_id', $sacco->id)
+//             ->where('user_type', 'admin')
+//             ->first();
+
+//             $chairperson = User::where('sacco_id', $sacco->id)
+//                 ->whereHas('position', function($query) {
+//                     $query->where('name', 'Chairperson');
+//                 })
+//                 ->select('first_name', 'last_name', 'phone_number')
+//                 ->first();
+
+//             $secretary = User::where('sacco_id', $sacco->id)
+//                 ->whereHas('position', function($query) {
+//                     $query->where('name', 'Secretary');
+//                 })
+//                 ->select('first_name', 'last_name', 'phone_number')
+//                 ->first();
+
+//             $treasurer = User::where('sacco_id', $sacco->id)
+//                 ->whereHas('position', function($query) {
+//                     $query->where('name', 'Treasurer');
+//                 })
+//                 ->select('first_name', 'last_name', 'phone_number')
+//                 ->first();
+
+//             $memberCount = User::where('sacco_id', $sacco->id)->count();
+
+//             $projects = Project::whereHas('saccos', function($query) use ($sacco) {
+//                 $query->where('sacco_id', $sacco->id);
+//             })->get()->map(function($project) {
+//                 return [
+//                     'name' => $project->name,
+//                     'description' => $project->description,
+//                     'start_date' => $project->start_date,
+//                     'end_date' => $project->end_date
+//                 ];
+//             });
+
+//             $latestMeeting = MeetingSchedule::where('sacco_id', $sacco->id)
+//                 ->where('meeting_date', '>=', now())
+//                 ->orderBy('meeting_date', 'asc')
+//                 ->first();
+
+//             if ($chairperson || $secretary || $treasurer) {
+//                 return [
+//                     'registration_number' => $sacco->id,
+//                     'contact_number' => $chairperson ? $chairperson->phone_number : '',
+//                     'district' => $sacco->district,
+//                     'subcounty' => $sacco->subcounty,
+//                     'parish' => $sacco->parish,
+//                     'village' => $sacco->village,
+//                     'address' => $sacco->physical_address,
+//                     'share_value' => $sacco->share_price,
+//                     'registration_fee' => $sacco->register_fee,
+//                     'created_at' => $sacco->created_at,
+//                     'updated_at' => $sacco->updated_at,
+//                     'chairperson_name' => $chairperson ? $chairperson->first_name . ' ' . $chairperson->last_name : '',
+//                     'chairperson_contact' => $chairperson ? $chairperson->phone_number : '',
+//                     'secretary_name' => $secretary ? $secretary->first_name . ' ' . $secretary->last_name : '',
+//                     'secretary_contact' => $secretary ? $secretary->phone_number : '',
+//                     'treasurer_name' => $treasurer ? $treasurer->first_name . ' ' . $treasurer->last_name : '',
+//                     'treasurer_contact' => $treasurer ? $treasurer->phone_number : '',
+//                     'member_count' => $memberCount,
+//                     'description' => "Welcome to " . $sacco->name . ", a VSLA group located in " .
+//                     $sacco->village . ", " . $sacco->parish . " Parish, " .
+//                     $sacco->subcounty . " Sub-county, " . $sacco->district . " District. " .
+//                     "Our group was established on " . Carbon::parse($sacco->establishment_date)->format('F j, Y') .
+//                     ". We conduct regular savings and loan activities with a share value of UGX " .
+//                     number_format($sacco->share_price) . " and a registration fee of UGX " .
+//                     number_format($sacco->register_fee) . ".",
+//                     'agent_id' => $user->id,
+//                     'projects' => $projects,
+//                     'meeting_day' => $latestMeeting ? Carbon::parse($latestMeeting->meeting_date)->format('l') : '',
+//                     'meeting_time' => $latestMeeting ? $latestMeeting->start_time : '',
+//                     'meeting_venue' => $latestMeeting ? $latestMeeting->location : '',
+//                     'next_meeting_date' => $latestMeeting ? $latestMeeting->meeting_date : '',
+
+//                     // Total savings (admin's balance)
+//                     'total_savings' => $adminUser ? $adminUser->balance : '0',
+
+//                     // Total loans (admin's LOAN_BALANCE)
+//                     'total_loans' => $adminUser ? $adminUser->LOAN_BALANCE : '0'
+//                 ];
+//             }
+
+//             return $this->error("No group leaders");
+//         })
+//         ->filter()
+//         ->values();
+
+//     return $this->success(
+//         $saccos,
+//         "Successfully retrieved " . $saccos->count() . " VSLA groups with assigned leaders in " . $agentDistrict . " district",
+//         200
+//     );
+// }
 
 // public function agentGroups(Request $r)
 // {
