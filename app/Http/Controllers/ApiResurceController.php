@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\AgentMeeting;
 use App\Models\Agent;
 use App\Models\AgentAllocation;
+use App\Models\AgentGroupAllocation;
 use App\Models\Association;
 use App\Models\Transaction;
 use Illuminate\Support\Facades\DB;
