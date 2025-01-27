@@ -103,19 +103,13 @@ public function agentGroups(Request $r)
         return $this->error('Agent not authenticated.');
     }
 
-    $agentDistrict = District::where('id', $user->district_id)->value('name');
-
-    if ($agentDistrict === null) {
-        return $this->error('Agent district not found.');
-    }
-
-    // Get the IDs of SACCOs allocated to this agent
+    // Get allocated SACCO IDs for this agent
     $allocatedSaccoIds = AgentGroupAllocation::where('agent_id', $user->id)
         ->where('status', 'active')
         ->pluck('sacco_id');
 
-    $saccos = Sacco::where('district', $agentDistrict)
-        ->whereIn('id', $allocatedSaccoIds)  // Only get allocated SACCOs
+    // Fetch SACCOs based on allocated IDs only
+    $saccos = Sacco::whereIn('id', $allocatedSaccoIds)
         ->orderby('id', 'desc')
         ->get()
         ->map(function ($sacco) use ($user) {
@@ -208,7 +202,7 @@ public function agentGroups(Request $r)
 
     return $this->success(
         $saccos,
-        "Successfully retrieved " . $saccos->count() . " allocated VSLA groups with assigned leaders in " . $agentDistrict . " district",
+        "Successfully retrieved " . $saccos->count() . " allocated VSLA groups with assigned leaders",
         200
     );
 }
