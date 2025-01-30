@@ -48,7 +48,7 @@ class MembersController extends AdminController
     // Start building the model query
     $grid->model()->orderBy('created_at', $sortOrder);
 
-    // **1. Exclude members without a valid group (sacco)**
+    // **1. Exclude members without a valid group (sacco) using whereHas**
     $grid->model()->whereHas('sacco');
 
     // Apply filters for non-admin users
@@ -84,9 +84,9 @@ class MembersController extends AdminController
             });
     }
 
-    // Grid configuration
-    $grid->disableBatchActions();
-    $grid->quickSearch(['first_name', 'last_name', 'email', 'phone_number', 'sacco.name'])->placeholder('Search by name, email, phone number, or group name');
+    // **3. Remove 'sacco.name' from quickSearch**
+    $grid->quickSearch(['first_name', 'last_name', 'email', 'phone_number'])
+         ->placeholder('Search by name, email, or phone number');
 
     // Define grid columns
     $grid->column('first_name', __('First Name'))->sortable()->display(function ($firstName) {
@@ -101,7 +101,9 @@ class MembersController extends AdminController
         $isValidPhoneNumber = preg_match('/^(\+256|0)?[3-9][0-9]{8}$/', $phoneNumber);
         return $isValidPhoneNumber ? $phoneNumber : '';
     });
-    $grid->column('sacco.name', __('Group Name'))->sortable();
+    $grid->column('sacco.name', __('Group Name'))->sortable()->display(function ($groupName) {
+        return $groupName ? $groupName : 'N/A';
+    });
     $grid->column('created_at', __('Date Joined'))->sortable()->display(function ($date) {
         return date('d M Y', strtotime($date));
     });
@@ -114,7 +116,7 @@ class MembersController extends AdminController
         $filter->like('email', 'Email');
         $filter->like('phone_number', 'Phone Number');
 
-        // **2. Add a filter for Group Name**
+        // **2. Add a dedicated filter for Group Name using whereHas**
         $filter->where(function ($query) {
             $query->whereHas('sacco', function ($q) {
                 $q->where('name', 'like', "%{$this->input}%");
