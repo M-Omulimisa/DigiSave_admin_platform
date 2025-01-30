@@ -48,7 +48,7 @@ class MembersController extends AdminController
     // Start building the model query
     $grid->model()->orderBy('created_at', $sortOrder);
 
-    // Exclude members without a valid group (sacco)
+    // **1. Exclude members without a valid group (sacco)**
     $grid->model()->whereHas('sacco');
 
     // Apply filters for non-admin users
@@ -78,7 +78,7 @@ class MembersController extends AdminController
     // If gender filter is active, filter members without gender (and exclude Admin members)
     if ($genderFilter === 'none') {
         $grid->model()->whereNull('sex')
-            .where(function ($query) {
+            ->where(function ($query) {
                 $query->whereNull('user_type')
                       ->orWhere('user_type', '!=', 'Admin');
             });
@@ -86,7 +86,7 @@ class MembersController extends AdminController
 
     // Grid configuration
     $grid->disableBatchActions();
-    $grid->quickSearch('first_name', 'last_name', 'email', 'phone_number')->placeholder('Search by name, email or phone number');
+    $grid->quickSearch(['first_name', 'last_name', 'email', 'phone_number', 'sacco.name'])->placeholder('Search by name, email, phone number, or group name');
 
     // Define grid columns
     $grid->column('first_name', __('First Name'))->sortable()->display(function ($firstName) {
@@ -114,7 +114,7 @@ class MembersController extends AdminController
         $filter->like('email', 'Email');
         $filter->like('phone_number', 'Phone Number');
 
-        // Add a filter for Group Name
+        // **2. Add a filter for Group Name**
         $filter->where(function ($query) {
             $query->whereHas('sacco', function ($q) {
                 $q->where('name', 'like', "%{$this->input}%");
