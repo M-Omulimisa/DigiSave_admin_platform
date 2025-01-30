@@ -82,18 +82,14 @@ class GroupInsert extends Model
                 MemberPosition::create($position);
             }
 
-            // After successful group creation and positions setup
-            if ($newGroup && isset($data['user_id'])) {
-                try {
-                    // Create agent-group relationship
-                    AgentGroup::assignGroupToAgent($data['user_id'], $newGroup->id);
-                } catch (\Exception $e) {
-                    \Log::error('Failed to create agent-group relationship: ' . $e->getMessage());
-                    // Even if relationship creation fails, we still want to return the group
-                }
+            if (isset($data['user_id'])) {
+                AgentGroup::assignGroupToAgent($data['user_id'], $newGroup->id);
             }
 
-            return ['group_id' => $newGroup->id, 'group_data' => $newGroup];
+            return [
+                'group_id' => $newGroup->id,
+                'group_data' => $newGroup
+            ];
         });
     } catch (\Exception $e) {
         \Log::error('Failed to create group: ' . $e->getMessage());
