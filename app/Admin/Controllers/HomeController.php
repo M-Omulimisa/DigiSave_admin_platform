@@ -335,6 +335,25 @@ class HomeController extends Controller
         });
         $pwdUsers = $filteredUsers->where('pwd', 'Yes');
 
+        $refugeMaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+        ->join(
+            'saccos',
+            'users.sacco_id',
+            '=',
+            'saccos.id'
+        )
+        ->where('transactions.type', 'SHARE')
+        // ->whereIn('users.sacco_id', $saccoIds)
+        // ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+        ->whereBetween('transactions.created_at', [$startDate, $endDate])
+        ->whereRaw('LOWER(users.refugee_status) = ?', ['yes'])
+        ->where('users.sex', 'Male')
+        ->where(function ($query) {
+            $query->whereNull('users.user_type')
+                ->orWhere('users.user_type', '<>', 'Admin');
+        })
+        ->sum('transactions.amount');
+
         $statistics = [
             'totalAccounts' => $this->getTotalAccounts($filteredUsers, $startDate, $endDate),
             'totalMembers' => $filteredUsers->count(),
@@ -1173,57 +1192,57 @@ class HomeController extends Controller
 
             // PWDs disermination by gender
             $pwdMaleUsers = $filteredUsers->whereIn('sacco_id', $saccoIds)
-            ->where('pwd', 'yes')
-            ->where('sex', 'Male');
-        $pwdFemaleUsers = $filteredUsers->whereIn('sacco_id', $saccoIds)
-            ->where('pwd', 'yes')
-            ->where('sex', 'Female');
+                ->where('pwd', 'yes')
+                ->where('sex', 'Male');
+            $pwdFemaleUsers = $filteredUsers->whereIn('sacco_id', $saccoIds)
+                ->where('pwd', 'yes')
+                ->where('sex', 'Female');
 
-        // Get pwd savings by gender
-        $pwdMaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->whereIn('transactions.sacco_id', $saccoIds)
-            ->where('transactions.type', 'SHARE')
-            ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
-            ->where('users.sex', 'Male')
-            ->sum('transactions.amount');
+            // Get pwd savings by gender
+            $pwdMaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'SHARE')
+                ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
+                ->where('users.sex', 'Male')
+                ->sum('transactions.amount');
 
-        $pwdFemaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->whereIn('transactions.sacco_id', $saccoIds)
-            ->where('transactions.type', 'SHARE')
-            ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
-            ->where('users.sex', 'Female')
-            ->sum('transactions.amount');
+            $pwdFemaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'SHARE')
+                ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
+                ->where('users.sex', 'Female')
+                ->sum('transactions.amount');
 
-        $pwdMaleLoanCount = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->whereIn('transactions.sacco_id', $saccoIds)
-            ->where('transactions.type', 'LOAN')
-            ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
-            ->where('users.sex', 'Male')
-            ->count();
+            $pwdMaleLoanCount = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'LOAN')
+                ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
+                ->where('users.sex', 'Male')
+                ->count();
 
-        // Get pwd female loan count
-        $pwdFemaleLoanCount = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->whereIn('transactions.sacco_id', $saccoIds)
-            ->where('transactions.type', 'LOAN')
-            ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
-            ->where('users.sex', 'Female')
-            ->count();
+            // Get pwd female loan count
+            $pwdFemaleLoanCount = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'LOAN')
+                ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
+                ->where('users.sex', 'Female')
+                ->count();
 
-        // Get pwd male loan amount
-        $pwdMaleLoanAmount = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->whereIn('transactions.sacco_id', $saccoIds)
-            ->where('transactions.type', 'LOAN')
-            ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
-            ->where('users.sex', 'Male')
-            ->sum('transactions.amount');
+            // Get pwd male loan amount
+            $pwdMaleLoanAmount = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'LOAN')
+                ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
+                ->where('users.sex', 'Male')
+                ->sum('transactions.amount');
 
-        // Get pwd female loan amount
-        $pwdFemaleLoanAmount = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->whereIn('transactions.sacco_id', $saccoIds)
-            ->where('transactions.type', 'LOAN')
-            ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
-            ->where('users.sex', 'Female')
-            ->sum('transactions.amount');
+            // Get pwd female loan amount
+            $pwdFemaleLoanAmount = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'LOAN')
+                ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
+                ->where('users.sex', 'Female')
+                ->sum('transactions.amount');
 
             $filteredUsersForBalances = $filteredUsers->whereIn('sacco_id', $saccoIds);
             $filteredUsersIds = $filteredUsers->pluck('id');
@@ -1520,46 +1539,46 @@ class HomeController extends Controller
 
             // PWDs dissermination by gender
             $pwdMaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            // ->whereIn('transactions.sacco_id', $saccoIds)
-            ->where('transactions.type', 'SHARE')
-            ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
-            ->where('users.sex', 'Male')
-            ->sum('transactions.amount');
+                // ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'SHARE')
+                ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
+                ->where('users.sex', 'Male')
+                ->sum('transactions.amount');
 
-        $pwdFemaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            // ->whereIn('transactions.sacco_id', $saccoIds)
-            ->where('transactions.type', 'SHARE')
-            ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
-            ->where('users.sex', 'Female')
-            ->sum('transactions.amount');
+            $pwdFemaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                // ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'SHARE')
+                ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
+                ->where('users.sex', 'Female')
+                ->sum('transactions.amount');
 
-        // Get pwd male loan count
-        $pwdMaleLoanCount = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->where('transactions.type', 'LOAN')
-            ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
-            ->where('users.sex', 'Male')
-            ->count();
+            // Get pwd male loan count
+            $pwdMaleLoanCount = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->where('transactions.type', 'LOAN')
+                ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
+                ->where('users.sex', 'Male')
+                ->count();
 
-        // Get pwd female loan count
-        $pwdFemaleLoanCount = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->where('transactions.type', 'LOAN')
-            ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
-            ->where('users.sex', 'Female')
-            ->count();
+            // Get pwd female loan count
+            $pwdFemaleLoanCount = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->where('transactions.type', 'LOAN')
+                ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
+                ->where('users.sex', 'Female')
+                ->count();
 
-        // Get pwd male loan amount
-        $pwdMaleLoanAmount = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->where('transactions.type', 'LOAN')
-            ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
-            ->where('users.sex', 'Male')
-            ->sum('transactions.amount');
+            // Get pwd male loan amount
+            $pwdMaleLoanAmount = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->where('transactions.type', 'LOAN')
+                ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
+                ->where('users.sex', 'Male')
+                ->sum('transactions.amount');
 
-        // Get pwd female loan amount
-        $pwdFemaleLoanAmount = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->where('transactions.type', 'LOAN')
-            ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
-            ->where('users.sex', 'Female')
-            ->sum('transactions.amount');
+            // Get pwd female loan amount
+            $pwdFemaleLoanAmount = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->where('transactions.type', 'LOAN')
+                ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
+                ->where('users.sex', 'Female')
+                ->sum('transactions.amount');
 
             $filteredUsersForBalances = $filteredUsers;
             $pwdUsers = $filteredUsers->where('pwd', 'Yes');
