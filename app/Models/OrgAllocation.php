@@ -14,6 +14,8 @@ class OrgAllocation extends Model
     protected $fillable = [
         'user_id',
         'vsla_organisation_id',
+        'position',
+        'region',
     ];
 
     public function admin()

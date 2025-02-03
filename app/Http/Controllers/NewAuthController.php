@@ -87,3 +87,5 @@ class NewAuthController extends BaseAuthController
         ])->withInput();
     }
 }
+
+
