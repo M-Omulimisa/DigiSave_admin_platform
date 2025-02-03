@@ -335,46 +335,6 @@ class HomeController extends Controller
         });
         $pwdUsers = $filteredUsers->where('pwd', 'Yes');
 
-        $refugeMaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-        ->join(
-            'saccos',
-            'users.sacco_id',
-            '=',
-            'saccos.id'
-        )
-        ->where('transactions.type', 'SHARE')
-        // ->whereIn('users.sacco_id', $saccoIds)
-        // ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-        ->whereBetween('transactions.created_at', [$startDate, $endDate])
-        ->whereRaw('LOWER(users.refugee_status) = ?', ['yes'])
-        ->where('users.sex', 'Male')
-        ->where(function ($query) {
-            $query->whereNull('users.user_type')
-                ->orWhere('users.user_type', '<>', 'Admin');
-        })
-        ->sum('transactions.amount');
-
-
-
-        $refugeFemaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-        ->join(
-            'saccos',
-            'users.sacco_id',
-            '=',
-            'saccos.id'
-        )
-        ->where('transactions.type', 'SHARE')
-        // ->whereIn('users.sacco_id', $saccoIds)
-        // ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-        ->whereBetween('transactions.created_at', [$startDate, $endDate])
-        ->whereRaw('LOWER(users.refugee_status) = ?', ['yes'])
-        ->where('users.sex', 'Female')
-        ->where(function ($query) {
-            $query->whereNull('users.user_type')
-                ->orWhere('users.user_type', '<>', 'Admin');
-        })
-        ->sum('transactions.amount');
-
         $statistics = [
             'totalAccounts' => $this->getTotalAccounts($filteredUsers, $startDate, $endDate),
             'totalMembers' => $filteredUsers->count(),
