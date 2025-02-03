@@ -48,7 +48,7 @@ class HomeController extends Controller
         }
 
         $startDate = Carbon::parse($request->input('start_date'))->startOfDay();
-        $endDate   = Carbon::parse($request->input('end_date'))->endOfDay();
+        $endDate = Carbon::parse($request->input('end_date'))->endOfDay();
 
         // dd('selected dates: ', $startDate->toDateString(), 'and: ', $endDate->toDateString());
 
@@ -57,7 +57,7 @@ class HomeController extends Controller
             return redirect()->back()->withErrors(['error' => 'Both start and end dates are required.']);
         }
 
-        $admin   = Admin::user();
+        $admin = Admin::user();
         $adminId = $admin->id;
 
         $users = User::all();
@@ -71,16 +71,6 @@ class HomeController extends Controller
         });
 
         $filteredUserIds = $filteredUsers->pluck('id');
-
-        // -------------------------------------------------------------------
-        // FIX: Initialize these sums to 0 BEFORE the if-block so they're safe
-        // -------------------------------------------------------------------
-        $refugeMaleShareSum   = 0;
-        $refugeFemaleShareSum = 0;
-        $pwdMaleShareSum      = 0;
-        $pwdFemaleShareSum    = 0;
-        $maleShareSum         = 0;
-        $femaleShareSum       = 0;
 
         // Additional filters based on admin role
         if (!$admin->isRole('admin')) {
@@ -338,37 +328,37 @@ class HomeController extends Controller
 
         // Calculate statistics
         $femaleUsers = $filteredUsers->where('sex', 'Female');
-        $maleUsers   = $filteredUsers->where('sex', 'Male');
-        $refuges     = $filteredUsers->where('refugee_status', 'yes');
-        $youthUsers  = $filteredUsers->filter(function ($user) {
+        $maleUsers = $filteredUsers->where('sex', 'Male');
+        $refuges = $filteredUsers->where('refugee_status', 'yes');
+        $youthUsers = $filteredUsers->filter(function ($user) {
             return Carbon::parse($user->dob)->age < 35;
         });
-        $pwdUsers    = $filteredUsers->where('pwd', 'Yes');
+        $pwdUsers = $filteredUsers->where('pwd', 'Yes');
 
         $statistics = [
-            'totalAccounts'       => $this->getTotalAccounts($filteredUsers, $startDate, $endDate),
-            'totalMembers'        => $filteredUsers->count(),
-            'femaleMembersCount'  => $femaleUsers->count(),
-            'refugesMemberCount'  => $refuges->count(),
-            'maleMembersCount'    => $maleUsers->count(),
-            'youthMembersCount'   => $youthUsers->count(),
-            'pwdMembersCount'     => $pwdUsers->count(),
-            'refugeeMaleSavings'  => $refugeMaleShareSum,
-            'refugeeFemaleSavings'=> $refugeFemaleShareSum,
-            'pwdMaleSavings'      => $pwdMaleShareSum,
-            'pwdFemaleSavings'    => $pwdFemaleShareSum,
-            'maleTotalBalance'    => $maleShareSum,
-            'femaleTotalBalance'  => $femaleShareSum,
-            'refugeeMaleLoans'    => $this->getLoanSumForGender($refuges, 'Male', $startDate, $endDate),
-            'refugeeFemaleLoans'  => $this->getLoanSumForGender($refuges, 'Female', $startDate, $endDate),
-            'pwdMaleLoans'        => $this->getLoanSumForGender($pwdUsers, 'Male', $startDate, $endDate),
-            'pwdFemaleLoans'      => $this->getLoanSumForGender($pwdUsers, 'Female', $startDate, $endDate),
-            'youthTotalBalance'   => $this->getTotalBalance($youthUsers, 'SHARE', $startDate, $endDate),
-            'pwdTotalBalance'     => $this->getTotalBalance($pwdUsers, 'SHARE', $startDate, $endDate),
-            'totalLoanAmount'     => $this->getTotalLoanAmount($filteredUsers, $startDate, $endDate),
-            'loanSumForWomen'     => $this->getLoanSumForGender($filteredUsers, 'Female', $startDate, $endDate),
-            'loanSumForMen'       => $this->getLoanSumForGender($filteredUsers, 'Male', $startDate, $endDate),
-            'loanSumForYouths'    => $this->getLoanSumForYouths($filteredUsers, $startDate, $endDate),
+            'totalAccounts' => $this->getTotalAccounts($filteredUsers, $startDate, $endDate),
+            'totalMembers' => $filteredUsers->count(),
+            'femaleMembersCount' => $femaleUsers->count(),
+            'refugesMemberCount' => $refuges->count(),
+            'maleMembersCount' => $maleUsers->count(),
+            'youthMembersCount' => $youthUsers->count(),
+            'pwdMembersCount' => $pwdUsers->count(),
+            'refugeeMaleSavings' => $refugeMaleShareSum,
+            'refugeeFemaleSavings' => $refugeFemaleShareSum,
+            'pwdMaleSavings' => $pwdMaleShareSum,
+            'pwdFemaleSavings' => $pwdFemaleShareSum,
+            'maleTotalBalance' => $maleShareSum,
+            'femaleTotalBalance' => $femaleShareSum,
+            'refugeeMaleLoans' => $this->getLoanSumForGender($refuges, 'Male', $startDate, $endDate),
+            'refugeeFemaleLoans' => $this->getLoanSumForGender($refuges, 'Female', $startDate, $endDate),
+            'pwdMaleLoans' => $this->getLoanSumForGender($pwdUsers, 'Male', $startDate, $endDate),
+            'pwdFemaleLoans' => $this->getLoanSumForGender($pwdUsers, 'Female', $startDate, $endDate),
+            'youthTotalBalance' => $this->getTotalBalance($youthUsers, 'SHARE', $startDate, $endDate),
+            'pwdTotalBalance' => $this->getTotalBalance($pwdUsers, 'SHARE', $startDate, $endDate),
+            'totalLoanAmount' => $this->getTotalLoanAmount($filteredUsers, $startDate, $endDate),
+            'loanSumForWomen' => $this->getLoanSumForGender($filteredUsers, 'Female', $startDate, $endDate),
+            'loanSumForMen' => $this->getLoanSumForGender($filteredUsers, 'Male', $startDate, $endDate),
+            'loanSumForYouths' => $this->getLoanSumForYouths($filteredUsers, $startDate, $endDate),
             'pwdTotalLoanBalance' => $this->getTotalLoanBalance($pwdUsers, $startDate, $endDate),
         ];
 
@@ -497,9 +487,7 @@ class HomeController extends Controller
 
     private function generateCsv($statistics, $startDate, $endDate)
     {
-        $startStamp = $startDate->format('Y-m-d_H-i-s');
-        $endStamp   = $endDate->format('Y-m-d_H-i-s');
-        $fileName = 'export_data_' . $startStamp . '_to_' . $endStamp . '.csv';
+        $fileName = 'export_data_' . $startDate . '_to_' . $endDate . '.csv';
         $filePath = storage_path('exports/' . $fileName);
 
         if (!file_exists(storage_path('exports'))) {
@@ -567,7 +555,7 @@ class HomeController extends Controller
         }
 
         return response()->download($filePath, $fileName, [
-            'Content-Type'        => 'text/csv',
+            'Content-Type' => 'text/csv',
             'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
         ])->deleteFileAfterSend(true);
     }
@@ -651,10 +639,10 @@ class HomeController extends Controller
             $sacco->processed = "yes";
             $sacco->save();
         }
-        $users   = User::all();
-        $admin   = Admin::user();
+        $users = User::all();
+        $admin = Admin::user();
         $adminId = $admin->id;
-        $userName= $admin->first_name;
+        $userName = $admin->first_name;
 
         // $totalAccounts = Sacco::whereHas('users', function ($query) {
         //     $query->whereHas('position', function ($query) {
@@ -683,9 +671,9 @@ class HomeController extends Controller
             return $user->user_type === null || !in_array($user->user_type, ['Admin', '5']);
         });
 
-        $admin          = Admin::user();
-        $adminId        = $admin->id;
-        $selectedOrgId  = request()->get('selected_org');
+        $admin = Admin::user();
+        $adminId = $admin->id;
+        $selectedOrgId = request()->get('selected_org');
 
         if (!$admin->isRole('admin')) {
             $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
@@ -698,10 +686,10 @@ class HomeController extends Controller
             }
 
             $organization = VslaOrganisation::find($orgAllocation->vsla_organisation_id);
-            $orgIds       = $orgAllocation->vsla_organisation_id;
-            $adminRegion  = trim($orgAllocation->region);
-            $orgName      = $organization->name;
-            $logoUrl      = '';
+            $orgIds = $orgAllocation->vsla_organisation_id;
+            $adminRegion = trim($orgAllocation->region);
+            $orgName = $organization->name;
+            $logoUrl = '';
 
             if ($organization->name === 'International Institute of Rural Reconstruction (IIRR)') {
                 $logoUrl = 'https://iirr.org/wp-content/uploads/2021/09/IIRR-PING-logo-1-2.png';
@@ -733,10 +721,10 @@ class HomeController extends Controller
                     ->toArray();
             }
 
-            $totalOrgAdmins      = count($OrgAdmins);
-            $totalSaccos         = Sacco::whereIn('id', $saccoIds)->count();
-            $organisationCount   = VslaOrganisation::where('id', $orgIds)->count();
-            $totalMembers        = $filteredUsers->whereIn('sacco_id', $saccoIds)->count();
+            $totalOrgAdmins = count($OrgAdmins);
+            $totalSaccos = Sacco::whereIn('id', $saccoIds)->count();
+            $organisationCount = VslaOrganisation::where('id', $orgIds)->count();
+            $totalMembers = $filteredUsers->whereIn('sacco_id', $saccoIds)->count();
 
             $saccoIdsWithPositions = User::whereIn('sacco_id', $saccoIds)
                 ->whereHas('sacco', function ($query) {
@@ -754,7 +742,7 @@ class HomeController extends Controller
                 ->count();
 
             $totalPwdMembers = $filteredUsers->whereIn('sacco_id', $saccoIds)->where('pwd', 'yes')->count();
-            $villageAgents   = User::whereIn('sacco_id', $saccoIds)->where('user_type', '4')->count();
+            $villageAgents = User::whereIn('sacco_id', $saccoIds)->where('user_type', '4')->count();
             $youthMembersPercentage = ($totalMembers > 0) ? $filteredUsers->whereIn('sacco_id', $saccoIds)->filter(function ($user) {
                 return Carbon::parse($user->dob)->age < 35;
             })->count() / $totalMembers * 100 : 0;
@@ -769,329 +757,329 @@ class HomeController extends Controller
 
             // Get refugee savings by gender
             $refugeMaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->whereIn('transactions.sacco_id', $saccoIds)
-            ->where('transactions.type', 'SHARE')
-            ->whereRaw('LOWER(users.refugee_status) = ?', ['yes'])
-            ->where('users.sex', 'Male')
-            ->sum('transactions.amount');
+                ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'SHARE')
+                ->whereRaw('LOWER(users.refugee_status) = ?', ['yes'])
+                ->where('users.sex', 'Male')
+                ->sum('transactions.amount');
 
-        $refugeFemaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->whereIn('transactions.sacco_id', $saccoIds)
-            ->where('transactions.type', 'SHARE')
-            ->whereRaw('LOWER(users.refugee_status) = ?', ['yes'])
-            ->where('users.sex', 'Female')
-            ->sum('transactions.amount');
+            $refugeFemaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'SHARE')
+                ->whereRaw('LOWER(users.refugee_status) = ?', ['yes'])
+                ->where('users.sex', 'Female')
+                ->sum('transactions.amount');
 
-        // Get refugee male loan count
-        $refugeeMaleLoanCount = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->whereIn('transactions.sacco_id', $saccoIds)
-            ->where('transactions.type', 'LOAN')
-            ->whereRaw('LOWER(users.refugee_status) = ?', ['yes'])
-            ->where('users.sex', 'Male')
-            ->count();
+            // Get refugee male loan count
+            $refugeeMaleLoanCount = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'LOAN')
+                ->whereRaw('LOWER(users.refugee_status) = ?', ['yes'])
+                ->where('users.sex', 'Male')
+                ->count();
 
-        // Get refugee female loan count
-        $refugeeFemaleLoanCount = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->whereIn('transactions.sacco_id', $saccoIds)
-            ->where('transactions.type', 'LOAN')
-            ->whereRaw('LOWER(users.refugee_status) = ?', ['yes'])
-            ->where('users.sex', 'Female')
-            ->count();
+            // Get refugee female loan count
+            $refugeeFemaleLoanCount = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'LOAN')
+                ->whereRaw('LOWER(users.refugee_status) = ?', ['yes'])
+                ->where('users.sex', 'Female')
+                ->count();
 
-        // Get refugee male loan amount
-        $refugeeMaleLoanAmount = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->whereIn('transactions.sacco_id', $saccoIds)
-            ->where('transactions.type', 'LOAN')
-            ->whereRaw('LOWER(users.refugee_status) = ?', ['yes'])
-            ->where('users.sex', 'Male')
-            ->sum('transactions.amount');
+            // Get refugee male loan amount
+            $refugeeMaleLoanAmount = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'LOAN')
+                ->whereRaw('LOWER(users.refugee_status) = ?', ['yes'])
+                ->where('users.sex', 'Male')
+                ->sum('transactions.amount');
 
-        // Get refugee female loan amount
-        $refugeeFemaleLoanAmount = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->whereIn('transactions.sacco_id', $saccoIds)
-            ->where('transactions.type', 'LOAN')
-            ->whereRaw('LOWER(users.refugee_status) = ?', ['yes'])
-            ->where('users.sex', 'Female')
-            ->sum('transactions.amount');
+            // Get refugee female loan amount
+            $refugeeFemaleLoanAmount = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'LOAN')
+                ->whereRaw('LOWER(users.refugee_status) = ?', ['yes'])
+                ->where('users.sex', 'Female')
+                ->sum('transactions.amount');
 
-        // PWDs account dissermination
-        $pwdMaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->whereIn('transactions.sacco_id', $saccoIds)
-            ->where('transactions.type', 'SHARE')
-            ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
-            ->where('users.sex', 'Male')
-            ->sum('transactions.amount');
+            // PWDs account dissermination
+            $pwdMaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'SHARE')
+                ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
+                ->where('users.sex', 'Male')
+                ->sum('transactions.amount');
 
-        $pwdFemaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->whereIn('transactions.sacco_id', $saccoIds)
-            ->where('transactions.type', 'SHARE')
-            ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
-            ->where('users.sex', 'Female')
-            ->sum('transactions.amount');
+            $pwdFemaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'SHARE')
+                ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
+                ->where('users.sex', 'Female')
+                ->sum('transactions.amount');
 
-        // Get pwd male loan count
-        $pwdMaleLoanCount = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->whereIn('transactions.sacco_id', $saccoIds)
-            ->where('transactions.type', 'LOAN')
-            ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
-            ->where('users.sex', 'Male')
-            ->count();
+            // Get pwd male loan count
+            $pwdMaleLoanCount = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'LOAN')
+                ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
+                ->where('users.sex', 'Male')
+                ->count();
 
-        // Get pwd female loan count
-        $pwdFemaleLoanCount = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->whereIn('transactions.sacco_id', $saccoIds)
-            ->where('transactions.type', 'LOAN')
-            ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
-            ->where('users.sex', 'Female')
-            ->count();
+            // Get pwd female loan count
+            $pwdFemaleLoanCount = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'LOAN')
+                ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
+                ->where('users.sex', 'Female')
+                ->count();
 
-        // Get pwd male loan amount
-        $pwdMaleLoanAmount = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->whereIn('transactions.sacco_id', $saccoIds)
-            ->where('transactions.type', 'LOAN')
-            ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
-            ->where('users.sex', 'Male')
-            ->sum('transactions.amount');
+            // Get pwd male loan amount
+            $pwdMaleLoanAmount = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'LOAN')
+                ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
+                ->where('users.sex', 'Male')
+                ->sum('transactions.amount');
 
-        // Get pwd female loan amount
-        $pwdFemaleLoanAmount = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->whereIn('transactions.sacco_id', $saccoIds)
-            ->where('transactions.type', 'LOAN')
-            ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
-            ->where('users.sex', 'Female')
-            ->sum('transactions.amount');
-
-
-        $filteredUsersForBalances = $filteredUsers->whereIn('sacco_id', $saccoIds);
-        $filteredUsersIds = $filteredUsers->pluck('id');
-        $pwdUsers = $filteredUsers->where('pwd', 'Yes');
-        $pwdMembersCount = $pwdUsers->count();
-        $pwdUserIds = $pwdUsers->pluck('id');
-
-        $pwdTotalBalance = Transaction::whereIn('sacco_id', $saccoIds)->where('type', 'SHARE')
-            ->whereIn('user_id', $pwdUserIds)
-            ->sum('balance');
-        $pwdTotalBalance = number_format($pwdTotalBalance, 2);
-
-        $loansDisbursedToWomen = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->whereIn('transactions.sacco_id', $saccoIds)
-            ->where('transactions.type', 'LOAN')
-            ->where('users.sex', 'Female')
-            ->count();
-
-        $loansDisbursedToMen = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->whereIn('transactions.sacco_id', $saccoIds)
-            ->where('transactions.type', 'LOAN')
-            ->where('users.sex', 'Male')
-            ->count();
-
-        // Get the IDs of youth users
-        $youthIds = User::whereIn('sacco_id', $saccoIds)
-            ->whereDate('dob', '>', now()->subYears(35))
-            ->pluck('id');
-
-        // Count the number of youths
-        $youthCount = $youthIds->count();
-
-        // dd($youthCount);
-
-        // Get the IDs of youth users
-        $youthIds = User::whereIn('sacco_id', $saccoIds)
-            ->whereDate('dob', '>', now()->subYears(35))
-            ->pluck('id');
-
-        // Count loans disbursed to youths
-        $loansDisbursedToYouths = Transaction::whereIn('sacco_id', $saccoIds)
-            ->whereIn('user_id', $youthIds)
-            ->where('type', 'LOAN')
-            ->count();
-
-        $loanSumForWomen = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->whereIn('transactions.sacco_id', $saccoIds)
-            ->where('transactions.type', 'LOAN')
-            ->where('users.sex', 'Female')
-            ->sum('transactions.amount');
-
-        $loanSumForMen = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->whereIn('transactions.sacco_id', $saccoIds)
-            ->where('transactions.type', 'LOAN')
-            ->where('users.sex', 'Male')
-            ->sum('transactions.amount');
-
-        $pwdTotalLoanBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->whereIn('transactions.sacco_id', $saccoIds)
-            ->where('transactions.type', 'LOAN')
-            ->where('users.pwd', 'yes')
-            ->sum('transactions.amount');
+            // Get pwd female loan amount
+            $pwdFemaleLoanAmount = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'LOAN')
+                ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
+                ->where('users.sex', 'Female')
+                ->sum('transactions.amount');
 
 
+            $filteredUsersForBalances = $filteredUsers->whereIn('sacco_id', $saccoIds);
+            $filteredUsersIds = $filteredUsers->pluck('id');
+            $pwdUsers = $filteredUsers->where('pwd', 'Yes');
+            $pwdMembersCount = $pwdUsers->count();
+            $pwdUserIds = $pwdUsers->pluck('id');
 
-        // Count loans disbursed to youths
-        $loansDisbursedToYouths = Transaction::whereIn('sacco_id', $saccoIds)->whereIn('source_user_id', $youthIds)
-            ->where('type', 'LOAN')
-            ->count();
+            $pwdTotalBalance = Transaction::whereIn('sacco_id', $saccoIds)->where('type', 'SHARE')
+                ->whereIn('user_id', $pwdUserIds)
+                ->sum('balance');
+            $pwdTotalBalance = number_format($pwdTotalBalance, 2);
 
-        // Sum the loan amounts disbursed to youths
-        $loanSumForYouths = Transaction::whereIn('sacco_id', $saccoIds)
-            ->whereIn('source_user_id', $youthIds)
-            ->where('type', 'LOAN')
-            ->sum('amount');
+            $loansDisbursedToWomen = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'LOAN')
+                ->where('users.sex', 'Female')
+                ->count();
 
-        $pwdTotalLoanCount = Transaction::whereIn('sacco_id', $saccoIds)->where('type', 'LOAN')
-            ->whereIn('source_user_id', $pwdUserIds)
-            ->count();
+            $loansDisbursedToMen = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'LOAN')
+                ->where('users.sex', 'Male')
+                ->count();
 
-        // $pwdTotalLoanBalance = Transaction::whereIn('sacco_id', $saccoIds)->where('type', 'LOAN')
-        //     ->whereIn('source_user_id', $pwdUserIds)
-        //     ->sum('balance');
+            // Get the IDs of youth users
+            $youthIds = User::whereIn('sacco_id', $saccoIds)
+                ->whereDate('dob', '>', now()->subYears(35))
+                ->pluck('id');
 
-        $totalLoanAmount = Transaction::whereIn('sacco_id', $saccoIds)->whereIn('user_id', $filteredUsers->pluck('id'))
-            ->where('type', 'LOAN')
-            ->sum('amount');
+            // Count the number of youths
+            $youthCount = $youthIds->count();
 
-        $totalLoanBalance = Transaction::whereIn('sacco_id', $saccoIds)->whereIn('user_id', $filteredUsers->pluck('id'))
-            ->where('type', 'LOAN')
-            ->sum('balance');
+            // dd($youthCount);
 
-        $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
+            // Get the IDs of youth users
+            $youthIds = User::whereIn('sacco_id', $saccoIds)
+                ->whereDate('dob', '>', now()->subYears(35))
+                ->pluck('id');
 
-        $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
-            ->whereIn('saccos.id', $saccoIds)
-            // ->where('users.sex', 'Male')
-            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-            ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
-            ->where(function ($query) {
-                $query->whereNull('users.user_type')
-                    ->orWhere('users.user_type', '<>', 'Admin');
-            })
-            ->select('transactions.*') // Select all transaction fields
-            ->get();
-        $monthYearList = [];
-        $totalSavingsList = [];
+            // Count loans disbursed to youths
+            $loansDisbursedToYouths = Transaction::whereIn('sacco_id', $saccoIds)
+                ->whereIn('user_id', $youthIds)
+                ->where('type', 'LOAN')
+                ->count();
 
-        foreach ($transactions as $transaction) {
-            $monthYear = Carbon::parse($transaction->created_at)->format('F Y');
+            $loanSumForWomen = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'LOAN')
+                ->where('users.sex', 'Female')
+                ->sum('transactions.amount');
 
-            if (!in_array($monthYear, $monthYearList)) {
-                $monthYearList[] = $monthYear;
+            $loanSumForMen = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'LOAN')
+                ->where('users.sex', 'Male')
+                ->sum('transactions.amount');
+
+            $pwdTotalLoanBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'LOAN')
+                ->where('users.pwd', 'yes')
+                ->sum('transactions.amount');
+
+
+
+            // Count loans disbursed to youths
+            $loansDisbursedToYouths = Transaction::whereIn('sacco_id', $saccoIds)->whereIn('source_user_id', $youthIds)
+                ->where('type', 'LOAN')
+                ->count();
+
+            // Sum the loan amounts disbursed to youths
+            $loanSumForYouths = Transaction::whereIn('sacco_id', $saccoIds)
+                ->whereIn('source_user_id', $youthIds)
+                ->where('type', 'LOAN')
+                ->sum('amount');
+
+            $pwdTotalLoanCount = Transaction::whereIn('sacco_id', $saccoIds)->where('type', 'LOAN')
+                ->whereIn('source_user_id', $pwdUserIds)
+                ->count();
+
+            // $pwdTotalLoanBalance = Transaction::whereIn('sacco_id', $saccoIds)->where('type', 'LOAN')
+            //     ->whereIn('source_user_id', $pwdUserIds)
+            //     ->sum('balance');
+
+            $totalLoanAmount = Transaction::whereIn('sacco_id', $saccoIds)->whereIn('user_id', $filteredUsers->pluck('id'))
+                ->where('type', 'LOAN')
+                ->sum('amount');
+
+            $totalLoanBalance = Transaction::whereIn('sacco_id', $saccoIds)->whereIn('user_id', $filteredUsers->pluck('id'))
+                ->where('type', 'LOAN')
+                ->sum('balance');
+
+            $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
+
+            $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
+                ->whereIn('saccos.id', $saccoIds)
+                // ->where('users.sex', 'Male')
+                ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+                ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
+                ->where(function ($query) {
+                    $query->whereNull('users.user_type')
+                        ->orWhere('users.user_type', '<>', 'Admin');
+                })
+                ->select('transactions.*') // Select all transaction fields
+                ->get();
+            $monthYearList = [];
+            $totalSavingsList = [];
+
+            foreach ($transactions as $transaction) {
+                $monthYear = Carbon::parse($transaction->created_at)->format('F Y');
+
+                if (!in_array($monthYear, $monthYearList)) {
+                    $monthYearList[] = $monthYear;
+                }
+
+                if (array_key_exists($monthYear, $totalSavingsList)) {
+                    $totalSavingsList[$monthYear] += $transaction->amount;
+                } else {
+                    $totalSavingsList[$monthYear] = $transaction->amount;
+                }
             }
 
-            if (array_key_exists($monthYear, $totalSavingsList)) {
-                $totalSavingsList[$monthYear] += $transaction->amount;
-            } else {
-                $totalSavingsList[$monthYear] = $transaction->amount;
-            }
-        }
+            $userRegistrations = $users->whereIn('sacco_id', $saccoIds)->where('user_type', '!=', 'Admin')->groupBy(function ($date) {
+                return Carbon::parse($date->created_at)->format('Y-m');
+            });
 
-        $userRegistrations = $users->whereIn('sacco_id', $saccoIds)->where('user_type', '!=', 'Admin')->groupBy(function ($date) {
-            return Carbon::parse($date->created_at)->format('Y-m');
-        });
+            $registrationDates = $userRegistrations->keys()->toArray();
+            $registrationCounts = $userRegistrations->map(function ($item) {
+                return count($item);
+            })->values()->toArray();
 
-        $registrationDates = $userRegistrations->keys()->toArray();
-        $registrationCounts = $userRegistrations->map(function ($item) {
-            return count($item);
-        })->values()->toArray();
-
-        $topSavingGroups = User::where('user_type', 'Admin')
-            ->whereIn('sacco_id', $saccoIds)
-            ->whereHas('sacco', function ($query) {
-                $query->whereNotIn('status', ['deleted', 'inactive']);
-            })
-            ->get()
-            ->sortByDesc('balance')
-            ->take(6);
+            $topSavingGroups = User::where('user_type', 'Admin')
+                ->whereIn('sacco_id', $saccoIds)
+                ->whereHas('sacco', function ($query) {
+                    $query->whereNotIn('status', ['deleted', 'inactive']);
+                })
+                ->get()
+                ->sortByDesc('balance')
+                ->take(6);
 
 
-        // Here
+            // Here
 
-        // Calculate total loans
-        $totalLoans = Transaction::whereIn('sacco_id', $saccoIds)
-            ->where('type', 'LOAN')
-            ->count();
+            // Calculate total loans
+            $totalLoans = Transaction::whereIn('sacco_id', $saccoIds)
+                ->where('type', 'LOAN')
+                ->count();
 
-        // Calculate loans given to youths
-        $loansGivenToYouths = Transaction::whereIn('sacco_id', $saccoIds)
-            ->whereIn('source_user_id', $youthIds)
-            ->where('type', 'LOAN')
-            ->count();
+            // Calculate loans given to youths
+            $loansGivenToYouths = Transaction::whereIn('sacco_id', $saccoIds)
+                ->whereIn('source_user_id', $youthIds)
+                ->where('type', 'LOAN')
+                ->count();
 
-        // Calculate loans given to PWDs
-        $loansGivenToPwds = Transaction::whereIn('sacco_id', $saccoIds)
-            ->whereIn('source_user_id', $pwdUserIds)
-            ->where('type', 'LOAN')
-            ->count();
+            // Calculate loans given to PWDs
+            $loansGivenToPwds = Transaction::whereIn('sacco_id', $saccoIds)
+                ->whereIn('source_user_id', $pwdUserIds)
+                ->where('type', 'LOAN')
+                ->count();
 
-        // Calculate percentages
-        $percentageLoansYouths = $totalLoans > 0 ? ($loansGivenToYouths / $totalLoans) * 100 : 0;
-        $percentageLoansPwd = $totalLoans > 0 ? ($loansGivenToPwds / $totalLoans) * 100 : 0;
+            // Calculate percentages
+            $percentageLoansYouths = $totalLoans > 0 ? ($loansGivenToYouths / $totalLoans) * 100 : 0;
+            $percentageLoansPwd = $totalLoans > 0 ? ($loansGivenToPwds / $totalLoans) * 100 : 0;
 
-        $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
+            $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
 
-        $youthTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
-            ->join('saccos as s', 'users.sacco_id', '=', 's.id')
-            ->whereIn('users.sacco_id', $saccoIds)
-            ->whereIn('users.id', $youthIds)
-            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-            ->where('t.type', 'SHARE')
-            ->where(function ($query) {
-                $query->whereNull('users.user_type')
-                    ->orWhere('users.user_type', '<>', 'Admin');
-            })
-            ->select(DB::raw('SUM(t.amount) as total_balance'))
-            ->first()
-            ->total_balance;
+            $youthTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
+                ->join('saccos as s', 'users.sacco_id', '=', 's.id')
+                ->whereIn('users.sacco_id', $saccoIds)
+                ->whereIn('users.id', $youthIds)
+                ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+                ->where('t.type', 'SHARE')
+                ->where(function ($query) {
+                    $query->whereNull('users.user_type')
+                        ->orWhere('users.user_type', '<>', 'Admin');
+                })
+                ->select(DB::raw('SUM(t.amount) as total_balance'))
+                ->first()
+                ->total_balance;
 
-        $pwdTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
-            ->join('saccos as s', 'users.sacco_id', '=', 's.id')
-            ->whereIn('users.sacco_id', $saccoIds)
-            ->where('users.pwd', 'Yes')
-            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-            ->where('t.type', 'SHARE')
-            ->where(function ($query) {
-                $query->whereNull('users.user_type')
-                    ->orWhere('users.user_type', '<>', 'Admin');
-            })
-            ->select(DB::raw('SUM(t.amount) as total_balance'))
-            ->first()
-            ->total_balance;
+            $pwdTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
+                ->join('saccos as s', 'users.sacco_id', '=', 's.id')
+                ->whereIn('users.sacco_id', $saccoIds)
+                ->where('users.pwd', 'Yes')
+                ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+                ->where('t.type', 'SHARE')
+                ->where(function ($query) {
+                    $query->whereNull('users.user_type')
+                        ->orWhere('users.user_type', '<>', 'Admin');
+                })
+                ->select(DB::raw('SUM(t.amount) as total_balance'))
+                ->first()
+                ->total_balance;
 
-        // Fetch total balances for male users across all groups (excluding deleted and inactive Saccos and Admins)
-        $maleTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
-            ->join('saccos as s', 'users.sacco_id', '=', 's.id')
-            ->whereIn('users.sacco_id', $saccoIds)
-            ->where('users.sex', 'Male')
-            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-            ->where('t.type', 'SHARE')
-            ->where(function ($query) {
-                $query->whereNull('users.user_type')
-                    ->orWhere('users.user_type', '<>', 'Admin');
-            })
-            ->select(DB::raw('SUM(t.amount) as total_balance'))
-            ->first()
-            ->total_balance;
+            // Fetch total balances for male users across all groups (excluding deleted and inactive Saccos and Admins)
+            $maleTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
+                ->join('saccos as s', 'users.sacco_id', '=', 's.id')
+                ->whereIn('users.sacco_id', $saccoIds)
+                ->where('users.sex', 'Male')
+                ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+                ->where('t.type', 'SHARE')
+                ->where(function ($query) {
+                    $query->whereNull('users.user_type')
+                        ->orWhere('users.user_type', '<>', 'Admin');
+                })
+                ->select(DB::raw('SUM(t.amount) as total_balance'))
+                ->first()
+                ->total_balance;
 
-        // Fetch total balances for female users across all groups (excluding deleted and inactive Saccos and Admins)
-        $femaleTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
-            ->join('saccos as s', 'users.sacco_id', '=', 's.id')
-            ->whereIn('users.sacco_id', $saccoIds)
-            ->where('users.sex', 'Female')
-            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-            ->where('t.type', 'SHARE')
-            ->where(function ($query) {
-                $query->whereNull('users.user_type')
-                    ->orWhere('users.user_type', '<>', 'Admin');
-            })
-            ->select(DB::raw('SUM(t.amount) as total_balance'))
-            ->first()
-            ->total_balance;
+            // Fetch total balances for female users across all groups (excluding deleted and inactive Saccos and Admins)
+            $femaleTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
+                ->join('saccos as s', 'users.sacco_id', '=', 's.id')
+                ->whereIn('users.sacco_id', $saccoIds)
+                ->where('users.sex', 'Female')
+                ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+                ->where('t.type', 'SHARE')
+                ->where(function ($query) {
+                    $query->whereNull('users.user_type')
+                        ->orWhere('users.user_type', '<>', 'Admin');
+                })
+                ->select(DB::raw('SUM(t.amount) as total_balance'))
+                ->first()
+                ->total_balance;
 
-        // Display the results
-        // dd(['male_total_balance' => $maleTotalBalance, 'female_total_balance' => $femaleTotalBalance]);;
+            // Display the results
+            // dd(['male_total_balance' => $maleTotalBalance, 'female_total_balance' => $femaleTotalBalance]);;
 
-        // $topSavingGroups = User::where('user_type', 'Admin')->whereIn('sacco_id', $saccoIds)->get()->sortByDesc('balance')->take(6);
-
-        } else if ($selectedOrgId) {
+            // $topSavingGroups = User::where('user_type', 'Admin')->whereIn('sacco_id', $saccoIds)->get()->sortByDesc('balance')->take(6);
+        } else
+        if ($selectedOrgId) {
             // When an organization is selected, filter data accordingly
             $organization = VslaOrganisation::find($selectedOrgId);
             $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $selectedOrgId)
@@ -1802,7 +1790,6 @@ class HomeController extends Controller
                 ->first()
                 ->total_balance;
         }
-
         $femaleUsers = $filteredUsersForBalances->where('sex', 'Female');
         $femaleMembersCount = $femaleUsers->count();
         // $femaleTotalBalance = number_format($femaleUsers->sum('balance'), 2);
@@ -1970,16 +1957,22 @@ class HomeController extends Controller
                 $filteredUsers = $filteredUsers->whereIn('sacco_id', $saccoIds);
             } else {
                 $orgName = 'DigiSave VSLA Platform';
+                // Use existing all-organization logic...
             }
         }
 
-        $quotes = [
-            "Empowerment through savings and loans.",
-            "Collaboration is key to success.",
-            "Building stronger communities together.",
-            "Savings groups transform lives.",
-            "In unity, there is strength."
-        ];
+        // $loanSumForWomen = (float)($loanSumForWomen ?? 0);
+        // $loanSumForMen = (float)($loanSumForMen ?? 0);
+        // $loanSumForYouths = (float)($loanSumForYouths ?? 0);
+        // $pwdTotalLoanBalance = (float)($pwdTotalLoanBalance ?? 0);
+        // $refugeeMaleLoanAmount = (float)($refugeeMaleLoanAmount ?? 0);
+        // $refugeeFemaleLoanAmount = (float)($refugeeFemaleLoanAmount ?? 0);
+        // $femaleTotalBalance = (float)($femaleTotalBalance ?? 0);
+        // $maleTotalBalance = (float)($maleTotalBalance ?? 0);
+        // $youthTotalBalance = (float)($youthTotalBalance ?? 0);
+        // $pwdTotalBalance = (float)($pwdTotalBalance ?? 0);
+        // $refugeMaleShareSum = (float)($refugeMaleShareSum ?? 0);
+        // $refugeFemaleShareSum = (float)($refugeFemaleShareSum ?? 0);
 
         return $content
             ->header('<div style="
@@ -2098,7 +2091,7 @@ class HomeController extends Controller
                         'totalMembers' => $totalMembers,
                         'totalAccounts' => $totalAccounts,
                         'totalOrgAdmins' => $totalOrgAdmins,
-                        'totalPwdMembers' => $totalPwdMembers,
+                        'totalPwdMembers' => $pwdMembersCount,
                         'youthMembersPercentage' => number_format($youthMembersPercentage, 2),
                     ]) .
                     view('widgets.card_set', [
@@ -2184,6 +2177,7 @@ class HomeController extends Controller
     }
 }
 ?>
+
 
 <script>
     $(document).ready(function() {
