@@ -13,6 +13,7 @@ class Meeting extends Model
         'name', 'date', 'location', 'sacco_id', 'administrator_id', 'members', 'minutes', 'attendance', 'cycle_id'
     ];
 
+    // Optionally, you can use casts instead of custom getter/setter
     // protected $casts = [
     //     'members' => 'array',
     //     'minutes' => 'array',
@@ -34,16 +35,30 @@ class Meeting extends Model
         return $this->belongsTo(User::class, 'administrator_id');
     }
 
-    // setter for multiple members
+    /**
+     * Setter for multiple members.
+     *
+     * @param mixed $value
+     */
     public function setMembersAttribute($value)
     {
         $this->attributes['members'] = json_encode($value);
     }
 
-    // getter for multiple members
+    /**
+     * Getter for multiple members.
+     *
+     * @param mixed $value
+     * @return mixed
+     */
     public function getMembersAttribute($value)
     {
-        return $this->attributes['members'] = json_decode($value);
+        // Only decode if the value is a string.
+        if (is_string($value)) {
+            // Return as an associative array. Remove the assignment.
+            return json_decode($value, true);
+        }
+        return $value;
     }
 
     /**
@@ -57,5 +72,3 @@ class Meeting extends Model
         return self::where('group_id', $groupId)->get();
     }
 }
-
-
