@@ -60,13 +60,28 @@ class CreditScoreController extends AdminController
             return $this->prepareSaccoData($sacco);
         });
 
-        // Dump the processed data and stop execution for inspection
-        // dd($processedSaccos);
-
+        // Return the view with processed SACCO data
         return view('admin.sacco.analysis', [
             'saccos' => $processedSaccos,  // All SACCOs data
             'sacco' => $processedSaccos->first()  // First SACCO for backward compatibility
         ]);
+    }
+
+    /**
+     * Recursively convert objects to arrays.
+     *
+     * @param mixed $data
+     * @return mixed
+     */
+    private function objectToArray($data)
+    {
+        if (is_object($data)) {
+            $data = get_object_vars($data);
+        }
+        if (is_array($data)) {
+            return array_map([$this, 'objectToArray'], $data);
+        }
+        return $data;
     }
 
     /**
@@ -127,7 +142,7 @@ class CreditScoreController extends AdminController
         $numberOfMembers = User::where('sacco_id', $sacco->id)
             ->where(function ($query) {
                 $query->whereNull('user_type')
-                    ->orWhere('user_type', '<>', 'Admin');
+                      ->orWhere('user_type', '<>', 'Admin');
             })
             ->count();
 
@@ -136,7 +151,7 @@ class CreditScoreController extends AdminController
             ->where('sex', 'Male')
             ->where(function ($query) {
                 $query->whereNull('user_type')
-                    ->orWhere('user_type', '<>', 'Admin');
+                      ->orWhere('user_type', '<>', 'Admin');
             })
             ->count();
 
@@ -145,7 +160,7 @@ class CreditScoreController extends AdminController
             ->where('sex', 'Female')
             ->where(function ($query) {
                 $query->whereNull('user_type')
-                    ->orWhere('user_type', '<>', 'Admin');
+                      ->orWhere('user_type', '<>', 'Admin');
             })
             ->count();
 
@@ -154,7 +169,7 @@ class CreditScoreController extends AdminController
             ->whereRaw('TIMESTAMPDIFF(YEAR, dob, CURDATE()) < 35')
             ->where(function ($query) {
                 $query->whereNull('user_type')
-                    ->orWhere('user_type', '<>', 'Admin');
+                      ->orWhere('user_type', '<>', 'Admin');
             })
             ->count();
 
@@ -167,14 +182,13 @@ class CreditScoreController extends AdminController
         foreach ($meetings as $meeting) {
             $membersData = $meeting->members;
 
-            // Use appropriate conversion based on type.
             if (is_string($membersData)) {
                 $attendanceData = json_decode($membersData, true);
             } elseif (is_array($membersData)) {
                 $attendanceData = $membersData;
             } elseif (is_object($membersData)) {
                 // Recursively convert object to array.
-                $attendanceData = json_decode(json_encode($membersData), true);
+                $attendanceData = $this->objectToArray($membersData);
             } else {
                 $attendanceData = [];
             }
@@ -186,7 +200,10 @@ class CreditScoreController extends AdminController
                 is_array($attendanceData['presentMembersIds'])
             ) {
                 foreach ($attendanceData['presentMembersIds'] as $member) {
-                    // Each $member is presumably an array with 'name'
+                    // If a member is still an object, cast it.
+                    if (is_object($member)) {
+                        $member = (array)$member;
+                    }
                     if (isset($member['name'])) {
                         $allMemberNames[] = $member['name'];
                     }
@@ -205,7 +222,7 @@ class CreditScoreController extends AdminController
             } elseif (is_array($membersData)) {
                 $attendanceData = $membersData;
             } elseif (is_object($membersData)) {
-                $attendanceData = json_decode(json_encode($membersData), true);
+                $attendanceData = $this->objectToArray($membersData);
             } else {
                 $attendanceData = [];
             }
@@ -289,7 +306,7 @@ class CreditScoreController extends AdminController
         $numberOfSavingsAccounts = User::where('sacco_id', $sacco->id)
             ->where(function ($query) {
                 $query->whereNull('user_type')
-                    ->orWhere('user_type', '<>', 'Admin');
+                      ->orWhere('user_type', '<>', 'Admin');
             })
             ->count();
 
