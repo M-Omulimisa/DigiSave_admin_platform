@@ -13,7 +13,7 @@ class Meeting extends Model
         'name', 'date', 'location', 'sacco_id', 'administrator_id', 'members', 'minutes', 'attendance', 'cycle_id'
     ];
 
-    // Optionally, you can use casts instead of custom getter/setter
+    // Optionally, you can use casts instead of custom getter/setter:
     // protected $casts = [
     //     'members' => 'array',
     //     'minutes' => 'array',
@@ -53,11 +53,11 @@ class Meeting extends Model
      */
     public function getMembersAttribute($value)
     {
-        // Only decode if the value is a string.
+        // If $value is a string, decode it.
         if (is_string($value)) {
-            // Return as an associative array. Remove the assignment.
             return json_decode($value, true);
         }
+        // If it's already an object or array, return it as-is.
         return $value;
     }
 
