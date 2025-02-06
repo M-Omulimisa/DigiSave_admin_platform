@@ -159,6 +159,7 @@ public function agentGroups(Request $r)
 
             if ($chairperson || $secretary || $treasurer) {
                 return [
+                    'name' => $sacco->name,
                     'registration_number' => $sacco->id,
                     'contact_number' => $chairperson ? $chairperson->phone_number : '',
                     'district' => $sacco->district,
