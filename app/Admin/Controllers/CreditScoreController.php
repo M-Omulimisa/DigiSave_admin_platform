@@ -61,10 +61,8 @@ class CreditScoreController extends AdminController
         });
 
         // Dump the processed data and stop execution for inspection
-        // Uncomment the line below to inspect the data
         // dd($processedSaccos);
 
-        // After inspecting the data, remove or comment out the dd() line and uncomment the return statement below:
         return view('admin.sacco.analysis', [
             'saccos' => $processedSaccos,  // All SACCOs data
             'sacco' => $processedSaccos->first()  // First SACCO for backward compatibility
@@ -169,18 +167,19 @@ class CreditScoreController extends AdminController
         foreach ($meetings as $meeting) {
             $membersData = $meeting->members;
 
-            // Determine the type of $membersData and decode/cast accordingly.
+            // Use appropriate conversion based on type.
             if (is_string($membersData)) {
                 $attendanceData = json_decode($membersData, true);
             } elseif (is_array($membersData)) {
                 $attendanceData = $membersData;
             } elseif (is_object($membersData)) {
-                $attendanceData = (array) $membersData;
+                // Recursively convert object to array.
+                $attendanceData = json_decode(json_encode($membersData), true);
             } else {
                 $attendanceData = [];
             }
 
-            // Check if decoding is successful and presentMembersIds exists
+            // Check if decoding is successful and presentMembersIds exists.
             if (
                 json_last_error() === JSON_ERROR_NONE &&
                 isset($attendanceData['presentMembersIds']) &&
@@ -201,13 +200,12 @@ class CreditScoreController extends AdminController
         foreach ($meetings as $meeting) {
             $membersData = $meeting->members;
 
-            // Use the same logic as above to decode or cast the data.
             if (is_string($membersData)) {
                 $attendanceData = json_decode($membersData, true);
             } elseif (is_array($membersData)) {
                 $attendanceData = $membersData;
             } elseif (is_object($membersData)) {
-                $attendanceData = (array) $membersData;
+                $attendanceData = json_decode(json_encode($membersData), true);
             } else {
                 $attendanceData = [];
             }
@@ -420,10 +418,8 @@ class CreditScoreController extends AdminController
             "fund_savings_credit_status" => $fundSavingsCreditStatus
         ];
 
-        // Optional: Log the request data for debugging
         Log::info('Credit Score API Request Data:', $requestData);
 
-        // Call the external API to get the credit score
         try {
             $response = Http::withOptions(['verify' => false])
                 ->post('https://vslacreditplus-fte2h3dhc5hcc0e5.canadacentral-01.azurewebsites.net/predict', $requestData);
@@ -434,19 +430,16 @@ class CreditScoreController extends AdminController
                 $creditScoreValue = $result['credit_score'];
                 $creditScoreDescription = $this->getCreditScoreDescription($creditScoreValue);
             } else {
-                // Handle the case where 'credit_score' is not present in the response
                 Log::error('Credit Score API response missing "credit_score":', $result);
                 $creditScoreValue = null;
                 $creditScoreDescription = 'Unable to calculate credit score at this time.';
             }
         } catch (\Exception $e) {
-            // Log the exception message for debugging
             Log::error('Credit Score API Calculation Error: ' . $e->getMessage());
             $creditScoreValue = null;
             $creditScoreDescription = 'Unable to calculate credit score at this time.';
         }
 
-        // Call the Max Loan Amount API
         $maxLoanAmountResponse = Http::withOptions(['verify' => false])
             ->withHeaders(['Content-Type' => 'application/json'])
             ->post('https://vslacreditplus-fte2h3dhc5hcc0e5.canadacentral-01.azurewebsites.net/max_loan_amount', [
@@ -526,7 +519,7 @@ class CreditScoreController extends AdminController
                 'description' => $creditScoreDescription
             ],
 
-            // Additional Data (if needed)
+            // Additional Data
             'maxLoanAmount' => $maxLoanAmount
         ];
     }
