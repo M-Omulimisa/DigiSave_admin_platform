@@ -97,7 +97,6 @@ class CreditScoreController extends AdminController
                 'maleMembers' => 0,
                 'femaleMembers' => 0,
                 'youthMembers' => 0,
-                'totalMeetings' => 0,
                 'totalMeetings' => $totalMeetings,
                 'averageAttendance' => 0.0,
                 'loanStats' => [
@@ -170,20 +169,18 @@ class CreditScoreController extends AdminController
         foreach ($meetings as $meeting) {
             $membersData = $meeting->members;
 
-            // 1) If it's a JSON string
+            // Determine the type of $membersData and decode/cast accordingly.
             if (is_string($membersData)) {
                 $attendanceData = json_decode($membersData, true);
-            }
-            // 2) If it's an object (stdClass)
-            elseif (is_object($membersData)) {
-                $attendanceData = json_decode(json_encode($membersData), true);
-            }
-            // 3) Otherwise, assume array
-            else {
+            } elseif (is_array($membersData)) {
                 $attendanceData = $membersData;
+            } elseif (is_object($membersData)) {
+                $attendanceData = (array) $membersData;
+            } else {
+                $attendanceData = [];
             }
 
-            // If decoding is successful and presentMembersIds exists
+            // Check if decoding is successful and presentMembersIds exists
             if (
                 json_last_error() === JSON_ERROR_NONE &&
                 isset($attendanceData['presentMembersIds']) &&
@@ -198,20 +195,21 @@ class CreditScoreController extends AdminController
             }
         }
 
-        $totalMeetings = Meeting::where('sacco_id', $sacco->id)->count();
         $meetingCount = count($meetings);
         $totalMembersPerMeeting = [];
 
         foreach ($meetings as $meeting) {
             $membersData = $meeting->members;
 
-            // Same consistent approach to decode
+            // Use the same logic as above to decode or cast the data.
             if (is_string($membersData)) {
                 $attendanceData = json_decode($membersData, true);
-            } elseif (is_object($membersData)) {
-                $attendanceData = json_decode(json_encode($membersData), true);
-            } else {
+            } elseif (is_array($membersData)) {
                 $attendanceData = $membersData;
+            } elseif (is_object($membersData)) {
+                $attendanceData = (array) $membersData;
+            } else {
+                $attendanceData = [];
             }
 
             if (
@@ -227,36 +225,27 @@ class CreditScoreController extends AdminController
             ? round(array_sum($totalMembersPerMeeting) / $meetingCount, 0)
             : 0;
 
-        // $meetingCount = count($meetings);
-        // $totalPresent = count(array_unique($allMemberNames));
-        // $averageAttendance = $meetingCount > 0 ? ($totalPresent / $meetingCount) * 100 : 0;
-        // $averageAttendanceRounded = round($averageAttendance, 2);
-
-        // Total Loans
+        // Loan and Savings Calculations
         $numberOfLoans = $sacco->transactions()
             ->where('cycle_id', $activeCycleId)
             ->where('type', 'LOAN')
             ->count();
 
-        // Total Loan Amount (Principal)
         $totalPrincipal = $sacco->transactions()
             ->where('cycle_id', $activeCycleId)
             ->where('type', 'LOAN')
             ->sum('amount');
 
-        // Total Interest
         $totalInterest = $sacco->transactions()
             ->where('cycle_id', $activeCycleId)
             ->where('type', 'LOAN_INTEREST')
             ->sum('amount');
 
-        // Total Loan Repayments
         $totalLoanRepayments = $sacco->transactions()
             ->where('cycle_id', $activeCycleId)
             ->where('type', 'LOAN_REPAYMENT')
             ->sum('amount');
 
-        // Loans to Males
         $numberOfLoansToMen = $sacco->transactions()
             ->where('cycle_id', $activeCycleId)
             ->join('users', 'transactions.source_user_id', '=', 'users.id')
@@ -264,7 +253,6 @@ class CreditScoreController extends AdminController
             ->where('users.sex', 'Male')
             ->count();
 
-        // Total Loans Disbursed to Males
         $totalDisbursedToMen = $sacco->transactions()
             ->where('cycle_id', $activeCycleId)
             ->join('users', 'transactions.source_user_id', '=', 'users.id')
@@ -272,7 +260,6 @@ class CreditScoreController extends AdminController
             ->where('users.sex', 'Male')
             ->sum('transactions.amount');
 
-        // Loans to Females
         $numberOfLoansToWomen = $sacco->transactions()
             ->where('cycle_id', $activeCycleId)
             ->join('users', 'transactions.source_user_id', '=', 'users.id')
@@ -280,7 +267,6 @@ class CreditScoreController extends AdminController
             ->where('users.sex', 'Female')
             ->count();
 
-        // Total Loans Disbursed to Females
         $totalDisbursedToWomen = $sacco->transactions()
             ->where('cycle_id', $activeCycleId)
             ->join('users', 'transactions.source_user_id', '=', 'users.id')
@@ -288,7 +274,6 @@ class CreditScoreController extends AdminController
             ->where('users.sex', 'Female')
             ->sum('transactions.amount');
 
-        // Loans to Youth
         $numberOfLoansToYouth = $sacco->transactions()
             ->where('cycle_id', $activeCycleId)
             ->join('users', 'transactions.source_user_id', '=', 'users.id')
@@ -296,7 +281,6 @@ class CreditScoreController extends AdminController
             ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
             ->count();
 
-        // Total Loans Disbursed to Youth
         $totalDisbursedToYouth = $sacco->transactions()
             ->where('cycle_id', $activeCycleId)
             ->join('users', 'transactions.source_user_id', '=', 'users.id')
@@ -304,7 +288,6 @@ class CreditScoreController extends AdminController
             ->whereRaw('TIMESTAMPDIFF(YEAR, users.dob, CURDATE()) < 35')
             ->sum('transactions.amount');
 
-        // Number of Savings Accounts
         $numberOfSavingsAccounts = User::where('sacco_id', $sacco->id)
             ->where(function ($query) {
                 $query->whereNull('user_type')
@@ -312,7 +295,6 @@ class CreditScoreController extends AdminController
             })
             ->count();
 
-        // Total Savings Balance
         $totalSavingsBalance = $sacco->transactions()
             ->where('cycle_id', $activeCycleId)
             ->join('users', 'transactions.source_user_id', '=', 'users.id')
@@ -320,7 +302,7 @@ class CreditScoreController extends AdminController
             ->sum('transactions.amount');
 
         // Calculate monthly savings
-        $cycle = Cycle::find($activeCycleId); // Replace with your actual cycle retrieval method
+        $cycle = Cycle::find($activeCycleId);
 
         $monthlyTransactions = $sacco->transactions()
             ->whereBetween('created_at', [$cycle->start_date, $cycle->end_date])
@@ -333,7 +315,6 @@ class CreditScoreController extends AdminController
         $totalSavings = $monthlyTransactions->sum('total');
         $average_monthly_savings = $totalMonths > 0 ? abs($totalSavings / $totalMonths) : 0;
 
-        // Savings to Males
         $savingsAccountsForMen = $sacco->transactions()
             ->where('cycle_id', $activeCycleId)
             ->join('users', 'transactions.source_user_id', '=', 'users.id')
@@ -342,7 +323,6 @@ class CreditScoreController extends AdminController
             ->distinct('source_user_id')
             ->count('source_user_id');
 
-        // Total Savings Balance for Males
         $totalSavingsBalanceForMen = $sacco->transactions()
             ->where('cycle_id', $activeCycleId)
             ->join('users', 'transactions.source_user_id', '=', 'users.id')
@@ -350,7 +330,6 @@ class CreditScoreController extends AdminController
             ->where('users.sex', 'Male')
             ->sum('transactions.amount');
 
-        // Savings to Females
         $savingsAccountsForWomen = $sacco->transactions()
             ->where('cycle_id', $activeCycleId)
             ->join('users', 'transactions.source_user_id', '=', 'users.id')
@@ -359,7 +338,6 @@ class CreditScoreController extends AdminController
             ->distinct('source_user_id')
             ->count('source_user_id');
 
-        // Total Savings Balance for Females
         $totalSavingsBalanceForWomen = $sacco->transactions()
             ->where('cycle_id', $activeCycleId)
             ->join('users', 'transactions.source_user_id', '=', 'users.id')
@@ -367,7 +345,6 @@ class CreditScoreController extends AdminController
             ->where('users.sex', 'Female')
             ->sum('transactions.amount');
 
-        // Savings to Youth
         $savingsAccountsForYouth = $sacco->transactions()
             ->where('cycle_id', $activeCycleId)
             ->join('users', 'transactions.source_user_id', '=', 'users.id')
@@ -376,7 +353,6 @@ class CreditScoreController extends AdminController
             ->distinct('source_user_id')
             ->count('source_user_id');
 
-        // Total Savings Balance for Youth
         $totalSavingsBalanceForYouth = $sacco->transactions()
             ->where('cycle_id', $activeCycleId)
             ->join('users', 'transactions.source_user_id', '=', 'users.id')
@@ -417,16 +393,7 @@ class CreditScoreController extends AdminController
         $fundSavingsCreditStatus = abs($totalPrincipal) > 0 ? ($totalPrincipalPaid / abs($totalPrincipal)) : 0;
         $fundSavingsCreditStatus = (int)($fundSavingsCreditStatus * 100);
 
-        // Calculate credit score based on actual performance
-        // $creditScore = min(300, round(
-        //     ($totalLoanRepayments / max(1, abs($totalPrincipal))) * 100 + // Repayment Rate
-        //     ($savingsCreditMobilization * 100) + // Savings Credit Mobilization
-        //     (($averageAttendance / max(1, $numberOfMembers)) * 100) // Attendance Rate
-        // ));
-
-        // Make the max loan amount API call with actual values
-
-        // Prepare prediction request data
+        // Prepare prediction request data for the Credit Score API call
         $requestData = [
             "number_of_loans" => $numberOfLoans,
             "total_principal" => abs($totalPrincipal),
@@ -459,10 +426,9 @@ class CreditScoreController extends AdminController
         // Call the external API to get the credit score
         try {
             $response = Http::withOptions(['verify' => false])
-    ->post('https://vslacreditplus-fte2h3dhc5hcc0e5.canadacentral-01.azurewebsites.net/predict', $requestData);
+                ->post('https://vslacreditplus-fte2h3dhc5hcc0e5.canadacentral-01.azurewebsites.net/predict', $requestData);
 
             $result = $response->json();
-            // dd($result);
 
             if (isset($result['credit_score'])) {
                 $creditScoreValue = $result['credit_score'];
@@ -480,26 +446,23 @@ class CreditScoreController extends AdminController
             $creditScoreDescription = 'Unable to calculate credit score at this time.';
         }
 
+        // Call the Max Loan Amount API
         $maxLoanAmountResponse = Http::withOptions(['verify' => false])
-        ->withHeaders(['Content-Type' => 'application/json'])
-        ->post('https://vslacreditplus-fte2h3dhc5hcc0e5.canadacentral-01.azurewebsites.net/max_loan_amount', [
-            "credit_score" => $creditScoreValue *0.8,
-            "average_savings" => $average_monthly_savings
-        ]);
+            ->withHeaders(['Content-Type' => 'application/json'])
+            ->post('https://vslacreditplus-fte2h3dhc5hcc0e5.canadacentral-01.azurewebsites.net/max_loan_amount', [
+                "credit_score" => $creditScoreValue * 0.8,
+                "average_savings" => $average_monthly_savings
+            ]);
 
-        $resp = $maxLoanAmountResponse->json();
-        // dd($average_monthly_savings);
-
-            if ($maxLoanAmountResponse->successful()) {
-                $maxLoanAmountData = $maxLoanAmountResponse->json();
-                $maxLoanAmount = $maxLoanAmountData['max_loan_amount'] ?? null;
-            } else {
-                $statusCode = $maxLoanAmountResponse->status();
-                $errorMessage = $maxLoanAmountResponse->body();
-                Log::error("Max Loan Amount API error: Status Code: $statusCode, Message: $errorMessage");
-                // You might choose to handle this differently based on your application's needs
-                $maxLoanAmount = null;
-            };
+        if ($maxLoanAmountResponse->successful()) {
+            $maxLoanAmountData = $maxLoanAmountResponse->json();
+            $maxLoanAmount = $maxLoanAmountData['max_loan_amount'] ?? null;
+        } else {
+            $statusCode = $maxLoanAmountResponse->status();
+            $errorMessage = $maxLoanAmountResponse->body();
+            Log::error("Max Loan Amount API error: Status Code: $statusCode, Message: $errorMessage");
+            $maxLoanAmount = null;
+        }
 
         return [
             // Basic Information
