@@ -70,7 +70,7 @@ class HomeController extends Controller
                 !in_array($user->user_type, ['Admin', '4', '5']);
         });
 
-        dd('Filtered users count:', $filteredUsers->count(), 'Total users count:', $users->count());
+        // dd('Filtered users count:', $filteredUsers->count(), 'Total users count:', $users->count());
 
         $filteredUserIds = $filteredUsers->pluck('id');
 
@@ -376,6 +376,13 @@ class HomeController extends Controller
         $totalAccounts = Sacco::whereIn('id', $saccoIds)
             ->whereBetween('created_at', [$startDate, $endDate])
             ->count();
+
+        dd(
+            'Total accounts: ' . $totalAccounts,
+            'Sacco IDs: ' . $saccoIds,
+            'Start date: ' . $startDate,
+            'End date: ' . $endDate
+        );
 
         return $totalAccounts;
     }
