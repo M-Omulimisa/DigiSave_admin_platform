@@ -70,6 +70,8 @@ class HomeController extends Controller
                 !in_array($user->user_type, ['Admin', '4', '5']);
         });
 
+        dd('Filtered users count:', $filteredUsers->count(), 'Total users count:', $users->count());
+
         $filteredUserIds = $filteredUsers->pluck('id');
 
         // Additional filters based on admin role
