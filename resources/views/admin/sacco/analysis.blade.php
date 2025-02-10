@@ -757,7 +757,7 @@
     function exportAllData() {
     // Filter by groups that are visible and qualified for crediting
     const visible = allSaccoData.filter(s => s.element.style.display !== 'none' && s.data.qualified);
-    
+
     const lines = [
         ['VSLA Groups Credit Score Report'],
         ['Generated on:', new Date().toLocaleString()],
