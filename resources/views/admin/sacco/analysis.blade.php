@@ -755,39 +755,40 @@
     }
 
     function exportAllData() {
-        const visible = allSaccoData.filter(s => s.element.style.display !== 'none');
+    // Filter by groups that are visible and qualified for crediting
+    const visible = allSaccoData.filter(s => s.element.style.display !== 'none' && s.data.qualified);
+    
+    const lines = [
+        ['VSLA Groups Credit Score Report'],
+        ['Generated on:', new Date().toLocaleString()],
+        ['Number of Groups:', visible.length],
+        [''],
+        [
+            'Group Name', 'Qualified?',
+            'Credit Score', 'Total Members', 'Male', 'Female', 'Youth',
+            'Total Savings', 'Active Loans', 'Avg Attendance', 'Total Meetings'
+        ].join(',')
+    ];
 
-        const lines = [
-            ['VSLA Groups Credit Score Report'],
-            ['Generated on:', new Date().toLocaleString()],
-            ['Number of Groups:', visible.length],
-            [''],
-            [
-                'Group Name', 'Qualified?',
-                'Credit Score', 'Total Members', 'Male', 'Female', 'Youth',
-                'Total Savings', 'Active Loans', 'Avg Attendance', 'Total Meetings'
-            ].join(',')
-        ];
+    visible.forEach(s => {
+        const d = s.data;
+        lines.push([
+            d.name,
+            d.qualified ? 'Yes' : 'No',
+            d.qualified ? (d.creditScore.score ?? 'N/A') : 'N/A',
+            d.totalMembers,
+            d.maleMembers,
+            d.femaleMembers,
+            d.youthMembers,
+            d.savingsStats.totalBalance,
+            d.qualified ? d.loanStats.total : '--',
+            d.averageAttendance + '%',
+            d.totalMeetings
+        ].join(','));
+    });
 
-        visible.forEach(s => {
-            const d = s.data;
-            lines.push([
-                d.name,
-                d.qualified ? 'Yes' : 'No',
-                d.qualified ? (d.creditScore.score ?? 'N/A') : 'N/A',
-                d.totalMembers,
-                d.maleMembers,
-                d.femaleMembers,
-                d.youthMembers,
-                d.savingsStats.totalBalance,
-                d.qualified ? d.loanStats.total : '--',
-                d.averageAttendance + '%',
-                d.totalMeetings
-            ].join(','));
-        });
-
-        downloadCSV(lines.join('\n'), 'vsla_groups_report.csv');
-    }
+    downloadCSV(lines.join('\n'), 'vsla_groups_report.csv');
+}
 
     function generateExport(sacco) {
         const isQual = sacco.qualified;
