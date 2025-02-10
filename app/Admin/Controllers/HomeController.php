@@ -660,6 +660,18 @@ class HomeController extends Controller
                 return Carbon::parse($user->dob)->age < 35;
             })->count() / $totalMembers * 100 : 0;
 
+            $maleTotalBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->whereIn('transactions.sacco_id', $saccoIds)
+            ->where('transactions.type', 'SHARE')
+            ->where('users.sex', 'Male')
+            ->sum('transactions.amount');
+
+        $femaleTotalBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+            ->whereIn('transactions.sacco_id', $saccoIds)
+            ->where('transactions.type', 'SHARE')
+            ->where('users.sex', 'Female')
+            ->sum('transactions.amount');
+
             // Get refugee savings by gender
             $refugeMaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
                 ->whereIn('transactions.sacco_id', $saccoIds)
@@ -1065,7 +1077,7 @@ class HomeController extends Controller
                         'maleMembersCount' => $maleMembersCount,
                         'maleTotalBalance' => number_format($maleTotalBalance, 2),
                         'youthMembersCount' => $youthMembersCount,
-                        'youthTotalBalance' => number_format($youthTotalBalance),
+                        'youthTotalBalance' => number_format($maleTotalBalance),
                         'pwdMembersCount' => $pwdMembersCount,
                         'refugeeMaleMembersCount' => $refugeMaleUsersCount,
                         'refugeeFemaleMembersCount' => $refugeFemaleUsersCount,
