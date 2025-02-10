@@ -461,8 +461,30 @@ class CreditScoreController extends AdminController
         $maxLoanAmountResponse = Http::withOptions(['verify' => false])
             ->withHeaders(['Content-Type' => 'application/json'])
             ->post('https://vslascore-gjh5e5frbbdjeza9.canadacentral-01.azurewebsites.net/max_loan_amount', [
-                "credit_score" => $creditScoreValue * 0.8,
-                "average_savings" => $average_monthly_savings
+                "credit_score" => $creditScoreValue,
+                "number_of_loans" => $numberOfLoans,
+                "total_principal" => abs($totalPrincipal),
+                "total_interest" => abs($totalInterest),
+                "total_principal_paid" => abs($totalPrincipalPaid),
+                "total_interest_paid" => abs($totalInterestPaid),
+                "number_of_savings_accounts" => $numberOfSavingsAccounts,
+                "total_savings_balance" => abs($totalSavingsBalance),
+                "total_principal_outstanding" => abs($totalPrincipalOutstanding),
+                "total_interest_outstanding" => abs($outstandingInterest),
+                "number_of_loans_to_men" => $numberOfLoansToMen,
+                "total_disbursed_to_men" => abs($totalDisbursedToMen),
+                "total_savings_accounts_for_men" => $savingsAccountsForMen,
+                "number_of_loans_to_women" => $numberOfLoansToWomen,
+                "total_disbursed_to_women" => abs($totalDisbursedToWomen),
+                "total_savings_accounts_for_women" => $savingsAccountsForWomen,
+                "total_savings_balance_for_women" => abs($totalSavingsBalanceForWomen),
+                "number_of_loans_to_youth" => $numberOfLoansToYouth,
+                "total_disbursed_to_youth" => abs($totalDisbursedToYouth),
+                "total_savings_balance_for_youth" => abs($totalSavingsBalanceForYouth),
+                "savings_per_member" => abs($averageSavingsPerMember),
+                "youth_support_rate" => $youthSupportRate,
+                "savings_credit_mobilization" => $savingsCreditMobilization,
+                "fund_savings_credit_status" => $fundSavingsCreditStatus
             ]);
 
         if ($maxLoanAmountResponse->successful()) {
