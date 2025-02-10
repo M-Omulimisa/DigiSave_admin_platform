@@ -71,20 +71,20 @@ class CreditScoreController extends AdminController
 
     /**
      * Safe number formatting helper
-     * 
+     *
      * @param mixed $value
      * @return float
      */
-    private function safeNumberFormat($value) 
+    private function safeNumberFormat($value)
     {
         if (is_string($value)) {
             $value = floatval($value);
         }
-        
+
         if ($value === null || !is_numeric($value)) {
             return 0;
         }
-        
+
         return abs($value);
     }
 
@@ -107,7 +107,7 @@ class CreditScoreController extends AdminController
 
     /**
      * Calculate meeting attendance statistics
-     * 
+     *
      * @param \App\Models\Sacco $sacco
      * @return array
      */
@@ -119,14 +119,14 @@ class CreditScoreController extends AdminController
 
         foreach ($meetings as $meeting) {
             $membersData = $meeting->members;
-            $attendanceData = is_string($membersData) ? json_decode($membersData, true) : 
-                            (is_array($membersData) ? $membersData : 
+            $attendanceData = is_string($membersData) ? json_decode($membersData, true) :
+                            (is_array($membersData) ? $membersData :
                             (is_object($membersData) ? $this->objectToArray($membersData) : []));
 
-            if (json_last_error() === JSON_ERROR_NONE && 
-                isset($attendanceData['presentMembersIds']) && 
+            if (json_last_error() === JSON_ERROR_NONE &&
+                isset($attendanceData['presentMembersIds']) &&
                 is_array($attendanceData['presentMembersIds'])) {
-                
+
                 foreach ($attendanceData['presentMembersIds'] as $member) {
                     if (is_object($member)) {
                         $member = (array)$member;
@@ -135,13 +135,13 @@ class CreditScoreController extends AdminController
                         $allMemberNames[] = $member['name'];
                     }
                 }
-                
+
                 $totalMembersPerMeeting[] = count($attendanceData['presentMembersIds']);
             }
         }
 
         $meetingCount = count($meetings);
-        $averageAttendance = $meetingCount > 0 ? 
+        $averageAttendance = $meetingCount > 0 ?
             round(array_sum($totalMembersPerMeeting) / $meetingCount, 0) : 0;
 
         return [
@@ -152,7 +152,7 @@ class CreditScoreController extends AdminController
 
     /**
      * Calculate credit score using API
-     * 
+     *
      * @param array $data
      * @return array
      */
@@ -193,7 +193,7 @@ class CreditScoreController extends AdminController
 
     /**
      * Calculate maximum loan amount
-     * 
+     *
      * @param float|null $creditScore
      * @param float $averageSavings
      * @return float|null
@@ -243,22 +243,22 @@ class CreditScoreController extends AdminController
         }
 
         $activeCycleId = $activeCycle->id;
-        
+
         // Calculate member demographics
         $memberStats = $this->calculateMemberStats($sacco);
-        
+
         // Calculate meeting statistics
         $meetingStats = $this->calculateMeetingStats($sacco);
-        
+
         // Calculate loan statistics
         $loanStats = $this->calculateLoanStats($sacco, $activeCycleId);
-        
+
         // Calculate savings statistics
         $savingsStats = $this->calculateSavingsStats($sacco, $activeCycleId, $memberStats['total']);
 
         // Prepare credit score request data
         $requestData = $this->prepareCreditScoreRequest($loanStats, $savingsStats, $sacco);
-        
+
         // Calculate credit score
         $creditScore = $this->calculateCreditScore($requestData);
 
@@ -298,7 +298,7 @@ class CreditScoreController extends AdminController
 
     /**
      * Calculate member statistics
-     * 
+     *
      * @param \App\Models\Sacco $sacco
      * @return array
      */
@@ -320,7 +320,7 @@ class CreditScoreController extends AdminController
 
     /**
      * Calculate loan statistics
-     * 
+     *
      * @param \App\Models\Sacco $sacco
      * @param int $cycleId
      * @return array
@@ -342,7 +342,7 @@ class CreditScoreController extends AdminController
 
     /**
      * Calculate gender-specific loan statistics
-     * 
+     *
      * @param \App\Models\Sacco $sacco
      * @param int $cycleId
      * @param string $gender
@@ -364,7 +364,7 @@ class CreditScoreController extends AdminController
 
     /**
      * Calculate youth loan statistics
-     * 
+     *
      * @param \App\Models\Sacco $sacco
      * @param int $cycleId
      * @return array
@@ -385,7 +385,7 @@ class CreditScoreController extends AdminController
 
     /**
      * Calculate savings statistics
-     * 
+     *
      * @param \App\Models\Sacco $sacco
      * @param int $cycleId
      * @param int $totalMembers
@@ -412,7 +412,7 @@ class CreditScoreController extends AdminController
 
     /**
      * Calculate gender-specific savings statistics
-     * 
+     *
      * @param \App\Models\Sacco $sacco
      * @param int $cycleId
      * @param string $gender
@@ -434,7 +434,7 @@ class CreditScoreController extends AdminController
 
     /**
      * Calculate youth savings statistics
-     * 
+     *
      * @param \App\Models\Sacco $sacco
      * @param int $cycleId
      * @return array
@@ -455,7 +455,7 @@ class CreditScoreController extends AdminController
 
     /**
      * Prepare data for credit score API request
-     * 
+     *
      * @param array $loanStats
      * @param array $savingsStats
      * @param \App\Models\Sacco $sacco
@@ -464,17 +464,17 @@ class CreditScoreController extends AdminController
     private function prepareCreditScoreRequest($loanStats, $savingsStats, $sacco)
     {
         $monthsSinceCreation = $sacco->created_at->diffInMonths(now());
-        
+
         // Calculate savings credit mobilization
-        $savingsCreditMobilization = $monthsSinceCreation > 0 ? 
+        $savingsCreditMobilization = $monthsSinceCreation > 0 ?
             ($savingsStats['totalBalance'] / ($monthsSinceCreation * 4)) : 0;
 
         // Calculate youth support rate
-        $youthSupportRate = $loanStats['principal'] > 0 ? 
+        $youthSupportRate = $loanStats['principal'] > 0 ?
             ($loanStats['youth']['amount'] / $loanStats['principal']) : 0;
-        
+
         // Calculate fund savings credit status
-        $fundSavingsCreditStatus = $loanStats['principal'] > 0 ? 
+        $fundSavingsCreditStatus = $loanStats['principal'] > 0 ?
             ($loanStats['repayments'] / $loanStats['principal']) * 100 : 0;
 
         return [
@@ -506,7 +506,7 @@ class CreditScoreController extends AdminController
 
     /**
      * Get empty SACCO data structure
-     * 
+     *
      * @param \App\Models\Sacco $sacco
      * @return array
      */
@@ -552,7 +552,7 @@ class CreditScoreController extends AdminController
 
     /**
      * Get credit score description based on score value
-     * 
+     *
      * @param int|null $score
      * @return string
      */
