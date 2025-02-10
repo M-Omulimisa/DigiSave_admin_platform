@@ -448,7 +448,7 @@ class CreditScoreController extends AdminController
                 $creditScoreValue = $result['credit_score'];
                 $creditScoreDescription = $this->getCreditScoreDescription($creditScoreValue);
             } else {
-                Log::error('Credit Score API response missing "credit_score":', $result);
+                Log::error('Credit Score API response missing "credit_score":', ['response' => $result]);
                 $creditScoreValue = null;
                 $creditScoreDescription = 'Unable to calculate credit score at this time.';
             }
