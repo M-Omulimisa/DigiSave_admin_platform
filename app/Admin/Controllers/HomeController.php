@@ -533,6 +533,10 @@ class HomeController extends Controller
 
     public function index(Content $content)
     {
+        $organizationSelector = '';
+$organizationContainer = '';
+$orgName = 'DigiSave VSLA Platform';
+
         foreach (Sacco::where(["processed" => "no"])->get() as $key => $sacco) {
             $chairperson = User::where('sacco_id', $sacco->id)
                 ->whereHas('position', function ($query) {
