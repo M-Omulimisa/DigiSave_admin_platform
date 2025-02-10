@@ -91,16 +91,15 @@ class CreditScoreController extends AdminController
      * @return array
      */
     private function prepareSaccoData($sacco)
-    {
         // Fetch the active cycle associated with the Sacco
         {
             // Fetch the active cycle associated with the Sacco
             $activeCycle = Cycle::where('sacco_id', $sacco->id)
                 ->where('status', 'Active')
                 ->first();
-        
+
             $totalMeetings = (int)Meeting::where('sacco_id', $sacco->id)->count();
-        
+
             if ($activeCycle == null) {
                 // If no active cycle is found, return minimal data with error in creditScore
                 return [
@@ -137,9 +136,9 @@ class CreditScoreController extends AdminController
                     ]
                 ];
             }
-        
+
             $activeCycleId = $activeCycle->id;
-        
+
             // Total Group Members with type casting
             $numberOfMembers = (int)User::where('sacco_id', $sacco->id)
                 ->where(function ($query) {
@@ -147,7 +146,7 @@ class CreditScoreController extends AdminController
                           ->orWhere('user_type', '<>', 'Admin');
                 })
                 ->count();
-        
+
             // Number of Male Members
             $numberOfMen = (int)User::where('sacco_id', $sacco->id)
                 ->where('sex', 'Male')
@@ -156,7 +155,7 @@ class CreditScoreController extends AdminController
                           ->orWhere('user_type', '<>', 'Admin');
                 })
                 ->count();
-        
+
             // Number of Female Members
             $numberOfWomen = (int)User::where('sacco_id', $sacco->id)
                 ->where('sex', 'Female')
@@ -165,7 +164,7 @@ class CreditScoreController extends AdminController
                           ->orWhere('user_type', '<>', 'Admin');
                 })
                 ->count();
-        
+
             // Number of Youth Members
             $numberOfYouth = (int)User::where('sacco_id', $sacco->id)
                 ->whereRaw('TIMESTAMPDIFF(YEAR, dob, CURDATE()) < 35')
@@ -565,4 +564,5 @@ class CreditScoreController extends AdminController
             return "Needs improvement. The group should focus on increasing savings and improving loan repayment rates.";
         }
     }
+
 }
