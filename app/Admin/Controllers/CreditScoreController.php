@@ -439,7 +439,7 @@ class CreditScoreController extends AdminController
 
         try {
             $response = Http::withOptions(['verify' => false])
-                ->post('https://vslacreditplus-fte2h3dhc5hcc0e5.canadacentral-01.azurewebsites.net/predict', $requestData);
+                ->post('https://vslascore-gjh5e5frbbdjeza9.canadacentral-01.azurewebsites.net/predict', $requestData);
 
             $result = $response->json();
 
@@ -459,7 +459,7 @@ class CreditScoreController extends AdminController
 
         $maxLoanAmountResponse = Http::withOptions(['verify' => false])
             ->withHeaders(['Content-Type' => 'application/json'])
-            ->post('https://vslacreditplus-fte2h3dhc5hcc0e5.canadacentral-01.azurewebsites.net/max_loan_amount', [
+            ->post('https://vslascore-gjh5e5frbbdjeza9.canadacentral-01.azurewebsites.net/max_loan_amount', [
                 "credit_score" => $creditScoreValue * 0.8,
                 "average_savings" => $average_monthly_savings
             ]);
