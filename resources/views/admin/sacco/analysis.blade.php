@@ -492,30 +492,27 @@
 
                         <div class="demographics">
                             <div class="demographic-item">
-                                <h5>{{ number_format($sacco['maleMembers']) }}</h5>
+                                <h5>{{ $sacco['maleMembers'] !== null ? number_format($sacco['maleMembers']) : '--' }}</h5>
                                 <small>Male</small>
                             </div>
                             <div class="demographic-item">
-                                <h5>{{ number_format($sacco['femaleMembers']) }}</h5>
+                                <h5>{{ $sacco['femaleMembers'] !== null ? number_format($sacco['femaleMembers']) : '--' }}</h5>
                                 <small>Female</small>
                             </div>
                             <div class="demographic-item">
-                                <h5>{{ number_format($sacco['youthMembers']) }}</h5>
+                                <h5>{{ $sacco['youthMembers'] !== null ? number_format($sacco['youthMembers']) : '--' }}</h5>
                                 <small>Youth</small>
                             </div>
                         </div>
 
-                        <div
-                          class="stat-box"
-                          style="margin-top:1rem;background:#eef9f0;text-align:center;border-radius:6px;"
-                        >
-                          @if($qualified)
-                            <h4>UGX {{ number_format($sacco['maxLoanAmount'] ?? 0) }}</h4>
-                            <p>Max Loan Amount</p>
-                          @else
-                            <h4>--</h4>
-                            <p>Max Loan Amount</p>
-                          @endif
+                        <div class="stat-box" style="margin-top:1rem;background:#eef9f0;text-align:center;border-radius:6px;">
+                            @if($qualified && $sacco['maxLoanAmount'] !== null)
+                                <h4>UGX {{ number_format((float)$sacco['maxLoanAmount']) }}</h4>
+                                <p>Max Loan Amount</p>
+                            @else
+                                <h4>--</h4>
+                                <p>Max Loan Amount</p>
+                            @endif
                         </div>
 
                         <div class="button-container">

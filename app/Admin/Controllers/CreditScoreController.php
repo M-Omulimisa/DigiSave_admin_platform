@@ -93,85 +93,87 @@ class CreditScoreController extends AdminController
     private function prepareSaccoData($sacco)
     {
         // Fetch the active cycle associated with the Sacco
-        $activeCycle = Cycle::where('sacco_id', $sacco->id)
-            ->where('status', 'Active')
-            ->first();
-
-        $totalMeetings = Meeting::where('sacco_id', $sacco->id)->count();
-
-        if ($activeCycle == null) {
-            // If no active cycle is found, return minimal data with error in creditScore
-            return [
-                'id' => $sacco->id,
-                'name' => $sacco->name,
-                'created_at' => $sacco->created_at,
-                'status' => $sacco->status,
-                'totalMembers' => 0,
-                'maleMembers' => 0,
-                'femaleMembers' => 0,
-                'youthMembers' => 0,
-                'totalMeetings' => $totalMeetings,
-                'averageAttendance' => 0.0,
-                'loanStats' => [
-                    'total' => 0,
-                    'principal' => 0,
-                    'interest' => 0,
-                    'repayments' => 0,
-                    'male' => ['count' => 0, 'amount' => 0],
-                    'female' => ['count' => 0, 'amount' => 0],
-                    'youth' => ['count' => 0, 'amount' => 0],
-                ],
-                'savingsStats' => [
-                    'totalAccounts' => 0,
-                    'totalBalance' => 0.0,
-                    'averageSavings' => 0.0,
-                    'male' => ['accounts' => 0, 'balance' => 0.0],
-                    'female' => ['accounts' => 0, 'balance' => 0.0],
-                    'youth' => ['accounts' => 0, 'balance' => 0.0],
-                ],
-                'creditScore' => [
-                    'score' => null,
-                    'description' => 'No active cycle found. Unable to calculate credit score.'
-                ]
-            ];
-        }
-
-        $activeCycleId = $activeCycle->id;
-
-        // Total Group Members
-        $numberOfMembers = User::where('sacco_id', $sacco->id)
-            ->where(function ($query) {
-                $query->whereNull('user_type')
-                      ->orWhere('user_type', '<>', 'Admin');
-            })
-            ->count();
-
-        // Number of Male Members
-        $numberOfMen = User::where('sacco_id', $sacco->id)
-            ->where('sex', 'Male')
-            ->where(function ($query) {
-                $query->whereNull('user_type')
-                      ->orWhere('user_type', '<>', 'Admin');
-            })
-            ->count();
-
-        // Number of Female Members
-        $numberOfWomen = User::where('sacco_id', $sacco->id)
-            ->where('sex', 'Female')
-            ->where(function ($query) {
-                $query->whereNull('user_type')
-                      ->orWhere('user_type', '<>', 'Admin');
-            })
-            ->count();
-
-        // Number of Youth Members
-        $numberOfYouth = User::where('sacco_id', $sacco->id)
-            ->whereRaw('TIMESTAMPDIFF(YEAR, dob, CURDATE()) < 35')
-            ->where(function ($query) {
-                $query->whereNull('user_type')
-                      ->orWhere('user_type', '<>', 'Admin');
-            })
-            ->count();
+        {
+            // Fetch the active cycle associated with the Sacco
+            $activeCycle = Cycle::where('sacco_id', $sacco->id)
+                ->where('status', 'Active')
+                ->first();
+        
+            $totalMeetings = (int)Meeting::where('sacco_id', $sacco->id)->count();
+        
+            if ($activeCycle == null) {
+                // If no active cycle is found, return minimal data with error in creditScore
+                return [
+                    'id' => (int)$sacco->id,
+                    'name' => $sacco->name,
+                    'created_at' => $sacco->created_at,
+                    'status' => $sacco->status,
+                    'totalMembers' => 0,
+                    'maleMembers' => 0,
+                    'femaleMembers' => 0,
+                    'youthMembers' => 0,
+                    'totalMeetings' => $totalMeetings,
+                    'averageAttendance' => 0.0,
+                    'loanStats' => [
+                        'total' => 0,
+                        'principal' => 0,
+                        'interest' => 0,
+                        'repayments' => 0,
+                        'male' => ['count' => 0, 'amount' => 0],
+                        'female' => ['count' => 0, 'amount' => 0],
+                        'youth' => ['count' => 0, 'amount' => 0],
+                    ],
+                    'savingsStats' => [
+                        'totalAccounts' => 0,
+                        'totalBalance' => 0,
+                        'averageSavings' => 0,
+                        'male' => ['accounts' => 0, 'balance' => 0],
+                        'female' => ['accounts' => 0, 'balance' => 0],
+                        'youth' => ['accounts' => 0, 'balance' => 0],
+                    ],
+                    'creditScore' => [
+                        'score' => null,
+                        'description' => 'No active cycle found. Unable to calculate credit score.'
+                    ]
+                ];
+            }
+        
+            $activeCycleId = $activeCycle->id;
+        
+            // Total Group Members with type casting
+            $numberOfMembers = (int)User::where('sacco_id', $sacco->id)
+                ->where(function ($query) {
+                    $query->whereNull('user_type')
+                          ->orWhere('user_type', '<>', 'Admin');
+                })
+                ->count();
+        
+            // Number of Male Members
+            $numberOfMen = (int)User::where('sacco_id', $sacco->id)
+                ->where('sex', 'Male')
+                ->where(function ($query) {
+                    $query->whereNull('user_type')
+                          ->orWhere('user_type', '<>', 'Admin');
+                })
+                ->count();
+        
+            // Number of Female Members
+            $numberOfWomen = (int)User::where('sacco_id', $sacco->id)
+                ->where('sex', 'Female')
+                ->where(function ($query) {
+                    $query->whereNull('user_type')
+                          ->orWhere('user_type', '<>', 'Admin');
+                })
+                ->count();
+        
+            // Number of Youth Members
+            $numberOfYouth = (int)User::where('sacco_id', $sacco->id)
+                ->whereRaw('TIMESTAMPDIFF(YEAR, dob, CURDATE()) < 35')
+                ->where(function ($query) {
+                    $query->whereNull('user_type')
+                          ->orWhere('user_type', '<>', 'Admin');
+                })
+                ->count();
 
         $totalMeetings = Meeting::where('sacco_id', $sacco->id)->count();
 
