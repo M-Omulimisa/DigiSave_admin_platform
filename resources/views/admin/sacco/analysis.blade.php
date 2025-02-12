@@ -865,7 +865,48 @@
             }
         }
 
-        function generateExport(sacco) {
+        function exportAllData() {
+    // Filter by groups that are visible, qualified for crediting, and have names
+    const visible = allSaccoData.filter(s =>
+        s.element.style.display !== 'none' &&
+        s.data.qualified &&
+        s.data.name &&
+        s.data.name.trim() !== '');
+
+    const lines = [
+        ['VSLA Groups Credit Score Report'],
+        ['Generated on:', new Date().toLocaleString()],
+        ['Number of Groups:', visible.length],
+        [''],
+        [
+            'Group Name', 'Qualified?', 'Credit Score', 'Total Members',
+            'Male', 'Female', 'Youth', 'Total Savings', 'Active Loans',
+            'Avg Attendance', 'Total Meetings', 'Max Loan Amount'  // Added Max Loan Amount
+        ].join(',')
+    ];
+
+    visible.forEach(s => {
+        const d = s.data;
+        lines.push([
+            capitalizeGroupName(d.name),  // Capitalize group name
+            d.qualified ? 'Yes' : 'No',
+            d.qualified ? (d.creditScore.score ?? 'N/A') : 'N/A',
+            d.totalMembers,
+            d.maleMembers,
+            d.femaleMembers,
+            d.youthMembers,
+            d.savingsStats.totalBalance,
+            d.qualified ? d.loanStats.total : '--',
+            d.averageAttendance + '%',
+            d.totalMeetings,
+            d.qualified ? (d.maxLoanAmount ? 'UGX ' + formatNumber(parseInt(d.maxLoanAmount.toString().replace(/[^0-9]/g, '')) || 0) : '--') : '--'
+        ].join(','));
+    });
+
+    downloadCSV(lines.join('\n'), 'vsla_groups_report.csv');
+}
+
+function generateExport(sacco) {
     // Don't generate export for groups without names
     if (!sacco.name || sacco.name.trim() === '') {
         console.warn('Cannot generate export for group with no name');
