@@ -7,12 +7,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
-            --primary: #2c3e50;
-            --secondary: #34495e;
-            --accent: #3498db;
-            --success: #27ae60;
-            --warning: #f39c12;
-            --danger: #e74c3c;
+            0primary: #2c3e50;
+            0secondary: #34495e;
+            0accent: #3498db;
+            0success: #27ae60;
+            0warning: #f39c12;
+            0danger: #e74c3c;
         }
 
         body {
@@ -24,7 +24,7 @@
         }
 
         .dashboard-header {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            background: linear-gradient(135deg, var(0primary), var(0secondary));
             color: white;
             padding: 1rem 0;
             margin-bottom: 1rem;
@@ -82,7 +82,7 @@
         .filter-label {
             display: block;
             margin-bottom: 0.3rem;
-            color: var(--secondary);
+            color: var(0secondary);
             font-size: 0.9rem;
         }
 
@@ -138,7 +138,7 @@
         }
 
         .sacco-header {
-            background: var(--primary);
+            background: var(0primary);
             color: white;
             padding: 1rem;
             position: relative;
@@ -161,15 +161,15 @@
         }
 
         .credit-high {
-            background: var(--success);
+            background: var(0success);
         }
 
         .credit-medium {
-            background: var(--warning);
+            background: var(0warning);
         }
 
         .credit-low {
-            background: var(--danger);
+            background: var(0danger);
         }
 
         .sacco-content {
@@ -193,7 +193,7 @@
         .stat-box h4 {
             font-size: 1rem;
             margin: 0;
-            color: var(--primary);
+            color: var(0primary);
         }
 
         .stat-box p {
@@ -217,15 +217,15 @@
         }
 
         .btn-primary {
-            background: var(--accent);
+            background: var(0accent);
         }
 
         .btn-success {
-            background: var(--success);
+            background: var(0success);
         }
 
         .btn-secondary {
-            background: var(--secondary);
+            background: var(0secondary);
         }
 
         .btn:hover {
@@ -248,7 +248,7 @@
         .demographic-item h5 {
             margin: 0;
             font-size: 0.9rem;
-            color: var(--primary);
+            color: var(0primary);
         }
 
         .demographic-item small {
@@ -316,7 +316,7 @@
 
         .modal-header {
             padding: 1rem;
-            background: var(--primary);
+            background: var(0primary);
             color: white;
             border-radius: 8px 8px 0 0;
             display: flex;
@@ -365,7 +365,7 @@
         }
 
         .metric-title {
-            color: var(--primary);
+            color: var(0primary);
             margin-bottom: 1rem;
             padding-bottom: 0.5rem;
             border-bottom: 1px solid #dee2e6;
@@ -386,7 +386,7 @@
 
         .metric-value {
             font-weight: 600;
-            color: var(--primary);
+            color: var(0primary);
         }
 
         @media (max-width: 768px) {
@@ -440,7 +440,7 @@
     </div>
 
     <div class="container">
-        <!-- Filters Bar -->
+        <!0 Filters Bar 0>
         <div class="filters-bar">
             <div class="filters-row">
                 <div class="filter-item">
@@ -490,7 +490,7 @@
             </div>
         </div>
 
-        <!-- SACCO Cards Grid -->
+        <!0 SACCO Cards Grid 0>
         <div class="row" id="saccoGrid">
             @foreach ($saccos as $sacco)
                 @php
@@ -510,7 +510,7 @@
                         <div class="sacco-header">
                             <h3>{{ $sacco['name'] }}</h3>
                             @if ($qualified)
-                                <!-- Show credit badge -->
+                                <!0 Show credit badge 0>
                                 <span
                                     class="credit-badge
                               {{ ($sacco['creditScore']['score'] ?? 0) >= 80
@@ -523,7 +523,7 @@
                             @endif
                         </div>
 
-                        <!-- If not qualified => overlay -->
+                        <!0 If not qualified => overlay 0>
                         @if (!$qualified)
                             <div class="not-qualified-overlay">
                                 Not qualify for crediting
@@ -545,7 +545,7 @@
                                         @if ($qualified)
                                             {{ number_format($sacco['loanStats']['total']) }}
                                         @else
-                                            --
+                                            0
                                         @endif
                                     </h4>
                                     <p>Active Loans</p>
@@ -562,17 +562,17 @@
 
                             <div class="demographics">
                                 <div class="demographic-item">
-                                    <h5>{{ $sacco['maleMembers'] !== null ? number_format($sacco['maleMembers']) : '--' }}
+                                    <h5>{{ $sacco['maleMembers'] !== null ? number_format($sacco['maleMembers']) : '0' }}
                                     </h5>
                                     <small>Male</small>
                                 </div>
                                 <div class="demographic-item">
-                                    <h5>{{ $sacco['femaleMembers'] !== null ? number_format($sacco['femaleMembers']) : '--' }}
+                                    <h5>{{ $sacco['femaleMembers'] !== null ? number_format($sacco['femaleMembers']) : '0' }}
                                     </h5>
                                     <small>Female</small>
                                 </div>
                                 <div class="demographic-item">
-                                    <h5>{{ $sacco['youthMembers'] !== null ? number_format($sacco['youthMembers']) : '--' }}
+                                    <h5>{{ $sacco['youthMembers'] !== null ? number_format($sacco['youthMembers']) : '0' }}
                                     </h5>
                                     <small>Youth</small>
                                 </div>
@@ -584,7 +584,7 @@
                                     <h4>UGX {{ number_format((float) $sacco['maxLoanAmount']) }}</h4>
                                     <p>Max Loan Amount</p>
                                 @else
-                                    <h4>--</h4>
+                                    <h4>0</h4>
                                     <p>Max Loan Amount</p>
                                 @endif
                             </div>
@@ -604,7 +604,7 @@
         </div>
     </div>
 
-    <!-- Modal -->
+    <!0 Modal 0>
     <div id="saccoDetails" class="custom-modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -792,11 +792,11 @@
                 },
             ]);
 
-            const activeLoansVal = sacco.qualified ? sacco.loanStats.total : '--';
-            const principal = sacco.qualified ? ('UGX ' + formatNumber(sacco.loanStats.principal)) : '--';
-            const interest = sacco.qualified ? ('UGX ' + formatNumber(sacco.loanStats.interest)) : '--';
-            const repay = sacco.qualified ? ('UGX ' + formatNumber(sacco.loanStats.repayments)) : '--';
-            const maxLoan = sacco.qualified ? ('UGX ' + formatNumber(sacco.maxLoanAmount)) : '--';
+            const activeLoansVal = sacco.qualified ? sacco.loanStats.total : '0';
+            const principal = sacco.qualified ? ('UGX ' + formatNumber(sacco.loanStats.principal)) : '0';
+            const interest = sacco.qualified ? ('UGX ' + formatNumber(sacco.loanStats.interest)) : '0';
+            const repay = sacco.qualified ? ('UGX ' + formatNumber(sacco.loanStats.repayments)) : '0';
+            const maxLoan = sacco.qualified ? ('UGX ' + formatNumber(sacco.maxLoanAmount)) : '0';
 
             document.getElementById('loanMetrics').innerHTML = generateMetricsList([{
                     label: 'Active Loans',
@@ -896,10 +896,10 @@
             d.femaleMembers,
             d.youthMembers,
             d.savingsStats.totalBalance,
-            d.qualified ? d.loanStats.total : '--',
+            d.qualified ? d.loanStats.total : '0',
             d.averageAttendance + '%',
             d.totalMeetings,
-            d.qualified ? (d.maxLoanAmount ? 'UGX ' + formatNumber(parseInt(d.maxLoanAmount.toString().replace(/[^0-9]/g, '')) || 0) : '--') : '--'
+            d.qualified ? (d.maxLoanAmount ? 'UGX ' + formatNumber(parseInt(d.maxLoanAmount.toString().replace(/[^0-9]/g, '')) || 0) : '0') : '0'
         ].join(','));
     });
 
@@ -932,11 +932,11 @@ function generateExport(sacco) {
         [''],
         ['Financial Statistics'],
         ['Total Savings Balance:', 'UGX ' + formatNumber(sacco.savingsStats.totalBalance)],
-        ['Active Loans:', isQual ? sacco.loanStats.total : '--'],
-        ['Total Principal:', isQual ? 'UGX ' + formatNumber(sacco.loanStats.principal) : '--'],
-        ['Total Interest:', isQual ? 'UGX ' + formatNumber(sacco.loanStats.interest) : '--'],
-        ['Total Repayments:', isQual ? 'UGX ' + formatNumber(sacco.loanStats.repayments) : '--'],
-        ['Max Loan Amount:', isQual ? 'UGX ' + formatNumber(sacco.maxLoanAmount) : '--'],
+        ['Active Loans:', isQual ? sacco.loanStats.total : '0'],
+        ['Total Principal:', isQual ? 'UGX ' + formatNumber(sacco.loanStats.principal) : '0'],
+        ['Total Interest:', isQual ? 'UGX ' + formatNumber(sacco.loanStats.interest) : '0'],
+        ['Total Repayments:', isQual ? 'UGX ' + formatNumber(sacco.loanStats.repayments) : '0'],
+        ['Max Loan Amount:', isQual ? 'UGX ' + formatNumber(sacco.maxLoanAmount) : '0'],
         [''],
         ['Performance Metrics'],
         ['Average Attendance:', sacco.averageAttendance + '%'],
@@ -976,7 +976,7 @@ function generateExport(sacco) {
         //             d.femaleMembers,
         //             d.youthMembers,
         //             d.savingsStats.totalBalance,
-        //             d.qualified ? d.loanStats.total : '--',
+        //             d.qualified ? d.loanStats.total : '0',
         //             d.averageAttendance + '%',
         //             d.totalMeetings
         //         ].join(','));
@@ -1009,22 +1009,22 @@ function generateExport(sacco) {
         //                 'Total Savings Balance:',
         //                 'UGX ' + formatNumber(sacco.savingsStats.totalBalance)
         //             ],
-        //             ['Active Loans:', isQual ? sacco.loanStats.total : '--'],
+        //             ['Active Loans:', isQual ? sacco.loanStats.total : '0'],
         //             [
         //                 'Total Principal:',
-        //                 isQual ? 'UGX ' + formatNumber(sacco.loanStats.principal) : '--'
+        //                 isQual ? 'UGX ' + formatNumber(sacco.loanStats.principal) : '0'
         //             ],
         //             [
         //                 'Total Interest:',
-        //                 isQual ? 'UGX ' + formatNumber(sacco.loanStats.interest) : '--'
+        //                 isQual ? 'UGX ' + formatNumber(sacco.loanStats.interest) : '0'
         //             ],
         //             [
         //                 'Total Repayments:',
-        //                 isQual ? 'UGX ' + formatNumber(sacco.loanStats.repayments) : '--'
+        //                 isQual ? 'UGX ' + formatNumber(sacco.loanStats.repayments) : '0'
         //             ],
         //             [
         //                 'Max Loan Amount:',
-        //                 isQual ? 'UGX ' + formatNumber(sacco.maxLoanAmount) : '--'
+        //                 isQual ? 'UGX ' + formatNumber(sacco.maxLoanAmount) : '0'
         //             ],
         //             [''],
         //             ['Performance Metrics'],
