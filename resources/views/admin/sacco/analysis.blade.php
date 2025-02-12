@@ -865,13 +865,19 @@
             }
         }
 
-        function exportAllData() {
-    // Filter by groups that are visible, qualified for crediting, and have names
+        function formatNumber(num) {
+    if (!num || isNaN(num)) return '0';
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+function exportAllData() {
+    // Filter by groups that are visible and qualified
     const visible = allSaccoData.filter(s =>
         s.element.style.display !== 'none' &&
         s.data.qualified &&
         s.data.name &&
-        s.data.name.trim() !== '');
+        s.data.name.trim() !== ''
+    );
 
     const lines = [
         ['VSLA Groups Credit Score Report'],
@@ -879,46 +885,87 @@
         ['Number of Groups:', visible.length],
         [''],
         [
-            'Group Name', 'Qualified?', 'Credit Score', 'Total Members',
-            'Male', 'Female', 'Youth', 'Total Savings', 'Active Loans',
-            'Avg Attendance', 'Total Meetings', 'Max Loan Amount'  // Added Max Loan Amount
+            'Group Name',
+            'Qualified?',
+            'Credit Score',
+            'Total Members',
+            'Male',
+            'Female',
+            'Youth',
+            'Total Savings',
+            'Active Loans',
+            'Avg Attendance',
+            'Total Meetings',
+            'Max Loan Amount'
         ].join(',')
     ];
 
     visible.forEach(s => {
         const d = s.data;
-        lines.push([
-            capitalizeGroupName(d.name),  // Capitalize group name
-            d.qualified ? 'Yes' : 'No',
-            d.qualified ? (d.creditScore.score ?? 'N/A') : 'N/A',
+
+        // Format max loan amount
+        let maxLoanAmount = '0';
+        if (d.qualified && d.maxLoanAmount) {
+            // Remove any non-numeric characters and parse
+            const amount = typeof d.maxLoanAmount === 'string' ?
+                parseInt(d.maxLoanAmount.replace(/[^\d]/g, '')) :
+                d.maxLoanAmount;
+
+            if (amount > 0) {
+                maxLoanAmount = `"UGX ${formatNumber(amount)}"`;
+            }
+        }
+
+        // Format total savings
+        const totalSavings = `"UGX ${formatNumber(d.savingsStats.totalBalance)}"`;
+
+        const rowData = [
+            capitalizeGroupName(d.name),
+            'Yes',  // Always yes since we filtered for qualified
+            d.creditScore.score ?? 'N/A',
             d.totalMembers,
             d.maleMembers,
             d.femaleMembers,
             d.youthMembers,
-            d.savingsStats.totalBalance,
-            d.qualified ? d.loanStats.total : '0',
+            totalSavings,
+            d.loanStats.total,
             d.averageAttendance + '%',
             d.totalMeetings,
-            d.qualified ? (d.maxLoanAmount ? 'UGX ' + formatNumber(parseInt(d.maxLoanAmount.toString().replace(/[^0-9]/g, '')) || 0) : '0') : '0'
-        ].join(','));
+            maxLoanAmount
+        ];
+
+        lines.push(rowData.join(','));
     });
 
     downloadCSV(lines.join('\n'), 'vsla_groups_report.csv');
 }
 
 function generateExport(sacco) {
-    // Don't generate export for groups without names
     if (!sacco.name || sacco.name.trim() === '') {
         console.warn('Cannot generate export for group with no name');
         return;
     }
+
     const isQual = sacco.qualified;
+
+    // Format max loan amount
+    let maxLoanAmount = '0';
+    if (isQual && sacco.maxLoanAmount) {
+        const amount = typeof sacco.maxLoanAmount === 'string' ?
+            parseInt(sacco.maxLoanAmount.replace(/[^\d]/g, '')) :
+            sacco.maxLoanAmount;
+
+        if (amount > 0) {
+            maxLoanAmount = `"UGX ${formatNumber(amount)}"`;
+        }
+    }
+
     const csvContent = [
         ['VSLA Credit Score Report'],
         ['Generated on:', new Date().toLocaleString()],
         [''],
         ['Basic Information'],
-        ['Group Name:', capitalizeGroupName(sacco.name)],  // Capitalize group name
+        ['Group Name:', capitalizeGroupName(sacco.name)],
         ['Qualified?:', isQual ? 'Yes' : 'No'],
         ['Credit Score:', isQual ? (sacco.creditScore.score ?? 'N/A') : 'N/A'],
         ['Credit Standing:', isQual ? sacco.creditScore.description : 'Not qualify for crediting'],
@@ -931,17 +978,17 @@ function generateExport(sacco) {
         ['Total Meetings:', sacco.totalMeetings],
         [''],
         ['Financial Statistics'],
-        ['Total Savings Balance:', 'UGX ' + formatNumber(sacco.savingsStats.totalBalance)],
+        ['Total Savings Balance:', `"UGX ${formatNumber(sacco.savingsStats.totalBalance)}"`],
         ['Active Loans:', isQual ? sacco.loanStats.total : '0'],
-        ['Total Principal:', isQual ? 'UGX ' + formatNumber(sacco.loanStats.principal) : '0'],
-        ['Total Interest:', isQual ? 'UGX ' + formatNumber(sacco.loanStats.interest) : '0'],
-        ['Total Repayments:', isQual ? 'UGX ' + formatNumber(sacco.loanStats.repayments) : '0'],
-        ['Max Loan Amount:', isQual ? 'UGX ' + formatNumber(sacco.maxLoanAmount) : '0'],
+        ['Total Principal:', isQual ? `"UGX ${formatNumber(sacco.loanStats.principal)}"` : '0'],
+        ['Total Interest:', isQual ? `"UGX ${formatNumber(sacco.loanStats.interest)}"` : '0'],
+        ['Total Repayments:', isQual ? `"UGX ${formatNumber(sacco.loanStats.repayments)}"` : '0'],
+        ['Max Loan Amount:', maxLoanAmount],
         [''],
         ['Performance Metrics'],
         ['Average Attendance:', sacco.averageAttendance + '%'],
         ['Savings per Member:', sacco.totalMembers > 0
-            ? 'UGX ' + formatNumber(sacco.savingsStats.totalBalance / sacco.totalMembers)
+            ? `"UGX ${formatNumber(sacco.savingsStats.totalBalance / sacco.totalMembers)}"`
             : 'N/A'
         ]
     ].map(row => row.join(',')).join('\n');
