@@ -865,90 +865,48 @@
             }
         }
 
-        function exportAllData() {
-            // Filter by groups that are visible, qualified for crediting, and have names
-            const visible = allSaccoData.filter(s =>
-                s.element.style.display !== 'none' &&
-                s.data.qualified &&
-                s.data.name &&
-                s.data.name.trim() !== '');
-
-            const lines = [
-                ['VSLA Groups Credit Score Report'],
-                ['Generated on:', new Date().toLocaleString()],
-                ['Number of Groups:', visible.length],
-                [''],
-                [
-                    'Group Name', 'Qualified?', 'Credit Score', 'Total Members',
-                    'Male', 'Female', 'Youth', 'Total Savings', 'Active Loans',
-                    'Avg Attendance', 'Total Meetings', 'Max Loan Amount' // Added Max Loan Amount
-                ].join(',')
-            ];
-
-            visible.forEach(s => {
-                const d = s.data;
-                lines.push([
-                    capitalizeGroupName(d.name), // Capitalize group name
-                    d.qualified ? 'Yes' : 'No',
-                    d.qualified ? (d.creditScore.score ?? 'N/A') : 'N/A',
-                    d.totalMembers,
-                    d.maleMembers,
-                    d.femaleMembers,
-                    d.youthMembers,
-                    d.savingsStats.totalBalance,
-                    d.qualified ? d.loanStats.total : '--',
-                    d.averageAttendance + '%',
-                    d.totalMeetings,
-                    d.qualified ? ('UGX ' + formatNumber(d.maxLoanAmount ?? 0)) :
-                    '--' // Added Max Loan Amount with UGX formatting
-                ].join(','));
-            });
-
-            downloadCSV(lines.join('\n'), 'vsla_groups_report.csv');
-        }
-
         function generateExport(sacco) {
-            // Don't generate export for groups without names
-            if (!sacco.name || sacco.name.trim() === '') {
-                console.warn('Cannot generate export for group with no name');
-                return;
-            }
-            const isQual = sacco.qualified;
-            const csvContent = [
-                ['VSLA Credit Score Report'],
-                ['Generated on:', new Date().toLocaleString()],
-                [''],
-                ['Basic Information'],
-                ['Group Name:', capitalizeGroupName(sacco.name)], // Capitalize group name
-                ['Qualified?:', isQual ? 'Yes' : 'No'],
-                ['Credit Score:', isQual ? (sacco.creditScore.score ?? 'N/A') : 'N/A'],
-                ['Credit Standing:', isQual ? sacco.creditScore.description : 'Not qualify for crediting'],
-                [''],
-                ['Membership Statistics'],
-                ['Total Members:', sacco.totalMembers],
-                ['Male Members:', sacco.maleMembers],
-                ['Female Members:', sacco.femaleMembers],
-                ['Youth Members:', sacco.youthMembers],
-                ['Total Meetings:', sacco.totalMeetings],
-                [''],
-                ['Financial Statistics'],
-                ['Total Savings Balance:', 'UGX ' + formatNumber(sacco.savingsStats.totalBalance)],
-                ['Active Loans:', isQual ? sacco.loanStats.total : '--'],
-                ['Total Principal:', isQual ? 'UGX ' + formatNumber(sacco.loanStats.principal) : '--'],
-                ['Total Interest:', isQual ? 'UGX ' + formatNumber(sacco.loanStats.interest) : '--'],
-                ['Total Repayments:', isQual ? 'UGX ' + formatNumber(sacco.loanStats.repayments) : '--'],
-                ['Max Loan Amount:', isQual ? 'UGX ' + formatNumber(sacco.maxLoanAmount) : '--'],
-                [''],
-                ['Performance Metrics'],
-                ['Average Attendance:', sacco.averageAttendance + '%'],
-                ['Savings per Member:', sacco.totalMembers > 0 ?
-                    'UGX ' + formatNumber(sacco.savingsStats.totalBalance / sacco.totalMembers) :
-                    'N/A'
-                ]
-            ].map(row => row.join(',')).join('\n');
+    // Don't generate export for groups without names
+    if (!sacco.name || sacco.name.trim() === '') {
+        console.warn('Cannot generate export for group with no name');
+        return;
+    }
+    const isQual = sacco.qualified;
+    const csvContent = [
+        ['VSLA Credit Score Report'],
+        ['Generated on:', new Date().toLocaleString()],
+        [''],
+        ['Basic Information'],
+        ['Group Name:', capitalizeGroupName(sacco.name)],  // Capitalize group name
+        ['Qualified?:', isQual ? 'Yes' : 'No'],
+        ['Credit Score:', isQual ? (sacco.creditScore.score ?? 'N/A') : 'N/A'],
+        ['Credit Standing:', isQual ? sacco.creditScore.description : 'Not qualify for crediting'],
+        [''],
+        ['Membership Statistics'],
+        ['Total Members:', sacco.totalMembers],
+        ['Male Members:', sacco.maleMembers],
+        ['Female Members:', sacco.femaleMembers],
+        ['Youth Members:', sacco.youthMembers],
+        ['Total Meetings:', sacco.totalMeetings],
+        [''],
+        ['Financial Statistics'],
+        ['Total Savings Balance:', 'UGX ' + formatNumber(sacco.savingsStats.totalBalance)],
+        ['Active Loans:', isQual ? sacco.loanStats.total : '--'],
+        ['Total Principal:', isQual ? 'UGX ' + formatNumber(sacco.loanStats.principal) : '--'],
+        ['Total Interest:', isQual ? 'UGX ' + formatNumber(sacco.loanStats.interest) : '--'],
+        ['Total Repayments:', isQual ? 'UGX ' + formatNumber(sacco.loanStats.repayments) : '--'],
+        ['Max Loan Amount:', isQual ? 'UGX ' + formatNumber(sacco.maxLoanAmount) : '--'],
+        [''],
+        ['Performance Metrics'],
+        ['Average Attendance:', sacco.averageAttendance + '%'],
+        ['Savings per Member:', sacco.totalMembers > 0
+            ? 'UGX ' + formatNumber(sacco.savingsStats.totalBalance / sacco.totalMembers)
+            : 'N/A'
+        ]
+    ].map(row => row.join(',')).join('\n');
 
-            downloadCSV(csvContent, `${capitalizeGroupName(sacco.name)}_credit_report.csv`);
-        }
+    downloadCSV(csvContent, `${capitalizeGroupName(sacco.name)}_credit_report.csv`);
+}
 
         //     function exportAllData() {
         //     // Filter by groups that are visible and qualified for crediting
