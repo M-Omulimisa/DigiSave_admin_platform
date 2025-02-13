@@ -142,10 +142,10 @@ class SaccoController extends AdminController
             return '<a href="' . url('/transactions?sacco_id=' . $this->id) . '">View Transactions</a>';
     });
 
-    $grid->column('view_credit', __('Credit Score'))
-    ->display(function () {
-        return '<a href="' . url('/credit?sacco_id=' . $this->id) . '">View Credit</a>';
-    });
+    // $grid->column('view_credit', __('Credit Score'))
+    // ->display(function () {
+    //     return '<a href="' . url('/credit?sacco_id=' . $this->id) . '">View Credit</a>';
+    // });
 
     $grid->column('created_at', __('Created At'))
             ->display(function ($date) {
