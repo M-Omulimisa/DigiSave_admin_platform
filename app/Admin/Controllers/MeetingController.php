@@ -74,19 +74,19 @@ class MeetingController extends AdminController
                 ->orderBy('created_at', $sortOrder);
         }
 
-        // Apply date filter if set
-        if ($startDate = request('start_date')) {
-            $grid->model()->whereDate('date', '>=', $startDate);
-        }
-        if ($endDate = request('end_date')) {
-            $grid->model()->whereDate('date', '<=', $endDate);
-        }
-
-        // Apply district filter if set
+        // Process filters
         if ($district = request('district')) {
             $grid->model()->whereHas('sacco', function ($query) use ($district) {
                 $query->where('district', 'like', "%{$district}%");
             });
+        }
+
+        if ($startDate = request('start_date')) {
+            $grid->model()->whereDate('date', '>=', $startDate);
+        }
+
+        if ($endDate = request('end_date')) {
+            $grid->model()->whereDate('date', '<=', $endDate);
         }
 
         $grid->model()
@@ -101,7 +101,7 @@ class MeetingController extends AdminController
             });
         })->placeholder('Search by group name');
 
-        // Custom tools
+        // Tools section with filters and modals
         $grid->tools(function ($tools) {
             $tools->append('
                 <div class="pull-right" style="margin-right: 10px;">
@@ -129,7 +129,7 @@ class MeetingController extends AdminController
                     <i class="fa fa-refresh"></i> Reset Filters
                 </a>
 
-                <!-- Date Range Modal -->
+                <!-- Date Filter Modal -->
                 <div class="modal fade" id="dateFilterModal" tabindex="-1" role="dialog">
                     <div class="modal-dialog" role="document">
                         <div class="modal-content">
@@ -165,21 +165,58 @@ class MeetingController extends AdminController
                                 <button type="button" class="close" data-dismiss="modal">&times;</button>
                                 <h4 class="modal-title">Meeting Details</h4>
                             </div>
-                            <div class="modal-body" id="meetingDetailsContent">
-                                Loading...
-                            </div>
+                            <div class="modal-body" id="meetingDetailsContent"></div>
                         </div>
                     </div>
                 </div>
             ');
 
-            // Add JavaScript for meeting details modal
+            // Meeting details JavaScript
             Admin::script('
                 $(function () {
-                    $(".meeting-details").click(function(e) {
+                    $(".view-meeting").click(function(e) {
                         e.preventDefault();
-                        var meetingId = $(this).data("id");
-                        $("#meetingDetailsContent").load("' . url('admin/meetings') . '/" + meetingId + " .meeting-details-content");
+                        var meeting = $(this).data("meeting");
+                        var attendanceHtml = meeting.formattedAttendance;
+                        var minutesHtml = meeting.formattedMinutes;
+
+                        var content = `
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5>Basic Information</h5>
+                                    <table class="table">
+                                        <tr>
+                                            <th>Group Name:</th>
+                                            <td>${meeting.sacco_name}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Meeting:</th>
+                                            <td>${meeting.name}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Date:</th>
+                                            <td>${meeting.date}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>District:</th>
+                                            <td>${meeting.district}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5>Attendance</h5>
+                                    ${attendanceHtml}
+                                </div>
+                            </div>
+                            <div class="row mt-4">
+                                <div class="col-md-12">
+                                    <h5>Minutes</h5>
+                                    ${minutesHtml}
+                                </div>
+                            </div>
+                        `;
+
+                        $("#meetingDetailsContent").html(content);
                         $("#meetingDetailsModal").modal("show");
                     });
                 });
@@ -196,8 +233,18 @@ class MeetingController extends AdminController
 
         // Meeting column with modal trigger
         $grid->column('name', __('Meeting'))->display(function ($name) {
-            return '<a href="javascript:void(0);" class="meeting-details" data-id="' . $this->id . '">'
-                . ucwords(strtolower($name)) . '</a>';
+            $meetingData = [
+                'name' => $name,
+                'date' => $this->date,
+                'sacco_name' => $this->sacco->name,
+                'district' => $this->sacco->district,
+                'formattedAttendance' => $this->formatAttendance($this->members),
+                'formattedMinutes' => $this->formatMinutes($this->minutes)
+            ];
+
+            return '<a href="javascript:void(0);" class="view-meeting"
+                data-meeting=\'' . json_encode($meetingData) . '\'>' .
+                ucwords(strtolower($name)) . '</a>';
         })->sortable();
 
         $grid->column('date', __('Date'))->sortable();
@@ -217,14 +264,56 @@ class MeetingController extends AdminController
             $memberData = json_decode($members, true);
             if (json_last_error() === JSON_ERROR_NONE && is_array($memberData) && !empty($memberData)) {
                 if (isset($memberData['presentMembersIds']) && is_array($memberData['presentMembersIds'])) {
-                    $memberCount = count($memberData['presentMembersIds']);
-                    return "{$memberCount} members present";
+                    return count($memberData['presentMembersIds']) . ' members present';
                 }
             }
             return 'No attendance recorded';
         });
 
+        $grid->disableBatchActions();
+
         return $grid;
+    }
+
+    private function formatAttendance($members)
+    {
+        $memberData = json_decode($members, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($memberData) && !empty($memberData)) {
+            if (isset($memberData['presentMembersIds']) && is_array($memberData['presentMembersIds'])) {
+                $formattedMembers = '<div class="card-deck">';
+                foreach ($memberData['presentMembersIds'] as $member) {
+                    $formattedMembers .= '<div class="card text-white bg-info mb-3" style="max-width: 18rem;">';
+                    $formattedMembers .= '<div class="card-body"><h5 class="card-title">' . $member['name'] . '</h5></div>';
+                    $formattedMembers .= '</div>';
+                }
+                $formattedMembers .= '</div>';
+                return $formattedMembers;
+            }
+        }
+        return 'No attendance recorded';
+    }
+
+    private function formatMinutes($minutes)
+    {
+        $minutesData = json_decode($minutes, true);
+        if (json_last_error() === JSON_ERROR_NONE) {
+            $formattedMinutes = '<div class="row">';
+            foreach ($minutesData as $section => $items) {
+                $formattedMinutes .= '<div class="col-md-6"><div class="card"><div class="card-body">';
+                $formattedMinutes .= '<h5 class="card-title">' . ucfirst(str_replace('_', ' ', $section)) .
+                    ':</h5><ul class="list-group list-group-flush">';
+                foreach ($items as $item) {
+                    if (isset($item['title']) && isset($item['value'])) {
+                        $formattedMinutes .= '<li class="list-group-item">' . $item['title'] . ': ' .
+                            $item['value'] . '</li>';
+                    }
+                }
+                $formattedMinutes .= '</ul></div></div></div>';
+            }
+            $formattedMinutes .= '</div>';
+            return $formattedMinutes;
+        }
+        return 'No minutes recorded';
     }
 
     protected function detail($id)
