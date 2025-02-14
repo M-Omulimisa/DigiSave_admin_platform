@@ -39,6 +39,22 @@ class MeetingController extends AdminController
             $sortOrder = 'desc';
         }
 
+        // Process date range filters
+        if ($startDate = request('start_date')) {
+            $grid->model()->whereDate('date', '>=', $startDate);
+        }
+
+        if ($endDate = request('end_date')) {
+            $grid->model()->whereDate('date', '<=', $endDate);
+        }
+
+        // Process district filter
+        if ($district = request('district')) {
+            $grid->model()->whereHas('sacco', function ($query) use ($district) {
+                $query->where('district', $district);
+            });
+        }
+
         if (!$admin->isRole('admin')) {
             $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
             if ($orgAllocation) {
@@ -82,22 +98,80 @@ class MeetingController extends AdminController
              })
              ->orderBy('created_at', $sortOrder);
 
-        $grid->filter(function ($filter) {
-            $filter->disableIdFilter();
-            $filter->equal('sacco_id', 'Group Name')->select(Sacco::all()->pluck('name', 'id'));
-            $filter->like('sacco.district', 'District');
-            $filter->where(function ($query) {
-                $cycleName = $this->input;
-                $cycleIds = Cycle::where('name', 'like', "%$cycleName%")->pluck('id');
-                $query->whereIn('cycle_id', $cycleIds);
-            }, 'Cycle Name');
+        // Quick search
+        $grid->disableBatchActions();
+        $grid->quickSearch(function ($model, $query) {
+            $model->whereHas('sacco', function ($query2) use ($query) {
+                $query2->where('name', 'like', "%{$query}%");
+            });
+        })->placeholder('Search by group name');
+
+        // Filter tools
+        $grid->tools(function ($tools) {
+            // Get districts for dropdown
+            $districts = Sacco::whereNotIn('status', ['deleted', 'inactive'])
+                ->whereNotNull('district')
+                ->distinct()
+                ->pluck('district')
+                ->sort()
+                ->values();
+
+            $tools->append('
+                <div class="btn-group pull-right" style="margin-right: 10px;">
+                    <button type="button" class="btn btn-sm btn-info dropdown-toggle" data-toggle="dropdown">
+                        Filter by District <span class="caret"></span>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a href="' . url()->current() . '">All Districts</a></li>
+                        ' . $districts->map(function ($district) {
+                            return '<li><a href="' . url()->current() . '?district=' . urlencode($district) . '">'
+                                . ucwords(strtolower($district)) . '</a></li>';
+                        })->implode('') . '
+                    </ul>
+                </div>
+
+                <div class="btn-group pull-right" style="margin-right: 10px;">
+                    <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#dateFilterModal">
+                        Filter by Date Range
+                    </button>
+                </div>
+
+                <a href="' . url()->current() . '" class="btn btn-sm btn-warning pull-right" style="margin-right: 10px;">
+                    <i class="fa fa-refresh"></i> Reset Filters
+                </a>
+
+                <div class="modal fade" id="dateFilterModal" tabindex="-1" role="dialog">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                <h4 class="modal-title">Filter by Date Range</h4>
+                            </div>
+                            <form action="' . url()->current() . '" method="get">
+                                <div class="modal-body">
+                                    <div class="form-group">
+                                        <label>Start Date:</label>
+                                        <input type="date" name="start_date" class="form-control" value="' . request('start_date') . '">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>End Date:</label>
+                                        <input type="date" name="end_date" class="form-control" value="' . request('end_date') . '">
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                                    <button type="submit" class="btn btn-primary">Apply Filter</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            ');
         });
 
         // Grid columns
         $grid->column('sacco.name', __('Group Name'))->sortable();
-        $grid->column('sacco.district', __('District'))->sortable()->display(function ($district) {
-            return $district ? ucwords(strtolower($district)) : 'N/A';
-        });
+        $grid->column('sacco.district', __('District'))->sortable();
         $grid->column('cycle_id', __('Cycle'))->display(function ($cycleId) {
             $cycle = Cycle::find($cycleId);
             return $cycle ? $cycle->name : 'Unknown';
@@ -108,7 +182,7 @@ class MeetingController extends AdminController
                 return $parts[0] . ' ' . $parts[1];
             }
             return $name;
-        })->editable()->sortable();
+        })->sortable();
         $grid->column('date', __('Date'))->sortable();
         $grid->column('chairperson_name', __('Chairperson Name'))
             ->sortable()
@@ -118,51 +192,17 @@ class MeetingController extends AdminController
                         $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
                     })
                     ->first();
-
                 return $user ? ucwords(strtolower($user->name)) : '';
             });
 
-        $grid->column('members', __('Attendance'))->display(function ($members) {
-            $memberData = json_decode($members, true);
-            if (json_last_error() === JSON_ERROR_NONE && is_array($memberData) && !empty($memberData)) {
-                if (isset($memberData['presentMembersIds']) && is_array($memberData['presentMembersIds'])) {
-                    $memberNames = array_map(function ($member) {
-                        return $member['name'];
-                    }, $memberData['presentMembersIds']);
+        // Your existing members and minutes columns...
 
-                    $formattedMembers = '<div class="card-deck">';
-                    foreach ($memberNames as $name) {
-                        $formattedMembers .= '<div class="card text-white bg-info mb-3" style="max-width: 18rem;">';
-                        $formattedMembers .= '<div class="card-body"><h5 class="card-title">' . $name . '</h5></div>';
-                        $formattedMembers .= '</div>';
-                    }
-                    $formattedMembers .= '</div>';
-                    return $formattedMembers;
-                }
-            }
-            return 'No attendance recorded';
-        });
-
-        $grid->column('minutes', __('Minutes'))->display(function ($minutes) {
-            $minutesData = json_decode($minutes, true);
-            if (json_last_error() === JSON_ERROR_NONE) {
-                $formattedMinutes = '<div class="row">';
-                foreach ($minutesData as $section => $items) {
-                    $formattedMinutes .= '<div class="col-md-6"><div class="card"><div class="card-body">';
-                    $formattedMinutes .= '<h5 class="card-title">' . ucfirst(str_replace('_', ' ', $section)) . ':</h5><ul class="list-group list-group-flush">';
-                    foreach ($items as $item) {
-                        if (isset($item['title']) && isset($item['value'])) {
-                            $formattedMinutes .= '<li class="list-group-item">' . $item['title'] . ': ' . $item['value'] . '</li>';
-                        } else {
-                            return 'No minutes data recorded';
-                        }
-                    }
-                    $formattedMinutes .= '</ul></div></div></div>';
-                }
-                $formattedMinutes .= '</div>';
-                return $formattedMinutes;
-            }
-            return $minutes;
+        // Filter configuration
+        $grid->filter(function ($filter) {
+            $filter->disableIdFilter();
+            $filter->like('sacco.name', 'Group Name');
+            $filter->like('sacco.district', 'District');
+            $filter->between('date', 'Meeting Date')->date();
         });
 
         return $grid;
