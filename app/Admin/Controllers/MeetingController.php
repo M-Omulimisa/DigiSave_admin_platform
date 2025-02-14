@@ -39,22 +39,6 @@ class MeetingController extends AdminController
             $sortOrder = 'desc';
         }
 
-        // Process date range filters
-        if ($startDate = request('start_date')) {
-            $grid->model()->whereDate('date', '>=', $startDate);
-        }
-
-        if ($endDate = request('end_date')) {
-            $grid->model()->whereDate('date', '<=', $endDate);
-        }
-
-        // Process district filter
-        if ($district = request('district')) {
-            $grid->model()->whereHas('sacco', function ($query) use ($district) {
-                $query->where('district', $district);
-            });
-        }
-
         if (!$admin->isRole('admin')) {
             $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
             if ($orgAllocation) {
@@ -62,12 +46,10 @@ class MeetingController extends AdminController
                 $adminRegion = trim($orgAllocation->region);
 
                 if (empty($adminRegion)) {
-                    // If no region is specified, get all SACCOs for the organization
                     $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)
                         ->pluck('sacco_id')
                         ->toArray();
                 } else {
-                    // Get only SACCOs in the admin's region
                     $saccoIds = VslaOrganisationSacco::join('saccos', 'vsla_organisation_sacco.sacco_id', '=', 'saccos.id')
                         ->where('vsla_organisation_sacco.vsla_organisation_id', $orgId)
                         ->whereRaw('LOWER(saccos.district) = ?', [strtolower($adminRegion)])
@@ -92,42 +74,49 @@ class MeetingController extends AdminController
                 ->orderBy('created_at', $sortOrder);
         }
 
+        // Apply date filter if set
+        if ($startDate = request('start_date')) {
+            $grid->model()->whereDate('date', '>=', $startDate);
+        }
+        if ($endDate = request('end_date')) {
+            $grid->model()->whereDate('date', '<=', $endDate);
+        }
+
+        // Apply district filter if set
+        if ($district = request('district')) {
+            $grid->model()->whereHas('sacco', function ($query) use ($district) {
+                $query->where('district', 'like', "%{$district}%");
+            });
+        }
+
         $grid->model()
              ->whereHas('cycle', function ($query) {
                 $query->where('status', 'active');
-             })
-             ->orderBy('created_at', $sortOrder);
+             });
 
-        // Quick search
-        $grid->disableBatchActions();
+        // Quick search for group name
         $grid->quickSearch(function ($model, $query) {
             $model->whereHas('sacco', function ($query2) use ($query) {
                 $query2->where('name', 'like', "%{$query}%");
             });
         })->placeholder('Search by group name');
 
-        // Filter tools
+        // Custom tools
         $grid->tools(function ($tools) {
-            // Get districts for dropdown
-            $districts = Sacco::whereNotIn('status', ['deleted', 'inactive'])
-                ->whereNotNull('district')
-                ->distinct()
-                ->pluck('district')
-                ->sort()
-                ->values();
-
             $tools->append('
-                <div class="btn-group pull-right" style="margin-right: 10px;">
-                    <button type="button" class="btn btn-sm btn-info dropdown-toggle" data-toggle="dropdown">
-                        Filter by District <span class="caret"></span>
-                    </button>
-                    <ul class="dropdown-menu">
-                        <li><a href="' . url()->current() . '">All Districts</a></li>
-                        ' . $districts->map(function ($district) {
-                            return '<li><a href="' . url()->current() . '?district=' . urlencode($district) . '">'
-                                . ucwords(strtolower($district)) . '</a></li>';
-                        })->implode('') . '
-                    </ul>
+                <div class="pull-right" style="margin-right: 10px;">
+                    <form action="' . url()->current() . '" method="GET" style="display: inline-block;">
+                        <div class="input-group input-group-sm" style="width: 200px;">
+                            <input type="text" name="district" class="form-control"
+                                placeholder="Search district..."
+                                value="' . request('district', '') . '">
+                            <span class="input-group-btn">
+                                <button type="submit" class="btn btn-info btn-flat">
+                                    <i class="fa fa-search"></i>
+                                </button>
+                            </span>
+                        </div>
+                    </form>
                 </div>
 
                 <div class="btn-group pull-right" style="margin-right: 10px;">
@@ -140,6 +129,7 @@ class MeetingController extends AdminController
                     <i class="fa fa-refresh"></i> Reset Filters
                 </a>
 
+                <!-- Date Range Modal -->
                 <div class="modal fade" id="dateFilterModal" tabindex="-1" role="dialog">
                     <div class="modal-dialog" role="document">
                         <div class="modal-content">
@@ -166,6 +156,33 @@ class MeetingController extends AdminController
                         </div>
                     </div>
                 </div>
+
+                <!-- Meeting Details Modal -->
+                <div class="modal fade" id="meetingDetailsModal" tabindex="-1" role="dialog">
+                    <div class="modal-dialog modal-lg" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                <h4 class="modal-title">Meeting Details</h4>
+                            </div>
+                            <div class="modal-body" id="meetingDetailsContent">
+                                Loading...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ');
+
+            // Add JavaScript for meeting details modal
+            Admin::script('
+                $(function () {
+                    $(".meeting-details").click(function(e) {
+                        e.preventDefault();
+                        var meetingId = $(this).data("id");
+                        $("#meetingDetailsContent").load("' . url('admin/meetings') . '/" + meetingId + " .meeting-details-content");
+                        $("#meetingDetailsModal").modal("show");
+                    });
+                });
             ');
         });
 
@@ -176,15 +193,16 @@ class MeetingController extends AdminController
             $cycle = Cycle::find($cycleId);
             return $cycle ? $cycle->name : 'Unknown';
         });
+
+        // Meeting column with modal trigger
         $grid->column('name', __('Meeting'))->display(function ($name) {
-            $parts = explode(' ', $name);
-            if (count($parts) >= 2) {
-                return $parts[0] . ' ' . $parts[1];
-            }
-            return $name;
+            return '<a href="javascript:void(0);" class="meeting-details" data-id="' . $this->id . '">'
+                . ucwords(strtolower($name)) . '</a>';
         })->sortable();
+
         $grid->column('date', __('Date'))->sortable();
-        $grid->column('chairperson_name', __('Chairperson Name'))
+
+        $grid->column('chairperson_name', __('Chairperson'))
             ->sortable()
             ->display(function () {
                 $user = User::where('sacco_id', $this->sacco_id)
@@ -195,14 +213,15 @@ class MeetingController extends AdminController
                 return $user ? ucwords(strtolower($user->name)) : '';
             });
 
-        // Your existing members and minutes columns...
-
-        // Filter configuration
-        $grid->filter(function ($filter) {
-            $filter->disableIdFilter();
-            $filter->like('sacco.name', 'Group Name');
-            $filter->like('sacco.district', 'District');
-            $filter->between('date', 'Meeting Date')->date();
+        $grid->column('members', __('Attendance'))->display(function ($members) {
+            $memberData = json_decode($members, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($memberData) && !empty($memberData)) {
+                if (isset($memberData['presentMembersIds']) && is_array($memberData['presentMembersIds'])) {
+                    $memberCount = count($memberData['presentMembersIds']);
+                    return "{$memberCount} members present";
+                }
+            }
+            return 'No attendance recorded';
         });
 
         return $grid;
