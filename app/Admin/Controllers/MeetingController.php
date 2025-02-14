@@ -238,14 +238,14 @@ class MeetingController extends AdminController
                 'date' => $this->date,
                 'sacco_name' => $this->sacco->name,
                 'district' => $this->sacco->district,
-                'formattedAttendance' => $this->formatMemberDisplay($this->members),
-                'formattedMinutes' => $this->formatMinutesDisplay($this->minutes)
+                'formattedAttendance' => $this->formatMemberDisplay($this->members), // Now calls the model method
+                'formattedMinutes' => $this->formatMinutesDisplay($this->minutes)    // Now calls the model method
             ];
 
             return '<a href="javascript:void(0);" class="view-meeting"
                 data-meeting=\'' . json_encode($meetingData) . '\'>' .
                 ucwords(strtolower($name)) . '</a>';
-        })->sortable();
+        });
 
         $grid->column('date', __('Date'))->sortable();
 
@@ -274,47 +274,6 @@ class MeetingController extends AdminController
 
         return $grid;
     }
-
-    public function formatMemberDisplay($members)
-{
-    $memberData = json_decode($members, true);
-    if (json_last_error() === JSON_ERROR_NONE && is_array($memberData) && !empty($memberData)) {
-        if (isset($memberData['presentMembersIds']) && is_array($memberData['presentMembersIds'])) {
-            $formattedMembers = '<div class="card-deck">';
-            foreach ($memberData['presentMembersIds'] as $member) {
-                $formattedMembers .= '<div class="card text-white bg-info mb-3" style="max-width: 18rem;">';
-                $formattedMembers .= '<div class="card-body"><h5 class="card-title">' . $member['name'] . '</h5></div>';
-                $formattedMembers .= '</div>';
-            }
-            $formattedMembers .= '</div>';
-            return $formattedMembers;
-        }
-    }
-    return 'No attendance recorded';
-}
-
-public function formatMinutesDisplay($minutes)
-{
-    $minutesData = json_decode($minutes, true);
-    if (json_last_error() === JSON_ERROR_NONE) {
-        $formattedMinutes = '<div class="row">';
-        foreach ($minutesData as $section => $items) {
-            $formattedMinutes .= '<div class="col-md-6"><div class="card"><div class="card-body">';
-            $formattedMinutes .= '<h5 class="card-title">' . ucfirst(str_replace('_', ' ', $section)) .
-                ':</h5><ul class="list-group list-group-flush">';
-            foreach ($items as $item) {
-                if (isset($item['title']) && isset($item['value'])) {
-                    $formattedMinutes .= '<li class="list-group-item">' . $item['title'] . ': ' .
-                        $item['value'] . '</li>';
-                }
-            }
-            $formattedMinutes .= '</ul></div></div></div>';
-        }
-        $formattedMinutes .= '</div>';
-        return $formattedMinutes;
-    }
-    return 'No minutes recorded';
-}
 
     protected function detail($id)
     {

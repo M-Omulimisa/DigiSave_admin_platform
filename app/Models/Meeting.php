@@ -25,6 +25,47 @@ class Meeting extends Model
         return $this->belongsTo(Cycle::class);
     }
 
+    public function formatMemberDisplay($members)
+    {
+        $memberData = json_decode($members, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($memberData) && !empty($memberData)) {
+            if (isset($memberData['presentMembersIds']) && is_array($memberData['presentMembersIds'])) {
+                $formattedMembers = '<div class="card-deck">';
+                foreach ($memberData['presentMembersIds'] as $member) {
+                    $formattedMembers .= '<div class="card text-white bg-info mb-3" style="max-width: 18rem;">';
+                    $formattedMembers .= '<div class="card-body"><h5 class="card-title">' . $member['name'] . '</h5></div>';
+                    $formattedMembers .= '</div>';
+                }
+                $formattedMembers .= '</div>';
+                return $formattedMembers;
+            }
+        }
+        return 'No attendance recorded';
+    }
+
+    public function formatMinutesDisplay($minutes)
+    {
+        $minutesData = json_decode($minutes, true);
+        if (json_last_error() === JSON_ERROR_NONE) {
+            $formattedMinutes = '<div class="row">';
+            foreach ($minutesData as $section => $items) {
+                $formattedMinutes .= '<div class="col-md-6"><div class="card"><div class="card-body">';
+                $formattedMinutes .= '<h5 class="card-title">' . ucfirst(str_replace('_', ' ', $section)) .
+                    ':</h5><ul class="list-group list-group-flush">';
+                foreach ($items as $item) {
+                    if (isset($item['title']) && isset($item['value'])) {
+                        $formattedMinutes .= '<li class="list-group-item">' . $item['title'] . ': ' .
+                            $item['value'] . '</li>';
+                    }
+                }
+                $formattedMinutes .= '</ul></div></div></div>';
+            }
+            $formattedMinutes .= '</div>';
+            return $formattedMinutes;
+        }
+        return 'No minutes recorded';
+    }
+
     public function sacco()
     {
         return $this->belongsTo(Sacco::class);
