@@ -25,7 +25,7 @@ class Meeting extends Model
         return $this->belongsTo(Cycle::class);
     }
 
-    protected function formatAttendanceForDisplay($members)
+    public function formatAttendanceForDisplay($members)
 {
     $memberData = json_decode($members, true);
     if (json_last_error() === JSON_ERROR_NONE && is_array($memberData) && !empty($memberData)) {
@@ -43,7 +43,7 @@ class Meeting extends Model
     return 'No attendance recorded';
 }
 
-protected function formatMinutesForDisplay($minutes)
+public function formatMinutesForDisplay($minutes)
 {
     $minutesData = json_decode($minutes, true);
     if (json_last_error() === JSON_ERROR_NONE) {
