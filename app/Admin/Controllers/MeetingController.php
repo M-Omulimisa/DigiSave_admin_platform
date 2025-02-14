@@ -77,7 +77,7 @@ class MeetingController extends AdminController
         // Process filters
         if ($district = request('district')) {
             $grid->model()->whereHas('sacco', function ($query) use ($district) {
-                $query->where('district', 'like', "%{$district}%");
+                $query->where('district', 'like', "%{$district}%");  // Fixed from $distrt321`q2wd35tr6ict
             });
         }
 
@@ -233,13 +233,16 @@ class MeetingController extends AdminController
 
         // Meeting column with modal trigger
         $grid->column('name', __('Meeting'))->display(function ($name) {
+            $attendanceHtml = $this->formatAttendanceForDisplay($this->members);
+            $minutesHtml = $this->formatMinutesForDisplay($this->minutes);
+
             $meetingData = [
                 'name' => $name,
                 'date' => $this->date,
                 'sacco_name' => $this->sacco->name,
                 'district' => $this->sacco->district,
-                'formattedAttendance' => $this->formatMemberDisplay($this->members), // Now calls the model method
-                'formattedMinutes' => $this->formatMinutesDisplay($this->minutes)    // Now calls the model method
+                'formattedAttendance' => $attendanceHtml,
+                'formattedMinutes' => $minutesHtml
             ];
 
             return '<a href="javascript:void(0);" class="view-meeting"
