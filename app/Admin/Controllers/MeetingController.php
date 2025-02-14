@@ -20,104 +20,110 @@ class MeetingController extends AdminController
     protected $title = 'Meetings';
 
     protected function grid()
-{
-    $grid = new Grid(new Meeting());
+    {
+        $grid = new Grid(new Meeting());
 
-    $grid->model()->whereHas('sacco', function ($query) {
-        $query->whereNotNull('name')
-              ->where('name', '!=', '')
-              ->whereNotIn('status', ['deleted', 'inactive']);
-    });
-
-    $u = Auth::user();
-    $adminId = $u->id;
-
-    $admin = Admin::user();
-    $adminId = $admin->id;
-
-    // Default sort order
-    $sortOrder = request()->get('_sort', 'desc');
-    if (!in_array($sortOrder, ['asc', 'desc'])) {
-        $sortOrder = 'desc';
-    }
-
-    if (!$admin->isRole('admin')) {
-        $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
-        i $orgId = $orgAllocation->vsla_organisation_id;
-        $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
-        $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
-
-        // dd($saccoIds);
-
-        $grid->model()
-        ->whereIn('sacco_id', $saccoIds)
-        ->whereHas('sacco', function ($query) {
-            $query->whereNotIn('status', ['deleted', 'inactive']);
-        })
-        ->orderBy('created_at', $sortOrder);
-            // ->orderBy('created_at', $sortOrder);
-
-        $grid->disableCreateButton();
-
-    } else {
-        // For admins, display all records ordered by created_at
-        $grid->model()
-        ->whereHas('sacco', function ($query) {
-            $query->whereNotIn('status', ['deleted', 'inactive']);
-        })
-        ->orderBy('created_at', $sortOrder);
-    }
-
-    $grid->model()
-         ->whereHas('cycle', function ($query) {
-            $query->where('status', 'active');
-         })
-         ->orderBy('created_at', $sortOrder);
-
-    $grid->filter(function ($filter) {
-        $filter->disableIdFilter();
-
-        // Filter by group name
-        $filter->equal('sacco_id', 'Group Name')->select(Sacco::all()->pluck('name', 'id'));
-
-        // Filter by cycle name
-        $filter->where(function ($query) {
-            $cycleName = $this->input;
-            $cycleIds = Cycle::where('name', 'like', "%$cycleName%")->pluck('id');
-            $query->whereIn('cycle_id', $cycleIds);
-        }, 'Cycle Name');
-    });
-
-    $grid->column('sacco.name', __('Group Name'));
-    // Display the cycle name directly using its id
-    $grid->column('cycle_id', __('Cycle'))->display(function ($cycleId) {
-        $cycle = Cycle::find($cycleId);
-        return $cycle ? $cycle->name : 'Unknown';
-    });
-    $grid->column('name', __('Meeting'))->display(function ($name) {
-        $parts = explode(' ', $name);
-        if (count($parts) >= 2) {
-            // Keep 'Meeting' and the first number only
-            return $parts[0] . ' ' . $parts[1];
-        }
-        return $name;
-    })->editable()->sortable();
-    $grid->column('date', __('Date'));
-    $grid->column('chairperson_name', __('Chairperson Name'))
-        ->sortable()
-        ->display(function () {
-            $user = User::where('sacco_id', $this->sacco_id)
-                ->whereHas('position', function ($query) {
-                    $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
-                })
-                ->first();
-
-            return $user ? ucwords(strtolower($user->name)) : '';
+        $grid->model()->whereHas('sacco', function ($query) {
+            $query->whereNotNull('name')
+                  ->where('name', '!=', '')
+                  ->whereNotIn('status', ['deleted', 'inactive']);
         });
+
+        $u = Auth::user();
+        $admin = Admin::user();
+        $adminId = $admin->id;
+
+        // Default sort order
+        $sortOrder = request()->get('_sort', 'desc');
+        if (!in_array($sortOrder, ['asc', 'desc'])) {
+            $sortOrder = 'desc';
+        }
+
+        if (!$admin->isRole('admin')) {
+            $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+            if ($orgAllocation) {
+                $orgId = $orgAllocation->vsla_organisation_id;
+                $adminRegion = trim($orgAllocation->region);
+
+                if (empty($adminRegion)) {
+                    // If no region is specified, get all SACCOs for the organization
+                    $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)
+                        ->pluck('sacco_id')
+                        ->toArray();
+                } else {
+                    // Get only SACCOs in the admin's region
+                    $saccoIds = VslaOrganisationSacco::join('saccos', 'vsla_organisation_sacco.sacco_id', '=', 'saccos.id')
+                        ->where('vsla_organisation_sacco.vsla_organisation_id', $orgId)
+                        ->whereRaw('LOWER(saccos.district) = ?', [strtolower($adminRegion)])
+                        ->pluck('sacco_id')
+                        ->toArray();
+                }
+
+                $grid->model()
+                    ->whereIn('sacco_id', $saccoIds)
+                    ->whereHas('sacco', function ($query) {
+                        $query->whereNotIn('status', ['deleted', 'inactive']);
+                    })
+                    ->orderBy('created_at', $sortOrder);
+
+                $grid->disableCreateButton();
+            }
+        } else {
+            $grid->model()
+                ->whereHas('sacco', function ($query) {
+                    $query->whereNotIn('status', ['deleted', 'inactive']);
+                })
+                ->orderBy('created_at', $sortOrder);
+        }
+
+        $grid->model()
+             ->whereHas('cycle', function ($query) {
+                $query->where('status', 'active');
+             })
+             ->orderBy('created_at', $sortOrder);
+
+        $grid->filter(function ($filter) {
+            $filter->disableIdFilter();
+            $filter->equal('sacco_id', 'Group Name')->select(Sacco::all()->pluck('name', 'id'));
+            $filter->like('sacco.district', 'District');
+            $filter->where(function ($query) {
+                $cycleName = $this->input;
+                $cycleIds = Cycle::where('name', 'like', "%$cycleName%")->pluck('id');
+                $query->whereIn('cycle_id', $cycleIds);
+            }, 'Cycle Name');
+        });
+
+        // Grid columns
+        $grid->column('sacco.name', __('Group Name'))->sortable();
+        $grid->column('sacco.district', __('District'))->sortable()->display(function ($district) {
+            return $district ? ucwords(strtolower($district)) : 'N/A';
+        });
+        $grid->column('cycle_id', __('Cycle'))->display(function ($cycleId) {
+            $cycle = Cycle::find($cycleId);
+            return $cycle ? $cycle->name : 'Unknown';
+        });
+        $grid->column('name', __('Meeting'))->display(function ($name) {
+            $parts = explode(' ', $name);
+            if (count($parts) >= 2) {
+                return $parts[0] . ' ' . $parts[1];
+            }
+            return $name;
+        })->editable()->sortable();
+        $grid->column('date', __('Date'))->sortable();
+        $grid->column('chairperson_name', __('Chairperson Name'))
+            ->sortable()
+            ->display(function () {
+                $user = User::where('sacco_id', $this->sacco_id)
+                    ->whereHas('position', function ($query) {
+                        $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+                    })
+                    ->first();
+
+                return $user ? ucwords(strtolower($user->name)) : '';
+            });
 
         $grid->column('members', __('Attendance'))->display(function ($members) {
             $memberData = json_decode($members, true);
-            // dd($memberData); // Dump and die to inspect the members data
             if (json_last_error() === JSON_ERROR_NONE && is_array($memberData) && !empty($memberData)) {
                 if (isset($memberData['presentMembersIds']) && is_array($memberData['presentMembersIds'])) {
                     $memberNames = array_map(function ($member) {
@@ -137,32 +143,30 @@ class MeetingController extends AdminController
             return 'No attendance recorded';
         });
 
-    // Update the 'minutes' column
-    $grid->column('minutes', __('Minutes'))->display(function ($minutes) {
-        $minutesData = json_decode($minutes, true);
-        if (json_last_error() === JSON_ERROR_NONE) {
-            $formattedMinutes = '<div class="row">';
-            foreach ($minutesData as $section => $items) {
-                $formattedMinutes .= '<div class="col-md-6"><div class="card"><div class="card-body">';
-                $formattedMinutes .= '<h5 class="card-title">' . ucfirst(str_replace('_', ' ', $section)) . ':</h5><ul class="list-group list-group-flush">';
-                foreach ($items as $item) {
-                    if (isset($item['title']) && isset($item['value'])) {
-                        $formattedMinutes .= '<li class="list-group-item">' . $item['title'] . ': ' . $item['value'] . '</li>';
-                    } else {
-                        return 'No minutes data recorded';
+        $grid->column('minutes', __('Minutes'))->display(function ($minutes) {
+            $minutesData = json_decode($minutes, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $formattedMinutes = '<div class="row">';
+                foreach ($minutesData as $section => $items) {
+                    $formattedMinutes .= '<div class="col-md-6"><div class="card"><div class="card-body">';
+                    $formattedMinutes .= '<h5 class="card-title">' . ucfirst(str_replace('_', ' ', $section)) . ':</h5><ul class="list-group list-group-flush">';
+                    foreach ($items as $item) {
+                        if (isset($item['title']) && isset($item['value'])) {
+                            $formattedMinutes .= '<li class="list-group-item">' . $item['title'] . ': ' . $item['value'] . '</li>';
+                        } else {
+                            return 'No minutes data recorded';
+                        }
                     }
+                    $formattedMinutes .= '</ul></div></div></div>';
                 }
-                $formattedMinutes .= '</ul></div></div></div>';
+                $formattedMinutes .= '</div>';
+                return $formattedMinutes;
             }
-            $formattedMinutes .= '</div>';
-            return $formattedMinutes;
-        }
-        return $minutes; // return as is if JSON decoding fails
-    });
+            return $minutes;
+        });
 
-    return $grid;
-}
-
+        return $grid;
+    }
 
     protected function detail($id)
     {
