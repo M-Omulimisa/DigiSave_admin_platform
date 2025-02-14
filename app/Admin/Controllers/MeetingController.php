@@ -43,23 +43,22 @@ class MeetingController extends AdminController
 
     if (!$admin->isRole('admin')) {
         $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
-        if ($orgAllocation) {
-            $orgId = $orgAllocation->vsla_organisation_id;
-            $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
-            $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
+        i $orgId = $orgAllocation->vsla_organisation_id;
+        $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
+        $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
 
-            // dd($saccoIds);
+        // dd($saccoIds);
 
-            $grid->model()
-            ->whereIn('sacco_id', $saccoIds)
-            ->whereHas('sacco', function ($query) {
-                $query->whereNotIn('status', ['deleted', 'inactive']);
-            })
-            ->orderBy('created_at', $sortOrder);
-                // ->orderBy('created_at', $sortOrder);
+        $grid->model()
+        ->whereIn('sacco_id', $saccoIds)
+        ->whereHas('sacco', function ($query) {
+            $query->whereNotIn('status', ['deleted', 'inactive']);
+        })
+        ->orderBy('created_at', $sortOrder);
+            // ->orderBy('created_at', $sortOrder);
 
-            $grid->disableCreateButton();
-        }
+        $grid->disableCreateButton();
+
     } else {
         // For admins, display all records ordered by created_at
         $grid->model()

@@ -56,16 +56,27 @@ class MembersController extends AdminController
         $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
         if ($orgAllocation) {
             $orgId = $orgAllocation->vsla_organisation_id;
-            $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
-            $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
+            $adminRegion = trim($orgAllocation->region);
 
-            // Restrict to specific sacco_ids
-            $grid->model()->whereIn('sacco_id', $saccoIds);
+            if (empty($adminRegion)) {
+                // If no region is specified, get all SACCOs for the organization
+                $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)
+                    ->pluck('sacco_id')
+                    ->toArray();
+            } else {
+                // Get only SACCOs in the admin's region
+                $saccoIds = VslaOrganisationSacco::join('saccos', 'vsla_organisation_sacco.sacco_id', '=', 'saccos.id')
+                    ->where('vsla_organisation_sacco.vsla_organisation_id', $orgId)
+                    ->whereRaw('LOWER(saccos.district) = ?', [strtolower($adminRegion)])
+                    ->pluck('sacco_id')
+                    ->toArray();
+            }
 
+            $grid->model()
+                ->whereIn('id', $saccoIds)
+                ->whereNotIn('status', ['deleted', 'inactive'])
+                ->orderBy('created_at', $sortOrder);
             $grid->disableCreateButton();
-            $grid->actions(function (Grid\Displayers\Actions $actions) {
-                $actions->disableDelete();
-            });
         }
     }
 
