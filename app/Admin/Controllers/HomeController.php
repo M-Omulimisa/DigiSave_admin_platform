@@ -1942,9 +1942,30 @@ class HomeController extends Controller
                 admin_error($message);
                 return redirect('auth/logout');
             }
+
             $organization = VslaOrganisation::find($orgAllocation->vsla_organisation_id);
             $orgIds = $orgAllocation->vsla_organisation_id;
+            $adminRegion = trim($orgAllocation->region);  // Get admin's region
             $orgName = $organization->name;
+
+            // Add region-based filtering
+            if (empty($adminRegion)) {
+                // If no region is specified, get all SACCOs for the organization
+                $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgIds)
+                    ->pluck('sacco_id')
+                    ->toArray();
+            } else {
+                // Get only SACCOs in the admin's region
+                $saccoIds = VslaOrganisationSacco::join('saccos', 'vsla_organisation_sacco.sacco_id', '=', 'saccos.id')
+                    ->where('vsla_organisation_sacco.vsla_organisation_id', $orgIds)
+                    ->whereRaw('LOWER(saccos.district) = ?', [strtolower($adminRegion)])
+                    ->pluck('sacco_id')
+                    ->toArray();
+            }
+
+            // Filter users based on the SACCO IDs
+            $filteredUsers = $filteredUsers->whereIn('sacco_id', $saccoIds);
+
         } else {
             // Modified admin logic to handle organization selection
             $selectedOrgId = request()->get('selected_org');
@@ -1960,6 +1981,34 @@ class HomeController extends Controller
                 // Use existing all-organization logic...
             }
         }
+        // if (!$admin->isRole('admin')) {
+        //     // Existing non-admin logic...
+        //     $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+        //     if (!$orgAllocation) {
+        //         Auth::logout();
+        //         $message = "You are not allocated to any organization. Please contact M-Omulimisa Service Help for assistance.";
+        //         Session::flash('warning', $message);
+        //         admin_error($message);
+        //         return redirect('auth/logout');
+        //     }
+        //     $organization = VslaOrganisation::find($orgAllocation->vsla_organisation_id);
+        //     $orgIds = $orgAllocation->vsla_organisation_id;
+        //     $orgName = $organization->name;
+        // } else {
+        //     // Modified admin logic to handle organization selection
+        //     $selectedOrgId = request()->get('selected_org');
+        //     if ($selectedOrgId) {
+        //         $organization = VslaOrganisation::find($selectedOrgId);
+        //         $orgIds = $selectedOrgId;
+        //         $orgName = $organization->name;
+        //         // Apply organization-specific filtering
+        //         $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgIds)->pluck('sacco_id')->toArray();
+        //         $filteredUsers = $filteredUsers->whereIn('sacco_id', $saccoIds);
+        //     } else {
+        //         $orgName = 'DigiSave VSLA Platform';
+        //         // Use existing all-organization logic...
+        //     }
+        // }
 
         // $loanSumForWomen = (float)($loanSumForWomen ?? 0);
         // $loanSumForMen = (float)($loanSumForMen ?? 0);
@@ -1976,18 +2025,26 @@ class HomeController extends Controller
 
         return $content
             ->header('<div style="
-                    text-align: center;
-                    background: linear-gradient(120deg, #1a472a, #2e8b57);
-                    color: white;
-                    font-size: 32px;
-                    font-weight: bold;
-                    padding: 30px;
-                    border-radius: 20px;
-                    margin: 20px 0;
-                    box-shadow: 0 10px 25px rgba(46, 139, 87, 0.2);
-                    letter-spacing: 1px;">
-                    ' . $orgName . '
-                  </div>')
+            text-align: center;
+            background: linear-gradient(120deg, #1a472a, #2e8b57);
+            color: white;
+            padding: 30px;
+            border-radius: 20px;
+            margin: 20px 0;
+            box-shadow: 0 10px 25px rgba(46, 139, 87, 0.2);
+            letter-spacing: 1px;">
+            <div style="font-size: 32px; font-weight: bold; margin-bottom: 5px;">
+                ' . $orgName . '
+            </div>
+            ' . (!$admin->isRole('admin') && !empty($adminRegion) ? '
+            <div style="
+                font-size: 20px;
+                color: rgba(255, 255, 255, 0.9);
+                margin-top: 10px;
+                font-weight: 500;">
+                ' . ucfirst($adminRegion) . ' District
+            </div>' : '') . '
+        </div>')
             ->body(
 
                 $organizationSelector .

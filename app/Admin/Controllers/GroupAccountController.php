@@ -28,115 +28,127 @@ class GroupAccountController extends AdminController
      * @return Grid
      */
     protected function grid()
-    {
-        $grid = new Grid(new User());
-        $u = Admin::user();
-        $admin = Admin::user();
-        $adminId = $admin->id;
+{
+    $grid = new Grid(new User());
+    $admin = Admin::user();
+    $adminId = $admin->id;
 
-        // Default sort order
-        $sortOrder = request()->get('_sort', 'desc');
-        if (!in_array($sortOrder, ['asc', 'desc'])) {
-            $sortOrder = 'desc';
-        }
+    // Default sort order
+    $sortOrder = request()->get('_sort', 'desc');
+    if (!in_array($sortOrder, ['asc', 'desc'])) {
+        $sortOrder = 'desc';
+    }
 
-        // Restrict access for non-admin users
-        if (!$admin->isRole('admin')) {
-            $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
-            if ($orgAllocation) {
-                $orgId = $orgAllocation->vsla_organisation_id;
-                $organizationAssignments = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)->get();
-                $saccoIds = $organizationAssignments->pluck('sacco_id')->toArray();
-                $grid->model()
-                ->whereIn('sacco_id',
-                    $saccoIds
-                )
-                ->whereHas('sacco', function ($query) {
-                    $query->whereNotIn('status', ['deleted', 'inactive']);
-                })
-                ->whereHas('sacco.users', function ($query) {
-                    $query->whereIn('position_id', function ($subQuery) {
-                        $subQuery->select('id')
-                                 ->from('positions')
-                                 ->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
-                    });
-                })
-                ->where('user_type', 'Admin')->orderBy('created_at', $sortOrder)
-                ->orderBy('created_at', $sortOrder);;
-                // $grid->model()->whereIn('sacco_id', $saccoIds)->orderBy('created_at', $sortOrder);
-                $grid->disableCreateButton();
-                $grid->actions(function (Grid\Displayers\Actions $actions) {
-                    $actions->disableDelete();
-                });
+    // Restrict access for non-admin users
+    if (!$admin->isRole('admin')) {
+        $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+        if ($orgAllocation) {
+            $orgId = $orgAllocation->vsla_organisation_id;
+            $adminRegion = trim($orgAllocation->region);
+
+            if (empty($adminRegion)) {
+                // If no region is specified, get all SACCOs for the organization
+                $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)
+                    ->pluck('sacco_id')
+                    ->toArray();
+            } else {
+                // Get only SACCOs in the admin's region
+                $saccoIds = VslaOrganisationSacco::join('saccos', 'vsla_organisation_sacco.sacco_id', '=', 'saccos.id')
+                    ->where('vsla_organisation_sacco.vsla_organisation_id', $orgId)
+                    ->whereRaw('LOWER(saccos.district) = ?', [strtolower($adminRegion)])
+                    ->pluck('sacco_id')
+                    ->toArray();
             }
-        } else {
+
             $grid->model()
+                ->whereIn('sacco_id', $saccoIds)
                 ->whereHas('sacco', function ($query) {
                     $query->whereNotIn('status', ['deleted', 'inactive']);
                 })
                 ->whereHas('sacco.users', function ($query) {
                     $query->whereIn('position_id', function ($subQuery) {
                         $subQuery->select('id')
-                                 ->from('positions')
-                                 ->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+                            ->from('positions')
+                            ->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
                     });
                 })
                 ->where('user_type', 'Admin')
                 ->orderBy('created_at', $sortOrder);
+
+            $grid->disableCreateButton();
+            $grid->actions(function (Grid\Displayers\Actions $actions) {
+                $actions->disableDelete();
+            });
         }
-
-        // Wrap fetching data in a try-catch block
-        try {
-            $grid->model()->where('user_type', 'Admin')->paginate(10);
-        } catch (\Exception $e) {
-            // Log the error or handle it as needed
-            Log::error('Error fetching data: ' . $e->getMessage());
-            // Continue without the problematic data
-            $grid->model()->where('user_type', 'Admin')->whereNotNull('id')->paginate(10);
-        }
-
-        $grid->disableBatchActions();
-        $grid->quickSearch('first_name', 'last_name', 'email', 'phone_number')->placeholder('Search by name, email, or phone number');
-
-        $grid->column('sacco.name', __('Group Name'))->sortable();
-
-        $grid->column('name', __('Account Name'))->display(function () {
-            return ucwords(strtolower($this->first_name . ' ' . $this->last_name));
-        });
-
-        $grid->column('phone_number', __('Group Code'));
-        $grid->column('location_lat', __('Latitude'))->sortable();
-        $grid->column('location_long', __('Longitude'))->sortable();
-        $grid->column('created_at', __('Created At'))->display(function ($createdAt) {
-            return \Carbon\Carbon::parse($createdAt)->format('Y-m-d H:i:s');
-        })->sortable();
-        // Adding search filters
-        $grid->filter(function ($filter) {
-            $filter->disableIdFilter();
-
-            $filter->like('first_name', 'First Name');
-            $filter->like('last_name', 'Last Name');
-            $filter->like('email', 'Email');
-            $filter->like('phone_number', 'Phone Number');
-        });
-
-        // Adding custom dropdown for sorting
-        $grid->tools(function ($tools) {
-            $tools->append('
-                <div class="btn-group pull-right" style="margin-right: 10px; margin-left: 10px;">
-                    <button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown">
-                        Sort by Created Date <span class="caret"></span>
-                    </button>
-                    <ul class="dropdown-menu" role="menu">
-                        <li><a href="' . url()->current() . '?_sort=asc">Ascending</a></li>
-                        <li><a href="' . url()->current() . '?_sort=desc">Descending</a></li>
-                    </ul>
-                </div>
-            ');
-        });
-
-        return $grid;
+    } else {
+        $grid->model()
+            ->whereHas('sacco', function ($query) {
+                $query->whereNotIn('status', ['deleted', 'inactive']);
+            })
+            ->whereHas('sacco.users', function ($query) {
+                $query->whereIn('position_id', function ($subQuery) {
+                    $subQuery->select('id')
+                        ->from('positions')
+                        ->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+                });
+            })
+            ->where('user_type', 'Admin')
+            ->orderBy('created_at', $sortOrder);
     }
+
+    // Wrap fetching data in a try-catch block
+    try {
+        $grid->model()->where('user_type', 'Admin')->paginate(10);
+    } catch (\Exception $e) {
+        Log::error('Error fetching data: ' . $e->getMessage());
+        $grid->model()->where('user_type', 'Admin')->whereNotNull('id')->paginate(10);
+    }
+
+    $grid->disableBatchActions();
+    $grid->quickSearch('first_name', 'last_name', 'email', 'phone_number')
+        ->placeholder('Search by name, email, or phone number');
+
+    $grid->column('sacco.name', __('Group Name'))->sortable();
+    $grid->column('sacco.district', __('District'))->sortable();
+
+    $grid->column('name', __('Account Name'))->display(function () {
+        return ucwords(strtolower($this->first_name . ' ' . $this->last_name));
+    });
+
+    $grid->column('phone_number', __('Group Code'));
+    $grid->column('location_lat', __('Latitude'))->sortable();
+    $grid->column('location_long', __('Longitude'))->sortable();
+    $grid->column('created_at', __('Created At'))->display(function ($createdAt) {
+        return \Carbon\Carbon::parse($createdAt)->format('Y-m-d H:i:s');
+    })->sortable();
+
+    // Adding search filters
+    $grid->filter(function ($filter) {
+        $filter->disableIdFilter();
+        $filter->like('first_name', 'First Name');
+        $filter->like('last_name', 'Last Name');
+        $filter->like('email', 'Email');
+        $filter->like('phone_number', 'Phone Number');
+        $filter->like('sacco.district', 'District');
+    });
+
+    // Adding custom dropdown for sorting
+    $grid->tools(function ($tools) {
+        $tools->append('
+            <div class="btn-group pull-right" style="margin-right: 10px; margin-left: 10px;">
+                <button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown">
+                    Sort by Created Date <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu" role="menu">
+                    <li><a href="' . url()->current() . '?_sort=asc">Ascending</a></li>
+                    <li><a href="' . url()->current() . '?_sort=desc">Descending</a></li>
+                </ul>
+            </div>
+        ');
+    });
+
+    return $grid;
+}
 
     /**
      * Make a show builder.
