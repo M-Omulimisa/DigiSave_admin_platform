@@ -63,7 +63,7 @@ class NewAuthController extends BaseAuthController
         if (!Hash::check($credentials['password'], $user->password)) {
             Log::warning('Login failed: Incorrect password for user: ' . $credentials['username']);
             return back()->withErrors([
-                'password' => 'The password is incorrect.',
+                'password' => 'The password is incorrect.1',
             ])->withInput();
         }
 
