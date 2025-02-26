@@ -87,7 +87,7 @@ class GroupInsert extends Model
                     'agent_id' => $data['user_id'] ?? null,
                     'sacco_id' => $newGroup->id,
                     'allocated_at' => now(),
-                    'allocated_by' => $data['user_id'] ?? 1, // Add default value as fallback
+                    'allocated_by' => 5297, // Add default value as fallback
                     'status' => 'active'
                 ]);
             }
@@ -99,7 +99,7 @@ class GroupInsert extends Model
         });
     } catch (\Exception $e) {
         \Log::error('Failed to create group: ' . $e->getMessage());
-        throw $e->getMessage();
+        throw $e;
     }
 }
 }
