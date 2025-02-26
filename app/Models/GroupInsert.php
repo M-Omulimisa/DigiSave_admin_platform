@@ -99,7 +99,7 @@ class GroupInsert extends Model
         });
     } catch (\Exception $e) {
         \Log::error('Failed to create group: ' . $e->getMessage());
-        throw $e;
+        throw $e->getMessage();
     }
 }
 }
