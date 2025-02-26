@@ -82,31 +82,15 @@ class GroupInsert extends Model
                 MemberPosition::create($position);
             }
 
-            if (isset($data['user_id']) && !empty($data['user_id'])) {
-                $allocatedBy = $data['user_id'];
-            } else {
-                // Try to get any user with user_type 'admin'
-                $adminUser = DB::table('users')->where('user_type', 'admin')->first();
-
-                if ($adminUser) {
-                    $allocatedBy = $adminUser->id;
-                } else {
-                    // Fallback to any user
-                    $anyUser = DB::table('users')->first();
-                    $allocatedBy = $anyUser ? $anyUser->id : 1;
-                }
+            if (isset($data['user_id'])) {
+                AgentGroupAllocation::create([
+                    'agent_id' => $data['user_id'] ?? null,
+                    'sacco_id' => $newGroup->id,
+                    'allocated_at' => now(),
+                    'allocated_by' => $data['user_id'] ?? 1, // Add default value as fallback
+                    'status' => 'active'
+                ]);
             }
-
-            // Log the allocated_by value for debugging
-            \Log::info('Allocated by user ID: ' . ($allocatedBy ?? 'NULL'));
-
-            AgentGroupAllocation::create([
-                'agent_id' => $data['user_id'] ?? null,
-                'sacco_id' => $newGroup->id,
-                'allocated_at' => now(),
-                'allocated_by' => $allocatedBy ?? 1, // Add default value as fallback
-                'status' => 'active'
-            ]);
 
             return [
                 'group_id' => $newGroup->id,
