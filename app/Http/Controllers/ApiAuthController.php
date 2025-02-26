@@ -2244,62 +2244,125 @@ class ApiAuthController extends Controller
         }
     }
 
-
     public function registerGroup(Request $request)
-    {
+{
+    try {
+        // Validate request inputs
+        $validatedData = $request->validate([
+            'name' => 'required|string|max:255',
+            'share_price' => 'nullable|numeric',
+            'register_fee' => 'nullable|numeric',
+            'phone_number' => 'nullable|string|max:20',
+            'email_address' => 'nullable|email|max:255',
+            'physical_address' => 'nullable|string|max:255',
+            'establishment_date' => 'nullable|date',
+            'chairperson_name' => 'nullable|string|max:255',
+            'chairperson_phone_number' => 'nullable|string|max:20',
+            'chairperson_email_address' => 'nullable|email|max:255',
+            'mission' => 'nullable|string|max:500',
+            'vision' => 'nullable|string|max:500',
+            'terms' => 'nullable|string|max:500',
+            'administrator_id' => 'nullable|numeric',
+            'uses_shares' => 'nullable|boolean',
+            'district' => 'nullable|string|max:255',
+            'subcounty' => 'nullable|string|max:255',
+            'parish' => 'nullable|string|max:255',
+            'village' => 'nullable|string|max:255',
+            'user_id' => 'nullable|numeric|exists:users,id',
+        ]);
+
+        // Create a new group record in the database
+        $group = GroupInsert::createGroup($validatedData);
+
+        // Check if error exists in the response
+        if (isset($group['error'])) {
+            \Log::error('Group creation error: ' . $group['error']);
+            return response()->json(['error' => 'Failed to register group: ' . $group['error']], 400);
+        }
+
+        // If we get here, the group was created successfully
+        $groupId = $group['group_id'];
+
         try {
-            // Validate request inputs
-            $validatedData = $request->validate([
-                'name' => 'required|string|max:255',
-                'share_price' => 'nullable|numeric',
-                'register_fee' => 'nullable|numeric',
-                'phone_number' => 'nullable|string|max:20',
-                'email_address' => 'nullable|email|max:255',
-                'physical_address' => 'nullable|string|max:255',
-                'establishment_date' => 'nullable|date',
-                'chairperson_name' => 'nullable|string|max:255',
-                'chairperson_phone_number' => 'nullable|string|max:20',
-                'chairperson_email_address' => 'nullable|email|max:255',
-                'mission' => 'nullable|string|max:500',
-                'vision' => 'nullable|string|max:500',
-                'terms' => 'nullable|string|max:500',
-                'administrator_id' => 'nullable|numeric',
-                'uses_shares' => 'nullable|boolean',
-                'district' => 'nullable|string|max:255',
-                'subcounty' => 'nullable|string|max:255',
-                'parish' => 'nullable|string|max:255',
-                'village' => 'nullable|string|max:255',
-                'user_id' => 'nullable|numeric|exists:users,id',
-            ]);
-
-            // Create a new group record in the database
-            $group = GroupInsert::createGroup($validatedData);
-
-            // Get the group ID
-            $groupId = $group['group_id'];
-
-            // Create a record in vsla_organisation_sacco with vsla_organisation_id as 2
+            // Create a record in vsla_organisation_sacco with vsla_organisation_id as 1
             $saccoData = [
                 'vsla_organisation_id' => 1,
                 'sacco_id' => $groupId,
             ];
             $saccoRecord = VslaOrganisationSacco::createSacco($saccoData);
 
-            if (isset($group['error'])) {
-                // If an error occurred during creation, return the error response
-                return response()->json(['error' => $group['error']], 400);
-            }
-
             // Return success response
             return response()->json(['message' => 'Group registered successfully', 'data' => $group], 201);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            // Validation error occurred
-            return response()->json(['error' => 'Validation failed', 'details' => $e->errors()], 422);
         } catch (\Exception $e) {
-            // Other unexpected errors
-            return response()->json(['error' => 'Failed to register group: ' . $e->getMessage()], 500);
+            \Log::error('Failed to create VSLA organization record: ' . $e->getMessage());
+            return response()->json(['error' => 'Group was created but failed to associate with organization: ' . $e->getMessage()], 500);
         }
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        // Validation error occurred
+        return response()->json(['error' => 'Validation failed', 'details' => $e->errors()], 422);
+    } catch (\Exception $e) {
+        // Other unexpected errors
+        \Log::error('Failed to register group: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to register group: ' . $e->getMessage()], 500);
     }
+}
+
+
+    // public function registerGroup(Request $request)
+    // {
+    //     try {
+    //         // Validate request inputs
+    //         $validatedData = $request->validate([
+    //             'name' => 'required|string|max:255',
+    //             'share_price' => 'nullable|numeric',
+    //             'register_fee' => 'nullable|numeric',
+    //             'phone_number' => 'nullable|string|max:20',
+    //             'email_address' => 'nullable|email|max:255',
+    //             'physical_address' => 'nullable|string|max:255',
+    //             'establishment_date' => 'nullable|date',
+    //             'chairperson_name' => 'nullable|string|max:255',
+    //             'chairperson_phone_number' => 'nullable|string|max:20',
+    //             'chairperson_email_address' => 'nullable|email|max:255',
+    //             'mission' => 'nullable|string|max:500',
+    //             'vision' => 'nullable|string|max:500',
+    //             'terms' => 'nullable|string|max:500',
+    //             'administrator_id' => 'nullable|numeric',
+    //             'uses_shares' => 'nullable|boolean',
+    //             'district' => 'nullable|string|max:255',
+    //             'subcounty' => 'nullable|string|max:255',
+    //             'parish' => 'nullable|string|max:255',
+    //             'village' => 'nullable|string|max:255',
+    //             'user_id' => 'nullable|numeric|exists:users,id',
+    //         ]);
+
+    //         // Create a new group record in the database
+    //         $group = GroupInsert::createGroup($validatedData);
+
+    //         // Get the group ID
+    //         $groupId = $group['group_id'];
+
+    //         // Create a record in vsla_organisation_sacco with vsla_organisation_id as 2
+    //         $saccoData = [
+    //             'vsla_organisation_id' => 1,
+    //             'sacco_id' => $groupId,
+    //         ];
+    //         $saccoRecord = VslaOrganisationSacco::createSacco($saccoData);
+
+    //         if (isset($group['error'])) {
+    //             // If an error occurred during creation, return the error response
+    //             return response()->json(['error' => $group['error']], 400);
+    //         }
+
+    //         // Return success response
+    //         return response()->json(['message' => 'Group registered successfully', 'data' => $group], 201);
+    //     } catch (\Illuminate\Validation\ValidationException $e) {
+    //         // Validation error occurred
+    //         return response()->json(['error' => 'Validation failed', 'details' => $e->errors()], 422);
+    //     } catch (\Exception $e) {
+    //         // Other unexpected errors
+    //         return response()->json(['error' => 'Failed to register group: ' . $e->getMessage()], 500);
+    //     }
+    // }
 
     public function registerRole(Request $request)
     {
