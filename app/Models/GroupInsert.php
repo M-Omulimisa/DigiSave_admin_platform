@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use DB;
-use Encore\Admin\Facades\Admin;
 
 class GroupInsert extends Model
 {
@@ -86,21 +85,27 @@ class GroupInsert extends Model
             if (isset($data['user_id']) && !empty($data['user_id'])) {
                 $allocatedBy = $data['user_id'];
             } else {
-                $admin = Admin::first();
+                // Try to get any user with user_type 'admin'
+                $adminUser = DB::table('users')->where('user_type', 'admin')->first();
 
-                if ($admin) {
-                    $allocatedBy = $admin->id;
+                if ($adminUser) {
+                    $allocatedBy = $adminUser->id;
                 } else {
-                    $anyUser = User::first();
+                    // Fallback to any user
+                    $anyUser = DB::table('users')->first();
                     $allocatedBy = $anyUser ? $anyUser->id : 1;
                 }
             }
+
+            // Log the allocated_by value for debugging
+            \Log::info('Allocated by user ID: ' . ($allocatedBy ?? 'NULL'));
 
             AgentGroupAllocation::create([
                 'agent_id' => $data['user_id'] ?? null,
                 'sacco_id' => $newGroup->id,
                 'allocated_at' => now(),
-                'allocated_by' => $allocatedBy
+                'allocated_by' => $allocatedBy ?? 1, // Add default value as fallback
+                'status' => 'active'
             ]);
 
             return [
