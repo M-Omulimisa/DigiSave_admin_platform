@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use DB;
+use Encore\Admin\Facades\Admin;
 
 class GroupInsert extends Model
 {
@@ -82,15 +83,25 @@ class GroupInsert extends Model
                 MemberPosition::create($position);
             }
 
-            if (isset($data['user_id'])) {
-                AgentGroupAllocation::create([
-                    'agent_id' => $data['user_id'],
-                    'sacco_id' => $newGroup->id,
-                    'allocated_at' => now(),
-                    'allocated_by' => $data['user_id']
-                ]);
-                // AgentGroup::assignGroupToAgent($data['user_id'], $newGroup->id);
+            if (isset($data['user_id']) && !empty($data['user_id'])) {
+                $allocatedBy = $data['user_id'];
+            } else {
+                $admin = Admin::first();
+
+                if ($admin) {
+                    $allocatedBy = $admin->id;
+                } else {
+                    $anyUser = User::first();
+                    $allocatedBy = $anyUser ? $anyUser->id : 1;
+                }
             }
+
+            AgentGroupAllocation::create([
+                'agent_id' => $data['user_id'] ?? null,
+                'sacco_id' => $newGroup->id,
+                'allocated_at' => now(),
+                'allocated_by' => $allocatedBy
+            ]);
 
             return [
                 'group_id' => $newGroup->id,

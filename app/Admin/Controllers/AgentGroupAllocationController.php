@@ -149,24 +149,11 @@ class AgentGroupAllocationController extends AdminController
                     }
 
                     // Create new allocation
-                    if (isset($data['user_id']) && !empty($data['user_id'])) {
-                        $allocatedBy = $data['user_id'];
-                    } else {
-                        $admin = Admin::first();
-
-                        if ($admin) {
-                            $allocatedBy = $admin->id;
-                        } else {
-                            $anyUser = User::first();
-                            $allocatedBy = $anyUser ? $anyUser->id : 1;
-                        }
-                    }
-
                     AgentGroupAllocation::create([
-                        'agent_id' => $data['user_id'] ?? null,
-                        'sacco_id' => $newGroup->id,
+                        'agent_id' => $agentId,
+                        'sacco_id' => $saccoId,
                         'allocated_at' => now(),
-                        'allocated_by' => $allocatedBy
+                        'allocated_by' => Admin::user()->id
                     ]);
                 }
 
