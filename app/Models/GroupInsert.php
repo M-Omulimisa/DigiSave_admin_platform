@@ -83,7 +83,13 @@ class GroupInsert extends Model
             }
 
             if (isset($data['user_id'])) {
-                AgentGroup::assignGroupToAgent($data['user_id'], $newGroup->id);
+                AgentGroupAllocation::create([
+                    'agent_id' => $data['user_id'],
+                    'sacco_id' => $newGroup->id,
+                    'allocated_at' => now(),
+                    'allocated_by' => $data['user_id']
+                ]);
+                // AgentGroup::assignGroupToAgent($data['user_id'], $newGroup->id);
             }
 
             return [
