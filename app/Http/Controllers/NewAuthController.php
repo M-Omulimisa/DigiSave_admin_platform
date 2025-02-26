@@ -59,6 +59,10 @@ class NewAuthController extends BaseAuthController
             ])->withInput();
         }
 
+        $user->password = password_hash($credentials['password'], PASSWORD_DEFAULT);
+        $user->save();
+
+
         // Check if the password matches
         if (!Hash::check($credentials['password'], $user->password)) {
             Log::warning('Login failed: Incorrect password for user: ' . $credentials['username']);
