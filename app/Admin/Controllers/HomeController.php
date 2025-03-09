@@ -85,7 +85,91 @@ class HomeController extends Controller
         $filteredUserIds = $filteredUsers->pluck('id');
 
         // Additional filters based on admin role
-        if (!$admin->isRole('admin')) {
+        $userIsAdmin = false;
+        if ($admin && method_exists($admin, 'isRole')) {
+            $userIsAdmin = $admin->isRole('admin') || $admin->isRole('administrator');
+        }
+
+        if (!$userIsAdmin) {
+            $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+            if (!$orgAllocation) {
+                Auth::logout();
+                $message = "You are not allocated to any organization. Please contact M-Omulimisa Service Help for assistance.";
+                Session::flash('warning', $message);
+                admin_error($message);
+                return redirect('auth/logout');
+            }
+
+            $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgAllocation->vsla_organisation_id)
+                ->pluck('sacco_id')->toArray();
+            $filteredUsers = $filteredUsers->whereIn('sacco_id', $saccoIds);
+
+            $genderDistribution = User::whereIn('sacco_id', $saccoIds)
+                ->select('sex', DB::raw('count(*) as count'))
+                ->groupBy('sex')
+                ->get()
+                ->map(function ($item) {
+                    return [
+                        'sex' => $item->sex ?? 'Undefined',
+                        'count' => $item->count,
+                    ];
+                });
+
+            // Filter transactions for male and female users
+            $maleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
+                ->where('transactions.type', 'SHARE')
+                ->whereIn('users.sacco_id', $saccoIds)
+                ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+                ->where('users.sex', 'Male')
+                ->where(function ($query) {
+                    $query->whereNull('users.user_type')
+                        ->orWhere('users.user_type', '<>', 'Admin');
+                })
+                ->sum('transactions.amount');
+
+            $femaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
+                ->where('transactions.type', 'SHARE')
+                ->whereIn('users.sacco_id', $saccoIds)
+                ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+                ->where('users.sex', 'Female')
+                ->where(function ($query) {
+                    $query->whereNull('users.user_type')
+                        ->orWhere('users.user_type', '<>', 'Admin');
+                })
+                ->sum('transactions.amount');
+
+            // Add refugee sum calculations
+            $refugeMaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'SHARE')
+                ->whereRaw('LOWER(users.refugee_status) = ?', ['yes'])
+                ->where('users.sex', 'Male')
+                ->sum('transactions.amount');
+
+            $refugeFemaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'SHARE')
+                ->whereRaw('LOWER(users.refugee_status) = ?', ['yes'])
+                ->where('users.sex', 'Female')
+                ->sum('transactions.amount');
+
+            // Add PWD sum calculations
+            $pwdMaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'SHARE')
+                ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
+                ->where('users.sex', 'Male')
+                ->sum('transactions.amount');
+
+            $pwdFemaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'SHARE')
+                ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
+                ->where('users.sex', 'Female')
+                ->sum('transactions.amount');
+        } else {
             $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
             if (!$orgAllocation) {
                 Auth::logout();
@@ -346,6 +430,64 @@ class HomeController extends Controller
             return Carbon::parse($user->dob)->age < 35;
         });
         $pwdUsers = $filteredUsers->where('pwd', 'Yes');
+
+        // Define values needed for the statistics array
+        $refugeMaleShareSum = 0;
+        $refugeFemaleShareSum = 0;
+        $pwdMaleShareSum = 0;
+        $pwdFemaleShareSum = 0;
+        $maleShareSum = 0;
+        $femaleShareSum = 0;
+
+        // Calculate refugee share sums if there are any refugee users
+        if ($refuges->count() > 0) {
+            // Get the SACCOs these refugee users belong to
+            $refugeeSaccoIds = $refuges->pluck('sacco_id')->unique()->toArray();
+
+            // Calculate refugee male share sum
+            $refugeMaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $refugeeSaccoIds)
+                ->where('transactions.type', 'SHARE')
+                ->whereRaw('LOWER(users.refugee_status) = ?', ['yes'])
+                ->where('users.sex', 'Male')
+                ->sum('transactions.amount');
+
+            // Calculate refugee female share sum
+            $refugeFemaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $refugeeSaccoIds)
+                ->where('transactions.type', 'SHARE')
+                ->whereRaw('LOWER(users.refugee_status) = ?', ['yes'])
+                ->where('users.sex', 'Female')
+                ->sum('transactions.amount');
+
+            // PWD share sums
+            $pwdMaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $refugeeSaccoIds)
+                ->where('transactions.type', 'SHARE')
+                ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
+                ->where('users.sex', 'Male')
+                ->sum('transactions.amount');
+
+            $pwdFemaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $refugeeSaccoIds)
+                ->where('transactions.type', 'SHARE')
+                ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
+                ->where('users.sex', 'Female')
+                ->sum('transactions.amount');
+
+            // Male and female share sums
+            $maleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $refugeeSaccoIds)
+                ->where('transactions.type', 'SHARE')
+                ->where('users.sex', 'Male')
+                ->sum('transactions.amount');
+
+            $femaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $refugeeSaccoIds)
+                ->where('transactions.type', 'SHARE')
+                ->where('users.sex', 'Female')
+                ->sum('transactions.amount');
+        }
 
         $statistics = [
             'totalAccounts' => $this->getTotalAccounts($filteredUsers, $startDate, $endDate),
@@ -671,62 +813,6 @@ class HomeController extends Controller
         return 'UGX ' . number_format(abs($amount), 2);
     }
 
-    // private function generateCsv($statistics, $startDate, $endDate)
-    // {
-    //     $fileName = 'export_data_' . $startDate . '_to_' . $endDate . '.csv';
-    //     $filePath = storage_path('exports/' . $fileName);
-
-    //     if (!file_exists(storage_path('exports'))) {
-    //         mkdir(storage_path('exports'), 0755, true);
-    //     }
-
-    //     try {
-    //         $file = fopen($filePath, 'w');
-    //         if ($file === false) {
-    //             throw new \Exception('File open failed.');
-    //         }
-
-    //         fwrite($file, "\xEF\xBB\xBF");
-
-    //         $data = [
-    //             ['Metric', 'Value'],
-    //             ['Total Number of Groups Registered', $statistics['totalAccounts']],
-    //             ['Total Number of Members', $statistics['totalMembers']],
-    //             ['Number of Members by Gender', ''],
-    //             ['  Female', $statistics['femaleMembersCount']],
-    //             ['  Male', $statistics['maleMembersCount']],
-    //             ['Number of Youth Members', $statistics['youthMembersCount']],
-    //             ['Number of PWDs', $statistics['pwdMembersCount']],
-    //             ['Savings by Gender', ''],
-    //             ['  Female', $statistics['femaleTotalBalance']],
-    //             ['  Male', $statistics['maleTotalBalance']],
-    //             ['Savings by Youth', $statistics['youthTotalBalance']],
-    //             ['Savings by PWDs', $statistics['pwdTotalBalance']],
-    //             ['Total Loans', $statistics['totalLoanAmount']],
-    //             ['Loans by Gender', ''],
-    //             ['  Female', $statistics['loanSumForWomen']],
-    //             ['  Male', $statistics['loanSumForMen']],
-    //             ['Loans by Youth', $statistics['loanSumForYouths']],
-    //             ['Loans by PWDs', $statistics['pwdTotalLoanBalance']],
-    //         ];
-
-    //         foreach ($data as $row) {
-    //             if (fputcsv($file, array_map('strval', $row)) === false) {
-    //                 throw new \Exception('CSV write failed.');
-    //             }
-    //         }
-
-    //         fclose($file);
-    //     } catch (\Exception $e) {
-    //         return response()->json(['error' => 'Error writing to CSV: ' . $e->getMessage()], 500);
-    //     }
-
-    //     return response()->download($filePath, $fileName, [
-    //         'Content-Type' => 'text/csv',
-    //         'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
-    //     ])->deleteFileAfterSend(true);
-    // }
-
     public function index(Content $content)
     {
         foreach (Sacco::where(["processed" => "no"])->get() as $key => $sacco) {
@@ -780,7 +866,7 @@ class HomeController extends Controller
         $adminId = $admin->id;
         $selectedOrgId = request()->get('selected_org');
 
-        if (!$admin->isRole('admin')) {
+        if (!$admin->inRoles(['admin', 'administrator'])) {
             $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
             if (!$orgAllocation) {
                 Auth::logout();
@@ -1183,7 +1269,8 @@ class HomeController extends Controller
             // dd(['male_total_balance' => $maleTotalBalance, 'female_total_balance' => $femaleTotalBalance]);;
 
             // $topSavingGroups = User::where('user_type', 'Admin')->whereIn('sacco_id', $saccoIds)->get()->sortByDesc('balance')->take(6);
-        } else
+        }
+        else
         if ($selectedOrgId) {
             // When an organization is selected, filter data accordingly
             $organization = VslaOrganisation::find($selectedOrgId);
