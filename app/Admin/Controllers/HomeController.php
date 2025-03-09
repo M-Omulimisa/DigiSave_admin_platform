@@ -47,14 +47,24 @@ class HomeController extends Controller
      */
     private function checkIfUserHasRole($user, $roleName)
     {
-        // For Encore\Admin user, check roles relationship
-        if (method_exists($user, 'roles')) {
-            return $user->roles->pluck('slug')->contains($roleName);
+        // If the user has 'isRole' method, use it directly
+        if (method_exists($user, 'isRole')) {
+            return $user->isRole($roleName);
         }
 
-        // Alternative check if user has a role property
-        if (isset($user->role) && is_string($user->role)) {
-            return strtolower($user->role) === strtolower($roleName);
+        // Check for admin role in user_type
+        if (isset($user->user_type) && strtolower($user->user_type) === strtolower($roleName)) {
+            return true;
+        }
+
+        // Simple check for role property
+        if (isset($user->role) && strtolower($user->role) === strtolower($roleName)) {
+            return true;
+        }
+
+        // Fallback to check if user is an administrator for admin role
+        if (strtolower($roleName) === 'admin' && $user instanceof Administrator) {
+            return true;
         }
 
         return false;
@@ -141,7 +151,11 @@ class HomeController extends Controller
                 ->where('transactions.type', 'SHARE')
                 ->whereIn('users.sacco_id', $saccoIds)
                 ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-                ->whereBetween('transactions.created_at', [$startDate, $endDate])
+                ->where(function ($query) use ($startDate, $endDate, $isAllTimeData) {
+                    if (!$isAllTimeData) {
+                        $query->whereBetween('transactions.created_at', [$startDate, $endDate]);
+                    }
+                })
                 ->where(function ($query) {
                     $query->whereNull('users.user_type')
                         ->orWhere('users.user_type', '<>', 'Admin');
@@ -161,7 +175,11 @@ class HomeController extends Controller
                 ->where('transactions.type', 'SHARE')
                 ->whereIn('users.sacco_id', $saccoIds)
                 ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-                ->whereBetween('transactions.created_at', [$startDate, $endDate])
+                ->where(function ($query) use ($startDate, $endDate, $isAllTimeData) {
+                    if (!$isAllTimeData) {
+                        $query->whereBetween('transactions.created_at', [$startDate, $endDate]);
+                    }
+                })
                 ->where('users.sex', 'Male') // Filter for male users
                 ->where(function ($query) {
                     $query->whereNull('users.user_type')
@@ -179,7 +197,11 @@ class HomeController extends Controller
                 ->where('transactions.type', 'SHARE')
                 ->whereIn('users.sacco_id', $saccoIds)
                 ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-                ->whereBetween('transactions.created_at', [$startDate, $endDate])
+                ->where(function ($query) use ($startDate, $endDate, $isAllTimeData) {
+                    if (!$isAllTimeData) {
+                        $query->whereBetween('transactions.created_at', [$startDate, $endDate]);
+                    }
+                })
                 ->where('users.sex', 'Female') // Filter for female users
                 ->where(function ($query) {
                     $query->whereNull('users.user_type')
@@ -192,7 +214,11 @@ class HomeController extends Controller
                 ->where('transactions.type', 'SHARE')
                 ->whereIn('users.sacco_id', $saccoIds)
                 ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-                ->whereBetween('transactions.created_at', [$startDate, $endDate])
+                ->where(function ($query) use ($startDate, $endDate, $isAllTimeData) {
+                    if (!$isAllTimeData) {
+                        $query->whereBetween('transactions.created_at', [$startDate, $endDate]);
+                    }
+                })
                 ->whereNull('users.sex')
                 ->orWhere('users.sex', '') // In case Undefined is stored explicitly
                 ->where(function ($query) {
@@ -211,7 +237,11 @@ class HomeController extends Controller
                 ->where('transactions.type', 'SHARE')
                 ->whereIn('users.sacco_id', $saccoIds)
                 ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-                ->whereBetween('transactions.created_at', [$startDate, $endDate])
+                ->where(function ($query) use ($startDate, $endDate, $isAllTimeData) {
+                    if (!$isAllTimeData) {
+                        $query->whereBetween('transactions.created_at', [$startDate, $endDate]);
+                    }
+                })
                 ->whereRaw('LOWER(users.refugee_status) = ?', ['yes'])
                 ->where('users.sex', 'Male')
                 ->where(function ($query) {
@@ -230,7 +260,11 @@ class HomeController extends Controller
                 ->where('transactions.type', 'SHARE')
                 ->whereIn('users.sacco_id', $saccoIds)
                 ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-                ->whereBetween('transactions.created_at', [$startDate, $endDate])
+                ->where(function ($query) use ($startDate, $endDate, $isAllTimeData) {
+                    if (!$isAllTimeData) {
+                        $query->whereBetween('transactions.created_at', [$startDate, $endDate]);
+                    }
+                })
                 ->whereRaw('LOWER(users.refugee_status) = ?', ['yes'])
                 ->where('users.sex', 'Female')
                 ->where(function ($query) {
@@ -249,7 +283,11 @@ class HomeController extends Controller
                 ->where('transactions.type', 'SHARE')
                 ->whereIn('users.sacco_id', $saccoIds)
                 ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-                ->whereBetween('transactions.created_at', [$startDate, $endDate])
+                ->where(function ($query) use ($startDate, $endDate, $isAllTimeData) {
+                    if (!$isAllTimeData) {
+                        $query->whereBetween('transactions.created_at', [$startDate, $endDate]);
+                    }
+                })
                 ->where('users.pwd', 'yes')
                 ->where('users.sex', 'Male')
                 ->where(function ($query) {
@@ -268,7 +306,11 @@ class HomeController extends Controller
                 ->where('transactions.type', 'SHARE')
                 ->whereIn('users.sacco_id', $saccoIds)
                 ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-                ->whereBetween('transactions.created_at', [$startDate, $endDate])
+                ->where(function ($query) use ($startDate, $endDate, $isAllTimeData) {
+                    if (!$isAllTimeData) {
+                        $query->whereBetween('transactions.created_at', [$startDate, $endDate]);
+                    }
+                })
                 ->where('users.pwd', 'yes')
                 ->where('users.sex', 'Female')
                 ->where(function ($query) {
@@ -287,7 +329,11 @@ class HomeController extends Controller
                 ->where('transactions.type', 'LOAN')
                 ->whereIn('users.sacco_id', $saccoIds)
                 ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-                ->whereBetween('transactions.created_at', [$startDate, $endDate])
+                ->where(function ($query) use ($startDate, $endDate, $isAllTimeData) {
+                    if (!$isAllTimeData) {
+                        $query->whereBetween('transactions.created_at', [$startDate, $endDate]);
+                    }
+                })
                 ->whereRaw('LOWER(users.refugee_status) = ?', ['yes'])
                 ->where('users.sex', 'Male')
                 ->where(function ($query) {
@@ -306,7 +352,11 @@ class HomeController extends Controller
                 ->where('transactions.type', 'LOAN')
                 ->whereIn('users.sacco_id', $saccoIds)
                 ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-                ->whereBetween('transactions.created_at', [$startDate, $endDate])
+                ->where(function ($query) use ($startDate, $endDate, $isAllTimeData) {
+                    if (!$isAllTimeData) {
+                        $query->whereBetween('transactions.created_at', [$startDate, $endDate]);
+                    }
+                })
                 ->whereRaw('LOWER(users.refugee_status) = ?', ['yes'])
                 ->where('users.sex', 'Female')
                 ->where(function ($query) {
@@ -325,7 +375,11 @@ class HomeController extends Controller
                 ->where('transactions.type', 'LOAN')
                 ->whereIn('users.sacco_id', $saccoIds)
                 ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-                ->whereBetween('transactions.created_at', [$startDate, $endDate])
+                ->where(function ($query) use ($startDate, $endDate, $isAllTimeData) {
+                    if (!$isAllTimeData) {
+                        $query->whereBetween('transactions.created_at', [$startDate, $endDate]);
+                    }
+                })
                 ->where('users.pwd', 'yes')
                 ->where('users.sex', 'Male')
                 ->where(function ($query) {
@@ -344,7 +398,11 @@ class HomeController extends Controller
                 ->where('transactions.type', 'LOAN')
                 ->whereIn('users.sacco_id', $saccoIds)
                 ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-                ->whereBetween('transactions.created_at', [$startDate, $endDate])
+                ->where(function ($query) use ($startDate, $endDate, $isAllTimeData) {
+                    if (!$isAllTimeData) {
+                        $query->whereBetween('transactions.created_at', [$startDate, $endDate]);
+                    }
+                })
                 ->where('users.pwd', 'yes')
                 ->where('users.sex', 'Female')
                 ->where(function ($query) {
@@ -959,7 +1017,7 @@ class HomeController extends Controller
 
             // Count loans disbursed to youths
             $loansDisbursedToYouths = Transaction::whereIn('sacco_id', $saccoIds)
-                ->whereIn('user_id', $youthIds)
+                ->whereIn('source_user_id', $youthIds)
                 ->where('type', 'LOAN')
                 ->count();
 
@@ -1334,7 +1392,7 @@ class HomeController extends Controller
 
             // Count loans disbursed to youths
             $loansDisbursedToYouths = Transaction::whereIn('sacco_id', $saccoIds)
-                ->whereIn('user_id', $youthIds)
+                ->whereIn('source_user_id', $youthIds)
                 ->where('type', 'LOAN')
                 ->count();
 
@@ -1920,7 +1978,7 @@ class HomeController extends Controller
         // $percentageLoansYouths = $totalLoans > 0 ? ($loansDisbursedToYouths / $totalLoans) * 100 : 0;
         // $percentageLoansPwd = $totalLoans > 0 ? ($pwdTotalLoanCount / $totalLoans) * 100 : 0;
 
-        $totalLoanSum = $loanSumForWomen + $loanSumForMen;
+        $totalLoanSum = $loanSumForWomen + $loanSumForMen + $loanSumForYouths;
         $percentageLoanSumWomen = $totalLoanSum > 0 ? ($loanSumForWomen / $totalLoanSum) * 100 : 0;
         $percentageLoanSumMen = $totalLoanSum > 0 ? ($loanSumForMen / $totalLoanSum) * 100 : 0;
         // $percentageLoanSumYouths = $totalLoanSum > 0 ? ($loanSumForYouths / $totalLoanSum) * 100 : 0;
@@ -2261,7 +2319,7 @@ class HomeController extends Controller
                                     <strong>Male:</strong> ' . $this->formatCurrency($maleTotalBalance) . '<br>
                                     <strong>Savings by Youth:</strong> ' . $this->formatCurrency($youthTotalBalance) . '<br>
                                     <strong>Savings by Refugees:</strong> ' . $this->formatCurrency($refugeMaleShareSum + $refugeFemaleShareSum) . '<br>
-                                    <strong>Savings by PWDs:</strong> ' . $this->formatCurrency($pwdMaleShareSum + $pwdFemaleShareSum) . '
+                                    <strong>Savings by PWDs:</strong> ' . $this->formatCurrency($pwdTotalBalance) . '
                                 </p>
                             </div>
                         </div>
@@ -3377,23 +3435,6 @@ class HomeController extends Controller
                             <div class="card-body">
                                 <h5 class="card-title">Loans Given to Youth</h5>
                                 <p class="card-text">
-                                    <strong>Female:</strong> ' . $this->formatCurrency($pwdFemaleLoanAmount) . '<br>
-                                    <strong>Male:</strong> ' . $this->formatCurrency($pwdMaleLoanAmount) . '
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6 col-lg-4" style="padding: 10px;">
-                        <div class="card">
-                            <div class="card-body">
-                                <h5 class="card-title">Loans Given to PWDs</h5>
-                                <p class="card-text">
-                                    <strong>Female:</strong> ' . $this->formatCurrency($pwdFemaleLoanAmount) . '<br>
-                                    <strong>Male:</strong> ' . $this->formatCurrency($pwdMaleLoanAmount) . '
-                                </p>
-                            </div>
-                        </div>
-                    </div>
                     <div class="col-md-6 col-lg-4" style="padding: 10px;">
                         <div class="card">
                             <div class="card-body">
