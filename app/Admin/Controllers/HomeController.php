@@ -417,7 +417,7 @@ class HomeController extends Controller
                 })
                 ->sum('transactions.amount');
 
-            // dd('Total share sum for filtered users in specified SACCOs:', $totalShareSum, 'No gender sum:', $undefinedGenderSum, 'Female share sum:', $femaleShareSum, 'Male share sum:', $maleShareSum);
+            // dd('Total share sum for filtered users in specified SACCOs:', $totalShareSum);
         }
 
         // dd('Filtered users count:', $filteredUsers->count(), 'Total users count:', $users->count());
@@ -431,63 +431,13 @@ class HomeController extends Controller
         });
         $pwdUsers = $filteredUsers->where('pwd', 'Yes');
 
-        // Define values needed for the statistics array
+        // Define variables to prevent undefined variable errors
         $refugeMaleShareSum = 0;
         $refugeFemaleShareSum = 0;
         $pwdMaleShareSum = 0;
         $pwdFemaleShareSum = 0;
         $maleShareSum = 0;
         $femaleShareSum = 0;
-
-        // Calculate refugee share sums if there are any refugee users
-        if ($refuges->count() > 0) {
-            // Get the SACCOs these refugee users belong to
-            $refugeeSaccoIds = $refuges->pluck('sacco_id')->unique()->toArray();
-
-            // Calculate refugee male share sum
-            $refugeMaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->whereIn('transactions.sacco_id', $refugeeSaccoIds)
-                ->where('transactions.type', 'SHARE')
-                ->whereRaw('LOWER(users.refugee_status) = ?', ['yes'])
-                ->where('users.sex', 'Male')
-                ->sum('transactions.amount');
-
-            // Calculate refugee female share sum
-            $refugeFemaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->whereIn('transactions.sacco_id', $refugeeSaccoIds)
-                ->where('transactions.type', 'SHARE')
-                ->whereRaw('LOWER(users.refugee_status) = ?', ['yes'])
-                ->where('users.sex', 'Female')
-                ->sum('transactions.amount');
-
-            // PWD share sums
-            $pwdMaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->whereIn('transactions.sacco_id', $refugeeSaccoIds)
-                ->where('transactions.type', 'SHARE')
-                ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
-                ->where('users.sex', 'Male')
-                ->sum('transactions.amount');
-
-            $pwdFemaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->whereIn('transactions.sacco_id', $refugeeSaccoIds)
-                ->where('transactions.type', 'SHARE')
-                ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
-                ->where('users.sex', 'Female')
-                ->sum('transactions.amount');
-
-            // Male and female share sums
-            $maleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->whereIn('transactions.sacco_id', $refugeeSaccoIds)
-                ->where('transactions.type', 'SHARE')
-                ->where('users.sex', 'Male')
-                ->sum('transactions.amount');
-
-            $femaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-                ->whereIn('transactions.sacco_id', $refugeeSaccoIds)
-                ->where('transactions.type', 'SHARE')
-                ->where('users.sex', 'Female')
-                ->sum('transactions.amount');
-        }
 
         $statistics = [
             'totalAccounts' => $this->getTotalAccounts($filteredUsers, $startDate, $endDate),
@@ -1987,13 +1937,13 @@ class HomeController extends Controller
                 ->first()
                 ->total_balance;
         }
-        $femaleUsers = $filteredUsersForBalances->where('sex', 'Female');
+        $femaleUsers = $filteredUsers->where('sex', 'Female');
         $femaleMembersCount = $femaleUsers->count();
         // $femaleTotalBalance = number_format($femaleUsers->sum('balance'), 2);
 
         // dd($femaleTotalBalance);
 
-        $maleUsers = $filteredUsersForBalances->where('sex', 'Male');
+        $maleUsers = $filteredUsers->where('sex', 'Male');
         $maleMembersCount = $maleUsers->count();
         // $maleTotalBalance = number_format($maleUsers->sum('balance'), 2);
 
@@ -2031,7 +1981,7 @@ class HomeController extends Controller
         //     })
         // ]);
 
-        $youthUsers = $filteredUsersForBalances->filter(function ($user) {
+        $youthUsers = $filteredUsers->filter(function ($user) {
             return Carbon::parse($user->dob)->age < 35;
         });
         $youthMembersCount = $youthUsers->count();
