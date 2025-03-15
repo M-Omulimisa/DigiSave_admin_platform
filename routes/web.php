@@ -20,6 +20,7 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 
 Route::get('export-groups', function () {
+    die("TEST ROUNT");
     //set unlimited time limit
     set_time_limit(0);
     //set memory limit
