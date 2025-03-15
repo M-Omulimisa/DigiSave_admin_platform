@@ -152,7 +152,7 @@
     <div class="container">
         <div class="login-box">
             <div class="login-box-body">
-                <h2 class="text-center">Login to dashboard</h2>
+                <h2 class="text-center">Login to dashboard.1..2.2</h2>
                 <form id="loginForm" action="{{ admin_url('auth/login') }}" method="post">
                     <div class="mb-3">
                         @if ($errors->has('username'))
