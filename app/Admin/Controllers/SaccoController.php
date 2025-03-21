@@ -249,6 +249,11 @@ if ($createdTo = request('created_to')) {
                             <i class="fa fa-refresh"></i> Reset Filters
                         </a>
                     </div>
+                    <div class="btn-group" style="margin-right: 5px;">
+                        <a href="' . url('') . '/export-groups" target="_blank" class="btn btn-sm btn-primary">
+                            <i class="fa fa-refresh"></i> EXPORT TO EXCEL
+                        </a>
+                    </div>
                 </div>
                 <div class="search-row">
                     <form action="' . url()->current() . '" method="GET" pjax-container>
