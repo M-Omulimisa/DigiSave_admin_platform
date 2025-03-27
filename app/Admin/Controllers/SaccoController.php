@@ -19,350 +19,361 @@ class SaccoController extends AdminController
     protected $title = 'VSLA Groups';
 
     protected function grid()
-{
-    $grid = new Grid(new Sacco());
+    {
+        $grid = new Grid(new Sacco());
 
-    $admin = Admin::user();
-    $adminId = $admin->id;
+        $admin = Admin::user();
+        $adminId = $admin->id;
 
-    // Default sort order
-    $sortOrder = request()->get('_sort', 'desc');
-    if (!in_array($sortOrder, ['asc', 'desc'])) {
-        $sortOrder = 'desc';
-    }
+        // Default sort order
+        $sortOrder = request()->get('_sort', 'desc');
+        if (!in_array($sortOrder, ['asc', 'desc'])) {
+            $sortOrder = 'desc';
+        }
 
-    $grid->model()->whereNotNull('name')->where('name', '!=', '');
+        $grid->model()->whereNotNull('name')->where('name', '!=', '');
 
-    // Apply filters based on user's role
-    if (!$admin->isRole('admin')) {
-        $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
-        if ($orgAllocation) {
-            $orgId = $orgAllocation->vsla_organisation_id;
-            $adminRegion = trim($orgAllocation->region);
+        // Filter out groups without a chairperson name or phone number
+        $grid->model()->whereHas('users', function ($query) {
+            $query->whereHas('position', function ($positionQuery) {
+                $positionQuery->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+            })
+            ->whereNotNull('name')
+            ->where('name', '!=', '')
+            ->whereNotNull('phone_number')
+            ->where('phone_number', '!=', '');
+        });
 
-            if (empty($adminRegion)) {
-                // If no region is specified, get all SACCOs for the organization
-                $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)
-                    ->pluck('sacco_id')
-                    ->toArray();
-            } else {
-                // Get only SACCOs in the admin's region
-                $saccoIds = VslaOrganisationSacco::join('saccos', 'vsla_organisation_sacco.sacco_id', '=', 'saccos.id')
-                    ->where('vsla_organisation_sacco.vsla_organisation_id', $orgId)
-                    ->whereRaw('LOWER(saccos.district) = ?', [strtolower($adminRegion)])
-                    ->pluck('sacco_id')
-                    ->toArray();
+        // Apply filters based on user's role
+        if (!$admin->isRole('admin')) {
+            $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+            if ($orgAllocation) {
+                $orgId = $orgAllocation->vsla_organisation_id;
+                $adminRegion = trim($orgAllocation->region);
+
+                if (empty($adminRegion)) {
+                    // If no region is specified, get all SACCOs for the organization
+                    $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)
+                        ->pluck('sacco_id')
+                        ->toArray();
+                } else {
+                    // Get only SACCOs in the admin's region
+                    $saccoIds = VslaOrganisationSacco::join('saccos', 'vsla_organisation_sacco.sacco_id', '=', 'saccos.id')
+                        ->where('vsla_organisation_sacco.vsla_organisation_id', $orgId)
+                        ->whereRaw('LOWER(saccos.district) = ?', [strtolower($adminRegion)])
+                        ->pluck('sacco_id')
+                        ->toArray();
+                }
+
+                $grid->model()
+                    ->whereIn('id', $saccoIds)
+                    ->whereNotIn('status', ['deleted', 'inactive'])
+                    ->orderBy('created_at', $sortOrder);
+                $grid->disableCreateButton();
             }
-
+        } else {
+            // For admins, display all records ordered by created_at
             $grid->model()
-                ->whereIn('id', $saccoIds)
                 ->whereNotIn('status', ['deleted', 'inactive'])
                 ->orderBy('created_at', $sortOrder);
-            $grid->disableCreateButton();
         }
-    } else {
-        // For admins, display all records ordered by created_at
-        $grid->model()
-            ->whereNotIn('status', ['deleted', 'inactive'])
-            ->orderBy('created_at', $sortOrder);
-    }
 
-    // Show export button
-    $grid->showExportBtn();
-    $grid->disableBatchActions();
-    $grid->quickSearch('name')->placeholder('Search by name');
+        // Show export button
+        $grid->showExportBtn();
+        $grid->disableBatchActions();
+        $grid->quickSearch('name')->placeholder('Search by name');
 
-    // Define columns
-    $grid->column('name', __('Name'))->sortable()->display(function ($name) {
-        return ucwords(strtolower($name));
-    });
-
-    $grid->column('chairperson_name', __('Leader'))
-        ->sortable()
-        ->display(function () {
-            $user = \App\Models\User::where('sacco_id', $this->id)
-                ->whereHas('position', function ($query) {
-                    $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
-                })
-                ->first();
-
-            return $user ? ucwords(strtolower($user->name)) : '';
-    });
-
-    $grid->column('phone_number', __('Contact'))
-        ->sortable()
-        ->display(function () {
-            $user = \App\Models\User::where('sacco_id', $this->id)
-                ->whereHas('position', function ($query) {
-                    $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
-                })
-                ->first();
-
-            return $user ? $user->phone_number : '';
-    });
-
-    $grid->column('district', __('District'))->sortable()->display(function ($district) {
-        if (!empty($district)) {
-            // If district is available, format and display it
-            return ucwords(strtolower($district));
-        } elseif (!empty($this->physical_address)) {
-            // If district is not available but physical_address is, format and display physical_address
-            return ucwords(strtolower($this->physical_address));
-        } else {
-            // If neither is available, display 'No District'
-            return 'No District';
-        }
-    });
-
-    $grid->column('amount_required_per_meeting', __('Welfare'))
-    ->display(function () {
-        $latestCycle = $this->cycles()->orderBy('created_at', 'desc')->first();
-        return $latestCycle ? number_format($latestCycle->amount_required_per_meeting) : 'N/A';
-    })->sortable()
-    ->editable();
-
-    // $grid->column('amount_required_per_meeting', __('Welfare'))
-    // ->display(function () {
-    //     // Get the latest cycle associated with the sacco
-    //     $latestCycle = $this->cycles()->orderBy('created_at', 'desc')->first();
-    //     return $latestCycle ? number_format($latestCycle->amount_required_per_meeting) : 'N/A';
-    // })->sortable();
-
-    // Adding new columns for uses_cash and uses_shares
-    $grid->column('uses_cash', __('Uses Cash'))
-        ->display(function () {
-            return $this->uses_shares == 0 ? 'Yes' : 'No';
-    })->sortable();
-
-    // Adding new columns for share_price and min_cash_savings
-    $grid->column('min_cash_savings', __('Minimum Cash Savings (UGX)'))
-        ->display(function () {
-            return $this->uses_shares == 0 ? number_format($this->share_price) : '0';
-    })->sortable();
-
-    $grid->column('uses_shares', __('Uses Shares'))
-        ->display(function () {
-            return $this->uses_shares == 1 ? 'Yes' : 'No';
-    })->sortable();
-
-    $grid->column('share_price', __('Share Price (UGX)'))
-        ->display(function () {
-            return $this->uses_shares == 1 ? number_format($this->share_price) : '0';
-    })->sortable();
-
-    // Adding the "View Transactions" column
-    $grid->column('view_transactions', __('View Transactions'))
-        ->display(function () {
-            return '<a href="' . url('/transactions?sacco_id=' . $this->id) . '">View Transactions</a>';
-    });
-
-    // $grid->column('view_credit', __('Credit Score'))
-    // ->display(function () {
-    //     return '<a href="' . url('/credit?sacco_id=' . $this->id) . '">View Credit</a>';
-    // });
-
-    $grid->column('created_at', __('Created At'))
-            ->display(function ($date) {
-                return date('d M Y', strtotime($date));
-    })->sortable();
-
-    // Adding search filters
-    $grid->filter(function ($filter) {
-        $filter->disableIdFilter();
-
-        $filter->like('name', 'Name');
-        $filter->like('phone_number', 'Phone Number');
-        $filter->like('physical_address', 'Physical Address');
-        $filter->between('created_at', 'Created At')->datetime();
-    });
-
-    // Filtering logic based on location_search
-    if ($search = request()->get('location_search')) {
-        $grid->model()->where(function ($query) use ($search) {
-            $query->where('district', 'like', "%{$search}%")
-                  ->orWhere('physical_address', 'like', "%{$search}%");
+        // Define columns
+        $grid->column('name', __('Name'))->sortable()->display(function ($name) {
+            return ucwords(strtolower($name));
         });
-    }
 
-    // Apply Created At date range filter if present
-if ($createdFrom = request('created_from')) {
-    $grid->model()->whereDate('created_at', '>=', $createdFrom);
-}
+        $grid->column('chairperson_name', __('Leader'))
+            ->sortable()
+            ->display(function () {
+                $user = \App\Models\User::where('sacco_id', $this->id)
+                    ->whereHas('position', function ($query) {
+                        $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+                    })
+                    ->first();
 
-if ($createdTo = request('created_to')) {
-    $grid->model()->whereDate('created_at', '<=', $createdTo);
-}
+                return $user ? ucwords(strtolower($user->name)) : '';
+        });
 
-    // Adding custom dropdowns and search input in the tools section
-    $grid->tools(function ($tools) {
-        $tools->append('
-            <style>
-                .custom-tool-container {
-                    width: 100%;
-                }
-                .custom-tool-container .button-row {
-                    display: flex;
-                    flex-wrap: wrap;
-                    margin-bottom: 10px;
-                    margin-top: 10px;
-                }
-                .custom-tool-container .search-row {
-                    margin-top: 10px;
-                }
-                /* Modal Styling */
-                .modal-header, .modal-footer {
-                    background-color: #f5f5f5;
-                }
-            </style>
-            <div class="custom-tool-container">
-                <div class="button-row">
-                    <!-- Sort Dropdown -->
-                    <div class="btn-group" style="margin-right: 5px;">
-                        <button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown">
-                            Sort by Established <span class="caret"></span>
-                        </button>
-                        <ul class="dropdown-menu" role="menu">
-                            <li><a href="' . url()->current() . '?_sort=asc">Ascending</a></li>
-                            <li><a href="' . url()->current() . '?_sort=desc">Descending</a></li>
-                        </ul>
-                    </div>
-                    <!-- Filter Dropdown -->
-                    <div class="btn-group" style="margin-right: 5px;">
-                        <button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown">
-                            Filter by Usage <span class="caret"></span>
-                        </button>
-                        <ul class="dropdown-menu" role="menu">
-                            <li><a href="' . url()->current() . '?uses_shares=0">Uses Cash</a></li>
-                            <li><a href="' . url()->current() . '?uses_shares=1">Uses Shares</a></li>
-                            <li><a href="' . url()->current() . '">All</a></li>
-                        </ul>
-                    </div>
-                    <!-- Filter by Created At Button -->
-                    <div class="btn-group" style="margin-right: 5px;">
-                        <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#createdAtFilterModal">
-                            Filter by Date Created
-                        </button>
-                    </div>
-                    <!-- Reset Filters Button -->
-                    <div class="btn-group" style="margin-right: 5px;">
-                        <a href="' . url()->current() . '" class="btn btn-sm btn-warning">
-                            <i class="fa fa-refresh"></i> Reset Filters
-                        </a>
-                    </div>
-                </div>
-                <div class="search-row">
-                    <form action="' . url()->current() . '" method="GET" pjax-container>
-                        <div class="input-group input-group-sm" style="width: 250px;">
-                            <input type="text" name="location_search" class="form-control" placeholder="Search District or Address" value="' . request('location_search', '') . '">
-                            <div class="input-group-btn">
-                                <button type="submit" class="btn btn-default"><i class="fa fa-search"></i></button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
+        $grid->column('phone_number', __('Contact'))
+            ->sortable()
+            ->display(function () {
+                $user = \App\Models\User::where('sacco_id', $this->id)
+                    ->whereHas('position', function ($query) {
+                        $query->whereIn('name', ['Chairperson', 'Secretary', 'Treasurer']);
+                    })
+                    ->first();
 
-            <!-- Created At Filter Modal -->
-            <div class="modal fade" id="createdAtFilterModal" tabindex="-1" role="dialog" aria-labelledby="createdAtFilterModalLabel">
-              <div class="modal-dialog" role="document">
-                <form action="' . url()->current() . '" method="GET">
-                  <div class="modal-content">
-                    <div class="modal-header">
-                      <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                      <h4 class="modal-title" id="createdAtFilterModalLabel">Filter by Created At</h4>
-                    </div>
-                    <div class="modal-body">
-                      <!-- Preserve existing filters -->
-                      <input type="hidden" name="uses_shares" value="' . request('uses_shares', '') . '">
-                      <input type="hidden" name="location_search" value="' . request('location_search', '') . '">
-                      <input type="hidden" name="_sort" value="' . request('_sort', 'desc') . '">
+                return $user ? $user->phone_number : '';
+        });
 
-                      <div class="form-group">
-                        <label for="created_from">Start Date:</label>
-                        <input type="text" class="form-control datepicker" id="created_from" name="created_from" placeholder="Select start date" value="' . request('created_from', '') . '" required>
-                      </div>
-                      <div class="form-group">
-                        <label for="created_to">End Date:</label>
-                        <input type="text" class="form-control datepicker" id="created_to" name="created_to" placeholder="Select end date" value="' . request('created_to', '') . '" required>
-                      </div>
-                    </div>
-                    <div class="modal-footer">
-                      <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-                      <button type="submit" class="btn btn-primary">Apply Filter</button>
-                    </div>
-                  </div>
-                </form>
-              </div>
-            </div>
+        $grid->column('district', __('District'))->sortable()->display(function ($district) {
+            if (!empty($district)) {
+                // If district is available, format and display it
+                return ucwords(strtolower($district));
+            } elseif (!empty($this->physical_address)) {
+                // If district is not available but physical_address is, format and display physical_address
+                return ucwords(strtolower($this->physical_address));
+            } else {
+                // If neither is available, display 'No District'
+                return 'No District';
+            }
+        });
 
-            <script>
-                $(document).ready(function(){
-                    // Initialize datepickers
-                    $(".datepicker").datepicker({
-                        format: "yyyy-mm-dd",
-                        autoclose: true,
-                        todayHighlight: true
-                    });
-                });
-            </script>
-        ');
-    });
+        $grid->column('amount_required_per_meeting', __('Welfare'))
+        ->display(function () {
+            $latestCycle = $this->cycles()->orderBy('created_at', 'desc')->first();
+            return $latestCycle ? number_format($latestCycle->amount_required_per_meeting) : 'N/A';
+        })->sortable()
+        ->editable();
 
-    // Adding the filtering logic based on the dropdown selection
-    if (request()->has('uses_shares')) {
-        $uses_shares = request()->get('uses_shares');
-        if (in_array($uses_shares, ['0', '1'])) {
-            $grid->model()->where('uses_shares', $uses_shares);
-        }
-    }
+        // $grid->column('amount_required_per_meeting', __('Welfare'))
+        // ->display(function () {
+        //     // Get the latest cycle associated with the sacco
+        //     $latestCycle = $this->cycles()->orderBy('created_at', 'desc')->first();
+        //     return $latestCycle ? number_format($latestCycle->amount_required_per_meeting) : 'N/A';
+        // })->sortable();
 
-    if (request()->has('transactions')) {
-        $transactions = request()->get('transactions');
-        if ($transactions === 'yes') {
-            $grid->model()->whereHas('transactions');
-        } elseif ($transactions === 'no') {
-            $grid->model()->whereDoesntHave('transactions');
-        }
-    }
+        // Adding new columns for uses_cash and uses_shares
+        $grid->column('uses_cash', __('Uses Cash'))
+            ->display(function () {
+                return $this->uses_shares == 0 ? 'Yes' : 'No';
+        })->sortable();
 
-    // Include jQuery UI
-    Admin::js('https://code.jquery.com/ui/1.12.1/jquery-ui.min.js');
-    Admin::css('https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css');
+        // Adding new columns for share_price and min_cash_savings
+        $grid->column('min_cash_savings', __('Minimum Cash Savings (UGX)'))
+            ->display(function () {
+                return $this->uses_shares == 0 ? number_format($this->share_price) : '0';
+        })->sortable();
 
-    // JavaScript code to fetch districts and initialize autocomplete
-    Admin::script("
-        $(function() {
-            var csrfToken = $('meta[name=\"csrf-token\"]').attr('content');
-            var districts = [];
+        $grid->column('uses_shares', __('Uses Shares'))
+            ->display(function () {
+                return $this->uses_shares == 1 ? 'Yes' : 'No';
+        })->sortable();
 
-            // Fetch all districts when the page loads
-            $.ajax({
-                url: '" . url('/api/district') . "',
-                type: 'GET',
-                dataType: 'json',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken
-                },
-                success: function(data) {
-                    districts = data.data.map(function(item) {
-                        return item.name;
-                    });
+        $grid->column('share_price', __('Share Price (UGX)'))
+            ->display(function () {
+                return $this->uses_shares == 1 ? number_format($this->share_price) : '0';
+        })->sortable();
 
-                    // Initialize the autocomplete after fetching districts
-                    $('input[name=\"location_search\"]').autocomplete({
-                        source: districts,
-                        minLength: 1,
-                    });
-                },
-                error: function(xhr, status, error) {
-                    console.log('AJAX Error: ' + status + ': ' + error);
-                }
+        // Adding the "View Transactions" column
+        $grid->column('view_transactions', __('View Transactions'))
+            ->display(function () {
+                return '<a href="' . url('/transactions?sacco_id=' . $this->id) . '">View Transactions</a>';
+        });
+
+        // $grid->column('view_credit', __('Credit Score'))
+        // ->display(function () {
+        //     return '<a href="' . url('/credit?sacco_id=' . $this->id) . '">View Credit</a>';
+        // });
+
+        $grid->column('created_at', __('Created At'))
+                ->display(function ($date) {
+                    return date('d M Y', strtotime($date));
+        })->sortable();
+
+        // Adding search filters
+        $grid->filter(function ($filter) {
+            $filter->disableIdFilter();
+
+            $filter->like('name', 'Name');
+            $filter->like('phone_number', 'Phone Number');
+            $filter->like('physical_address', 'Physical Address');
+            $filter->between('created_at', 'Created At')->datetime();
+        });
+
+        // Filtering logic based on location_search
+        if ($search = request()->get('location_search')) {
+            $grid->model()->where(function ($query) use ($search) {
+                $query->where('district', 'like', "%{$search}%")
+                      ->orWhere('physical_address', 'like', "%{$search}%");
             });
-        });
-    ");
+        }
 
-    return $grid;
-}
+        // Apply Created At date range filter if present
+    if ($createdFrom = request('created_from')) {
+        $grid->model()->whereDate('created_at', '>=', $createdFrom);
+    }
+
+    if ($createdTo = request('created_to')) {
+        $grid->model()->whereDate('created_at', '<=', $createdTo);
+    }
+
+        // Adding custom dropdowns and search input in the tools section
+        $grid->tools(function ($tools) {
+            $tools->append('
+                <style>
+                    .custom-tool-container {
+                        width: 100%;
+                    }
+                    .custom-tool-container .button-row {
+                        display: flex;
+                        flex-wrap: wrap;
+                        margin-bottom: 10px;
+                        margin-top: 10px;
+                    }
+                    .custom-tool-container .search-row {
+                        margin-top: 10px;
+                    }
+                    /* Modal Styling */
+                    .modal-header, .modal-footer {
+                        background-color: #f5f5f5;
+                    }
+                </style>
+                <div class="custom-tool-container">
+                    <div class="button-row">
+                        <!-- Sort Dropdown -->
+                        <div class="btn-group" style="margin-right: 5px;">
+                            <button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown">
+                                Sort by Established <span class="caret"></span>
+                            </button>
+                            <ul class="dropdown-menu" role="menu">
+                                <li><a href="' . url()->current() . '?_sort=asc">Ascending</a></li>
+                                <li><a href="' . url()->current() . '?_sort=desc">Descending</a></li>
+                            </ul>
+                        </div>
+                        <!-- Filter Dropdown -->
+                        <div class="btn-group" style="margin-right: 5px;">
+                            <button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown">
+                                Filter by Usage <span class="caret"></span>
+                            </button>
+                            <ul class="dropdown-menu" role="menu">
+                                <li><a href="' . url()->current() . '?uses_shares=0">Uses Cash</a></li>
+                                <li><a href="' . url()->current() . '?uses_shares=1">Uses Shares</a></li>
+                                <li><a href="' . url()->current() . '">All</a></li>
+                            </ul>
+                        </div>
+                        <!-- Filter by Created At Button -->
+                        <div class="btn-group" style="margin-right: 5px;">
+                            <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#createdAtFilterModal">
+                                Filter by Date Created
+                            </button>
+                        </div>
+                        <!-- Reset Filters Button -->
+                        <div class="btn-group" style="margin-right: 5px;">
+                            <a href="' . url()->current() . '" class="btn btn-sm btn-warning">
+                                <i class="fa fa-refresh"></i> Reset Filters
+                            </a>
+                        </div>
+                    </div>
+                    <div class="search-row">
+                        <form action="' . url()->current() . '" method="GET" pjax-container>
+                            <div class="input-group input-group-sm" style="width: 250px;">
+                                <input type="text" name="location_search" class="form-control" placeholder="Search District or Address" value="' . request('location_search', '') . '">
+                                <div class="input-group-btn">
+                                    <button type="submit" class="btn btn-default"><i class="fa fa-search"></i></button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Created At Filter Modal -->
+                <div class="modal fade" id="createdAtFilterModal" tabindex="-1" role="dialog" aria-labelledby="createdAtFilterModalLabel">
+                  <div class="modal-dialog" role="document">
+                    <form action="' . url()->current() . '" method="GET">
+                      <div class="modal-content">
+                        <div class="modal-header">
+                          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                          <h4 class="modal-title" id="createdAtFilterModalLabel">Filter by Created At</h4>
+                        </div>
+                        <div class="modal-body">
+                          <!-- Preserve existing filters -->
+                          <input type="hidden" name="uses_shares" value="' . request('uses_shares', '') . '">
+                          <input type="hidden" name="location_search" value="' . request('location_search', '') . '">
+                          <input type="hidden" name="_sort" value="' . request('_sort', 'desc') . '">
+
+                          <div class="form-group">
+                            <label for="created_from">Start Date:</label>
+                            <input type="text" class="form-control datepicker" id="created_from" name="created_from" placeholder="Select start date" value="' . request('created_from', '') . '" required>
+                          </div>
+                          <div class="form-group">
+                            <label for="created_to">End Date:</label>
+                            <input type="text" class="form-control datepicker" id="created_to" name="created_to" placeholder="Select end date" value="' . request('created_to', '') . '" required>
+                          </div>
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                          <button type="submit" class="btn btn-primary">Apply Filter</button>
+                        </div>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+
+                <script>
+                    $(document).ready(function(){
+                        // Initialize datepickers
+                        $(".datepicker").datepicker({
+                            format: "yyyy-mm-dd",
+                            autoclose: true,
+                            todayHighlight: true
+                        });
+                    });
+                </script>
+            ');
+        });
+
+        // Adding the filtering logic based on the dropdown selection
+        if (request()->has('uses_shares')) {
+            $uses_shares = request()->get('uses_shares');
+            if (in_array($uses_shares, ['0', '1'])) {
+                $grid->model()->where('uses_shares', $uses_shares);
+            }
+        }
+
+        if (request()->has('transactions')) {
+            $transactions = request()->get('transactions');
+            if ($transactions === 'yes') {
+                $grid->model()->whereHas('transactions');
+            } elseif ($transactions === 'no') {
+                $grid->model()->whereDoesntHave('transactions');
+            }
+        }
+
+        // Include jQuery UI
+        Admin::js('https://code.jquery.com/ui/1.12.1/jquery-ui.min.js');
+        Admin::css('https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css');
+
+        // JavaScript code to fetch districts and initialize autocomplete
+        Admin::script("
+            $(function() {
+                var csrfToken = $('meta[name=\"csrf-token\"]').attr('content');
+                var districts = [];
+
+                // Fetch all districts when the page loads
+                $.ajax({
+                    url: '" . url('/api/district') . "',
+                    type: 'GET',
+                    dataType: 'json',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    success: function(data) {
+                        districts = data.data.map(function(item) {
+                            return item.name;
+                        });
+
+                        // Initialize the autocomplete after fetching districts
+                        $('input[name=\"location_search\"]').autocomplete({
+                            source: districts,
+                            minLength: 1,
+                        });
+                    },
+                    error: function(xhr, status, error) {
+                        console.log('AJAX Error: ' + status + ': ' + error);
+                    }
+                });
+            });
+        ");
+
+        return $grid;
+    }
 
     protected function detail($id)
     {

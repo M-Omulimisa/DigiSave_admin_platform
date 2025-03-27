@@ -50,7 +50,12 @@ class HomeController extends Controller
         $startDate = Carbon::parse($request->input('start_date'))->startOfDay();
         $endDate = Carbon::parse($request->input('end_date'))->endOfDay();
 
-        // dd('selected dates: ', $startDate->toDateString(), 'and: ', $endDate->toDateString());
+        // Check if dates represent "from system start to current date"
+        $isAllTimeData = false;
+        $oldestRecord = User::orderBy('created_at', 'asc')->first();
+        if ($oldestRecord && $startDate->lte(Carbon::parse($oldestRecord->created_at)) && $endDate->gte(Carbon::now())) {
+            $isAllTimeData = true;
+        }
 
         // Validate date inputs
         if (!$startDate || !$endDate) {
@@ -62,18 +67,109 @@ class HomeController extends Controller
 
         $users = User::all();
 
-        // Apply date filter and other user type restrictions
-        $filteredUsers = $users->filter(function ($user) use ($startDate, $endDate, $adminId) {
-            $createdAt = Carbon::parse($user->created_at);
-            return $createdAt->between($startDate, $endDate) &&
-                $user->id !== $adminId &&
-                !in_array($user->user_type, ['Admin', '4', '5']);
+        // Apply user type restrictions but not date filter when using all-time data
+        $filteredUsers = $users->filter(function ($user) use ($startDate, $endDate, $adminId, $isAllTimeData) {
+            if ($isAllTimeData) {
+                // For all-time data, don't filter by date, just by user type
+                return $user->id !== $adminId &&
+                       !in_array($user->user_type, ['Admin', '4', '5']);
+            } else {
+                // For specific date ranges, filter by date and user type
+                $createdAt = Carbon::parse($user->created_at);
+                return $createdAt->between($startDate, $endDate) &&
+                    $user->id !== $adminId &&
+                    !in_array($user->user_type, ['Admin', '4', '5']);
+            }
         });
 
         $filteredUserIds = $filteredUsers->pluck('id');
 
         // Additional filters based on admin role
-        if (!$admin->isRole('admin')) {
+        $userIsAdmin = false;
+        if ($admin && method_exists($admin, 'isRole')) {
+            $userIsAdmin = $admin->isRole('admin') || $admin->isRole('administrator');
+        }
+
+        if (!$userIsAdmin) {
+            $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+            if (!$orgAllocation) {
+                Auth::logout();
+                $message = "You are not allocated to any organization. Please contact M-Omulimisa Service Help for assistance.";
+                Session::flash('warning', $message);
+                admin_error($message);
+                return redirect('auth/logout');
+            }
+
+            $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgAllocation->vsla_organisation_id)
+                ->pluck('sacco_id')->toArray();
+            $filteredUsers = $filteredUsers->whereIn('sacco_id', $saccoIds);
+
+            $genderDistribution = User::whereIn('sacco_id', $saccoIds)
+                ->select('sex', DB::raw('count(*) as count'))
+                ->groupBy('sex')
+                ->get()
+                ->map(function ($item) {
+                    return [
+                        'sex' => $item->sex ?? 'Undefined',
+                        'count' => $item->count,
+                    ];
+                });
+
+            // Filter transactions for male and female users
+            $maleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
+                ->where('transactions.type', 'SHARE')
+                ->whereIn('users.sacco_id', $saccoIds)
+                ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+                ->where('users.sex', 'Male')
+                ->where(function ($query) {
+                    $query->whereNull('users.user_type')
+                        ->orWhere('users.user_type', '<>', 'Admin');
+                })
+                ->sum('transactions.amount');
+
+            $femaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
+                ->where('transactions.type', 'SHARE')
+                ->whereIn('users.sacco_id', $saccoIds)
+                ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+                ->where('users.sex', 'Female')
+                ->where(function ($query) {
+                    $query->whereNull('users.user_type')
+                        ->orWhere('users.user_type', '<>', 'Admin');
+                })
+                ->sum('transactions.amount');
+
+            // Add refugee sum calculations
+            $refugeMaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'SHARE')
+                ->whereRaw('LOWER(users.refugee_status) = ?', ['yes'])
+                ->where('users.sex', 'Male')
+                ->sum('transactions.amount');
+
+            $refugeFemaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'SHARE')
+                ->whereRaw('LOWER(users.refugee_status) = ?', ['yes'])
+                ->where('users.sex', 'Female')
+                ->sum('transactions.amount');
+
+            // Add PWD sum calculations
+            $pwdMaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'SHARE')
+                ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
+                ->where('users.sex', 'Male')
+                ->sum('transactions.amount');
+
+            $pwdFemaleShareSum = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->whereIn('transactions.sacco_id', $saccoIds)
+                ->where('transactions.type', 'SHARE')
+                ->whereRaw('LOWER(users.pwd) = ?', ['yes'])
+                ->where('users.sex', 'Female')
+                ->sum('transactions.amount');
+        } else {
             $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
             if (!$orgAllocation) {
                 Auth::logout();
@@ -321,7 +417,7 @@ class HomeController extends Controller
                 })
                 ->sum('transactions.amount');
 
-            // dd('Total share sum for filtered users in specified SACCOs:', $totalShareSum, 'No gender sum:', $undefinedGenderSum, 'Female share sum:', $femaleShareSum, 'Male share sum:', $maleShareSum);
+            // dd('Total share sum for filtered users in specified SACCOs:', $totalShareSum);
         }
 
         // dd('Filtered users count:', $filteredUsers->count(), 'Total users count:', $users->count());
@@ -334,6 +430,14 @@ class HomeController extends Controller
             return Carbon::parse($user->dob)->age < 35;
         });
         $pwdUsers = $filteredUsers->where('pwd', 'Yes');
+
+        // Define variables to prevent undefined variable errors
+        $refugeMaleShareSum = 0;
+        $refugeFemaleShareSum = 0;
+        $pwdMaleShareSum = 0;
+        $pwdFemaleShareSum = 0;
+        $maleShareSum = 0;
+        $femaleShareSum = 0;
 
         $statistics = [
             'totalAccounts' => $this->getTotalAccounts($filteredUsers, $startDate, $endDate),
@@ -370,10 +474,22 @@ class HomeController extends Controller
         // Get the distinct Sacco IDs from the filtered users
         $saccoIds = $filteredUsers->pluck('sacco_id')->unique();
 
-        // Count Saccos registered within the specified date range
-        $totalAccounts = Sacco::whereIn('id', $saccoIds)
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->count();
+        // Check if we're using all-time data
+        $isAllTimeData = false;
+        $oldestRecord = User::orderBy('created_at', 'asc')->first();
+        if ($oldestRecord && $startDate->lte(Carbon::parse($oldestRecord->created_at)) && $endDate->gte(Carbon::now())) {
+            $isAllTimeData = true;
+        }
+
+        // Query to count Saccos
+        $query = Sacco::whereIn('id', $saccoIds);
+
+        // Only apply date filter if not using all-time data
+        if (!$isAllTimeData) {
+            $query->whereBetween('created_at', [$startDate, $endDate]);
+        }
+
+        $totalAccounts = $query->count();
 
         return $totalAccounts;
     }
@@ -387,13 +503,25 @@ class HomeController extends Controller
         // Use pluck to extract only the IDs from the $users collection
         $userIds = $users->pluck('id')->toArray();
 
-        $totalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
+        // Check if we're using all-time data
+        $isAllTimeData = false;
+        $oldestRecord = User::orderBy('created_at', 'asc')->first();
+        if ($oldestRecord && $startDate->lte(Carbon::parse($oldestRecord->created_at)) && $endDate->gte(Carbon::now())) {
+            $isAllTimeData = true;
+        }
+
+        $query = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
             ->join('saccos as s', 'users.sacco_id', '=', 's.id')
             ->whereIn('users.id', $userIds)  // Use the extracted user IDs
             ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-            ->where('t.type', $type)  // Use the specified transaction type
-            ->whereBetween('t.created_at', [$startDate, $endDate]) // Filter by created_at date range
-            ->where(function ($query) {
+            ->where('t.type', $type);  // Use the specified transaction type
+
+        // Only apply date filter if not using all-time data
+        if (!$isAllTimeData) {
+            $query->whereBetween('t.created_at', [$startDate, $endDate]); // Filter by created_at date range
+        }
+
+        $totalBalance = $query->where(function ($query) {
                 $query->whereNull('users.user_type')
                     ->orWhere('users.user_type', '<>', 'Admin');
             })
@@ -411,13 +539,25 @@ class HomeController extends Controller
         // Use pluck to extract only the IDs from the $users collection
         $userIds = $users->pluck('id')->toArray();
 
-        $totalLoanAmount = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
+        // Check if we're using all-time data
+        $isAllTimeData = false;
+        $oldestRecord = User::orderBy('created_at', 'asc')->first();
+        if ($oldestRecord && $startDate->lte(Carbon::parse($oldestRecord->created_at)) && $endDate->gte(Carbon::now())) {
+            $isAllTimeData = true;
+        }
+
+        $query = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
             ->join('saccos as s', 'users.sacco_id', '=', 's.id')
             ->whereIn('users.id', $userIds)  // Use the extracted user IDs
-            // ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-            ->where('t.type', 'LOAN')  // Filter for loans
-            ->whereBetween('t.created_at', [$startDate, $endDate]) // Filter by created_at date range
-            ->where(function ($query) {
+            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+            ->where('t.type', 'LOAN');  // Loan type transactions
+
+        // Only apply date filter if not using all-time data
+        if (!$isAllTimeData) {
+            $query->whereBetween('t.created_at', [$startDate, $endDate]); // Filter by created_at date range
+        }
+
+        $totalLoanAmount = $query->where(function ($query) {
                 $query->whereNull('users.user_type')
                     ->orWhere('users.user_type', '<>', 'Admin');
             })
@@ -432,17 +572,29 @@ class HomeController extends Controller
     {
         $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
 
-        // Extract only the IDs from the $users collection
+        // Extract user IDs from the $users collection
         $userIds = $users->pluck('id')->toArray();
 
-        $totalLoanAmount = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
+        // Check if we're using all-time data
+        $isAllTimeData = false;
+        $oldestRecord = User::orderBy('created_at', 'asc')->first();
+        if ($oldestRecord && $startDate->lte(Carbon::parse($oldestRecord->created_at)) && $endDate->gte(Carbon::now())) {
+            $isAllTimeData = true;
+        }
+
+        $query = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
             ->join('saccos as s', 'users.sacco_id', '=', 's.id')
-            ->whereIn('users.id', $userIds)  // Use the extracted user IDs
-            ->where('users.sex', $gender)    // Filter by gender
-            // ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
-            ->where('t.type', 'LOAN')        // Filter for loans
-            ->whereBetween('t.created_at', [$startDate, $endDate])
-            ->where(function ($query) {
+            ->whereIn('users.id', $userIds)
+            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+            ->where('users.sex', $gender)
+            ->where('t.type', 'LOAN');
+
+        // Only apply date filter if not using all-time data
+        if (!$isAllTimeData) {
+            $query->whereBetween('t.created_at', [$startDate, $endDate]);
+        }
+
+        $loanSumForGender = $query->where(function ($query) {
                 $query->whereNull('users.user_type')
                     ->orWhere('users.user_type', '<>', 'Admin');
             })
@@ -450,39 +602,84 @@ class HomeController extends Controller
             ->first()
             ->total_loan_amount;
 
-        return $totalLoanAmount;
+        return $loanSumForGender;
     }
 
     private function getLoanSumForYouths($users, $startDate, $endDate)
     {
-        $userIds = $users->pluck('id')->toArray();
+        $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
 
-        $loanSumForYouths = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->whereIn('users.id', $userIds)
-            ->where('transactions.type', 'LOAN')
-            ->whereDate('users.dob', '>', now()->subYears(35))
-            ->whereBetween('users.created_at', [$startDate, $endDate])
-            ->where(function ($query) {
+        // Filter to get only youth users
+        $youthUsers = $users->filter(function ($user) {
+            return Carbon::parse($user->dob)->age < 35;
+        });
+
+        // Extract user IDs from the filtered collection
+        $youthUserIds = $youthUsers->pluck('id')->toArray();
+
+        // Check if we're using all-time data
+        $isAllTimeData = false;
+        $oldestRecord = User::orderBy('created_at', 'asc')->first();
+        if ($oldestRecord && $startDate->lte(Carbon::parse($oldestRecord->created_at)) && $endDate->gte(Carbon::now())) {
+            $isAllTimeData = true;
+        }
+
+        $query = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
+            ->join('saccos as s', 'users.sacco_id', '=', 's.id')
+            ->whereIn('users.id', $youthUserIds)
+            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+            ->where('t.type', 'LOAN');
+
+        // Only apply date filter if not using all-time data
+        if (!$isAllTimeData) {
+            $query->whereBetween('t.created_at', [$startDate, $endDate]);
+        }
+
+        $loanSumForYouths = $query->where(function ($query) {
                 $query->whereNull('users.user_type')
                     ->orWhere('users.user_type', '<>', 'Admin');
             })
-            ->sum('transactions.amount');
+            ->select(DB::raw('SUM(t.amount) as total_loan_amount'))
+            ->first()
+            ->total_loan_amount;
 
         return $loanSumForYouths;
     }
 
     private function getTotalLoanBalance($users, $startDate, $endDate)
     {
+        $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
+
+        // Extract user IDs from the $users collection
         $userIds = $users->pluck('id')->toArray();
 
-        $pwdTotalLoanBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
-            ->whereIn('users.id', $userIds)
-            ->where('transactions.type', 'LOAN')
-            ->where('users.pwd', 'yes')
-            ->whereBetween('users.created_at', [$startDate, $endDate])
-            ->sum('transactions.amount');
+        // Check if we're using all-time data
+        $isAllTimeData = false;
+        $oldestRecord = User::orderBy('created_at', 'asc')->first();
+        if ($oldestRecord && $startDate->lte(Carbon::parse($oldestRecord->created_at)) && $endDate->gte(Carbon::now())) {
+            $isAllTimeData = true;
+        }
 
-        return $pwdTotalLoanBalance;
+        $query = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
+            ->join('saccos as s', 'users.sacco_id', '=', 's.id')
+            ->whereIn('users.id', $userIds)
+            ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+            ->where('t.type', 'LOAN');
+
+        // Only apply date filter if not using all-time data
+        if (!$isAllTimeData) {
+            $query->whereBetween('t.created_at', [$startDate, $endDate]);
+        }
+
+        $totalLoanBalance = $query->where(function ($query) {
+                $query->whereNull('users.user_type')
+                    ->orWhere('users.user_type', '<>', 'Admin');
+            })
+            ->select(DB::raw('SUM(t.balance) as total_loan_balance'))
+            ->first()
+            ->total_loan_balance;
+
+        return $totalLoanBalance;
     }
 
     private function generateCsv($statistics, $startDate, $endDate)
@@ -566,62 +763,6 @@ class HomeController extends Controller
         return 'UGX ' . number_format(abs($amount), 2);
     }
 
-    // private function generateCsv($statistics, $startDate, $endDate)
-    // {
-    //     $fileName = 'export_data_' . $startDate . '_to_' . $endDate . '.csv';
-    //     $filePath = storage_path('exports/' . $fileName);
-
-    //     if (!file_exists(storage_path('exports'))) {
-    //         mkdir(storage_path('exports'), 0755, true);
-    //     }
-
-    //     try {
-    //         $file = fopen($filePath, 'w');
-    //         if ($file === false) {
-    //             throw new \Exception('File open failed.');
-    //         }
-
-    //         fwrite($file, "\xEF\xBB\xBF");
-
-    //         $data = [
-    //             ['Metric', 'Value'],
-    //             ['Total Number of Groups Registered', $statistics['totalAccounts']],
-    //             ['Total Number of Members', $statistics['totalMembers']],
-    //             ['Number of Members by Gender', ''],
-    //             ['  Female', $statistics['femaleMembersCount']],
-    //             ['  Male', $statistics['maleMembersCount']],
-    //             ['Number of Youth Members', $statistics['youthMembersCount']],
-    //             ['Number of PWDs', $statistics['pwdMembersCount']],
-    //             ['Savings by Gender', ''],
-    //             ['  Female', $statistics['femaleTotalBalance']],
-    //             ['  Male', $statistics['maleTotalBalance']],
-    //             ['Savings by Youth', $statistics['youthTotalBalance']],
-    //             ['Savings by PWDs', $statistics['pwdTotalBalance']],
-    //             ['Total Loans', $statistics['totalLoanAmount']],
-    //             ['Loans by Gender', ''],
-    //             ['  Female', $statistics['loanSumForWomen']],
-    //             ['  Male', $statistics['loanSumForMen']],
-    //             ['Loans by Youth', $statistics['loanSumForYouths']],
-    //             ['Loans by PWDs', $statistics['pwdTotalLoanBalance']],
-    //         ];
-
-    //         foreach ($data as $row) {
-    //             if (fputcsv($file, array_map('strval', $row)) === false) {
-    //                 throw new \Exception('CSV write failed.');
-    //             }
-    //         }
-
-    //         fclose($file);
-    //     } catch (\Exception $e) {
-    //         return response()->json(['error' => 'Error writing to CSV: ' . $e->getMessage()], 500);
-    //     }
-
-    //     return response()->download($filePath, $fileName, [
-    //         'Content-Type' => 'text/csv',
-    //         'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
-    //     ])->deleteFileAfterSend(true);
-    // }
-
     public function index(Content $content)
     {
         foreach (Sacco::where(["processed" => "no"])->get() as $key => $sacco) {
@@ -675,7 +816,7 @@ class HomeController extends Controller
         $adminId = $admin->id;
         $selectedOrgId = request()->get('selected_org');
 
-        if (!$admin->isRole('admin')) {
+        if (!$admin->inRoles(['admin', 'administrator'])) {
             $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
             if (!$orgAllocation) {
                 Auth::logout();
@@ -1078,7 +1219,8 @@ class HomeController extends Controller
             // dd(['male_total_balance' => $maleTotalBalance, 'female_total_balance' => $femaleTotalBalance]);;
 
             // $topSavingGroups = User::where('user_type', 'Admin')->whereIn('sacco_id', $saccoIds)->get()->sortByDesc('balance')->take(6);
-        } else
+        }
+        else
         if ($selectedOrgId) {
             // When an organization is selected, filter data accordingly
             $organization = VslaOrganisation::find($selectedOrgId);
@@ -1448,6 +1590,11 @@ class HomeController extends Controller
                 ->select(DB::raw('SUM(t.amount) as total_balance'))
                 ->first()
                 ->total_balance;
+
+            // Display the results
+            // dd(['male_total_balance' => $maleTotalBalance, 'female_total_balance' => $femaleTotalBalance]);;
+
+            // $topSavingGroups = User::where('user_type', 'Admin')->whereIn('sacco_id', $saccoIds)->get()->sortByDesc('balance')->take(6);
         } else {
             $organizationContainer = '';
             $orgName = 'DigiSave VSLA Platform';
@@ -1790,13 +1937,13 @@ class HomeController extends Controller
                 ->first()
                 ->total_balance;
         }
-        $femaleUsers = $filteredUsersForBalances->where('sex', 'Female');
+        $femaleUsers = $filteredUsers->where('sex', 'Female');
         $femaleMembersCount = $femaleUsers->count();
         // $femaleTotalBalance = number_format($femaleUsers->sum('balance'), 2);
 
         // dd($femaleTotalBalance);
 
-        $maleUsers = $filteredUsersForBalances->where('sex', 'Male');
+        $maleUsers = $filteredUsers->where('sex', 'Male');
         $maleMembersCount = $maleUsers->count();
         // $maleTotalBalance = number_format($maleUsers->sum('balance'), 2);
 
@@ -1834,7 +1981,7 @@ class HomeController extends Controller
         //     })
         // ]);
 
-        $youthUsers = $filteredUsersForBalances->filter(function ($user) {
+        $youthUsers = $filteredUsers->filter(function ($user) {
             return Carbon::parse($user->dob)->age < 35;
         });
         $youthMembersCount = $youthUsers->count();
