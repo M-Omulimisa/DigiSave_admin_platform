@@ -2,7 +2,7 @@ php artisan migrate
 
 ssh -p 2211 cpaneluser@10.0.10.10
 
-php artisan make:migration add_code_col_t-users --table=users 
+php artisan make:migration add_amount_to_be_paid_to_loans --table=loans 
  
 php artisan admin:make MemberController --model=App\\Models\\User 
 

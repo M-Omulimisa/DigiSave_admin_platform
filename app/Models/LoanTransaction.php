@@ -25,8 +25,10 @@ class LoanTransaction extends Model
 
         //creatd
         static::created(function ($model) {
+            Loan::process_loan($model->id);
         });
         static::updated(function ($model) {
+            Loan::process_loan($model->id);
             return $model;
         });
     }
