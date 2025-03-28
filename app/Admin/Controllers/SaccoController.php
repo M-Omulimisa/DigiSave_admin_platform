@@ -13,6 +13,14 @@ use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Encore\Admin\Show;
 use Illuminate\Support\Str;
+use App\Models\User;
+use App\Models\Cycle;
+use App\Models\Meeting;
+use App\Models\Transaction;
+use App\Models\Loan;
+use App\Models\LoanScheem;
+use App\Models\SocialFund;
+use Encore\Admin\Layout\Content;
 
 class SaccoController extends AdminController
 {
@@ -176,6 +184,17 @@ class SaccoController extends AdminController
                 ->display(function ($date) {
                     return date('d M Y', strtotime($date));
         })->sortable();
+
+        // Replace the default delete action with our custom delete confirmation
+        $grid->actions(function ($actions) {
+            // Remove the default delete action
+            $actions->disableDelete();
+
+            // Add a custom delete confirmation action
+            $actions->append('<a href="'.admin_url('saccos/'.$actions->getKey().'/delete-confirmation').'" class="grid-row-delete" title="Delete">
+                <i class="fa fa-trash"></i>
+            </a>');
+        });
 
         // Adding search filters
         $grid->filter(function ($filter) {
@@ -593,85 +612,135 @@ class SaccoController extends AdminController
 
         return $form;
     }
+
+    /**
+     * Show the confirmation page for deleting a group with all related data.
+     *
+     * @param int $id
+     * @return Content
+     */
+    public function deleteConfirmation($id)
+    {
+        $sacco = Sacco::findOrFail($id);
+
+        // Get all related data
+        $users = User::where('sacco_id', $id)->get();
+        $cycles = Cycle::where('sacco_id', $id)->get();
+        $meetings = Meeting::where('sacco_id', $id)->get();
+        $transactions = Transaction::where('sacco_id', $id)->get();
+        $loans = Loan::where('sacco_id', $id)->get();
+        $positions = MemberPosition::where('sacco_id', $id)->get();
+        $loanSchemes = LoanScheem::where('sacco_id', $id)->get();
+        $socialFunds = SocialFund::where('sacco_id', $id)->get();
+        $orgAssociations = VslaOrganisationSacco::where('sacco_id', $id)->get();
+
+        // Return view with all data
+        return Admin::content(function (Content $content) use ($sacco, $users, $cycles, $meetings, $transactions, $loans, $positions, $loanSchemes, $socialFunds, $orgAssociations) {
+            $content->header('Delete VSLA Group: ' . $sacco->name);
+            $content->description('Please delete all associated data before deleting the group.');
+
+            $content->body(view('admin.delete-sacco-confirmation', [
+                'sacco' => $sacco,
+                'users' => $users,
+                'cycles' => $cycles,
+                'meetings' => $meetings,
+                'transactions' => $transactions,
+                'loans' => $loans,
+                'positions' => $positions,
+                'loanSchemes' => $loanSchemes,
+                'socialFunds' => $socialFunds,
+                'orgAssociations' => $orgAssociations
+            ]));
+        });
+    }
+
+    /**
+     * Handle the actual deletion of a group after all related data is removed.
+     *
+     * @param int $id
+     * @return \Illuminate\Http\Response
+     */
+    public function destroy($id)
+    {
+        $sacco = Sacco::findOrFail($id);
+
+        // Check if there are users associated with this Sacco
+        $users = User::where('sacco_id', $id)->get();
+        if ($users->isNotEmpty()) {
+            admin_error('Delete Failed', 'Cannot delete Group as there are associated members. Please remove all members first.');
+            return back();
+        }
+
+        // Check for cycles
+        $cycles = Cycle::where('sacco_id', $id)->get();
+        if ($cycles->isNotEmpty()) {
+            admin_error('Delete Failed', 'Cannot delete Group as there are associated cycles. Please remove all cycles first.');
+            return back();
+        }
+
+        // Check for meetings
+        $meetings = Meeting::where('sacco_id', $id)->get();
+        if ($meetings->isNotEmpty()) {
+            admin_error('Delete Failed', 'Cannot delete Group as there are associated meetings. Please remove all meetings first.');
+            return back();
+        }
+
+        // Check for transactions
+        $transactions = Transaction::where('sacco_id', $id)->get();
+        if ($transactions->isNotEmpty()) {
+            admin_error('Delete Failed', 'Cannot delete Group as there are associated transactions. Please remove all transactions first.');
+            return back();
+        }
+
+        // Check for loans
+        $loans = Loan::where('sacco_id', $id)->get();
+        if ($loans->isNotEmpty()) {
+            admin_error('Delete Failed', 'Cannot delete Group as there are associated loans. Please remove all loans first.');
+            return back();
+        }
+
+        // Check for positions
+        $positions = MemberPosition::where('sacco_id', $id)->get();
+        if ($positions->isNotEmpty()) {
+            admin_error('Delete Failed', 'Cannot delete Group as there are associated positions. Please remove all positions first.');
+            return back();
+        }
+
+        // Check for loan schemes
+        $loanSchemes = LoanScheem::where('sacco_id', $id)->get();
+        if ($loanSchemes->isNotEmpty()) {
+            admin_error('Delete Failed', 'Cannot delete Group as there are associated loan schemes. Please remove all loan schemes first.');
+            return back();
+        }
+
+        // Check for social funds
+        $socialFunds = SocialFund::where('sacco_id', $id)->get();
+        if ($socialFunds->isNotEmpty()) {
+            admin_error('Delete Failed', 'Cannot delete Group as there are associated social funds. Please remove all social funds first.');
+            return back();
+        }
+
+        // Check for organization associations
+        $orgAssociations = VslaOrganisationSacco::where('sacco_id', $id)->get();
+        if ($orgAssociations->isNotEmpty()) {
+            admin_error('Delete Failed', 'Cannot delete Group as there are associated organization links. Please remove all organization associations first.');
+            return back();
+        }
+
+        // If we've gotten this far, it's safe to delete the group
+        $saccoName = $sacco->name;
+
+        try {
+            // Set status to deleted instead of actually deleting
+            $sacco->status = 'deleted';
+            $sacco->save();
+
+            admin_success('Success', "Group {$saccoName} has been successfully marked as deleted.");
+            return redirect('admin/saccos');
+        } catch (\Exception $e) {
+            admin_error('Error', "Failed to delete group: {$e->getMessage()}");
+            return back();
+        }
+    }
 }
-
-// <?php
-
-// namespace App\Admin\Controllers;
-
-// use App\Models\Sacco;
-// use App\Models\User;
-// use App\Models\OrgAllocation;
-// use App\Models\VslaOrganisationSacco;
-// use Encore\Admin\Controllers\AdminController;
-// use Encore\Admin\Facades\Admin;
-// use Encore\Admin\Layout\Content;
-
-// class SaccoController extends AdminController
-// {
-//     protected $title = 'VSLA Groups';
-
-//     /**
-//      * Display a listing of the VSLA Groups with relevant details.
-//      *
-//      * @param Content $content
-//      * @return Content
-//      */
-//     public function index(Content $content)
-// {
-//     // Fetch the logged-in admin user
-//     $admin = Admin::user();
-//     $adminId = $admin->id;
-
-//     // Determine the sorting order based on the request parameter
-//     $sortOrder = request()->get('_sort', 'desc');
-//     $sortOrder = in_array($sortOrder, ['asc', 'desc']) ? $sortOrder : 'desc';
-
-//     // Query to fetch Saccos based on user's role
-//     $saccosQuery = Sacco::query();
-
-//     if (!$admin->isRole('admin')) {
-//         // Non-admin users can only view assigned Saccos
-//         $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
-//         if ($orgAllocation) {
-//             $orgId = $orgAllocation->vsla_organisation_id;
-//             $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgId)
-//                             ->pluck('sacco_id')
-//                             ->toArray();
-//             $saccosQuery->whereIn('id', $saccoIds)
-//                         ->whereNotIn('status', ['deleted', 'inactive']);
-//         }
-//     } else {
-//         // Admins can view all active Saccos
-//         $saccosQuery->whereNotIn('status', ['deleted', 'inactive']);
-//     }
-
-//     // Apply search and filter criteria if present
-//     if ($search = request()->get('location_search')) {
-//         $saccosQuery->where(function ($query) use ($search) {
-//             $query->where('district', 'like', "%{$search}%")
-//                   ->orWhere('physical_address', 'like', "%{$search}%");
-//         });
-//     }
-
-//     // Apply created date range filters
-//     if ($createdFrom = request()->get('created_from')) {
-//         $saccosQuery->whereDate('created_at', '>=', $createdFrom);
-//     }
-//     if ($createdTo = request()->get('created_to')) {
-//         $saccosQuery->whereDate('created_at', '<=', $createdTo);
-//     }
-
-//     // Apply sorting
-//     $saccos = $saccosQuery->orderBy('created_at', $sortOrder)
-//                           ->get();
-
-//     // Return the view with the fetched data
-//     return $content
-//         ->header('VSLA Groups Dashboard')
-//         ->description('Overview of all VSLA groups')
-//         ->body(view('vsla-groups', compact('saccos')));
-// }
-
-// }
 

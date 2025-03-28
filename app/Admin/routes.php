@@ -23,7 +23,11 @@ Route::group([
     $router->get('/', 'HomeController@index')->name('home');
     $router->resource('gens', GenController::class);
     $router->resource('vslagroups', GroupInsertController::class);
+
+    // Add route for delete confirmation before the resource route
+    $router->get('saccos/{id}/delete-confirmation', 'SaccoController@deleteConfirmation')->name('saccos.delete-confirmation');
     $router->resource('saccos', SaccoController::class);
+
     $router->resource('inactive-saccos', SaccoDeletedActiveController::class);
     $router->resource('scheme', LoanScheemController::class);
     $router->resource('districts', DistrictsController::class);
