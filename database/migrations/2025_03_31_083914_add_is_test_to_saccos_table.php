@@ -14,7 +14,7 @@ class AddIsTestToSaccosTable extends Migration
     public function up()
     {
         Schema::table('saccos', function (Blueprint $table) {
-            $table->boolean('isTest')->default(false)->after('status');
+            //
         });
     }
 
@@ -26,7 +26,7 @@ class AddIsTestToSaccosTable extends Migration
     public function down()
     {
         Schema::table('saccos', function (Blueprint $table) {
-            $table->dropColumn('isTest');
+            //
         });
     }
 }

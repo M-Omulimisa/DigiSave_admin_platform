@@ -227,7 +227,6 @@ class Sacco extends Model
         'created_at',
         'administrator_id',
         'logo',
-        'isTest',
     ];
 
     //appends
