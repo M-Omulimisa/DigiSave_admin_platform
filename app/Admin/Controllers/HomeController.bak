@@ -49,7 +49,6 @@ class HomeController extends Controller
 
         $startDate = Carbon::parse($request->input('start_date'))->startOfDay();
         $endDate = Carbon::parse($request->input('end_date'))->endOfDay();
-        $districtId = $request->input('district');
 
         // Check if dates represent "from system start to current date"
         $isAllTimeData = false;
@@ -85,23 +84,10 @@ class HomeController extends Controller
 
         $filteredUserIds = $filteredUsers->pluck('id');
 
-        // Apply district filter if provided
-        if (!empty($districtId)) {
-            // Get all Saccos in the selected district (case-insensitive comparison)
-            $saccoIdsInDistrict = Sacco::whereRaw('LOWER(district) = ?', [strtolower($districtId)])
-                ->where('isTest', false) // Exclude test groups
-                ->pluck('id')
-                ->toArray();
-
-            // Filter users by Saccos in the selected district
-            $filteredUsers = $filteredUsers->whereIn('sacco_id', $saccoIdsInDistrict);
-            $filteredUserIds = $filteredUsers->pluck('id');
-        }
-
         // Additional filters based on admin role
         $userIsAdmin = false;
-        if ($admin) {
-            $userIsAdmin = $admin->roles->pluck('slug')->contains('admin') || $admin->user_type === 'Admin';
+        if ($admin && method_exists($admin, 'isRole')) {
+            $userIsAdmin = $admin->isRole('admin') || $admin->isRole('administrator');
         }
 
         if (!$userIsAdmin) {
@@ -117,9 +103,6 @@ class HomeController extends Controller
             $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgAllocation->vsla_organisation_id)
                 ->pluck('sacco_id')->toArray();
             $filteredUsers = $filteredUsers->whereIn('sacco_id', $saccoIds);
-
-            // Define the variable before using it
-            $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
 
             $genderDistribution = User::whereIn('sacco_id', $saccoIds)
                 ->select('sex', DB::raw('count(*) as count'))
@@ -717,26 +700,11 @@ class HomeController extends Controller
             // Write BOM for UTF-8 encoding
             fwrite($file, "\xEF\xBB\xBF");
 
-            // Add district information if filtered
-            $districtInfo = '';
-            if (request()->has('district') && !empty(request('district'))) {
-                $districtInfo = request('district');
-            }
-
             $data = [
+                // Counts
                 ['Metric', 'Value (UGX)'],
                 ['Total Number of Groups Registered', $statistics['totalAccounts']],
                 ['Total Number of Members', $statistics['totalMembers']],
-            ];
-
-            // Add district information if available
-            if (!empty($districtInfo)) {
-                // Insert district information as the second row
-                array_splice($data, 1, 0, [['District', $districtInfo]]);
-            }
-
-            // Continue with the rest of the data
-            $data = array_merge($data, [
                 ['Number of Members by Gender', ''],
                 ['  Female', $statistics['femaleMembersCount']],
                 ['  Male', $statistics['maleMembersCount']],
@@ -770,7 +738,7 @@ class HomeController extends Controller
                 ['  Female PWDs', $this->formatCurrency($statistics['pwdFemaleLoans'])],
                 ['  Male PWDs', $this->formatCurrency($statistics['pwdMaleLoans'])],
                 ['Loans by PWDs (Overall)', $this->formatCurrency($statistics['pwdTotalLoanBalance'])],
-            ]);
+            ];
 
             foreach ($data as $row) {
                 if (fputcsv($file, array_map('strval', $row)) === false) {
@@ -795,28 +763,8 @@ class HomeController extends Controller
         return 'UGX ' . number_format(abs($amount), 2);
     }
 
-    /**
-     * Generate HTML options for district dropdown
-     *
-     * @return string
-     */
-    private function getDistrictsOptions()
-    {
-        $options = '';
-        $districts = \App\Models\District::orderBy('name', 'asc')->get();
-
-        foreach ($districts as $district) {
-            $name = ucfirst(strtolower($district->name));
-            $options .= '<option value="' . $name . '">' . $name . '</option>';
-        }
-
-        return $options;
-    }
-
     public function index(Content $content)
     {
-        $admin = Admin::user();
-
         foreach (Sacco::where(["processed" => "no"])->get() as $key => $sacco) {
             $chairperson = User::where('sacco_id', $sacco->id)
                 ->whereHas('position', function ($query) {
@@ -868,7 +816,7 @@ class HomeController extends Controller
         $adminId = $admin->id;
         $selectedOrgId = request()->get('selected_org');
 
-        if (!($admin->roles->pluck('slug')->contains('admin') || $admin->user_type === 'Admin')) {
+        if (!$admin->inRoles(['admin', 'administrator'])) {
             $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
             if (!$orgAllocation) {
                 Auth::logout();
@@ -897,12 +845,6 @@ class HomeController extends Controller
                     ->pluck('sacco_id')
                     ->toArray();
 
-                // Filter out test groups
-                $saccoIds = Sacco::whereIn('id', $saccoIds)
-                    ->where('isTest', false)
-                    ->pluck('id')
-                    ->toArray();
-
                 $OrgAdmins = OrgAllocation::where('vsla_organisation_id', $orgIds)
                     ->pluck('vsla_organisation_id')
                     ->toArray();
@@ -911,7 +853,6 @@ class HomeController extends Controller
                 $saccoIds = VslaOrganisationSacco::join('saccos', 'vsla_organisation_sacco.sacco_id', '=', 'saccos.id')
                     ->where('vsla_organisation_sacco.vsla_organisation_id', $orgIds)
                     ->whereRaw('LOWER(saccos.district) = ?', [strtolower($adminRegion)])
-                    ->where('saccos.isTest', false) // Exclude test groups
                     ->pluck('sacco_id')
                     ->toArray();
 
@@ -1811,3 +1752,656 @@ class HomeController extends Controller
                 ->where('transactions.type', 'LOAN')
                 ->where('users.sex', 'Female')
                 ->count();
+
+            $loansDisbursedToMen = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->where('transactions.type', 'LOAN')
+                ->where('users.sex', 'Male')
+                ->count();
+
+            // Get the IDs of youth users
+            $youthIds = User::whereDate('dob', '>', now()->subYears(35))
+                ->pluck('id');
+
+            // Count the number of youths
+            $youthCount = $youthIds->count();
+
+            // dd($youthCount);
+
+
+            $loansDisbursedToYouths = Transaction::whereIn('user_id', $youthIds)
+                ->where('type', 'LOAN')
+                ->count();
+
+            $loanSumForWomen = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->where('transactions.type', 'LOAN')
+                ->where('users.sex', 'Female')
+                ->sum('transactions.amount');
+
+            $loanSumForMen = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->where('transactions.type', 'LOAN')
+                ->where('users.sex', 'Male')
+                ->sum('transactions.amount');
+
+            $pwdTotalLoanBalance = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->where('transactions.type', 'LOAN')
+                ->where('users.pwd', 'yes')
+                ->sum('transactions.amount');
+
+            // Count loans disbursed to youths
+            $loansDisbursedToYouths = Transaction::whereIn('source_user_id', $youthIds)
+                ->where('type', 'LOAN')
+                ->count();
+
+            // Sum the loan amounts disbursed to youths
+            $loanSumForYouths = Transaction::whereIn('source_user_id', $youthIds)
+                ->where('type', 'LOAN')
+                ->sum('amount');
+            $totalLoanAmount = Transaction::whereIn('user_id', $filteredUsers->pluck('id'))
+                ->where('type', 'LOAN')
+                ->sum('amount');
+
+            $totalLoanBalance = Transaction::whereIn('user_id', $filteredUsers->pluck('id'))
+                ->where('type', 'LOAN')
+                ->sum('balance');
+
+            $pwdTotalLoanCount = Transaction::where('type', 'LOAN')
+                ->whereIn('source_user_id', $pwdUserIds)
+                ->count();
+
+            // $pwdTotalLoanBalance = Transaction::where('type', 'LOAN')
+            //     ->whereIn('source_user_id', $pwdUserIds)
+            //     ->sum('balance');
+
+            $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
+
+            $transactions = Transaction::join('users', 'transactions.source_user_id', '=', 'users.id')
+                ->join('saccos', 'users.sacco_id', '=', 'saccos.id')
+                ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+                ->where('transactions.type', 'SHARE') // Filter for 'SHARE' type transactions
+                ->where(function ($query) {
+                    $query->whereNull('users.user_type')
+                        ->orWhere('users.user_type', '<>', 'Admin');
+                })
+                ->select('transactions.*') // Select all transaction fields
+                ->get();
+            $monthYearList = [];
+            $totalSavingsList = [];
+
+            foreach ($transactions as $transaction) {
+                $monthYear = Carbon::parse($transaction->created_at)->format('F Y');
+
+                if (!in_array($monthYear, $monthYearList)) {
+                    $monthYearList[] = $monthYear;
+                }
+
+                if (array_key_exists($monthYear, $totalSavingsList)) {
+                    $totalSavingsList[$monthYear] += $transaction->amount;
+                } else {
+                    $totalSavingsList[$monthYear] = $transaction->amount;
+                }
+            }
+
+            $userRegistrations = $users->where('user_type', '!=', 'Admin')->groupBy(function ($date) {
+                return Carbon::parse($date->created_at)->format('Y-m');
+            });
+
+            $registrationDates = $userRegistrations->keys()->toArray();
+            $registrationCounts = $userRegistrations->map(function ($item) {
+                return count($item);
+            })->values()->toArray();
+
+            $topSavingGroups = User::where('user_type', 'Admin')
+                ->whereHas('sacco', function ($query) {
+                    $query->whereNotIn('status', ['deleted', 'inactive']);
+                })
+                ->get()
+                ->sortByDesc('balance')
+                ->take(6);
+            //Here
+
+            // Calculate total loans
+            $totalLoans = Transaction::where('type', 'LOAN')
+                ->count();
+
+            // Calculate loans given to youths
+            $loansGivenToYouths = Transaction::whereIn('source_user_id', $youthIds)
+                ->where('type', 'LOAN')
+                ->count();
+
+            // Calculate loans given to PWDs
+            $loansGivenToPwds = Transaction::whereIn('source_user_id', $pwdUserIds)
+                ->where('type', 'LOAN')
+                ->count();
+
+            // Calculate percentages
+            $percentageLoansYouths = $totalLoans > 0 ? ($loansGivenToYouths / $totalLoans) * 100 : 0;
+            $percentageLoansPwd = $totalLoans > 0 ? ($loansGivenToPwds / $totalLoans) * 100 : 0;
+
+            $filteredUsersIds = $filteredUsers->pluck('id')->toArray();
+
+            // dd($filteredUsersIds);
+
+            $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id');
+
+            $youthTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
+                ->join('saccos as s', 'users.sacco_id', '=', 's.id')
+                ->whereIn('users.id', $youthIds)
+                ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+                ->where('t.type', 'SHARE')
+                ->where(function ($query) {
+                    $query->whereNull('users.user_type')
+                        ->orWhere('users.user_type', '<>', 'Admin');
+                })
+                ->select(DB::raw('SUM(t.amount) as total_balance'))
+                ->first()
+                ->total_balance;
+
+            $pwdTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
+                ->join('saccos as s', 'users.sacco_id', '=', 's.id')
+                ->where('users.pwd', 'Yes')
+                ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+                ->where('t.type', 'SHARE')
+                ->where(function ($query) {
+                    $query->whereNull('users.user_type')
+                        ->orWhere('users.user_type', '<>', 'Admin');
+                })
+                ->select(DB::raw('SUM(t.amount) as total_balance'))
+                ->first()
+                ->total_balance;
+
+            // Fetch total balances for male users across all groups (excluding deleted and inactive Saccos and Admins)
+            $maleTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
+                ->join('saccos as s', 'users.sacco_id', '=', 's.id')
+                ->where('users.sex', 'Male')
+                ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+                ->where('t.type', 'SHARE')
+                ->where(function ($query) {
+                    $query->whereNull('users.user_type')
+                        ->orWhere('users.user_type', '<>', 'Admin');
+                })
+                ->select(DB::raw('SUM(t.amount) as total_balance'))
+                ->first()
+                ->total_balance;
+
+            // Fetch total balances for female users across all groups (excluding deleted and inactive Saccos and Admins)
+            $femaleTotalBalance = User::join('transactions as t', 'users.id', '=', 't.source_user_id')
+                ->join('saccos as s', 'users.sacco_id', '=', 's.id')
+                ->where('users.sex', 'Female')
+                ->whereNotIn('users.sacco_id', $deletedOrInactiveSaccoIds)
+                ->where('t.type', 'SHARE')
+                ->where(function ($query) {
+                    $query->whereNull('users.user_type')
+                        ->orWhere('users.user_type', '<>', 'Admin');
+                })
+                ->select(DB::raw('SUM(t.amount) as total_balance'))
+                ->first()
+                ->total_balance;
+        }
+        $femaleUsers = $filteredUsers->where('sex', 'Female');
+        $femaleMembersCount = $femaleUsers->count();
+        // $femaleTotalBalance = number_format($femaleUsers->sum('balance'), 2);
+
+        // dd($femaleTotalBalance);
+
+        $maleUsers = $filteredUsers->where('sex', 'Male');
+        $maleMembersCount = $maleUsers->count();
+        // $maleTotalBalance = number_format($maleUsers->sum('balance'), 2);
+
+        $refugeMaleUsers = $maleUsers->where('refugee_status', 'Yes');
+        $refugeMaleUsersCount = $refugeMaleUsers->count();
+        $refugeFemaleUsers = $femaleUsers->where('refugee_status', 'Yes');
+        $refugeFemaleUsersCount = $refugeFemaleUsers->count();
+
+        // PWDs disermination by gender
+        $pwdMaleUsers = $maleUsers->where('pwd', 'Yes');
+        $pwdMaleUsersCount = $pwdMaleUsers->count();
+        $pwdFemaleUsers = $femaleUsers->where('pwd', 'Yes');
+        $pwdFemaleUsersCount = $pwdFemaleUsers->count();
+
+        // dd([
+        //     'all_male_count' => $maleUsers->count(),
+        //     'all_female_count' => $femaleUsers->count(),
+        //     'refugee_male_count' => $refugeMaleUsers->count(),
+        //     'refugee_female_count' => $refugeFemaleUsers->count(),
+        //     'refugee_male_details' => $refugeMaleUsers->map(function($user) {
+        //         return [
+        //             'first_name' => $user->first_name,
+        //             'last_name' => $user->last_name,
+        //             'refugee_status' => $user->refugee_status,
+        //             'sex' => $user->sex
+        //         ];
+        //     }),
+        //     'refugee_female_details' => $refugeFemaleUsers->map(function($user) {
+        //         return [
+        //             'first_name' => $user->first_name,
+        //             'last_name' => $user->last_name,
+        //             'refugee_status' => $user->refugee_status,
+        //             'sex' => $user->sex
+        //         ];
+        //     })
+        // ]);
+
+        $youthUsers = $filteredUsers->filter(function ($user) {
+            return Carbon::parse($user->dob)->age < 35;
+        });
+        $youthMembersCount = $youthUsers->count();
+        // $youthTotalBalance = number_format($youthUsers->sum('balance'), 2);
+
+        $totalLoans = $loansDisbursedToWomen + $loansDisbursedToMen;
+        $percentageLoansWomen = $totalLoans > 0 ? ($loansDisbursedToWomen / $totalLoans) * 100 : 0;
+        $percentageLoansMen = $totalLoans > 0 ? ($loansDisbursedToMen / $totalLoans) * 100 : 0;
+        // $percentageLoansYouths = $totalLoans > 0 ? ($loansDisbursedToYouths / $totalLoans) * 100 : 0;
+        // $percentageLoansPwd = $totalLoans > 0 ? ($pwdTotalLoanCount / $totalLoans) * 100 : 0;
+
+        $totalLoanSum = $loanSumForWomen + $loanSumForMen;
+        $percentageLoanSumWomen = $totalLoanSum > 0 ? ($loanSumForWomen / $totalLoanSum) * 100 : 0;
+        $percentageLoanSumMen = $totalLoanSum > 0 ? ($loanSumForMen / $totalLoanSum) * 100 : 0;
+        // $percentageLoanSumYouths = $totalLoanSum > 0 ? ($loanSumForYouths / $totalLoanSum) * 100 : 0;
+
+        $quotes = [
+            "Empowerment through savings and loans.",
+            "Collaboration is key to success.",
+            "Building stronger communities together.",
+            "Savings groups transform lives.",
+            "In unity, there is strength."
+        ];
+
+        $totalLoanAmount = $loanSumForWomen + $loanSumForMen + $loanSumForYouths;
+
+        // Retrieve the user with the Sacco information
+        // $cliff_group = User::where('last_name', 'Dairy')
+        // ->where('first_name', 'maendeleo')
+        // ->with('sacco')
+        // ->get();
+
+        // // $group = Sacco::where('name', 'rwamahega')->first();
+
+        // // // Check if the collection is not empty
+        // if ($cliff_group->isNotEmpty()) {
+        //     // Get the first user from the collection
+        //     $user = $cliff_group->first();
+
+        //     // Check if the user has an associated Sacco
+        //     if ($user->sacco) {
+        //         // Update the Sacco's status to "inactive"
+        //         $user->sacco->status = 'active';
+        //         $user->sacco->save();
+
+        //         echo "Sacco status updated to active.";
+        //     } else {
+        //         echo "User does not have an associated Sacco.";
+        //     }
+
+        //     // Delete the user
+        //     // $user->delete();
+        //     echo "User deleted successfully.";
+        // } else {
+        //     echo "User not found.";
+        // }
+
+        // dd($cliff_group);
+
+        $admin = Admin::user();
+        $adminId = $admin->id;
+
+        // Add organization selector for admin users
+        $organizationSelector = '';
+        if ($admin->isRole('admin')) {
+            $organizations = VslaOrganisation::all();
+            $organizationSelector = '
+        <div style="text-align: right; margin-bottom: 20px;">
+            <form id="orgSelectForm" method="GET" style="display: flex; gap: 15px; justify-content: flex-end; align-items: center;">
+                <select name="selected_org" id="orgSelect" style="
+                    padding: 12px 20px;
+                    border: 2px solid #e2e8f0;
+                    border-radius: 12px;
+                    font-size: 16px;
+                    color: #4a5568;
+                    min-width: 200px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+                    transition: all 0.3s ease;">
+                    <option value="">All Organizations</option>';
+
+            foreach ($organizations as $org) {
+                $selected = request()->get('selected_org') == $org->id ? 'selected' : '';
+                $organizationSelector .= '<option value="' . $org->id . '" ' . $selected . '>' . $org->name . '</option>';
+            }
+
+            $organizationSelector .= '
+                </select>
+            </form>
+            <script>
+                document.getElementById("orgSelect").addEventListener("change", function() {
+                    document.getElementById("orgSelectForm").submit();
+                });
+            </script>
+        </div>';
+        }
+
+        // Modify the existing organization filtering logic
+        if (!$admin->isRole('admin')) {
+            // Existing non-admin logic...
+            $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+            if (!$orgAllocation) {
+                Auth::logout();
+                $message = "You are not allocated to any organization. Please contact M-Omulimisa Service Help for assistance.";
+                Session::flash('warning', $message);
+                admin_error($message);
+                return redirect('auth/logout');
+            }
+
+            $organization = VslaOrganisation::find($orgAllocation->vsla_organisation_id);
+            $orgIds = $orgAllocation->vsla_organisation_id;
+            $adminRegion = trim($orgAllocation->region);  // Get admin's region
+            $orgName = $organization->name;
+
+            // Add region-based filtering
+            if (empty($adminRegion)) {
+                // If no region is specified, get all SACCOs for the organization
+                $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgIds)
+                    ->pluck('sacco_id')
+                    ->toArray();
+            } else {
+                // Get only SACCOs in the admin's region
+                $saccoIds = VslaOrganisationSacco::join('saccos', 'vsla_organisation_sacco.sacco_id', '=', 'saccos.id')
+                    ->where('vsla_organisation_sacco.vsla_organisation_id', $orgIds)
+                    ->whereRaw('LOWER(saccos.district) = ?', [strtolower($adminRegion)])
+                    ->pluck('sacco_id')
+                    ->toArray();
+            }
+
+            // Filter users based on the SACCO IDs
+            $filteredUsers = $filteredUsers->whereIn('sacco_id', $saccoIds);
+
+        } else {
+            // Modified admin logic to handle organization selection
+            $selectedOrgId = request()->get('selected_org');
+            if ($selectedOrgId) {
+                $organization = VslaOrganisation::find($selectedOrgId);
+                $orgIds = $selectedOrgId;
+                $orgName = $organization->name;
+                // Apply organization-specific filtering
+                $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgIds)->pluck('sacco_id')->toArray();
+                $filteredUsers = $filteredUsers->whereIn('sacco_id', $saccoIds);
+            } else {
+                $orgName = 'DigiSave VSLA Platform';
+                // Use existing all-organization logic...
+            }
+        }
+        // if (!$admin->isRole('admin')) {
+        //     // Existing non-admin logic...
+        //     $orgAllocation = OrgAllocation::where('user_id', $adminId)->first();
+        //     if (!$orgAllocation) {
+        //         Auth::logout();
+        //         $message = "You are not allocated to any organization. Please contact M-Omulimisa Service Help for assistance.";
+        //         Session::flash('warning', $message);
+        //         admin_error($message);
+        //         return redirect('auth/logout');
+        //     }
+        //     $organization = VslaOrganisation::find($orgAllocation->vsla_organisation_id);
+        //     $orgIds = $orgAllocation->vsla_organisation_id;
+        //     $orgName = $organization->name;
+        // } else {
+        //     // Modified admin logic to handle organization selection
+        //     $selectedOrgId = request()->get('selected_org');
+        //     if ($selectedOrgId) {
+        //         $organization = VslaOrganisation::find($selectedOrgId);
+        //         $orgIds = $selectedOrgId;
+        //         $orgName = $organization->name;
+        //         // Apply organization-specific filtering
+        //         $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgIds)->pluck('sacco_id')->toArray();
+        //         $filteredUsers = $filteredUsers->whereIn('sacco_id', $saccoIds);
+        //     } else {
+        //         $orgName = 'DigiSave VSLA Platform';
+        //         // Use existing all-organization logic...
+        //     }
+        // }
+
+        // $loanSumForWomen = (float)($loanSumForWomen ?? 0);
+        // $loanSumForMen = (float)($loanSumForMen ?? 0);
+        // $loanSumForYouths = (float)($loanSumForYouths ?? 0);
+        // $pwdTotalLoanBalance = (float)($pwdTotalLoanBalance ?? 0);
+        // $refugeeMaleLoanAmount = (float)($refugeeMaleLoanAmount ?? 0);
+        // $refugeeFemaleLoanAmount = (float)($refugeeFemaleLoanAmount ?? 0);
+        // $femaleTotalBalance = (float)($femaleTotalBalance ?? 0);
+        // $maleTotalBalance = (float)($maleTotalBalance ?? 0);
+        // $youthTotalBalance = (float)($youthTotalBalance ?? 0);
+        // $pwdTotalBalance = (float)($pwdTotalBalance ?? 0);
+        // $refugeMaleShareSum = (float)($refugeMaleShareSum ?? 0);
+        // $refugeFemaleShareSum = (float)($refugeFemaleShareSum ?? 0);
+
+        return $content
+            ->header('<div style="
+            text-align: center;
+            background: linear-gradient(120deg, #1a472a, #2e8b57);
+            color: white;
+            padding: 30px;
+            border-radius: 20px;
+            margin: 20px 0;
+            box-shadow: 0 10px 25px rgba(46, 139, 87, 0.2);
+            letter-spacing: 1px;">
+            <div style="font-size: 32px; font-weight: bold; margin-bottom: 5px;">
+                ' . $orgName . '
+            </div>
+            ' . (!$admin->isRole('admin') && !empty($adminRegion) ? '
+            <div style="
+                font-size: 20px;
+                color: rgba(255, 255, 255, 0.9);
+                margin-top: 10px;
+                font-weight: 500;">
+                ' . ucfirst($adminRegion) . ' District
+            </div>' : '') . '
+        </div>')
+            ->body(
+
+                $organizationSelector .
+                    $organizationContainer .
+                    '<div style="
+                    background: linear-gradient(135deg, #fff, #f0f7f4);
+                    padding: 30px;
+                    border-radius: 20px;
+                    margin-bottom: 30px;
+                    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+                    border: 1px solid rgba(255, 255, 255, 0.8);">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <h2 style="
+                                margin: 0;
+                                font-size: 32px;
+                                font-weight: 800;
+                                background: linear-gradient(120deg, #1a472a, #2e8b57);
+                                -webkit-background-clip: text;
+                                -webkit-text-fill-color: transparent;">
+                            Welcome back, ' . $userName . '!
+                        </h2>
+                        <div id="quote-slider" style="
+                                margin: 12px 0 0;
+                                font-size: 18px;
+                                color: #4a5568;
+                                height: 28px;
+                                font-style: italic;">
+                            <p style="transition: all 0.5s ease;">' . $quotes[0] . '</p>
+                        </div>
+                    </div>
+                    <div>
+                        <img src="https://www.pngmart.com/files/21/Admin-Profile-PNG-Clipart.png"
+                             alt="Welcome Image"
+                             style="
+                                height: 120px;
+                                border-radius: 50%;
+                                box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+                                border: 4px solid #fff;
+                                transition: transform 0.3s ease;"
+                             onmouseover="this.style.transform=\'scale(1.05)\'"
+                             onmouseout="this.style.transform=\'scale(1)\'">
+                    </div>
+                </div>
+            </div>' .
+                    '<div style="text-align: right; margin-bottom: 30px;">
+                <form action="' . route(config('admin.route.prefix') . '.export-data') . '"
+                      method="GET"
+                      style="display: flex; gap: 15px; justify-content: flex-end; align-items: center;">
+                    <input type="date"
+                           name="start_date"
+                           required
+                           style="
+                                padding: 12px 20px;
+                                border: 2px solid #e2e8f0;
+                                border-radius: 12px;
+                                font-size: 16px;
+                                color: #4a5568;
+                                box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+                                transition: all 0.3s ease;">
+                    <input type="date"
+                           name="end_date"
+                           required
+                           style="
+                                padding: 12px 20px;
+                                border: 2px solid #e2e8f0;
+                                border-radius: 12px;
+                                font-size: 16px;
+                                color: #4a5568;
+                                box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+                                transition: all 0.3s ease;">
+                    <button type="submit"
+                            class="btn btn-primary"
+                            style="
+                                padding: 12px 30px;
+                                background: linear-gradient(120deg, #1a472a, #2e8b57);
+                                border: none;
+                                border-radius: 12px;
+                                color: white;
+                                font-weight: 600;
+                                font-size: 16px;
+                                box-shadow: 0 8px 15px rgba(46, 139, 87, 0.2);
+                                transition: all 0.3s ease;
+                                cursor: pointer;"
+                            onmouseover="this.style.transform=\'translateY(-2px)\'"
+                            onmouseout="this.style.transform=\'translateY(0)\'">
+                        Export Data
+                    </button>
+                </form>
+            </div>' .
+                    '<div style="
+                    background: linear-gradient(135deg, #f7faf9, #ffffff);
+                    padding: 30px;
+                    border-radius: 20px;
+                    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+                    border: 1px solid rgba(255, 255, 255, 0.8);">' .
+                    view('widgets.statistics', [
+                        'totalSaccos' => $totalAccounts,
+                        'villageAgents' => $villageAgents,
+                        'organisationCount' => $organisationCount,
+                        'totalMembers' => $totalMembers,
+                        'totalAccounts' => $totalAccounts,
+                        'totalOrgAdmins' => $totalOrgAdmins,
+                        'totalPwdMembers' => $pwdMembersCount,
+                        'youthMembersPercentage' => number_format($youthMembersPercentage, 2),
+                    ]) .
+                    view('widgets.card_set', [
+                        'femaleMembersCount' => $femaleMembersCount,
+                        'femaleTotalBalance' => number_format($femaleTotalBalance, 2),
+                        'maleMembersCount' => $maleMembersCount,
+                        'maleTotalBalance' => number_format($maleTotalBalance, 2),
+                        'youthMembersCount' => $youthMembersCount,
+                        'youthTotalBalance' => number_format($youthTotalBalance),
+                        'pwdMembersCount' => $pwdMembersCount,
+                        // 'pwdTotalBalance' => number_format($pwdTotalBalance),
+                        'refugeeMaleMembersCount' => $refugeMaleUsersCount,
+                        'refugeeFemaleMembersCount' => $refugeFemaleUsersCount,
+                        'refugeeMaleSavings' => number_format($refugeMaleShareSum, 2),
+                        'refugeeFemaleSavings' => number_format($refugeFemaleShareSum, 2),
+                        // PWDs dissermination by gender
+
+                        'pwdMaleMembersCount' => $pwdMaleUsersCount,
+                        'pwdFemaleMembersCount' => $pwdFemaleUsersCount,
+                        'pwdMaleSavings' => number_format($pwdMaleShareSum, 2),
+                        'pwdFemaleSavings' => number_format($pwdFemaleShareSum, 2)
+                    ]) .
+                    '<div style="
+                    background: linear-gradient(135deg, #f7faf9, #ffffff);
+                    padding: 30px;
+                    border-radius: 20px;
+                    margin-top: 30px;
+                    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+                    border: 1px solid rgba(255, 255, 255, 0.8);">' .
+                    view('widgets.category', [
+                        'loansDisbursedToWomen' => $loansDisbursedToWomen,
+                        'loansDisbursedToMen' => $loansDisbursedToMen,
+                        'loansDisbursedToYouths' => $loansDisbursedToYouths,
+                        'loanSumForWomen' => $loanSumForWomen,
+                        'loanSumForMen' => $loanSumForMen,
+                        'loanSumForYouths' => $loanSumForYouths,
+                        'pwdTotalLoanCount' => $pwdTotalLoanCount,
+                        'percentageLoansWomen' => $percentageLoansWomen,
+                        'percentageLoansMen' => $percentageLoansMen,
+                        'percentageLoansYouths' => $percentageLoansYouths,
+                        'percentageLoansPwd' => $percentageLoansPwd,
+                        'percentageLoanSumWomen' => $percentageLoanSumWomen,
+                        'percentageLoanSumMen' => $percentageLoanSumMen,
+                        'pwdTotalLoanBalance' => $pwdTotalLoanBalance,
+                        'refugeeMaleLoanCount' => $refugeeMaleLoanCount,
+                        'refugeeFemaleLoanCount' => $refugeeFemaleLoanCount,
+                        'refugeeMaleLoanAmount' => $refugeeMaleLoanAmount,
+                        'refugeeFemaleLoanAmount' => $refugeeFemaleLoanAmount,
+                        // PWDs dissermination by gender
+
+                        'pwdMaleLoanCount' => $pwdMaleLoanCount,
+                        'pwdFemaleLoanCount' => $pwdFemaleLoanCount,
+                        'pwdMaleLoanAmount' => $pwdMaleLoanAmount,
+                        'pwdFemaleLoanAmount' => $pwdFemaleLoanAmount
+                    ]) .
+                    '</div>' .
+                    view('widgets.chart_container', [
+                        'monthYearList' => $monthYearList,
+                        'totalSavingsList' => $totalSavingsList,
+                    ]) .
+                    '<div class="row" style="padding-top: 35px;">
+                <div class="col-md-6" style="
+                        background: white;
+                        padding: 25px;
+                        border-radius: 15px;
+                        box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                    ' . view('widgets.top_saving_groups', [
+                        'topSavingGroups' => $topSavingGroups,
+                    ]) . '
+                </div>
+                <div class="col-md-6" style="
+                        background: white;
+                        padding: 25px;
+                        border-radius: 15px;
+                        box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                    ' . view('widgets.bar_chart', [
+                        'registrationDates' => $registrationDates,
+                        'registrationCounts' => $registrationCounts,
+                    ]) . '
+                </div>
+            </div>'
+            );
+    }
+}
+?>
+
+
+<script>
+    $(document).ready(function() {
+        const quotes = [
+            "Empowerment through savings and loans.",
+            "Collaboration is key to success.",
+            "Building stronger communities together.",
+            "Savings groups transform lives.",
+            "In unity, there is strength."
+        ];
+
+        let quoteIndex = 0;
+
+        function showNextQuote() {
+            quoteIndex = (quoteIndex + 1) % quotes.length;
+            $('#quote-slider p').fadeOut(500, function() {
+                $(this).text(quotes[quoteIndex]).fadeIn(500);
+            });
+        }
+
+        setInterval(showNextQuote, 3000);
+    });
+</script>

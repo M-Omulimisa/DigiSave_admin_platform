@@ -23,6 +23,10 @@ use Illuminate\Support\Facades\Route;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
+// Add SaccoController delete-related route
+Route::delete('admin/saccos/{id}/delete-related/{model}', [\App\Admin\Controllers\SaccoController::class, 'deleteRelated'])
+    ->middleware('admin')
+    ->name('admin.sacco.delete-related');
 
 Route::get('gen-dummy', function () {
 
@@ -36,7 +40,7 @@ Route::get('gen-dummy', function () {
     $users = User::all();
     $schemes = LoanScheem::all();
     $loanTransaction = LoanTransaction::all();
-    /* 
+    /*
 LoanTransaction
     "id" => 1
     "created_at" => "2024-03-22 11:02:04"
@@ -74,8 +78,8 @@ LoanTransaction
 
 
     /* loans table
-    
-    
+
+
 Full texts
 id
 created_at
@@ -113,7 +117,7 @@ amount_to_be_paid
 
  */
 
- 
+
     // Create 10 loans for each sacco
     foreach ($saccos as $sacco) {
         $sacco_members = $users->where('sacco_id', $sacco->id);
@@ -201,7 +205,7 @@ amount_to_be_paid
     */
 
     //truncate all tables
-    // DB::table(( new LoanScheem())->getTable())->truncate(); 
+    // DB::table(( new LoanScheem())->getTable())->truncate();
 
     //create loan scheem for each sacco
     foreach ($saccos as $key => $sacco) {
@@ -236,7 +240,7 @@ amount_to_be_paid
     }
 
     dd($loans);
-    /* 
+    /*
         "id" => 1
         "created_at" => "2024-03-22 11:02:04"
         "updated_at" => "2024-03-22 11:02:04"
@@ -359,7 +363,7 @@ Route::get('export-groups', function () {
 
 
 
-    /*   
+    /*
     "phone_number" => "+256701035193"
     "email_address" => null
     "physical_address" => "Busukuma"
@@ -399,8 +403,8 @@ Route::get('export-groups', function () {
 
     // Set column headers
 
-    /* 
-    
+    /*
+
 number of loans given to men
 total amount loans given to men
 number of  women

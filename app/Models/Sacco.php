@@ -191,6 +191,14 @@ class Sacco extends Model
         return $this->belongsToMany(VslaOrganisation::class, 'vsla_organisation_saccos', 'sacco_id', 'vsla_organisation_id');
     }
 
+    /**
+     * Get the district that the sacco belongs to.
+     */
+    public function district()
+    {
+        return $this->belongsTo(District::class);
+    }
+
     //balance
     public function getBalanceAttribute()
     {
@@ -219,6 +227,7 @@ class Sacco extends Model
         'created_at',
         'administrator_id',
         'logo',
+        'isTest',
     ];
 
     //appends

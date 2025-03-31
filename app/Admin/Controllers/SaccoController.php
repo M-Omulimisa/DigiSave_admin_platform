@@ -21,6 +21,7 @@ use App\Models\Loan;
 use App\Models\LoanScheem;
 use App\Models\SocialFund;
 use Encore\Admin\Layout\Content;
+use App\Admin\Actions\DeleteConfirmation;
 
 class SaccoController extends AdminController
 {
@@ -190,10 +191,8 @@ class SaccoController extends AdminController
             // Remove the default delete action
             $actions->disableDelete();
 
-            // Add a custom delete confirmation action
-            $actions->append('<a href="'.admin_url('saccos/'.$actions->getKey().'/delete-confirmation').'" class="grid-row-delete" title="Delete">
-                <i class="fa fa-trash"></i>
-            </a>');
+            // Add our custom delete action using the proper RowAction class
+            $actions->add(new DeleteConfirmation());
         });
 
         // Adding search filters
@@ -228,7 +227,7 @@ class SaccoController extends AdminController
             $tools->append('
                 <style>
                     .custom-tool-container {
-                        width: 100%;
+                        width: 80%;
                     }
                     .custom-tool-container .button-row {
                         display: flex;
@@ -265,6 +264,17 @@ class SaccoController extends AdminController
                                 <li><a href="' . url()->current() . '?uses_shares=0">Uses Cash</a></li>
                                 <li><a href="' . url()->current() . '?uses_shares=1">Uses Shares</a></li>
                                 <li><a href="' . url()->current() . '">All</a></li>
+                            </ul>
+                        </div>
+                        <!-- Filter for Test Groups -->
+                        <div class="btn-group" style="margin-right: 5px;">
+                            <button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown">
+                                Filter Test Groups <span class="caret"></span>
+                            </button>
+                            <ul class="dropdown-menu" role="menu">
+                                <li><a href="' . url()->current() . '?is_test=1">Show Test Groups Only</a></li>
+                                <li><a href="' . url()->current() . '?is_test=0">Hide Test Groups</a></li>
+                                <li><a href="' . url()->current() . '">All Groups</a></li>
                             </ul>
                         </div>
                         <!-- Filter by Created At Button -->
@@ -306,6 +316,7 @@ class SaccoController extends AdminController
                           <input type="hidden" name="uses_shares" value="' . request('uses_shares', '') . '">
                           <input type="hidden" name="location_search" value="' . request('location_search', '') . '">
                           <input type="hidden" name="_sort" value="' . request('_sort', 'desc') . '">
+                          <input type="hidden" name="is_test" value="' . request('is_test', '') . '">
 
                           <div class="form-group">
                             <label for="created_from">Start Date:</label>
@@ -343,6 +354,18 @@ class SaccoController extends AdminController
             $uses_shares = request()->get('uses_shares');
             if (in_array($uses_shares, ['0', '1'])) {
                 $grid->model()->where('uses_shares', $uses_shares);
+            }
+        }
+
+        // Add filtering logic for test groups
+        if (request()->has('is_test')) {
+            $isTest = request()->get('is_test');
+            if ($isTest === '1') {
+                $grid->model()->where('isTest', true);
+            } elseif ($isTest === '0') {
+                $grid->model()->where(function($query) {
+                    $query->where('isTest', false)->orWhereNull('isTest');
+                });
             }
         }
 
@@ -469,6 +492,10 @@ class SaccoController extends AdminController
         $form->text('parish', __('Parish'));
         $form->text('village', __('Village'));
 
+        // Add isTest switch field
+        $form->switch('isTest', __('Is Test Group'))->default(false)
+            ->help('Mark this group as a test group (will be excluded from reports)');
+
         // Add a select field for transactions view
         // $form->select('view_transactions', __('View Transactions'))->options([
         //     'yes' => 'Yes',
@@ -520,6 +547,13 @@ class SaccoController extends AdminController
 
             // Set uses_shares based on saving type for both create and update
             $form->uses_shares = request()->get('saving_types') == 'shares' ? 1 : 0;
+
+            // Fix isTest field - convert 'on' to boolean 1
+            if ($form->isTest === 'on') {
+                $form->isTest = 1;
+            } else {
+                $form->isTest = 0;
+            }
         });
 
         $form->saved(function (Form $form) {
@@ -537,6 +571,9 @@ class SaccoController extends AdminController
                 $sacco->village = $form->village;
                 $sacco->administrator_id = $form->administrator_id;
                 $sacco->uses_shares = $form->uses_shares;
+
+                // Convert isTest value to proper boolean (1/0)
+                $sacco->isTest = filter_var($form->isTest, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? 1 : 0;
 
                 if (request()->get('saving_types') == 'shares') {
                     $sacco->share_price = $form->share_price;
@@ -571,6 +608,9 @@ class SaccoController extends AdminController
                 $sacco->village = $form->village;
                 $sacco->uses_shares = $form->uses_shares;
                 $sacco->administrator_id = $form->administrator_id;
+
+                // Convert isTest value to proper boolean (1/0)
+                $sacco->isTest = filter_var($form->isTest, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? 1 : 0;
 
                 if (request()->get('saving_types') == 'shares') {
                     $sacco->share_price = $form->share_price;
@@ -623,35 +663,274 @@ class SaccoController extends AdminController
     {
         $sacco = Sacco::findOrFail($id);
 
-        // Get all related data
-        $users = User::where('sacco_id', $id)->get();
-        $cycles = Cycle::where('sacco_id', $id)->get();
-        $meetings = Meeting::where('sacco_id', $id)->get();
-        $transactions = Transaction::where('sacco_id', $id)->get();
-        $loans = Loan::where('sacco_id', $id)->get();
-        $positions = MemberPosition::where('sacco_id', $id)->get();
-        $loanSchemes = LoanScheem::where('sacco_id', $id)->get();
-        $socialFunds = SocialFund::where('sacco_id', $id)->get();
-        $orgAssociations = VslaOrganisationSacco::where('sacco_id', $id)->get();
+        // Define the deletion order with try-catch blocks to handle missing tables
+        $deletionOrder = [];
+
+        // Get all related data with count, handling missing tables gracefully
+        try {
+            $users = User::where('sacco_id', $id)->get();
+            $deletionOrder[] = [
+                'name' => 'Users',
+                'model' => 'User',
+                'count' => $users->count(),
+                'route' => 'admin.sacco.delete-related',
+                'icon' => 'fa-users',
+                'description' => 'Member records for this group',
+                'dependent_on' => ['Loans', 'Meetings', 'Transactions', 'Share Records']
+            ];
+        } catch (\Exception $e) {
+            // Table doesn't exist or other error
+        }
+
+        try {
+            $cycles = Cycle::where('sacco_id', $id)->get();
+            $deletionOrder[] = [
+                'name' => 'Cycles',
+                'model' => 'Cycle',
+                'count' => $cycles->count(),
+                'route' => 'admin.sacco.delete-related',
+                'icon' => 'fa-sync',
+                'description' => 'Cycle records for this group',
+                'dependent_on' => ['Meetings', 'Loans', 'Transactions']
+            ];
+        } catch (\Exception $e) {
+            // Table doesn't exist or other error
+        }
+
+        try {
+            $meetings = Meeting::where('sacco_id', $id)->get();
+            $deletionOrder[] = [
+                'name' => 'Meetings',
+                'model' => 'Meeting',
+                'count' => $meetings->count(),
+                'route' => 'admin.sacco.delete-related',
+                'icon' => 'fa-users',
+                'description' => 'Meeting records for this group',
+                'dependent_on' => ['Transactions', 'Share Records']
+            ];
+        } catch (\Exception $e) {
+            // Table doesn't exist or other error
+        }
+
+        try {
+            $transactions = Transaction::where('sacco_id', $id)->get();
+            $deletionOrder[] = [
+                'name' => 'Transactions',
+                'model' => 'Transaction',
+                'count' => $transactions->count(),
+                'route' => 'admin.sacco.delete-related',
+                'icon' => 'fa-exchange-alt',
+                'description' => 'Transaction records for this group',
+                'dependent_on' => []
+            ];
+        } catch (\Exception $e) {
+            // Table doesn't exist or other error
+        }
+
+        try {
+            $loans = Loan::where('sacco_id', $id)->get();
+            $deletionOrder[] = [
+                'name' => 'Loans',
+                'model' => 'Loan',
+                'count' => $loans->count(),
+                'route' => 'admin.sacco.delete-related',
+                'icon' => 'fa-hand-holding-usd',
+                'description' => 'Loan records for this group',
+                'dependent_on' => ['Loan Transactions']
+            ];
+        } catch (\Exception $e) {
+            // Table doesn't exist or other error
+        }
+
+        try {
+            $shareRecords = \App\Models\ShareRecord::where('sacco_id', $id)->count();
+            $deletionOrder[] = [
+                'name' => 'Share Records',
+                'model' => 'ShareRecord',
+                'count' => $shareRecords,
+                'route' => 'admin.sacco.delete-related',
+                'icon' => 'fa-chart-pie',
+                'description' => 'Share records for this group',
+                'dependent_on' => []
+            ];
+        } catch (\Exception $e) {
+            // Table doesn't exist or other error
+        }
+
+        try {
+            $loanTransactions = \App\Models\LoanTransaction::whereIn('loan_id', isset($loans) ? $loans->pluck('id') : [])->count();
+            $deletionOrder[] = [
+                'name' => 'Loan Transactions',
+                'model' => 'LoanTransaction',
+                'count' => $loanTransactions,
+                'route' => 'admin.sacco.delete-related',
+                'icon' => 'fa-exchange-alt',
+                'description' => 'Loan transaction records for this group',
+                'dependent_on' => []
+            ];
+        } catch (\Exception $e) {
+            // Table doesn't exist or other error
+        }
+
+        try {
+            $positions = MemberPosition::where('sacco_id', $id)->get();
+            $deletionOrder[] = [
+                'name' => 'Member Positions',
+                'model' => 'MemberPosition',
+                'count' => $positions->count(),
+                'route' => 'admin.sacco.delete-related',
+                'icon' => 'fa-user-tag',
+                'description' => 'Position records for this group',
+                'dependent_on' => ['Users']
+            ];
+        } catch (\Exception $e) {
+            // Table doesn't exist or other error
+        }
+
+        try {
+            $loanSchemes = LoanScheem::where('sacco_id', $id)->get();
+            $deletionOrder[] = [
+                'name' => 'Loan Schemes',
+                'model' => 'LoanScheem',
+                'count' => $loanSchemes->count(),
+                'route' => 'admin.sacco.delete-related',
+                'icon' => 'fa-percent',
+                'description' => 'Loan scheme configurations for this group',
+                'dependent_on' => ['Loans']
+            ];
+        } catch (\Exception $e) {
+            // Table doesn't exist or other error
+        }
+
+        try {
+            $meetingSchedules = \App\Models\MeetingSchedule::where('sacco_id', $id)->count();
+            $deletionOrder[] = [
+                'name' => 'Meeting Schedules',
+                'model' => 'MeetingSchedule',
+                'count' => $meetingSchedules,
+                'route' => 'admin.sacco.delete-related',
+                'icon' => 'fa-calendar-alt',
+                'description' => 'Meeting schedules for this group',
+                'dependent_on' => ['Meetings']
+            ];
+        } catch (\Exception $e) {
+            // Table doesn't exist or other error
+        }
+
+        try {
+            $socialFunds = \App\Models\SocialFund::where('sacco_id', $id)->get();
+            $deletionOrder[] = [
+                'name' => 'Social Funds',
+                'model' => 'SocialFund',
+                'count' => $socialFunds->count(),
+                'route' => 'admin.sacco.delete-related',
+                'icon' => 'fa-money-bill-wave',
+                'description' => 'Social fund records for this group',
+                'dependent_on' => []
+            ];
+        } catch (\Exception $e) {
+            // Table doesn't exist or other error
+        }
+
+        try {
+            $orgAssociations = \App\Models\VslaOrganisationSacco::where('sacco_id', $id)->get();
+            $deletionOrder[] = [
+                'name' => 'Organization Associations',
+                'model' => 'VslaOrganisationSacco',
+                'count' => $orgAssociations->count(),
+                'route' => 'admin.sacco.delete-related',
+                'icon' => 'fa-building',
+                'description' => 'Organization links for this group',
+                'dependent_on' => []
+            ];
+        } catch (\Exception $e) {
+            // Table doesn't exist or other error
+        }
 
         // Return view with all data
-        return Admin::content(function (Content $content) use ($sacco, $users, $cycles, $meetings, $transactions, $loans, $positions, $loanSchemes, $socialFunds, $orgAssociations) {
+        return Admin::content(function (Content $content) use ($sacco, $deletionOrder) {
             $content->header('Delete VSLA Group: ' . $sacco->name);
             $content->description('Please delete all associated data before deleting the group.');
 
+            // Set the title for the page
+            Admin::script('$(document).ready(function() { document.title = "Delete ' . $sacco->name . ' | ' . config('admin.title') . '"; });');
+
             $content->body(view('admin.delete-sacco-confirmation', [
                 'sacco' => $sacco,
-                'users' => $users,
-                'cycles' => $cycles,
-                'meetings' => $meetings,
-                'transactions' => $transactions,
-                'loans' => $loans,
-                'positions' => $positions,
-                'loanSchemes' => $loanSchemes,
-                'socialFunds' => $socialFunds,
-                'orgAssociations' => $orgAssociations
+                'deletionOrder' => $deletionOrder,
+                'header' => 'Delete VSLA Group: ' . $sacco->name,  // Add header to the view data
             ]));
         });
+    }
+
+    /**
+     * Handle the deletion of related records for a specific SACCO.
+     *
+     * @param int $id
+     * @param string $model
+     * @return \Illuminate\Http\Response
+     */
+    public function deleteRelated($id, $model)
+    {
+        $sacco = Sacco::findOrFail($id);
+        $modelClass = "\\App\\Models\\" . $model;
+        $modelNameFormatted = preg_replace('/(?<!^)[A-Z]/', ' $0', $model);
+
+        try {
+            switch ($model) {
+                case 'User':
+                    $count = $modelClass::where('sacco_id', $id)->count();
+                    $modelClass::where('sacco_id', $id)->update(['sacco_id' => null]);
+                    break;
+
+                case 'LoanTransaction':
+                    $loanIds = \App\Models\Loan::where('sacco_id', $id)->pluck('id')->toArray();
+                    $count = $modelClass::whereIn('loan_id', $loanIds)->count();
+                    $modelClass::whereIn('loan_id', $loanIds)->delete();
+                    break;
+
+                case 'VslaOrganisationSacco':
+                    $count = $modelClass::where('sacco_id', $id)->count();
+                    $modelClass::where('sacco_id', $id)->delete();
+                    break;
+
+                default:
+                    $count = $modelClass::where('sacco_id', $id)->count();
+                    $modelClass::where('sacco_id', $id)->delete();
+                    break;
+            }
+
+            $successMessage = "All {$count} {$modelNameFormatted} records for {$sacco->name} have been deleted successfully.";
+
+            // Handle AJAX requests
+            if (request()->ajax()) {
+                return response()->json([
+                    'status' => 'success',
+                    'message' => $successMessage
+                ]);
+            }
+
+            // Handle regular requests
+            admin_success('Success', $successMessage);
+        } catch (\Exception $e) {
+            $errorMessage = "Failed to delete {$modelNameFormatted} records: {$e->getMessage()}";
+
+            // Handle AJAX requests
+            if (request()->ajax()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => $errorMessage
+                ], 500);
+            }
+
+            // Handle regular requests
+            admin_error('Error', $errorMessage);
+        }
+
+        // For regular requests, redirect back to the confirmation page
+        if (!request()->ajax()) {
+            return redirect("admin/saccos/{$id}/delete-confirmation");
+        }
     }
 
     /**
@@ -664,67 +943,78 @@ class SaccoController extends AdminController
     {
         $sacco = Sacco::findOrFail($id);
 
-        // Check if there are users associated with this Sacco
-        $users = User::where('sacco_id', $id)->get();
-        if ($users->isNotEmpty()) {
-            admin_error('Delete Failed', 'Cannot delete Group as there are associated members. Please remove all members first.');
-            return back();
-        }
+        // Check if any related data still exists
+        $relatedDataExists = false;
+        $errorMessage = '';
+
+        // Function to safely check for related records
+        $checkForRelatedRecords = function($model, $errorMsg) use (&$relatedDataExists, &$errorMessage, $id) {
+            try {
+                $count = $model::where('sacco_id', $id)->count();
+                if ($count > 0) {
+                    $relatedDataExists = true;
+                    $errorMessage = $errorMsg;
+                }
+            } catch (\Exception $e) {
+                // Table may not exist, just continue
+            }
+        };
+
+        // Check for users
+        $checkForRelatedRecords(User::class, 'Cannot delete Group as there are associated members. Please remove all members first.');
 
         // Check for cycles
-        $cycles = Cycle::where('sacco_id', $id)->get();
-        if ($cycles->isNotEmpty()) {
-            admin_error('Delete Failed', 'Cannot delete Group as there are associated cycles. Please remove all cycles first.');
-            return back();
-        }
+        $checkForRelatedRecords(Cycle::class, 'Cannot delete Group as there are associated cycles. Please remove all cycles first.');
 
         // Check for meetings
-        $meetings = Meeting::where('sacco_id', $id)->get();
-        if ($meetings->isNotEmpty()) {
-            admin_error('Delete Failed', 'Cannot delete Group as there are associated meetings. Please remove all meetings first.');
-            return back();
-        }
+        $checkForRelatedRecords(Meeting::class, 'Cannot delete Group as there are associated meetings. Please remove all meetings first.');
 
         // Check for transactions
-        $transactions = Transaction::where('sacco_id', $id)->get();
-        if ($transactions->isNotEmpty()) {
-            admin_error('Delete Failed', 'Cannot delete Group as there are associated transactions. Please remove all transactions first.');
-            return back();
-        }
+        $checkForRelatedRecords(Transaction::class, 'Cannot delete Group as there are associated transactions. Please remove all transactions first.');
 
         // Check for loans
-        $loans = Loan::where('sacco_id', $id)->get();
-        if ($loans->isNotEmpty()) {
-            admin_error('Delete Failed', 'Cannot delete Group as there are associated loans. Please remove all loans first.');
-            return back();
-        }
+        $checkForRelatedRecords(Loan::class, 'Cannot delete Group as there are associated loans. Please remove all loans first.');
 
         // Check for positions
-        $positions = MemberPosition::where('sacco_id', $id)->get();
-        if ($positions->isNotEmpty()) {
-            admin_error('Delete Failed', 'Cannot delete Group as there are associated positions. Please remove all positions first.');
-            return back();
-        }
+        $checkForRelatedRecords(MemberPosition::class, 'Cannot delete Group as there are associated positions. Please remove all positions first.');
 
         // Check for loan schemes
-        $loanSchemes = LoanScheem::where('sacco_id', $id)->get();
-        if ($loanSchemes->isNotEmpty()) {
-            admin_error('Delete Failed', 'Cannot delete Group as there are associated loan schemes. Please remove all loan schemes first.');
-            return back();
-        }
+        $checkForRelatedRecords(LoanScheem::class, 'Cannot delete Group as there are associated loan schemes. Please remove all loan schemes first.');
 
         // Check for social funds
-        $socialFunds = SocialFund::where('sacco_id', $id)->get();
-        if ($socialFunds->isNotEmpty()) {
-            admin_error('Delete Failed', 'Cannot delete Group as there are associated social funds. Please remove all social funds first.');
-            return back();
+        try {
+            $socialFundsCount = \App\Models\SocialFund::where('sacco_id', $id)->count();
+            if ($socialFundsCount > 0) {
+                $relatedDataExists = true;
+                $errorMessage = 'Cannot delete Group as there are associated social funds. Please remove all social funds first.';
+            }
+        } catch (\Exception $e) {
+            // Table may not exist, just continue
         }
 
         // Check for organization associations
-        $orgAssociations = VslaOrganisationSacco::where('sacco_id', $id)->get();
-        if ($orgAssociations->isNotEmpty()) {
-            admin_error('Delete Failed', 'Cannot delete Group as there are associated organization links. Please remove all organization associations first.');
-            return back();
+        try {
+            $orgAssociationsCount = \App\Models\VslaOrganisationSacco::where('sacco_id', $id)->count();
+            if ($orgAssociationsCount > 0) {
+                $relatedDataExists = true;
+                $errorMessage = 'Cannot delete Group as there are associated organization links. Please remove all organization associations first.';
+            }
+        } catch (\Exception $e) {
+            // Table may not exist, just continue
+        }
+
+        if ($relatedDataExists) {
+            // Handle AJAX requests
+            if (request()->ajax()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => $errorMessage
+                ], 422);
+            }
+
+            // Handle regular requests
+            admin_error('Delete Failed', $errorMessage);
+            return redirect("admin/saccos/{$id}/delete-confirmation");
         }
 
         // If we've gotten this far, it's safe to delete the group
@@ -735,9 +1025,27 @@ class SaccoController extends AdminController
             $sacco->status = 'deleted';
             $sacco->save();
 
+            // Handle AJAX requests
+            if (request()->ajax()) {
+                return response()->json([
+                    'status' => 'success',
+                    'message' => "Group {$saccoName} has been successfully marked as deleted."
+                ]);
+            }
+
+            // Handle regular requests
             admin_success('Success', "Group {$saccoName} has been successfully marked as deleted.");
             return redirect('admin/saccos');
         } catch (\Exception $e) {
+            // Handle AJAX requests
+            if (request()->ajax()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => "Failed to delete group: {$e->getMessage()}"
+                ], 500);
+            }
+
+            // Handle regular requests
             admin_error('Error', "Failed to delete group: {$e->getMessage()}");
             return back();
         }

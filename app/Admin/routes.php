@@ -26,6 +26,7 @@ Route::group([
 
     // Add route for delete confirmation before the resource route
     $router->get('saccos/{id}/delete-confirmation', 'SaccoController@deleteConfirmation')->name('saccos.delete-confirmation');
+    $router->delete('saccos/{id}/delete-related/{model}', 'SaccoController@deleteRelated')->name('admin.sacco.delete-related');
     $router->resource('saccos', SaccoController::class);
 
     $router->resource('inactive-saccos', SaccoDeletedActiveController::class);
