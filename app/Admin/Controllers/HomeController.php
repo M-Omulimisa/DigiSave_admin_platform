@@ -68,10 +68,7 @@ class HomeController extends Controller
         $users = User::all();
 
         // Get IDs of deleted or inactive Saccos
-        $deletedOrInactiveSaccoIds = Sacco::where(function($query) {
-                $query->where('status', '!=', 'ACTIVE')
-                      ->orWhereNotNull('deleted_at');
-            })
+        $deletedOrInactiveSaccoIds = Sacco::where('status', '!=', 'ACTIVE')
             ->pluck('id')
             ->toArray();
 
