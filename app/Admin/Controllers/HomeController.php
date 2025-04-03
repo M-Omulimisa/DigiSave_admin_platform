@@ -2004,13 +2004,13 @@ class HomeController extends Controller
                 ->first()
                 ->total_balance;
         }
-        $femaleUsers = $filteredUsers->where('sex', 'Female');
+        $femaleUsers = $filteredUsersForBalances->where('sex', 'Female');
         $femaleMembersCount = $femaleUsers->count();
         // $femaleTotalBalance = number_format($femaleUsers->sum('balance'), 2);
 
         // dd($femaleTotalBalance);
 
-        $maleUsers = $filteredUsers->where('sex', 'Male');
+        $maleUsers = $filteredUsersForBalances->where('sex', 'Male');
         $maleMembersCount = $maleUsers->count();
         // $maleTotalBalance = number_format($maleUsers->sum('balance'), 2);
 
@@ -2025,28 +2025,8 @@ class HomeController extends Controller
         $pwdFemaleUsers = $femaleUsers->where('pwd', 'Yes');
         $pwdFemaleUsersCount = $pwdFemaleUsers->count();
 
-        // dd([
-        //     'all_male_count' => $maleUsers->count(),
-        //     'all_female_count' => $femaleUsers->count(),
-        //     'refugee_male_count' => $refugeMaleUsers->count(),
-        //     'refugee_female_count' => $refugeFemaleUsers->count(),
-        //     'refugee_male_details' => $refugeMaleUsers->map(function($user) {
-        //         return [
-        //             'first_name' => $user->first_name,
-        //             'last_name' => $user->last_name,
-        //             'refugee_status' => $user->refugee_status,
-        //             'sex' => $user->sex
-        //         ];
-        //     }),
-        //     'refugee_female_details' => $refugeFemaleUsers->map(function($user) {
-        //         return [
-        //             'first_name' => $user->first_name,
-        //             'last_name' => $user->last_name,
-        //             'refugee_status' => $user->refugee_status,
-        //             'sex' => $user->sex
-        //         ];
-        //     })
-        // ]);
+        // Ensure total members matches sum of male and female members
+        $totalMembers = $maleMembersCount + $femaleMembersCount;
 
         $youthUsers = $filteredUsers->filter(function ($user) {
             return Carbon::parse($user->dob)->age < 35;
