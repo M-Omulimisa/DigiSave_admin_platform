@@ -49,6 +49,7 @@ class HomeController extends Controller
 
         $startDate = Carbon::parse($request->input('start_date'))->startOfDay();
         $endDate = Carbon::parse($request->input('end_date'))->endOfDay();
+        $districtId = $request->input('district_id');
 
         // Check if dates represent "from system start to current date"
         $isAllTimeData = false;
@@ -67,19 +68,13 @@ class HomeController extends Controller
 
         $users = User::all();
 
-        // Apply user type restrictions but not date filter when using all-time data
-        $filteredUsers = $users->filter(function ($user) use ($startDate, $endDate, $adminId, $isAllTimeData) {
-            if ($isAllTimeData) {
-                // For all-time data, don't filter by date, just by user type
-                return $user->id !== $adminId &&
-                       !in_array($user->user_type, ['Admin', '4', '5']);
-            } else {
-                // For specific date ranges, filter by date and user type
-                $createdAt = Carbon::parse($user->created_at);
-                return $createdAt->between($startDate, $endDate) &&
-                    $user->id !== $adminId &&
-                    !in_array($user->user_type, ['Admin', '4', '5']);
-            }
+        // Apply filters: date range, user type, and district (if specified)
+        $filteredUsers = $users->filter(function ($user) use ($startDate, $endDate, $adminId, $isAllTimeData, $districtId) {
+            $passesDateFilter = $isAllTimeData || Carbon::parse($user->created_at)->between($startDate, $endDate);
+            $passesUserTypeFilter = $user->id !== $adminId && !in_array($user->user_type, ['Admin', '4', '5']);
+            $passesDistrictFilter = !$districtId || $user->district_id == $districtId;
+
+            return $passesDateFilter && $passesUserTypeFilter && $passesDistrictFilter;
         });
 
         $filteredUserIds = $filteredUsers->pluck('id');
@@ -103,6 +98,9 @@ class HomeController extends Controller
             $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgAllocation->vsla_organisation_id)
                 ->pluck('sacco_id')->toArray();
             $filteredUsers = $filteredUsers->whereIn('sacco_id', $saccoIds);
+
+            // Define deleted or inactive SACCOs
+            $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id')->toArray();
 
             $genderDistribution = User::whereIn('sacco_id', $saccoIds)
                 ->select('sex', DB::raw('count(*) as count'))
@@ -684,7 +682,17 @@ class HomeController extends Controller
 
     private function generateCsv($statistics, $startDate, $endDate)
     {
-        $fileName = 'export_data_' . $startDate . '_to_' . $endDate . '.csv';
+        $districtInfo = '';
+        $districtId = request()->input('district_id');
+
+        if ($districtId) {
+            $district = \App\Models\District::find($districtId);
+            if ($district) {
+                $districtInfo = '_' . str_replace(' ', '_', $district->name);
+            }
+        }
+
+        $fileName = 'export_data' . $districtInfo . '_' . $startDate . '_to_' . $endDate . '.csv';
         $filePath = storage_path('exports/' . $fileName);
 
         if (!file_exists(storage_path('exports'))) {
@@ -703,6 +711,20 @@ class HomeController extends Controller
             $data = [
                 // Counts
                 ['Metric', 'Value (UGX)'],
+            ];
+
+            // Add district information if a district is selected
+            $districtId = request()->input('district_id');
+            if ($districtId) {
+                $district = \App\Models\District::find($districtId);
+                if ($district) {
+                    $data[] = ['District', $district->name];
+                    $data[] = ['', ''];
+                }
+            }
+
+            // Add the rest of the data
+            $data = array_merge($data, [
                 ['Total Number of Groups Registered', $statistics['totalAccounts']],
                 ['Total Number of Members', $statistics['totalMembers']],
                 ['Number of Members by Gender', ''],
@@ -738,7 +760,7 @@ class HomeController extends Controller
                 ['  Female PWDs', $this->formatCurrency($statistics['pwdFemaleLoans'])],
                 ['  Male PWDs', $this->formatCurrency($statistics['pwdMaleLoans'])],
                 ['Loans by PWDs (Overall)', $this->formatCurrency($statistics['pwdTotalLoanBalance'])],
-            ];
+            ]);
 
             foreach ($data as $row) {
                 if (fputcsv($file, array_map('strval', $row)) === false) {
@@ -2241,28 +2263,51 @@ class HomeController extends Controller
                 <form action="' . route(config('admin.route.prefix') . '.export-data') . '"
                       method="GET"
                       style="display: flex; gap: 15px; justify-content: flex-end; align-items: center;">
-                    <input type="date"
-                           name="start_date"
-                           required
-                           style="
+
+                    <select name="district_id"
+                            style="
                                 padding: 12px 20px;
                                 border: 2px solid #e2e8f0;
                                 border-radius: 12px;
                                 font-size: 16px;
                                 color: #4a5568;
                                 box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-                                transition: all 0.3s ease;">
-                    <input type="date"
-                           name="end_date"
-                           required
-                           style="
-                                padding: 12px 20px;
-                                border: 2px solid #e2e8f0;
-                                border-radius: 12px;
-                                font-size: 16px;
-                                color: #4a5568;
-                                box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-                                transition: all 0.3s ease;">
+                                transition: all 0.3s ease;
+                                min-width: 180px;">
+                        <option value="">Select District</option>' .
+                        $this->getDistrictOptionsHtml() . '
+                    </select>
+
+                    <div style="position: relative; display: inline-block;">
+                        <div style="position: absolute; top: -20px; left: 5px; font-size: 14px; color: #4a5568;">Start Date</div>
+                        <input type="date"
+                               name="start_date"
+                               required
+                               style="
+                                    padding: 12px 20px;
+                                    border: 2px solid #e2e8f0;
+                                    border-radius: 12px;
+                                    font-size: 16px;
+                                    color: #4a5568;
+                                    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+                                    transition: all 0.3s ease;">
+                    </div>
+
+                    <div style="position: relative; display: inline-block;">
+                        <div style="position: absolute; top: -20px; left: 5px; font-size: 14px; color: #4a5568;">End Date</div>
+                        <input type="date"
+                               name="end_date"
+                               required
+                               style="
+                                    padding: 12px 20px;
+                                    border: 2px solid #e2e8f0;
+                                    border-radius: 12px;
+                                    font-size: 16px;
+                                    color: #4a5568;
+                                    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+                                    transition: all 0.3s ease;">
+                    </div>
+
                     <button type="submit"
                             class="btn btn-primary"
                             style="
@@ -2378,6 +2423,23 @@ class HomeController extends Controller
                 </div>
             </div>'
             );
+    }
+
+    /**
+     * Generate district options HTML for the select dropdown
+     *
+     * @return string
+     */
+    private function getDistrictOptionsHtml()
+    {
+        $options = '';
+        $districts = \App\Models\District::orderBy('name')->get();
+
+        foreach ($districts as $district) {
+            $options .= '<option value="'.$district->id.'">'.$district->name.'</option>';
+        }
+
+        return $options;
     }
 }
 ?>

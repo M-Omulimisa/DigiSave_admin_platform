@@ -266,6 +266,17 @@ class SaccoController extends AdminController
                                 <li><a href="' . url()->current() . '">All</a></li>
                             </ul>
                         </div>
+                        <!-- Filter for Test Groups -->
+                        <div class="btn-group" style="margin-right: 5px;">
+                            <button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown">
+                                Filter Test Groups <span class="caret"></span>
+                            </button>
+                            <ul class="dropdown-menu" role="menu">
+                                <li><a href="' . url()->current() . '?is_test=1">Show Test Groups Only</a></li>
+                                <li><a href="' . url()->current() . '?is_test=0">Hide Test Groups</a></li>
+                                <li><a href="' . url()->current() . '">All Groups</a></li>
+                            </ul>
+                        </div>
                         <!-- Filter by Created At Button -->
                         <div class="btn-group" style="margin-right: 5px;">
                             <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#createdAtFilterModal">
@@ -305,6 +316,7 @@ class SaccoController extends AdminController
                           <input type="hidden" name="uses_shares" value="' . request('uses_shares', '') . '">
                           <input type="hidden" name="location_search" value="' . request('location_search', '') . '">
                           <input type="hidden" name="_sort" value="' . request('_sort', 'desc') . '">
+                          <input type="hidden" name="is_test" value="' . request('is_test', '') . '">
 
                           <div class="form-group">
                             <label for="created_from">Start Date:</label>
@@ -342,6 +354,18 @@ class SaccoController extends AdminController
             $uses_shares = request()->get('uses_shares');
             if (in_array($uses_shares, ['0', '1'])) {
                 $grid->model()->where('uses_shares', $uses_shares);
+            }
+        }
+
+        // Add filtering logic for test groups
+        if (request()->has('is_test')) {
+            $isTest = request()->get('is_test');
+            if ($isTest === '1') {
+                $grid->model()->where('isTest', true);
+            } elseif ($isTest === '0') {
+                $grid->model()->where(function($query) {
+                    $query->where('isTest', false)->orWhereNull('isTest');
+                });
             }
         }
 
@@ -468,6 +492,10 @@ class SaccoController extends AdminController
         $form->text('parish', __('Parish'));
         $form->text('village', __('Village'));
 
+        // Add isTest switch field
+        $form->switch('isTest', __('Is Test Group'))->default(false)
+            ->help('Mark this group as a test group (will be excluded from reports)');
+
         // Add a select field for transactions view
         // $form->select('view_transactions', __('View Transactions'))->options([
         //     'yes' => 'Yes',
@@ -519,6 +547,13 @@ class SaccoController extends AdminController
 
             // Set uses_shares based on saving type for both create and update
             $form->uses_shares = request()->get('saving_types') == 'shares' ? 1 : 0;
+
+            // Fix isTest field - convert 'on' to boolean 1
+            if ($form->isTest === 'on') {
+                $form->isTest = 1;
+            } else {
+                $form->isTest = 0;
+            }
         });
 
         $form->saved(function (Form $form) {
@@ -536,6 +571,9 @@ class SaccoController extends AdminController
                 $sacco->village = $form->village;
                 $sacco->administrator_id = $form->administrator_id;
                 $sacco->uses_shares = $form->uses_shares;
+
+                // Convert isTest value to proper boolean (1/0)
+                $sacco->isTest = filter_var($form->isTest, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? 1 : 0;
 
                 if (request()->get('saving_types') == 'shares') {
                     $sacco->share_price = $form->share_price;
@@ -570,6 +608,9 @@ class SaccoController extends AdminController
                 $sacco->village = $form->village;
                 $sacco->uses_shares = $form->uses_shares;
                 $sacco->administrator_id = $form->administrator_id;
+
+                // Convert isTest value to proper boolean (1/0)
+                $sacco->isTest = filter_var($form->isTest, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? 1 : 0;
 
                 if (request()->get('saving_types') == 'shares') {
                     $sacco->share_price = $form->share_price;
