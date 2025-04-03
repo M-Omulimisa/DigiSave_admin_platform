@@ -49,7 +49,6 @@ class HomeController extends Controller
 
         $startDate = Carbon::parse($request->input('start_date'))->startOfDay();
         $endDate = Carbon::parse($request->input('end_date'))->endOfDay();
-        $districtId = $request->input('district_id');
 
         // Check if dates represent "from system start to current date"
         $isAllTimeData = false;
@@ -68,13 +67,19 @@ class HomeController extends Controller
 
         $users = User::all();
 
-        // Apply filters: date range, user type, and district (if specified)
-        $filteredUsers = $users->filter(function ($user) use ($startDate, $endDate, $adminId, $isAllTimeData, $districtId) {
-            $passesDateFilter = $isAllTimeData || Carbon::parse($user->created_at)->between($startDate, $endDate);
-            $passesUserTypeFilter = $user->id !== $adminId && !in_array($user->user_type, ['Admin', '4', '5']);
-            $passesDistrictFilter = !$districtId || $user->district_id == $districtId;
-
-            return $passesDateFilter && $passesUserTypeFilter && $passesDistrictFilter;
+        // Apply user type restrictions but not date filter when using all-time data
+        $filteredUsers = $users->filter(function ($user) use ($startDate, $endDate, $adminId, $isAllTimeData) {
+            if ($isAllTimeData) {
+                // For all-time data, don't filter by date, just by user type
+                return $user->id !== $adminId &&
+                       !in_array($user->user_type, ['Admin', '4', '5']);
+            } else {
+                // For specific date ranges, filter by date and user type
+                $createdAt = Carbon::parse($user->created_at);
+                return $createdAt->between($startDate, $endDate) &&
+                    $user->id !== $adminId &&
+                    !in_array($user->user_type, ['Admin', '4', '5']);
+            }
         });
 
         $filteredUserIds = $filteredUsers->pluck('id');
@@ -98,9 +103,6 @@ class HomeController extends Controller
             $saccoIds = VslaOrganisationSacco::where('vsla_organisation_id', $orgAllocation->vsla_organisation_id)
                 ->pluck('sacco_id')->toArray();
             $filteredUsers = $filteredUsers->whereIn('sacco_id', $saccoIds);
-
-            // Define deleted or inactive SACCOs
-            $deletedOrInactiveSaccoIds = Sacco::whereIn('status', ['deleted', 'inactive'])->pluck('id')->toArray();
 
             $genderDistribution = User::whereIn('sacco_id', $saccoIds)
                 ->select('sex', DB::raw('count(*) as count'))
@@ -437,76 +439,31 @@ class HomeController extends Controller
         $maleShareSum = 0;
         $femaleShareSum = 0;
 
-        // Prepare the statistics array
         $statistics = [
             'totalAccounts' => $this->getTotalAccounts($filteredUsers, $startDate, $endDate),
             'totalMembers' => $filteredUsers->count(),
-            'maleMembersCount' => $filteredUsers->where('sex', 'Male')->count(),
-            'femaleMembersCount' => $filteredUsers->where('sex', 'Female')->count(),
-            'refugesMemberCount' => $filteredUsers->where('is_refugee', 'Yes')->count(),
-            'youthMembersCount' => $filteredUsers->where(function ($user) {
-                return $user->dob && Carbon::parse($user->dob)->age < 35;
-            })->count(),
-            'pwdMembersCount' => $filteredUsers->where('pwd', 'Yes')->count(),
-
-            // Savings balances - Use transactions.amount instead of balance
-            'maleTotalBalance' => $this->getTotalBalance($filteredUsers->where('sex', 'Male'), 'SHARE', $startDate, $endDate),
-            'femaleTotalBalance' => $this->getTotalBalance($filteredUsers->where('sex', 'Female'), 'SHARE', $startDate, $endDate),
-            'youthTotalBalance' => $this->getTotalBalance($filteredUsers->where(function ($user) {
-                return $user->dob && Carbon::parse($user->dob)->age < 35;
-            }), 'SHARE', $startDate, $endDate),
-            'refugeeFemaleSavings' => $this->getTotalBalance(
-                $filteredUsers->where('sex', 'Female')->where('is_refugee', 'Yes'),
-                'SHARE',
-                $startDate,
-                $endDate
-            ),
-            'refugeeMaleSavings' => $this->getTotalBalance(
-                $filteredUsers->where('sex', 'Male')->where('is_refugee', 'Yes'),
-                'SHARE',
-                $startDate,
-                $endDate
-            ),
-            'pwdFemaleSavings' => $this->getTotalBalance(
-                $filteredUsers->where('sex', 'Female')->where('pwd', 'Yes'),
-                'SHARE',
-                $startDate,
-                $endDate
-            ),
-            'pwdMaleSavings' => $this->getTotalBalance(
-                $filteredUsers->where('sex', 'Male')->where('pwd', 'Yes'),
-                'SHARE',
-                $startDate,
-                $endDate
-            ),
-            'pwdTotalBalance' => $this->getTotalBalance($filteredUsers->where('pwd', 'Yes'), 'SHARE', $startDate, $endDate),
-
-            // Loan amounts - ensure consistency in calculation
+            'femaleMembersCount' => $femaleUsers->count(),
+            'refugesMemberCount' => $refuges->count(),
+            'maleMembersCount' => $maleUsers->count(),
+            'youthMembersCount' => $youthUsers->count(),
+            'pwdMembersCount' => $pwdUsers->count(),
+            'refugeeMaleSavings' => $refugeMaleShareSum,
+            'refugeeFemaleSavings' => $refugeFemaleShareSum,
+            'pwdMaleSavings' => $pwdMaleShareSum,
+            'pwdFemaleSavings' => $pwdFemaleShareSum,
+            'maleTotalBalance' => $maleShareSum,
+            'femaleTotalBalance' => $femaleShareSum,
+            'refugeeMaleLoans' => $this->getLoanSumForGender($refuges, 'Male', $startDate, $endDate),
+            'refugeeFemaleLoans' => $this->getLoanSumForGender($refuges, 'Female', $startDate, $endDate),
+            'pwdMaleLoans' => $this->getLoanSumForGender($pwdUsers, 'Male', $startDate, $endDate),
+            'pwdFemaleLoans' => $this->getLoanSumForGender($pwdUsers, 'Female', $startDate, $endDate),
+            'youthTotalBalance' => $this->getTotalBalance($youthUsers, 'SHARE', $startDate, $endDate),
+            'pwdTotalBalance' => $this->getTotalBalance($pwdUsers, 'SHARE', $startDate, $endDate),
             'totalLoanAmount' => $this->getTotalLoanAmount($filteredUsers, $startDate, $endDate),
             'loanSumForWomen' => $this->getLoanSumForGender($filteredUsers, 'Female', $startDate, $endDate),
             'loanSumForMen' => $this->getLoanSumForGender($filteredUsers, 'Male', $startDate, $endDate),
             'loanSumForYouths' => $this->getLoanSumForYouths($filteredUsers, $startDate, $endDate),
-            'refugeeFemaleLoans' => $this->getTotalLoanAmount(
-                $filteredUsers->where('sex', 'Female')->where('is_refugee', 'Yes'),
-                $startDate,
-                $endDate
-            ),
-            'refugeeMaleLoans' => $this->getTotalLoanAmount(
-                $filteredUsers->where('sex', 'Male')->where('is_refugee', 'Yes'),
-                $startDate,
-                $endDate
-            ),
-            'pwdFemaleLoans' => $this->getTotalLoanAmount(
-                $filteredUsers->where('sex', 'Female')->where('pwd', 'Yes'),
-                $startDate,
-                $endDate
-            ),
-            'pwdMaleLoans' => $this->getTotalLoanAmount(
-                $filteredUsers->where('sex', 'Male')->where('pwd', 'Yes'),
-                $startDate,
-                $endDate
-            ),
-            'pwdTotalLoanBalance' => $this->getTotalLoanBalance($filteredUsers->where('pwd', 'Yes'), $startDate, $endDate),
+            'pwdTotalLoanBalance' => $this->getTotalLoanBalance($pwdUsers, $startDate, $endDate),
         ];
 
         return $this->generateCsv($statistics, $startDate, $endDate);
@@ -727,17 +684,7 @@ class HomeController extends Controller
 
     private function generateCsv($statistics, $startDate, $endDate)
     {
-        $districtInfo = '';
-        $districtId = request()->input('district_id');
-
-        if ($districtId) {
-            $district = \App\Models\District::find($districtId);
-            if ($district) {
-                $districtInfo = '_' . str_replace(' ', '_', $district->name);
-            }
-        }
-
-        $fileName = 'export_data' . $districtInfo . '_' . $startDate . '_to_' . $endDate . '.csv';
+        $fileName = 'export_data_' . $startDate . '_to_' . $endDate . '.csv';
         $filePath = storage_path('exports/' . $fileName);
 
         if (!file_exists(storage_path('exports'))) {
@@ -756,20 +703,6 @@ class HomeController extends Controller
             $data = [
                 // Counts
                 ['Metric', 'Value (UGX)'],
-            ];
-
-            // Add district information if a district is selected
-            $districtId = request()->input('district_id');
-            if ($districtId) {
-                $district = \App\Models\District::find($districtId);
-                if ($district) {
-                    $data[] = ['District', $district->name];
-                    $data[] = ['', ''];
-                }
-            }
-
-            // Add the rest of the data
-            $data = array_merge($data, [
                 ['Total Number of Groups Registered', $statistics['totalAccounts']],
                 ['Total Number of Members', $statistics['totalMembers']],
                 ['Number of Members by Gender', ''],
@@ -805,7 +738,7 @@ class HomeController extends Controller
                 ['  Female PWDs', $this->formatCurrency($statistics['pwdFemaleLoans'])],
                 ['  Male PWDs', $this->formatCurrency($statistics['pwdMaleLoans'])],
                 ['Loans by PWDs (Overall)', $this->formatCurrency($statistics['pwdTotalLoanBalance'])],
-            ]);
+            ];
 
             foreach ($data as $row) {
                 if (fputcsv($file, array_map('strval', $row)) === false) {
@@ -2004,13 +1937,13 @@ class HomeController extends Controller
                 ->first()
                 ->total_balance;
         }
-        $femaleUsers = $filteredUsersForBalances->where('sex', 'Female');
+        $femaleUsers = $filteredUsers->where('sex', 'Female');
         $femaleMembersCount = $femaleUsers->count();
         // $femaleTotalBalance = number_format($femaleUsers->sum('balance'), 2);
 
         // dd($femaleTotalBalance);
 
-        $maleUsers = $filteredUsersForBalances->where('sex', 'Male');
+        $maleUsers = $filteredUsers->where('sex', 'Male');
         $maleMembersCount = $maleUsers->count();
         // $maleTotalBalance = number_format($maleUsers->sum('balance'), 2);
 
@@ -2025,8 +1958,28 @@ class HomeController extends Controller
         $pwdFemaleUsers = $femaleUsers->where('pwd', 'Yes');
         $pwdFemaleUsersCount = $pwdFemaleUsers->count();
 
-        // Ensure total members matches sum of male and female members
-        $totalMembers = $maleMembersCount + $femaleMembersCount;
+        // dd([
+        //     'all_male_count' => $maleUsers->count(),
+        //     'all_female_count' => $femaleUsers->count(),
+        //     'refugee_male_count' => $refugeMaleUsers->count(),
+        //     'refugee_female_count' => $refugeFemaleUsers->count(),
+        //     'refugee_male_details' => $refugeMaleUsers->map(function($user) {
+        //         return [
+        //             'first_name' => $user->first_name,
+        //             'last_name' => $user->last_name,
+        //             'refugee_status' => $user->refugee_status,
+        //             'sex' => $user->sex
+        //         ];
+        //     }),
+        //     'refugee_female_details' => $refugeFemaleUsers->map(function($user) {
+        //         return [
+        //             'first_name' => $user->first_name,
+        //             'last_name' => $user->last_name,
+        //             'refugee_status' => $user->refugee_status,
+        //             'sex' => $user->sex
+        //         ];
+        //     })
+        // ]);
 
         $youthUsers = $filteredUsers->filter(function ($user) {
             return Carbon::parse($user->dob)->age < 35;
@@ -2288,51 +2241,28 @@ class HomeController extends Controller
                 <form action="' . route(config('admin.route.prefix') . '.export-data') . '"
                       method="GET"
                       style="display: flex; gap: 15px; justify-content: flex-end; align-items: center;">
-
-                    <select name="district_id"
-                            style="
+                    <input type="date"
+                           name="start_date"
+                           required
+                           style="
                                 padding: 12px 20px;
                                 border: 2px solid #e2e8f0;
                                 border-radius: 12px;
                                 font-size: 16px;
                                 color: #4a5568;
                                 box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-                                transition: all 0.3s ease;
-                                min-width: 180px;">
-                        <option value="">Select District</option>' .
-                        $this->getDistrictOptionsHtml() . '
-                    </select>
-
-                    <div style="position: relative; display: inline-block;">
-                        <div style="position: absolute; top: -20px; left: 5px; font-size: 14px; color: #4a5568;">Start Date</div>
-                        <input type="date"
-                               name="start_date"
-                               required
-                               style="
-                                    padding: 12px 20px;
-                                    border: 2px solid #e2e8f0;
-                                    border-radius: 12px;
-                                    font-size: 16px;
-                                    color: #4a5568;
-                                    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-                                    transition: all 0.3s ease;">
-                    </div>
-
-                    <div style="position: relative; display: inline-block;">
-                        <div style="position: absolute; top: -20px; left: 5px; font-size: 14px; color: #4a5568;">End Date</div>
-                        <input type="date"
-                               name="end_date"
-                               required
-                               style="
-                                    padding: 12px 20px;
-                                    border: 2px solid #e2e8f0;
-                                    border-radius: 12px;
-                                    font-size: 16px;
-                                    color: #4a5568;
-                                    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-                                    transition: all 0.3s ease;">
-                    </div>
-
+                                transition: all 0.3s ease;">
+                    <input type="date"
+                           name="end_date"
+                           required
+                           style="
+                                padding: 12px 20px;
+                                border: 2px solid #e2e8f0;
+                                border-radius: 12px;
+                                font-size: 16px;
+                                color: #4a5568;
+                                box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+                                transition: all 0.3s ease;">
                     <button type="submit"
                             class="btn btn-primary"
                             style="
@@ -2448,23 +2378,6 @@ class HomeController extends Controller
                 </div>
             </div>'
             );
-    }
-
-    /**
-     * Generate district options HTML for the select dropdown
-     *
-     * @return string
-     */
-    private function getDistrictOptionsHtml()
-    {
-        $options = '';
-        $districts = \App\Models\District::orderBy('name')->get();
-
-        foreach ($districts as $district) {
-            $options .= '<option value="'.$district->id.'">'.$district->name.'</option>';
-        }
-
-        return $options;
     }
 }
 ?>
