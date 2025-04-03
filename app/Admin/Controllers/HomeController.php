@@ -437,31 +437,76 @@ class HomeController extends Controller
         $maleShareSum = 0;
         $femaleShareSum = 0;
 
+        // Prepare the statistics array
         $statistics = [
             'totalAccounts' => $this->getTotalAccounts($filteredUsers, $startDate, $endDate),
             'totalMembers' => $filteredUsers->count(),
-            'femaleMembersCount' => $femaleUsers->count(),
-            'refugesMemberCount' => $refuges->count(),
-            'maleMembersCount' => $maleUsers->count(),
-            'youthMembersCount' => $youthUsers->count(),
-            'pwdMembersCount' => $pwdUsers->count(),
-            'refugeeMaleSavings' => $refugeMaleShareSum,
-            'refugeeFemaleSavings' => $refugeFemaleShareSum,
-            'pwdMaleSavings' => $pwdMaleShareSum,
-            'pwdFemaleSavings' => $pwdFemaleShareSum,
-            'maleTotalBalance' => $maleShareSum,
-            'femaleTotalBalance' => $femaleShareSum,
-            'refugeeMaleLoans' => $this->getLoanSumForGender($refuges, 'Male', $startDate, $endDate),
-            'refugeeFemaleLoans' => $this->getLoanSumForGender($refuges, 'Female', $startDate, $endDate),
-            'pwdMaleLoans' => $this->getLoanSumForGender($pwdUsers, 'Male', $startDate, $endDate),
-            'pwdFemaleLoans' => $this->getLoanSumForGender($pwdUsers, 'Female', $startDate, $endDate),
-            'youthTotalBalance' => $this->getTotalBalance($youthUsers, 'SHARE', $startDate, $endDate),
-            'pwdTotalBalance' => $this->getTotalBalance($pwdUsers, 'SHARE', $startDate, $endDate),
+            'maleMembersCount' => $filteredUsers->where('sex', 'Male')->count(),
+            'femaleMembersCount' => $filteredUsers->where('sex', 'Female')->count(),
+            'refugesMemberCount' => $filteredUsers->where('is_refugee', 'Yes')->count(),
+            'youthMembersCount' => $filteredUsers->where(function ($user) {
+                return $user->dob && Carbon::parse($user->dob)->age < 35;
+            })->count(),
+            'pwdMembersCount' => $filteredUsers->where('pwd', 'Yes')->count(),
+
+            // Savings balances - Use transactions.amount instead of balance
+            'maleTotalBalance' => $this->getTotalBalance($filteredUsers->where('sex', 'Male'), 'SHARE', $startDate, $endDate),
+            'femaleTotalBalance' => $this->getTotalBalance($filteredUsers->where('sex', 'Female'), 'SHARE', $startDate, $endDate),
+            'youthTotalBalance' => $this->getTotalBalance($filteredUsers->where(function ($user) {
+                return $user->dob && Carbon::parse($user->dob)->age < 35;
+            }), 'SHARE', $startDate, $endDate),
+            'refugeeFemaleSavings' => $this->getTotalBalance(
+                $filteredUsers->where('sex', 'Female')->where('is_refugee', 'Yes'),
+                'SHARE',
+                $startDate,
+                $endDate
+            ),
+            'refugeeMaleSavings' => $this->getTotalBalance(
+                $filteredUsers->where('sex', 'Male')->where('is_refugee', 'Yes'),
+                'SHARE',
+                $startDate,
+                $endDate
+            ),
+            'pwdFemaleSavings' => $this->getTotalBalance(
+                $filteredUsers->where('sex', 'Female')->where('pwd', 'Yes'),
+                'SHARE',
+                $startDate,
+                $endDate
+            ),
+            'pwdMaleSavings' => $this->getTotalBalance(
+                $filteredUsers->where('sex', 'Male')->where('pwd', 'Yes'),
+                'SHARE',
+                $startDate,
+                $endDate
+            ),
+            'pwdTotalBalance' => $this->getTotalBalance($filteredUsers->where('pwd', 'Yes'), 'SHARE', $startDate, $endDate),
+
+            // Loan amounts - ensure consistency in calculation
             'totalLoanAmount' => $this->getTotalLoanAmount($filteredUsers, $startDate, $endDate),
             'loanSumForWomen' => $this->getLoanSumForGender($filteredUsers, 'Female', $startDate, $endDate),
             'loanSumForMen' => $this->getLoanSumForGender($filteredUsers, 'Male', $startDate, $endDate),
             'loanSumForYouths' => $this->getLoanSumForYouths($filteredUsers, $startDate, $endDate),
-            'pwdTotalLoanBalance' => $this->getTotalLoanBalance($pwdUsers, $startDate, $endDate),
+            'refugeeFemaleLoans' => $this->getTotalLoanAmount(
+                $filteredUsers->where('sex', 'Female')->where('is_refugee', 'Yes'),
+                $startDate,
+                $endDate
+            ),
+            'refugeeMaleLoans' => $this->getTotalLoanAmount(
+                $filteredUsers->where('sex', 'Male')->where('is_refugee', 'Yes'),
+                $startDate,
+                $endDate
+            ),
+            'pwdFemaleLoans' => $this->getTotalLoanAmount(
+                $filteredUsers->where('sex', 'Female')->where('pwd', 'Yes'),
+                $startDate,
+                $endDate
+            ),
+            'pwdMaleLoans' => $this->getTotalLoanAmount(
+                $filteredUsers->where('sex', 'Male')->where('pwd', 'Yes'),
+                $startDate,
+                $endDate
+            ),
+            'pwdTotalLoanBalance' => $this->getTotalLoanBalance($filteredUsers->where('pwd', 'Yes'), $startDate, $endDate),
         ];
 
         return $this->generateCsv($statistics, $startDate, $endDate);
