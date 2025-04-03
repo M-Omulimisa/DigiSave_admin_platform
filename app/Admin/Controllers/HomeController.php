@@ -67,6 +67,14 @@ class HomeController extends Controller
 
         $users = User::all();
 
+        // Get IDs of deleted or inactive Saccos
+        $deletedOrInactiveSaccoIds = Sacco::where(function($query) {
+                $query->where('status', '!=', 'ACTIVE')
+                      ->orWhereNotNull('deleted_at');
+            })
+            ->pluck('id')
+            ->toArray();
+
         // Apply user type restrictions but not date filter when using all-time data
         $filteredUsers = $users->filter(function ($user) use ($startDate, $endDate, $adminId, $isAllTimeData) {
             if ($isAllTimeData) {
