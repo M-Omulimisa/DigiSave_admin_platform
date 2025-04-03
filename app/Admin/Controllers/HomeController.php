@@ -1950,8 +1950,11 @@ class HomeController extends Controller
 
         $maleUsers = $filteredUsers->where('sex', 'Male');
         $maleMembersCount = $maleUsers->count();
-        // $maleTotalBalance = number_format($maleUsers->sum('balance'), 2);
 
+        // Make sure total members matches the sum of male and female counts
+        $totalMembers = $maleMembersCount + $femaleMembersCount;
+
+        // Update the remaining code with the corrected total
         $refugeMaleUsers = $maleUsers->where('refugee_status', 'Yes');
         $refugeMaleUsersCount = $refugeMaleUsers->count();
         $refugeFemaleUsers = $femaleUsers->where('refugee_status', 'Yes');
